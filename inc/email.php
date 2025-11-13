@@ -1,68 +1,84 @@
 <?php
 // inc/email.php
-// Unified email + notification helper for Umoja Sacco System
+// Unified email + notification handler for Umoja Sacco System
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
-// Include PHPMailer
+// PHPMailer includes
 require_once __DIR__ . '/../vendor/phpmailer/src/Exception.php';
 require_once __DIR__ . '/../vendor/phpmailer/src/PHPMailer.php';
 require_once __DIR__ . '/../vendor/phpmailer/src/SMTP.php';
 
-// Include DB connection
+// DB connection
 require_once __DIR__ . '/../config/db_connect.php';
 
 /**
- * Send an email and log a notification in the database.
+ * Send an email and also create an in-app notification.
  *
- * @param string $to_email  Recipient email address
- * @param string $subject   Email subject
- * @param string $body      Email body (HTML supported)
- * @param int|null $member_id  Member ID for notification
- * @param int|null $admin_id   Admin ID for notification
- * @return bool|string True if sent successfully, error message otherwise
+ * @param string $to_email   Recipient email
+ * @param string $subject    Email subject
+ * @param string $body_html  HTML email body (long format)
+ * @param int|null $member_id
+ * @param int|null $admin_id
+ * @return bool
  */
-function sendEmailWithNotification($to_email, $subject, $body, $member_id = null, $admin_id = null)
+function sendEmailWithNotification($to_email, $subject, $body_html, $member_id = null, $admin_id = null)
 {
     global $conn;
     $mail = new PHPMailer(true);
 
     try {
         // ======================
-        //  SMTP CONFIGURATION
+        // SMTP CONFIGURATION
         // ======================
         $mail->isSMTP();
         $mail->Host       = 'smtp.gmail.com';
         $mail->SMTPAuth   = true;
-        $mail->Username   = 'leyianbeza24@gmail.com'; // your sender email
-        $mail->Password   = 'duzb mbqt fnsz ipkg'; // Gmail app password
+        $mail->Username   = 'leyianbeza24@gmail.com'; // sender Gmail
+        $mail->Password   = 'duzb mbqt fnsz ipkg';    // Gmail App Password
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
         $mail->Port       = 587;
 
         // ======================
-        //  EMAIL DETAILS
+        // EMAIL SETUP
         // ======================
         $mail->setFrom('leyianbeza24@gmail.com', 'Umoja Drivers Sacco');
         $mail->addAddress($to_email);
         $mail->isHTML(true);
         $mail->Subject = $subject;
-        $mail->Body    = nl2br($body);
-        $mail->AltBody = strip_tags($body);
+
+        // Wrap the email body in a cleaner HTML template
+        $mail->Body = "
+            <div style='font-family:Arial, sans-serif; line-height:1.6; color:#333;'>
+                <h2 style='color:#009444;'>Umoja Drivers Sacco</h2>
+                <p>$body_html</p>
+                <p style='margin-top:20px; font-size:13px; color:#666;'>
+                    This is an automated message from Umoja Sacco System.
+                </p>
+            </div>
+        ";
+        $mail->AltBody = strip_tags($body_html);
 
         // ======================
-        //  SEND EMAIL
+        // SEND EMAIL
         // ======================
         $mail->send();
 
         // ======================
-        //  SAVE NOTIFICATION
+        // STORE NOTIFICATION
         // ======================
         if ($conn && ($member_id || $admin_id)) {
 
             $to_role = $member_id ? 'member' : 'admin';
             $user_id = $member_id ?: $admin_id;
             $user_type = $member_id ? 'member' : 'admin';
+
+            // Clean plain-text version for notifications
+            $plain_message = trim(strip_tags($body_html));
+            if (strlen($plain_message) > 180) {
+                $plain_message = substr($plain_message, 0, 180) . '...';
+            }
 
             $sql = "INSERT INTO notifications 
                     (member_id, admin_id, user_id, user_type, to_role, title, message, status, is_read, created_at)
@@ -77,7 +93,7 @@ function sendEmailWithNotification($to_email, $subject, $body, $member_id = null
                     $user_type,
                     $to_role,
                     $subject,
-                    $body
+                    $plain_message
                 );
                 $stmt->execute();
                 $stmt->close();
@@ -92,8 +108,8 @@ function sendEmailWithNotification($to_email, $subject, $body, $member_id = null
     }
 }
 
-// Simple alias for backwards compatibility
-function sendEmail($to_email, $subject, $body, $member_id = null, $admin_id = null)
+// Backward-compatible alias
+function sendEmail($to_email, $subject, $body_html, $member_id = null, $admin_id = null)
 {
-    return sendEmailWithNotification($to_email, $subject, $body, $member_id, $admin_id);
+    return sendEmailWithNotification($to_email, $subject, $body_html, $member_id, $admin_id);
 }
