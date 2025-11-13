@@ -1,14 +1,14 @@
 <?php
-// Database Configuration
-$host = "localhost";          // MySQL host
+// Database Configuration for XAMPP
+$host = "localhost";          // Host
 $user = "root";               // Default XAMPP MySQL user
-$password = "";               // Default XAMPP MySQL password is empty
-$database = "umoja_sacco_db"; // Database name
+$password = "";               // Default XAMPP MySQL password (leave empty)
+$database = "umoja_sacco_db"; // Make sure this DB exists in phpMyAdmin
 
-// Create Database Connection
+// Create connection
 $conn = mysqli_connect($host, $user, $password, $database);
 
-// Check Connection
+// Check connection
 if (!$conn) {
     die("Connection failed: " . mysqli_connect_error());
 }
