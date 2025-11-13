@@ -11,7 +11,7 @@ if (session_status() === PHP_SESSION_NONE) {
 $host   = 'localhost';                 // XAMPP default server
 $user   = 'root';                      // XAMPP default username
 $pass   = '';                          // XAMPP default password is empty
-$dbname = 'umoja_drivers_sacco';       // Your database name (create in phpMyAdmin)
+$dbname = 'umoja_drivers_sacco';       // Your database name 
 
 $conn = new mysqli($host, $user, $pass, $dbname);
 
