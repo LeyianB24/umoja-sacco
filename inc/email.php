@@ -35,10 +35,8 @@ function sendEmailWithNotification($to_email, $subject, $body, $member_id = null
         $mail->isSMTP();
         $mail->Host       = 'smtp.gmail.com';
         $mail->SMTPAuth   = true;
-
-        //  Change these credentials accordingly
-        $mail->Username   = 'leyianbeza24@gmail.com';
-        $mail->Password   = 'duzb mbqt fnsz ipkg'; // App password (not Gmail login)
+        $mail->Username   = 'leyianbeza24@gmail.com'; // your sender email
+        $mail->Password   = 'duzb mbqt fnsz ipkg'; // Gmail app password
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
         $mail->Port       = 587;
 
@@ -55,27 +53,45 @@ function sendEmailWithNotification($to_email, $subject, $body, $member_id = null
         // ======================
         //  SEND EMAIL
         // ======================
-        $sent = $mail->send();
+        $mail->send();
 
         // ======================
         //  SAVE NOTIFICATION
         // ======================
         if ($conn && ($member_id || $admin_id)) {
-            $sql = "INSERT INTO notifications (member_id, admin_id, title, message, status, created_at)
-                    VALUES (?, ?, ?, ?, 'unread', NOW())";
+
+            $to_role = $member_id ? 'member' : 'admin';
+            $user_id = $member_id ?: $admin_id;
+            $user_type = $member_id ? 'member' : 'admin';
+
+            $sql = "INSERT INTO notifications 
+                    (member_id, admin_id, user_id, user_type, to_role, title, message, status, is_read, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, 'unread', 0, NOW())";
+
             if ($stmt = $conn->prepare($sql)) {
-                $stmt->bind_param("iiss", $member_id, $admin_id, $subject, $body);
+                $stmt->bind_param(
+                    "iiissss",
+                    $member_id,
+                    $admin_id,
+                    $user_id,
+                    $user_type,
+                    $to_role,
+                    $subject,
+                    $body
+                );
                 $stmt->execute();
                 $stmt->close();
             }
         }
 
-        return $sent ? true : "Email not sent (unknown reason)";
+        return true;
 
     } catch (Exception $e) {
-        return "Mailer Error: " . $mail->ErrorInfo;
+        error_log("Mailer Error: " . $mail->ErrorInfo);
+        return false;
     }
 }
+
 // Simple alias for backwards compatibility
 function sendEmail($to_email, $subject, $body, $member_id = null, $admin_id = null)
 {
