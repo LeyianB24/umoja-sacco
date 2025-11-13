@@ -1,1 +1,6 @@
-config/mpesa_config.php
+/vendor/
+/config/db_connect.php
+/config/mpesa_config.php
+.env
+*.log
+
