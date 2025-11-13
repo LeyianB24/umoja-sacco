@@ -1,15 +1,28 @@
 <?php
-// Database Configuration for XAMPP
-$host = "localhost";          // Host
-$user = "root";               // Default XAMPP MySQL user
-$password = "";               // Default XAMPP MySQL password (leave empty)
-$database = "umoja_sacco_db"; // Make sure this DB exists in phpMyAdmin
+/**
+ * Database Connection - XAMPP Friendly
+ * Move to production by changing credentials & disabling errors
+ */
 
-// Create connection
-$conn = mysqli_connect($host, $user, $password, $database);
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+$host   = 'localhost';                 // XAMPP default server
+$user   = 'root';                      // XAMPP default username
+$pass   = '';                          // XAMPP default password is empty
+$dbname = 'umoja_drivers_sacco';       // Your database name (create in phpMyAdmin)
+
+$conn = new mysqli($host, $user, $pass, $dbname);
 
 // Check connection
-if (!$conn) {
-    die("Connection failed: " . mysqli_connect_error());
+if ($conn->connect_errno) {
+    if (defined('APP_ENV') && APP_ENV === 'development') {
+        die("Database connection failed: " . $conn->connect_error);
+    } else {
+        die("Error connecting to system database. Please try again later.");
+    }
 }
-?>
+
+// Set default charset
+$conn->set_charset('utf8mb4');
