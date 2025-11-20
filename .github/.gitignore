@@ -1,6 +1,9 @@
 /vendor/
 /config/db_connect.php
 /config/mpesa_config.php
+/inc/email.php
+/inc/mpesa_lib.php
+/auth.php
 .env
 *.log
 
