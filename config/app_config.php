@@ -9,13 +9,21 @@ define('SITE_NAME', 'Umoja Drivers Sacco');
 define('TAGLINE', 'Together We Grow');
 
 // ----------------------------
+// CONTACT INFORMATION
+// ----------------------------
+// These constants are used in the Footer, Support Page, and Emails
+define('OFFICE_LOCATION', 'Umoja Sacco Plaza, 4th Floor, Nairobi, Kenya');
+define('OFFICE_PHONE', '+254 755 758 208');
+define('OFFICE_EMAIL', 'support@umojadrivers.co.ke'); // Or info@umojadrivers.co.ke
+
+// ----------------------------
 // PATH CONFIG
 // ----------------------------
 // The system is running from  http://localhost/usms/
 // So BASE_URL should NOT include /public
 define('BASE_URL', '/usms');
 define('ASSET_BASE', BASE_URL . '/public/assets');
-
+define('BACKGROUND_IMAGE', ASSET_BASE . "/images/sacco17.jpg");
 
 // Security secret (used for password reset tokens, sessions, etc)
 define('APP_SECRET', 'a-very-long-random-secret-you-generate');
@@ -45,3 +53,4 @@ if (APP_ENV === 'production') {
     ini_set('display_errors', 0);
     // Production mode: hide errors
 }
+?>

@@ -1,9 +1,4 @@
 <?php
-/**
- * Database Connection - XAMPP Friendly
- * Move to production by changing credentials & disabling errors
- */
-
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }

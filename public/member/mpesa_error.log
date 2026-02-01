@@ -1,0 +1,9 @@
+[2025-11-26 23:15:10] RAW CALLBACK:
+{"Body":{"stkCallback":{"MerchantRequestID":"3a80-4dc9-b03e-f38e45b5117d22423","CheckoutRequestID":"ws_CO_27112025011559778796157265","ResultCode":1037,"ResultDesc":"No response from user."}}}
+
+[2025-11-26 23:32:25] RAW CALLBACK:
+{"Body":{"stkCallback":{"MerchantRequestID":"954a-4b36-8f22-8d0678f4628f15801","CheckoutRequestID":"ws_CO_27112025013314665796157265","ResultCode":1037,"ResultDesc":"No response from user."}}}
+
+[2025-11-26 23:43:12] RAW CALLBACK:
+{"Body":{"stkCallback":{"MerchantRequestID":"954a-4b36-8f22-8d0678f4628f15916","CheckoutRequestID":"ws_CO_27112025014402340796157265","ResultCode":1037,"ResultDesc":"No response from user."}}}
+
