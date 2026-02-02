@@ -138,9 +138,10 @@ function mpesa_b2c_request($phone, $amount, $reference, $remarks = 'Withdrawal')
         return ['success' => false, 'message' => 'Token Error: ' . $e->getMessage()];
     }
 
-    $url = mpesa_base_url() . '/mpesa/b2c/v3/paymentrequest';
+    $url = mpesa_base_url() . '/mpesa/b2c/v1/paymentrequest';
     $formatted_phone = preg_replace('/^0/', '254', $phone);
 
+    // Daraja B2C v1 standard payload
     $payload = [
         'InitiatorName' => $c['b2c_initiator_name'],
         'SecurityCredential' => $security_credential,
@@ -153,6 +154,10 @@ function mpesa_b2c_request($phone, $amount, $reference, $remarks = 'Withdrawal')
         'ResultURL' => $c['b2c_result_url'],
         'Occasion' => $remarks
     ];
+
+    // DEBUG: Log the M-Pesa B2C request
+    error_log("MPESA B2C DEBUG - URL: " . $url);
+    error_log("MPESA B2C DEBUG - Payload: " . json_encode($payload));
 
     $ch = curl_init($url);
     curl_setopt_array($ch, [
@@ -169,18 +174,34 @@ function mpesa_b2c_request($phone, $amount, $reference, $remarks = 'Withdrawal')
     
     $response = curl_exec($ch);
     $info = curl_getinfo($ch);
+    $error = curl_error($ch);
     curl_close($ch);
 
+    // DEBUG: Log the M-Pesa B2C response
+    error_log("MPESA B2C DEBUG - HTTP Code: " . $info['http_code']);
+    error_log("MPESA B2C DEBUG - Response: " . $response);
+    if ($error) error_log("MPESA B2C DEBUG - cURL Error: " . $error);
+
     if ($info['http_code'] >= 400) {
-        return ['success' => false, 'message' => 'HTTP Error ' . $info['http_code'] . ': ' . $response];
+        return ['success' => false, 'message' => 'M-Pesa API Error (HTTP ' . $info['http_code'] . '): ' . $response];
     }
 
     $json = json_decode($response, true);
     
-    if (isset($json['ResponseCode']) && $json['ResponseCode'] === '0') {
+    if (isset($json['ResultCode']) && $json['ResultCode'] === '0') {
+        return ['success' => true, 'data' => $json];
+    } elseif (isset($json['ResponseCode']) && $json['ResponseCode'] === '0') {
         return ['success' => true, 'data' => $json];
     } else {
-        return ['success' => false, 'message' => $json['errorMessage'] ?? 'M-Pesa B2C Failed'];
+        $msg = $json['errorMessage'] ?? $json['ResponseDescription'] ?? 'M-Pesa B2C Request Failed';
+        return ['success' => false, 'message' => $msg];
     }
+}
+
+/**
+ * Simplified B2C payment initiation
+ */
+function initiate_b2c_payment($phone, $amount, $remarks = 'Withdrawal', $reference = '') {
+    return mpesa_b2c_request($phone, $amount, $reference, $remarks);
 }
 ?>

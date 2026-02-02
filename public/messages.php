@@ -29,8 +29,8 @@ $dashboard_url = match($my_role) {
     'superadmin' => '../superadmin/dashboard.php',
     'manager'    => '../manager/dashboard.php',
     'accountant' => '../accountant/dashboard.php',
-    'admin'      => '../admin/dashboard.php',
-    'member'     => '../member/dashboard.php',
+    'admin'      => '../admin/pages/dashboard.php',
+    'member'     => '../member/pages/dashboard.php',
     default      => 'login.php'
 };
 
@@ -93,14 +93,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_message'])) {
         
         // A. BROADCAST LOGIC
         if ($recipient_role === 'broadcast' && $my_role !== 'member') {
-            $members = $conn->query("SELECT member_id FROM members WHERE status='active'");
-            $stmt = $conn->prepare("INSERT INTO messages (from_admin_id, to_member_id, subject, body, attachment, sent_at, is_read) VALUES (?, ?, 'Broadcast', ?, ?, NOW(), 0)");
+            $target_grp = $_POST['broadcast_group'] ?? 'members';
             
             $conn->begin_transaction();
             try {
-                while ($m = $members->fetch_assoc()) {
-                    $stmt->bind_param("iiss", $my_id, $m['member_id'], $body, $attachment);
-                    $stmt->execute();
+                if ($target_grp === 'members') {
+                    $recipients = $conn->query("SELECT member_id FROM members WHERE status='active'");
+                    $stmt = $conn->prepare("INSERT INTO messages (from_admin_id, to_member_id, subject, body, attachment, sent_at, is_read) VALUES (?, ?, 'Broadcast', ?, ?, NOW(), 0)");
+                    while ($m = $recipients->fetch_assoc()) {
+                        $stmt->bind_param("iiss", $my_id, $m['member_id'], $body, $attachment);
+                        $stmt->execute();
+                    }
+                } elseif (in_array($target_grp, ['admin', 'manager', 'accountant', 'superadmin', 'all_admins'])) {
+                    $where = ($target_grp === 'all_admins') ? "" : "WHERE role='$target_grp'";
+                    $recipients = $conn->query("SELECT admin_id FROM admins $where");
+                    $stmt = $conn->prepare("INSERT INTO messages (from_admin_id, to_admin_id, subject, body, attachment, sent_at, is_read) VALUES (?, ?, 'Admin Broadcast', ?, ?, NOW(), 0)");
+                    while ($a = $recipients->fetch_assoc()) {
+                        if ($a['admin_id'] == $my_id) continue; // Don't send to self
+                        $stmt->bind_param("iiss", $my_id, $a['admin_id'], $body, $attachment);
+                        $stmt->execute();
+                    }
                 }
                 $conn->commit();
             } catch (Exception $e) {
@@ -205,6 +217,7 @@ if ($active_id && $active_role) {
             $partner = ['name' => $info['full_name'] ?? 'Unknown Member', 'pic' => $info['profile_pic'] ?? null];
         }
     }
+    $partner = $partner ?? ['name' => 'Unknown', 'pic' => null];
     $partner['name'] = $partner['name'] ?? 'Unknown';
 
     $markSQL = match($my_role) {
@@ -243,343 +256,496 @@ function renderImg($blob, $name) {
 ?>
 
 <!DOCTYPE html>
-<html lang="en" data-bs-theme="light">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Messages</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <title>Messages | <?= SITE_NAME ?></title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-    /* ============================ */
-    /* THEME CONFIGURATION        */
-    /* ============================ */
-    :root[data-bs-theme="light"] {
-        /* Palette: Teal/Emerald & Gold */
-        --primary-color: #0f766e;  /* Teal-700 */
-        --primary-hover: #115e59;  /* Teal-800 */
-        --accent-color: #f59e0b;   /* Amber-500 */
-        
-        --app-bg: #f0fdfa;         /* Very Light Teal/Gray */
-        --sidebar-bg: #ffffff;
-        --chat-bg: #ffffff;
-        --border-color: #e2e8f0;
-        
-        /* Message Bubbles */
-        --bubble-in: #f1f5f9;      /* Slate-100 */
-        --text-bubble-in: #1e293b;
-        --bubble-out: #0f766e;     /* Primary Color */
-        --text-bubble-out: #ffffff;
-        
-        --active-thread: #ccfbf1;  /* Teal-100 */
-        --text-secondary: #64748b;
-    }
-    
-    :root[data-bs-theme="dark"] {
-        /* Palette: Dark Slate & Emerald */
-        --primary-color: #2dd4bf;  /* Teal-400 */
-        --primary-hover: #14b8a6;  /* Teal-500 */
-        --accent-color: #fbbf24;   /* Amber-400 */
-        
-        --app-bg: #0f172a;         /* Slate-900 */
-        --sidebar-bg: #1e293b;     /* Slate-800 */
-        --chat-bg: #0f172a;        /* Slate-900 */
-        --border-color: #334155;   /* Slate-700 */
-        
-        /* Message Bubbles */
-        --bubble-in: #334155;      /* Slate-700 */
-        --text-bubble-in: #e2e8f0;
-        --bubble-out: #115e59;     /* Teal-800 */
-        --text-bubble-out: #f0fdfa;
-        
-        --active-thread: #1e293b;  
-        --text-secondary: #94a3b8;
-    }
+        :root {
+            --forest-green: #0F392B;
+            --forest-mid: #134e3b;
+            --forest-light: #1a634b;
+            --lime: #D0F35D;
+            --glass-bg: rgba(255, 255, 255, 0.9);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --sidebar-width: 360px;
+        }
 
-    /* GLOBAL OVERRIDES */
-    body { background-color: var(--app-bg); height: 100vh; overflow: hidden; font-family: 'Segoe UI', system-ui, sans-serif; transition: background 0.3s; color: var(--text-bubble-in); }
-    
-    /* Bootstrap Override for Primary Buttons */
-    .btn-primary { background-color: var(--primary-color); border-color: var(--primary-color); }
-    .btn-primary:hover, .btn-primary:active, .btn-primary:focus { background-color: var(--primary-hover); border-color: var(--primary-hover); }
-    .text-primary { color: var(--primary-color) !important; }
-    .bg-primary { background-color: var(--primary-color) !important; }
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            height: 100vh;
+            overflow: hidden;
+            color: var(--forest-green);
+        }
 
-    .app-layout { display: flex; height: 100vh; max-width: 1600px; margin: 0 auto; }
-    
-    /* SIDEBAR */
-    .sidebar { width: 350px; background: var(--sidebar-bg); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; z-index: 100; transition: transform 0.3s; }
-    .sidebar-header { padding: 1.25rem; border-bottom: 1px solid var(--border-color); }
-    .thread-list { overflow-y: auto; flex: 1; }
-    .thread-item { padding: 1rem; border-bottom: 1px solid var(--border-color); cursor: pointer; transition: background 0.2s; text-decoration: none; color: inherit; display: block; }
-    .thread-item:hover { background-color: var(--app-bg); }
-    .thread-item.active { background-color: var(--active-thread); border-left: 4px solid var(--primary-color); }
-    
-    /* CHAT AREA */
-    .chat-area { flex: 1; display: flex; flex-direction: column; background: var(--chat-bg); position: relative; }
-    .chat-header { padding: 1rem 1.5rem; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; background: var(--sidebar-bg); }
-    .chat-messages { flex: 1; overflow-y: auto; padding: 1.5rem; display: flex; flex-direction: column; gap: 0.5rem; }
-    .chat-footer { padding: 1rem 1.5rem; border-top: 1px solid var(--border-color); background: var(--sidebar-bg); }
-    
-    /* BUBBLES */
-    .msg-group { margin-bottom: 1rem; }
-    .date-divider { text-align: center; margin: 1.5rem 0; position: relative; }
-    .date-divider span { background: var(--app-bg); padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.75rem; color: var(--text-secondary); border: 1px solid var(--border-color); }
+        .app-container {
+            display: flex;
+            height: 100vh;
+            backdrop-filter: blur(10px);
+        }
 
-    .msg-row { display: flex; margin-bottom: 4px; }
-    .msg-row.sent { justify-content: flex-end; }
-    .msg-row.received { justify-content: flex-start; }
-    
-    .bubble { max-width: 70%; padding: 0.75rem 1rem; border-radius: 18px; position: relative; font-size: 0.95rem; line-height: 1.5; word-wrap: break-word; }
-    .msg-row.received .bubble { background: var(--bubble-in); color: var(--text-bubble-in); border-top-left-radius: 4px; }
-    .msg-row.sent .bubble { background: var(--bubble-out); color: var(--text-bubble-out); border-top-right-radius: 4px; }
-    
-    .msg-meta { font-size: 0.7rem; margin-top: 4px; opacity: 0.7; display: flex; align-items: center; gap: 4px; justify-content: flex-end; }
-    
-    /* COMPONENTS */
-    .chat-input { background: var(--app-bg); border: 1px solid var(--border-color); border-radius: 24px; padding: 10px 20px; color: inherit; width: 100%; }
-    .chat-input:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 2px var(--active-thread); }
-    .btn-circle { width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: transform 0.2s; }
-    .btn-circle:hover { transform: scale(1.05); }
+        /* Sidebar Styling */
+        .msg-sidebar {
+            width: var(--sidebar-width);
+            background: var(--forest-green);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.3s ease;
+        }
 
-    /* MOBILE */
-    @media (max-width: 768px) {
-        .sidebar { position: absolute; top: 0; left: 0; bottom: 0; width: 100%; transform: translateX(0); }
-        .sidebar.hidden { transform: translateX(-100%); }
-        .chat-area { width: 100%; }
-        .chat-area.hidden { display: none; }
-    }
-    
-    /* Theme Toggle Animation */
-    #themeToggle i { transition: transform 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55); }
-    .spin-icon { transform: rotate(360deg); }
+        .sidebar-header {
+            padding: 30px 24px;
+            background: rgba(0,0,0,0.1);
+        }
+
+        .sidebar-footer {
+            padding: 24px;
+            background: rgba(0,0,0,0.2);
+        }
+
+        .thread-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px;
+        }
+
+        .thread-item {
+            display: flex;
+            padding: 16px;
+            border-radius: 16px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            color: rgba(255,255,255,0.7);
+            border: 1px solid transparent;
+        }
+
+        .thread-item:hover {
+            background: rgba(255,255,255,0.05);
+            color: white;
+        }
+
+        .thread-item.active {
+            background: rgba(255,255,255,0.1);
+            border-color: rgba(255,255,255,0.2);
+            color: white;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .avatar-circle {
+            width: 52px;
+            height: 52px;
+            border-radius: 16px;
+            background: var(--lime);
+            color: var(--forest-green);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            border: 2px solid rgba(255,255,255,0.2);
+        }
+
+        /* Chat Area Styling */
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #f8f9fa;
+            position: relative;
+        }
+
+        .chat-header {
+            padding: 20px 30px;
+            background: white;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+        }
+
+        .messages-viewport {
+            flex: 1;
+            overflow-y: auto;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            background: url("https://www.transparenttextures.com/patterns/cubes.png");
+        }
+
+        .chat-input-area {
+            padding: 24px 30px;
+            background: white;
+            border-top: 1px solid #e9ecef;
+        }
+
+        /* Bubble Styling */
+        .bubble-wrapper {
+            display: flex;
+            width: 100%;
+            margin-bottom: 4px;
+        }
+
+        .bubble-wrapper.sent { justify-content: flex-end; }
+        .bubble-wrapper.received { justify-content: flex-start; }
+
+        .chat-bubble {
+            max-width: 65%;
+            padding: 14px 20px;
+            border-radius: 20px;
+            position: relative;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .sent .chat-bubble {
+            background: var(--forest-green);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .received .chat-bubble {
+            background: white;
+            color: var(--forest-green);
+            border-bottom-left-radius: 4px;
+            border: 1px solid #e9ecef;
+        }
+
+        .bubble-time {
+            font-size: 0.7rem;
+            margin-top: 6px;
+            opacity: 0.6;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 4px;
+        }
+
+        /* Input Styling */
+        .input-glass {
+            background: #f1f3f5 !important;
+            border: 2px solid transparent !important;
+            border-radius: 16px !important;
+            padding: 14px 22px !important;
+            transition: all 0.3s !important;
+            font-weight: 500;
+        }
+
+        .input-glass:focus {
+            background: white !important;
+            border-color: var(--forest-green) !important;
+            box-shadow: 0 0 0 4px rgba(15, 57, 43, 0.05) !important;
+        }
+
+        .btn-send {
+            width: 54px;
+            height: 54px;
+            border-radius: 16px;
+            background: var(--lime);
+            border: none;
+            color: var(--forest-green);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            transition: all 0.3s;
+        }
+
+        .btn-send:hover {
+            transform: scale(1.05) translateY(-2px);
+            background: #e1ff8d;
+            box-shadow: 0 5px 15px rgba(208, 243, 93, 0.3);
+        }
+
+        /* Misc */
+        .badge-unread {
+            background: var(--lime);
+            color: var(--forest-green);
+            font-weight: 800;
+            padding: 4px 8px;
+            border-radius: 8px;
+            font-size: 0.7rem;
+        }
+
+        .date-chip {
+            text-align: center;
+            margin: 24px 0;
+            position: relative;
+        }
+
+        .date-chip span {
+            background: rgba(15, 57, 43, 0.05);
+            padding: 6px 16px;
+            border-radius: 50px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--forest-mid);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .attachment-card {
+            background: rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 10px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: white;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .received .attachment-card {
+            background: #f8f9fa;
+            color: var(--forest-green);
+            border-color: #dee2e6;
+        }
+        
+        @media (max-width: 991px) {
+            .msg-sidebar { position: fixed; left: -100%; height: 100%; z-index: 1000; }
+            .msg-sidebar.show { left: 0; }
+        }
     </style>
 </head>
 <body>
 
-<div class="app-layout">
+<div class="app-container">
     
-    <div class="sidebar <?= $active_id ? 'hidden' : '' ?>" id="sidebar">
-        <div class="sidebar-header d-flex justify-content-between align-items-center">
-            <div class="d-flex align-items-center gap-2">
-                <a href="<?= $dashboard_url ?>" class="btn btn-sm btn-outline-secondary rounded-circle" style="width:32px;height:32px;padding:0;display:flex;align-items:center;justify-content:center"><i class="bi bi-arrow-left"></i></a>
-                <h5 class="mb-0 fw-bold">Messages</h5>
-            </div>
-            <div class="d-flex gap-2">
-                <button class="btn btn-link text-secondary p-0 me-2" id="themeToggle"><i class="bi bi-moon-stars-fill fs-5"></i></button>
-                <button class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#newChatModal">
+    <!-- Sidebar -->
+    <aside class="msg-sidebar" id="msgSidebar">
+        <div class="sidebar-header">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <a href="<?= $dashboard_url ?>" class="btn btn-link p-0 text-white opacity-75 text-decoration-none">
+                    <i class="bi bi-chevron-left me-2"></i> Dashboard
+                </a>
+                <button class="btn btn-sm btn-light rounded-pill px-3 fw-bold" data-bs-toggle="modal" data-bs-target="#newChatModal">
                     <i class="bi bi-plus-lg me-1"></i> New
                 </button>
             </div>
+            <h3 class="fw-extrabold mb-1">Messages</h3>
+            <p class="small opacity-50 mb-0">Secure Member Communication</p>
         </div>
 
-        <div class="thread-list">
+        <div class="thread-container">
             <?php if(empty($threads)): ?>
-                <div class="text-center p-5 text-muted">
-                    <i class="bi bi-chat-square-dots fs-1 mb-2 d-block opacity-25"></i>
-                    <small>No conversations yet.</small>
+                <div class="text-center p-5 opacity-25">
+                    <i class="bi bi-chat-dots display-1 mb-3"></i>
+                    <p>No conversations found</p>
                 </div>
             <?php endif; ?>
 
             <?php foreach($threads as $key => $t): ?>
             <a href="?chat_with=<?= $t['id'] ?>&role=<?= $t['role'] ?>" class="thread-item <?= ($active_id == $t['id'] && $active_role == $t['role']) ? 'active' : '' ?>">
-                <div class="d-flex gap-3">
-                    <div class="position-relative">
-                        <?= renderImg($t['pic'], $t['name']) ?>
-                        <?php if($t['role'] == 'admin'): ?>
-                            <span class="position-absolute bottom-0 end-0 bg-primary border border-white rounded-circle" style="width:12px;height:12px"></span>
-                        <?php endif; ?>
+                <div class="avatar-circle me-3">
+                    <?= strtoupper(substr((string)($t['name'] ?? 'U'), 0, 1)) ?>
+                </div>
+                <div class="flex-grow-1 overflow-hidden">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="fw-bold text-truncate" style="font-size:0.95rem"><?= htmlspecialchars($t['name']) ?></span>
+                        <small class="opacity-50" style="font-size:0.75rem"><?= date('H:i', strtotime($t['time'])) ?></small>
                     </div>
-                    <div class="flex-grow-1 overflow-hidden">
-                        <div class="d-flex justify-content-between align-items-center mb-1">
-                            <span class="fw-bold text-truncate" style="font-size:0.95rem"><?= htmlspecialchars($t['name']) ?></span>
-                            <small class="text-muted" style="font-size:0.75rem"><?= date('H:i', strtotime($t['time'])) ?></small>
-                        </div>
-                        <div class="d-flex justify-content-between align-items-center">
-                            <small class="text-muted text-truncate d-block" style="max-width: 180px; font-size:0.85rem">
-                                <?= $t['unread'] > 0 ? '<strong class="text-primary">' . htmlspecialchars($t['last_msg']) . '</strong>' : htmlspecialchars($t['last_msg']) ?>
-                            </small>
-                            <?php if($t['unread'] > 0): ?>
-                                <span class="badge bg-danger rounded-circle p-1" style="width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:0.65rem"><?= $t['unread'] ?></span>
-                            <?php endif; ?>
-                        </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-truncate opacity-75" style="font-size:0.85rem">
+                            <?= $t['unread'] > 0 ? '<strong>' . htmlspecialchars($t['last_msg']) . '</strong>' : htmlspecialchars($t['last_msg']) ?>
+                        </small>
+                        <?php if($t['unread'] > 0): ?>
+                            <span class="badge-unread"><?= $t['unread'] ?></span>
+                        <?php endif; ?>
                     </div>
                 </div>
             </a>
             <?php endforeach; ?>
         </div>
-    </div>
 
-   <div class="chat-area <?= !$active_id ? 'hidden' : '' ?>">
-    <?php if($active_id): ?>
-        <div class="chat-header">
+        <div class="sidebar-footer">
             <div class="d-flex align-items-center gap-3">
-                <a href="messages.php" class="d-md-none btn btn-sm btn-light border rounded-circle">
-                    <i class="bi bi-chevron-left"></i>
-                </a>
+                <div class="avatar-circle" style="width:40px;height:40px;font-size:0.9rem">
+                    <?= strtoupper(substr((string)($_SESSION['admin_name'] ?? $_SESSION['member_name'] ?? 'U'), 0, 1)) ?>
+                </div>
+                <div class="overflow-hidden">
+                    <div class="fw-bold text-truncate"><?= htmlspecialchars($_SESSION['admin_name'] ?? $_SESSION['member_name'] ?? 'User') ?></div>
+                    <div class="small opacity-50 text-uppercase" style="font-size:0.6rem; letter-spacing:1px"><?= $my_role ?></div>
+                </div>
+            </div>
+        </div>
+    </aside>
 
-                <?= renderImg($partner['pic'] ?? null, $partner['name'] ?? 'Unknown') ?>
-
-                <div>
-                    <div class="fw-bold lh-1">
-                        <?= htmlspecialchars($partner['name'] ?? 'Unknown') ?>
+    <!-- Main Chat Area -->
+    <main class="chat-container">
+        <?php if($active_id): ?>
+            <div class="chat-header">
+                <div class="d-flex align-items-center">
+                    <button class="btn d-lg-none me-3 p-0" onclick="document.getElementById('msgSidebar').classList.toggle('show')">
+                        <i class="bi bi-list fs-3"></i>
+                    </button>
+                    <div class="avatar-circle me-3" style="width:46px;height:46px;border-radius:12px">
+                        <?= strtoupper(substr((string)($partner['name'] ?? 'U'), 0, 1)) ?>
                     </div>
-
-                    <small class="text-muted" style="font-size:0.75rem">
-                        <?= ucfirst($active_role ?? 'User') ?>
-                    </small>
+                    <div>
+                        <h5 class="fw-bold mb-0"><?= htmlspecialchars((string)($partner['name'] ?? 'Unknown')) ?></h5>
+                        <span class="badge bg-success bg-opacity-10 text-success py-1 px-2 rounded-pill" style="font-size:0.65rem">
+                            <i class="bi bi-circle-fill me-1" style="font-size:0.4rem"></i> ACTIVE NOW
+                        </span>
+                    </div>
+                </div>
+                <div class="dropdown">
+                    <button class="btn btn-light rounded-pill p-2" data-bs-toggle="dropdown">
+                        <i class="bi bi-three-dots-vertical"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+                        <li><a class="dropdown-item" href="messages.php"><i class="bi bi-x-lg me-2"></i> Close Chat</a></li>
+                    </ul>
                 </div>
             </div>
 
-            <div class="dropdown">
-                <button class="btn btn-link text-secondary" data-bs-toggle="dropdown">
-                    <i class="bi bi-three-dots-vertical"></i>
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end">
-                    <li><a class="dropdown-item" href="messages.php">Close Chat</a></li>
-                </ul>
-            </div>
-        </div>
+            <div class="messages-viewport" id="msgViewport">
+                <?php 
+                $lastDate = '';
+                foreach($messages as $msg): 
+                    $currDate = formatChatDate($msg['sent_at']);
+                    if($currDate !== $lastDate): 
+                ?>
+                    <div class="date-chip"><span><?= $currDate ?></span></div>
+                <?php $lastDate = $currDate; endif; ?>
 
-        <div class="chat-messages" id="messageContainer"> 
-            <?php 
-            $lastDate = '';
-            foreach($messages as $msg): 
-                $currentDate = formatChatDate($msg['sent_at']);
-                if($currentDate !== $lastDate): 
-            ?>
-                <div class="date-divider"><span><?= $currentDate ?></span></div>
-            <?php 
-                $lastDate = $currentDate;
-                endif;
-                
+                <?php 
                 $isMe = ($my_role === 'member' 
                     ? $msg['from_member_id'] == $my_id 
                     : $msg['from_admin_id'] == $my_id);
-            ?>
+                ?>
 
-            <div class="msg-row <?= $isMe ? 'sent' : 'received' ?>">
-                <div class="bubble shadow-sm">
-
-                    <?php if($msg['attachment']): ?>
-                        <a href="<?= $msg['attachment'] ?>" 
-                           target="_blank" 
-                           class="d-flex align-items-center gap-2 p-2 mb-2 rounded bg-white bg-opacity-25 
-                           text-decoration-none text-reset border border-white border-opacity-25">
-                            <i class="bi bi-file-earmark-arrow-down-fill fs-4"></i>
-                            <div class="lh-1 text-truncate" style="max-width: 150px;">
-                                <small class="d-block fw-bold">Attachment</small>
-                                <small class="opacity-75" style="font-size:0.7rem">Click to view</small>
-                            </div>
-                        </a>
-                    <?php endif; ?>
-
-                    <?= nl2br(htmlspecialchars($msg['body'])) ?>
-
-                    <div class="msg-meta">
-                        <?= date('H:i', strtotime($msg['sent_at'])) ?>
-                        <?php if($isMe): ?>
-                            <i class="bi bi-check2-all <?= $msg['is_read'] ? 'text-info' : '' ?>"></i>
+                <div class="bubble-wrapper <?= $isMe ? 'sent' : 'received' ?>">
+                    <div class="chat-bubble">
+                        <?php if($msg['attachment']): ?>
+                            <a href="<?= $msg['attachment'] ?>" target="_blank" class="attachment-card">
+                                <i class="bi bi-file-earmark-arrow-down-fill fs-4"></i>
+                                <div class="overflow-hidden">
+                                    <div class="fw-bold small">Attachment</div>
+                                    <div class="small opacity-50" style="font-size:0.7rem">Click to view file</div>
+                                </div>
+                            </a>
                         <?php endif; ?>
+                        
+                        <?= nl2br(htmlspecialchars($msg['body'])) ?>
+
+                        <div class="bubble-time">
+                            <?= date('H:i', strtotime($msg['sent_at'])) ?>
+                            <?php if($isMe): ?>
+                                <i class="bi bi-check2-all <?= $msg['is_read'] ? 'text-lime' : '' ?>"></i>
+                            <?php endif; ?>
+                        </div>
                     </div>
-
                 </div>
+                <?php endforeach; ?>
             </div>
 
-            <?php endforeach; ?>
-        </div>
-
-        <?php if($is_broadcast): ?>
-            <div class="chat-footer text-center text-muted small bg-light">
-                <i class="bi bi-megaphone-fill me-2"></i> This is a broadcast message. Replies are disabled.
-            </div>
-        <?php else: ?>
-            <div class="chat-footer">
-                <form method="POST" enctype="multipart/form-data" class="d-flex align-items-end gap-2" id="msgForm">
-
+            <?php if(!$is_broadcast): ?>
+            <div class="chat-input-area">
+                <form method="POST" enctype="multipart/form-data" class="d-flex gap-3 align-items-center">
                     <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
                     <input type="hidden" name="send_message" value="1">
                     <input type="hidden" name="recipient_role" value="<?= htmlspecialchars($active_role) ?>">
                     <input type="hidden" name="target_id" value="<?= $active_id ?>">
 
-                    <label class="btn btn-light text-secondary border rounded-circle btn-circle mb-1" title="Attach File">
-                        <i class="bi bi-paperclip"></i>
-                        <input type="file" name="attachment" class="d-none" onchange="this.parentElement.classList.add('text-primary', 'border-primary')">
-                    </label>
-
-                    <div class="flex-grow-1">
-                        <textarea name="body" 
-                                  class="chat-input" 
-                                  rows="1" 
-                                  placeholder="Type a message..."
-                                  required 
-                                  style="resize:none; min-height:46px; max-height:120px; padding-top:10px"
-                                  oninput="this.style.height=''; this.style.height=this.scrollHeight + 'px'"></textarea>
+                    <div class="dropup">
+                        <label class="btn btn-light rounded-pill p-3 border" title="Attach File">
+                            <i class="bi bi-paperclip fs-5"></i>
+                            <input type="file" name="attachment" class="d-none">
+                        </label>
                     </div>
 
-                    <button type="submit" class="btn btn-primary rounded-circle btn-circle mb-1 shadow-sm">
-                        <i class="bi bi-send-fill"></i>
-                    </button>
+                    <div class="flex-grow-1">
+                        <textarea name="body" class="form-control input-glass" rows="1" placeholder="Type your message here..." required style="resize:none"></textarea>
+                    </div>
 
+                    <button type="submit" class="btn-send">
+                        <i class="bi bi-send-fill text-forest"></i>
+                    </button>
                 </form>
             </div>
-        <?php endif; ?>
+            <?php else: ?>
+                <div class="p-3 bg-light text-center text-muted small border-top">
+                    <i class="bi bi-megaphone-fill me-2"></i> This is a system broadcast. Replies are disabled.
+                </div>
+            <?php endif; ?>
 
-    <?php else: ?>
-        <div class="d-flex flex-column align-items-center justify-content-center h-100 text-muted opacity-50 pb-5">
-            <div class="bg-secondary bg-opacity-10 p-4 rounded-circle mb-3">
-                <i class="bi bi-chat-square-heart-fill display-1" style="color: var(--primary-color)"></i>
+        <?php else: ?>
+            <div class="d-flex flex-column align-items-center justify-content-center h-100 p-5 text-center">
+                <div class="mb-4 bg-white p-4 rounded-circle shadow-sm">
+                    <i class="bi bi-chat-quote display-1 text-forest opacity-25"></i>
+                </div>
+                <h3 class="fw-bold">Welcome to SACCO Messages</h3>
+                <p class="text-muted" style="max-width:400px">Select a staff member or another member from the list to start a secure conversation.</p>
+                <button class="btn btn-forest rounded-pill px-5 py-2 mt-3" data-bs-toggle="modal" data-bs-target="#newChatModal">
+                    Start New Chat
+                </button>
             </div>
-            <h4>Select a conversation</h4>
-            <p>Choose a contact from the left to start chatting.</p>
-        </div>
-    <?php endif; ?>
-
-    </div>
+        <?php endif; ?>
+    </main>
 </div>
 
+<!-- Modals -->
 <div class="modal fade" id="newChatModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-scrollable">
-        <div class="modal-content">
-            <div class="modal-header border-bottom-0">
-                <h5 class="modal-title fw-bold">New Message</h5>
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="modal-header border-0 bg-light p-4">
+                <h5 class="modal-title fw-bold">Who would you like to message?</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body p-0">
-                <div class="p-3 bg-light border-bottom sticky-top">
-                    <div class="input-group">
-                        <span class="input-group-text bg-white border-end-0"><i class="bi bi-search"></i></span>
-                        <input type="text" id="userSearch" class="form-control border-start-0" placeholder="Search name...">
-                    </div>
-                </div>
-                
                 <div class="list-group list-group-flush">
                     <?php if ($my_role !== 'member'): ?>
-                        <button class="list-group-item list-group-item-action d-flex align-items-center gap-3 py-3 bg-warning bg-opacity-10" data-bs-toggle="modal" data-bs-target="#broadcastModal">
-                            <div class="rounded-circle bg-warning text-dark d-flex align-items-center justify-content-center" style="width:40px;height:40px"><i class="bi bi-megaphone-fill"></i></div>
-                            <div>
-                                <div class="fw-bold">Broadcast Message</div>
-                                <small class="text-muted">Send to all members at once</small>
+                        <div class="p-4 border-bottom bg-warning bg-opacity-10 cursor-pointer" data-bs-toggle="modal" data-bs-target="#broadcastModal">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="avatar-circle bg-warning text-dark"><i class="bi bi-megaphone"></i></div>
+                                <div><div class="fw-bold">System Broadcast</div><small>Message all members</small></div>
                             </div>
-                        </button>
+                        </div>
                     <?php endif; ?>
 
-                    <?php $admins = $conn->query("SELECT admin_id, full_name FROM admins WHERE admin_id != $my_id"); ?>
+                    <?php $admins = $conn->query("SELECT admin_id, full_name, r.name as role 
+                                                 FROM admins a 
+                                                 JOIN roles r ON a.role_id = r.id 
+                                                 WHERE admin_id != $my_id"); ?>
                     <?php while ($a = $admins->fetch_assoc()): ?>
-                        <a href="?chat_with=<?= $a['admin_id'] ?>&role=admin" class="contact-item list-group-item list-group-item-action d-flex align-items-center gap-3 py-3">
-                            <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center" style="width:40px;height:40px"><i class="bi bi-shield-lock-fill"></i></div>
-                            <span class="fw-bold contact-name"><?= htmlspecialchars($a['full_name']) ?></span>
+                        <a href="?chat_with=<?= $a['admin_id'] ?>&role=admin" class="list-group-item list-group-item-action d-flex align-items-center gap-3 p-4">
+                            <div class="avatar-circle"><?= strtoupper(substr((string)($a['full_name'] ?? 'A'), 0, 1)) ?></div>
+                            <div>
+                                <div class="fw-bold"><?= htmlspecialchars($a['full_name']) ?></div>
+                                <small class="text-uppercase opacity-50 small"><?= $a['role'] ?></small>
+                            </div>
                         </a>
                     <?php endwhile; ?>
 
-                    <?php 
-                    $exclude = ($my_role === 'member') ? "AND member_id != $my_id" : "";
-                    $members = $conn->query("SELECT member_id, full_name, profile_pic FROM members WHERE status='active' $exclude LIMIT 100");
-                    while ($m = $members->fetch_assoc()): 
-                    ?>
-                        <a href="?chat_with=<?= $m['member_id'] ?>&role=member" class="contact-item list-group-item list-group-item-action d-flex align-items-center gap-3 py-3">
-                            <?= renderImg($m['profile_pic'], $m['full_name']) ?>
-                            <span class="fw-bold contact-name"><?= htmlspecialchars($m['full_name']) ?></span>
+                    <?php $members = $conn->query("SELECT member_id, full_name, national_id FROM members WHERE status='active' AND member_id != $my_id LIMIT 50"); ?>
+                    <?php while ($m = $members->fetch_assoc()): ?>
+                        <a href="?chat_with=<?= $m['member_id'] ?>&role=member" class="list-group-item list-group-item-action d-flex align-items-center gap-3 p-4">
+                            <div class="avatar-circle bg-secondary text-white"><?= strtoupper(substr((string)($m['full_name'] ?? 'M'), 0, 1)) ?></div>
+                            <div>
+                                <div class="fw-bold"><?= htmlspecialchars($m['full_name']) ?></div>
+                                <small class="opacity-50 small">Member: <?= $m['national_id'] ?></small>
+                            </div>
                         </a>
                     <?php endwhile; ?>
                 </div>
@@ -588,74 +754,10 @@ function renderImg($blob, $name) {
     </div>
 </div>
 
-<div class="modal fade" id="broadcastModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header bg-warning text-dark border-bottom-0">
-                <h5 class="modal-title fw-bold"><i class="bi bi-megaphone-fill me-2"></i>System Broadcast</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body p-4">
-                <form method="POST" enctype="multipart/form-data">
-                    <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
-                    <input type="hidden" name="send_message" value="1">
-                    <input type="hidden" name="recipient_role" value="broadcast">
-                    
-                    <div class="mb-3">
-                        <label class="form-label fw-bold small text-muted">Message Content</label>
-                        <textarea name="body" class="form-control" rows="5" required placeholder="Write your announcement here..."></textarea>
-                    </div>
-                    <div class="mb-4">
-                        <label class="form-label fw-bold small text-muted">Attachment (Optional)</label>
-                        <input type="file" name="attachment" class="form-control">
-                    </div>
-                    <div class="d-grid">
-                        <button type="submit" class="btn btn-dark fw-bold py-2">Send to All Members</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-document.addEventListener("DOMContentLoaded", () => {
-    const container = document.getElementById('messageContainer');
-    if (container) container.scrollTo(0, container.scrollHeight);
-
-    const search = document.getElementById('userSearch');
-    if (search) {
-        search.addEventListener('keyup', function() {
-            const val = this.value.toLowerCase();
-            document.querySelectorAll('.contact-item').forEach(el => {
-                const name = el.querySelector('.contact-name').textContent.toLowerCase();
-                el.style.display = name.includes(val) ? 'flex' : 'none';
-            });
-        });
-    }
-
-    const toggleBtn = document.getElementById('themeToggle');
-    const icon = toggleBtn.querySelector('i');
-    const html = document.documentElement;
-
-    const saved = localStorage.getItem('theme') || 'light';
-    setTheme(saved);
-
-    toggleBtn.addEventListener('click', () => {
-        icon.classList.add('spin-icon');
-        setTimeout(() => icon.classList.remove('spin-icon'), 500);
-        const current = html.getAttribute('data-bs-theme');
-        const next = current === 'light' ? 'dark' : 'light';
-        setTheme(next);
-    });
-
-    function setTheme(theme) {
-        html.setAttribute('data-bs-theme', theme);
-        localStorage.setItem('theme', theme);
-        icon.className = theme === 'dark' ? 'bi bi-sun-fill fs-5' : 'bi bi-moon-stars-fill fs-5';
-    }
-});
+    const viewport = document.getElementById('msgViewport');
+    if(viewport) viewport.scrollTop = viewport.scrollHeight;
 </script>
 </body>
 </html>

@@ -161,7 +161,7 @@ function time_elapsed_string($datetime, $full = false) {
         </div>
 
         <div class="notification-footer">
-            <a href="<?= ASSET_BASE ?>/../member/notifications.php" class="small text-decoration-none fw-bold text-success">
+            <a href="<?= ASSET_BASE ?>/../member/pages/notifications.php" class="small text-decoration-none fw-bold text-success">
                 View All Notifications <i class="bi bi-arrow-right ms-1"></i>
             </a>
         </div>

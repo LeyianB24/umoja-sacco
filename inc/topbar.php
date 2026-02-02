@@ -4,6 +4,7 @@
 // Logic: 100% Preserved
 
 if (session_status() === PHP_SESSION_NONE) session_start();
+require_once __DIR__ . '/Auth.php';
 
 /* -----------------------------------------------------------
    1. USER SESSION VARIABLES (UNTOUCHED)
@@ -125,8 +126,10 @@ $pic_src = !empty($profile_pic_db)
     ? "data:image/jpeg;base64,".base64_encode($profile_pic_db)
     : "{$base}/public/assets/uploads/{$default_avatar}";
 $msgs_link   = "{$base}/public/messages.php";
-$notif_link  = ($user_role==='member') ? "{$base}/member/notifications.php" : "#";
-$profile_link = ($user_role==='member') ? "{$base}/member/profile.php" : "{$base}/superadmin/settings.php";
+$notif_link  = ($user_role==='member') ? "{$base}/member/pages/notifications.php" : "#";
+
+// Unified Profile Link Logic
+$profile_link = ($user_role === 'member') ? "{$base}/member/pages/profile.php" : "{$base}/public/admin_settings.php";
 ?>
 
 <style>
@@ -385,7 +388,7 @@ $profile_link = ($user_role==='member') ? "{$base}/member/profile.php" : "{$base
         <?php if(!empty($recent_messages)): foreach($recent_messages as $msg):
             $chat_id = $user_role==='member'?($msg['from_admin_id']?:$msg['from_member_id']):$msg['from_member_id'];
             // Generate a placeholder avatar or use real one if available
-            $initial = strtoupper(substr($msg['sender_name'], 0, 1));
+            $initial = strtoupper(substr($msg['sender_name'] ?? 'U', 0, 1));
             $avatar_html = "<div class='msg-avatar bg-primary text-white d-flex align-items-center justify-content-center fw-bold'>{$initial}</div>";
         ?>
             <a href="javascript:void(0);" 
@@ -395,7 +398,7 @@ $profile_link = ($user_role==='member') ? "{$base}/member/profile.php" : "{$base
                     <?= $avatar_html ?>
                     <div class="grow overflow-hidden">
                         <div class="d-flex justify-content-between align-items-center mb-1">
-                            <strong class="text-truncate text-dark" style="font-size:0.9rem; max-width: 160px;"><?= htmlspecialchars($msg['sender_name']) ?></strong>
+                            <strong class="text-truncate text-dark" style="font-size:0.9rem; max-width: 160px;"><?= htmlspecialchars($msg['sender_name'] ?? 'User') ?></strong>
                             <span class="small text-muted" style="font-size: 0.7rem;"><?= time_elapsed_string_topbar($msg['sent_at']) ?></span>
                         </div>
                         <div class="text-truncate small text-secondary"><?= htmlspecialchars($msg['body'] ?: 'Sent an attachment') ?></div>
@@ -477,7 +480,11 @@ $profile_link = ($user_role==='member') ? "{$base}/member/profile.php" : "{$base
                     <span class="small text-muted fw-bold">MY ACCOUNT</span>
                 </li>
                 <li><a class="dropdown-item list-item-custom small" href="<?= $profile_link ?>"><i class="bi bi-person me-2"></i>Profile</a></li>
-                <li><a class="dropdown-item list-item-custom small" href="<?= $base ?>/member/settings.php"><i class="bi bi-gear me-2"></i>Settings</a></li>
+                <?php if($user_role === 'member'): ?>
+                    <li><a class="dropdown-item list-item-custom small" href="<?= $base ?>/member/pages/settings.php"><i class="bi bi-gear me-2"></i>Settings</a></li>
+                <?php else: ?>
+                    <li><a class="dropdown-item list-item-custom small" href="<?= $base ?>/public/admin_settings.php"><i class="bi bi-gear me-2"></i>Config</a></li>
+                <?php endif; ?>
                 <li><hr class="dropdown-divider opacity-10"></li>
                 <li><a class="dropdown-item list-item-custom small text-danger" href="<?= $base ?>/public/logout.php"><i class="bi bi-power me-2"></i>Sign Out</a></li>
             </ul>
@@ -497,9 +504,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const updateIcon = (theme) => {
         if(theme === 'dark'){
-            themeIcon.classList.replace('bi-moon-stars', 'bi-sun');
+            if(themeIcon) themeIcon.classList.replace('bi-moon-stars', 'bi-sun');
         } else {
-            themeIcon.classList.replace('bi-sun', 'bi-moon-stars');
+            if(themeIcon) themeIcon.classList.replace('bi-sun', 'bi-moon-stars');
         }
     };
 
@@ -508,13 +515,16 @@ document.addEventListener('DOMContentLoaded', () => {
         updateIcon(saved);
     }
 
-    document.getElementById('themeToggle').addEventListener('click', () => {
-        const current = html.getAttribute('data-bs-theme');
-        const next = current === 'dark' ? 'light' : 'dark';
-        html.setAttribute('data-bs-theme', next);
-        localStorage.setItem('theme', next);
-        updateIcon(next);
-    });
+    const themeToggle = document.getElementById('themeToggle');
+    if(themeToggle) {
+        themeToggle.addEventListener('click', () => {
+            const current = html.getAttribute('data-bs-theme');
+            const next = current === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-bs-theme', next);
+            localStorage.setItem('theme', next);
+            updateIcon(next);
+        });
+    }
 
     // 2. Mobile Sidebar Toggle
     // Triggers the class logic defined in your sidebar.php

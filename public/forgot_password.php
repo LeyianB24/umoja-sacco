@@ -59,16 +59,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // OR update your members/admins table to have `reset_token` and `reset_expires_at` columns.
             // Assuming we use a dedicated table for cleanliness:
             
-            $del = $conn->prepare("DELETE FROM password_reset_tokens WHERE email = ?");
-            $del->bind_param("s", $email);
+            $del = $conn->prepare("DELETE FROM password_reset_tokens WHERE user_type = ? AND user_id = ?");
+            $del->bind_param("si", $user_type, $user_id);
             $del->execute();
 
-            $ins = $conn->prepare("INSERT INTO password_reset_tokens (email, token, expires_at) VALUES (?, ?, ?)");
-            $ins->bind_param("sss", $email, $token, $expiry);
+            $ins = $conn->prepare("INSERT INTO password_reset_tokens (user_type, user_id, token, expires_at) VALUES (?, ?, ?, ?)");
+            $ins->bind_param("siss", $user_type, $user_id, $token, $expiry);
             
             if ($ins->execute()) {
                 // Prepare Email
-                $reset_link = BASE_URL . "/public/reset_password.php?token=" . $token . "&email=" . urlencode($email);
+                $reset_link = SITE_URL . "/public/reset_password.php?token=" . $token . "&type=" . $user_type . "&uid=" . $user_id;
                 
                 $subject = "Password Reset Request";
                 $body = "
@@ -85,7 +85,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ";
 
                 // Send
-                if (sendEmailWithNotification($email, $subject, $body, $user_id, $user_type)) {
+                $mid = ($user_type === 'member') ? $user_id : null;
+                $aid = ($user_type === 'admin') ? $user_id : null;
+
+                if (sendEmailWithNotification($email, $subject, $body, $mid, $aid)) {
                     $message = "We have emailed a password reset link to <strong>" . htmlspecialchars($email) . "</strong>.";
                     $msg_type = "success";
                 } else {
@@ -107,105 +110,223 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <!DOCTYPE html>
 <html lang="en">
 <head>
-            box-shadow: 0 10px 40px rgba(0,0,0,0.08);
-            overflow: hidden;
-            background: #fff;
-        }
-        .card-header-hero {
-            background: linear-gradient(135deg, var(--brand-green) 0%, #084a28 100%);
-            padding: 2.5rem 2rem;
-            text-align: center;
-            color: white;
-            position: relative;
-        }
-        .card-header-hero::after {
-            content: "";
-            position: absolute; bottom: 0; left: 0; right: 0;
-            height: 4px; background: var(--brand-accent);
-        }
-        .icon-circle {
-            width: 70px; height: 70px;
-            background: rgba(255,255,255,0.15);
-            border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            margin: 0 auto 1rem;
-            backdrop-filter: blur(5px);
-        }
-        .btn-brand {
-            background-color: var(--brand-green);
-            color: white;
-            padding: 12px;
-            border-radius: 8px;
-            font-weight: 600;
-            transition: all 0.3s;
-            border: none;
-        }
-        .btn-brand:hover {
-            background-color: #064022;
-            color: white;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(10, 107, 58, 0.25);
-        }
-        .form-control:focus {
-            border-color: var(--brand-green);
-            box-shadow: 0 0 0 0.25rem rgba(10, 107, 58, 0.15);
-        }
-    </style>
+  <meta charset="utf-8">
+  <title>Forgot Password — <?= htmlspecialchars(SITE_NAME) ?></title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+        --forest-green: #0F392B;
+        --forest-mid: #134e3b;
+        --lime: #D0F35D;
+        --glass-bg: rgba(255, 255, 255, 0.9);
+        --glass-border: rgba(255, 255, 255, 0.2);
+    }
+
+    body {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        background: linear-gradient(135deg, rgba(15, 57, 43, 0.85) 0%, rgba(19, 78, 59, 0.90) 100%),
+                    url('<?= BACKGROUND_IMAGE ?>') center/cover no-repeat fixed;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow-x: hidden;
+    }
+
+    .forgot-container {
+        width: 100%;
+        max-width: 450px;
+        padding: 20px;
+        position: relative;
+    }
+
+    /* Decorative circles */
+    .deco-circle {
+        position: absolute;
+        width: 300px;
+        height: 300px;
+        border-radius: 50%;
+        background: var(--lime);
+        filter: blur(80px);
+        opacity: 0.15;
+        z-index: -1;
+    }
+    .circle-1 { top: -100px; right: -150px; }
+    .circle-2 { bottom: -100px; left: -150px; background: var(--forest-green); }
+
+    .forgot-card {
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-radius: 30px;
+        overflow: hidden;
+        box-shadow: 0 25px 50px -12px rgba(15, 57, 43, 0.15);
+        animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes slideUp {
+        from { opacity: 0; transform: translateY(30px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .card-header-hero {
+        background: linear-gradient(135deg, var(--forest-green) 0%, #084a28 100%);
+        padding: 40px 30px;
+        text-align: center;
+        color: white;
+        position: relative;
+    }
+
+    .card-header-hero::after {
+        content: "";
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: var(--lime);
+    }
+
+    .icon-circle {
+        width: 70px;
+        height: 70px;
+        background: rgba(255,255,255,0.15);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 15px;
+        backdrop-filter: blur(5px);
+        color: var(--lime);
+        font-size: 1.8rem;
+    }
+
+    .form-label {
+        font-weight: 700;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--forest-mid);
+        margin-bottom: 8px;
+        opacity: 0.7;
+    }
+
+    .form-control-modern {
+        background: #f1f3f5 !important;
+        border: 2px solid transparent !important;
+        border-radius: 16px !important;
+        padding: 14px 20px !important;
+        transition: all 0.3s !important;
+        font-weight: 600;
+    }
+
+    .form-control-modern:focus {
+        background: white !important;
+        border-color: var(--forest-green) !important;
+        box-shadow: 0 0 0 5px rgba(15, 57, 43, 0.05) !important;
+    }
+
+    .btn-brand {
+        background: var(--forest-green);
+        color: white;
+        border: none;
+        border-radius: 16px;
+        padding: 16px;
+        font-weight: 700;
+        font-size: 1rem;
+        transition: all 0.3s;
+        margin-bottom: 15px;
+    }
+
+    .btn-brand:hover {
+        background: var(--forest-mid);
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(15, 57, 43, 0.2);
+        color: white;
+    }
+
+    .btn-back {
+        background: transparent;
+        color: var(--forest-green);
+        border: 2px solid var(--forest-green);
+        border-radius: 16px;
+        padding: 14px;
+        font-weight: 700;
+        font-size: 0.9rem;
+        transition: 0.2s;
+        text-decoration: none;
+        display: block;
+        text-align: center;
+    }
+
+    .btn-back:hover {
+        background: var(--forest-green);
+        color: white;
+    }
+
+    /* Flash Message UI */
+    .flash-item {
+        border-radius: 15px;
+        border: none;
+        padding: 12px 20px;
+        font-weight: 600;
+        font-size: 0.85rem;
+        margin-bottom: 20px;
+    }
+  </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="row justify-content-center">
-        <div class="col-md-5 col-lg-4">
-            
-            <div class="auth-card">
-                <div class="card-header-hero">
-                    <div class="icon-circle">
-                        <i class="bi bi-key-fill fs-2"></i>
-                    </div>
-                    <h4 class="fw-bold mb-1">Forgot Password?</h4>
-                    <p class="small opacity-75 mb-0">No worries, we'll send you reset instructions.</p>
+<div class="deco-circle circle-1"></div>
+<div class="deco-circle circle-2"></div>
+
+<div class="forgot-container">
+    <div class="forgot-card">
+        <div class="card-header-hero">
+            <div class="icon-circle">
+                <i class="bi bi-key-fill"></i>
+            </div>
+            <h4 class="fw-800 mb-1">Forgot Password?</h4>
+            <p class="small opacity-75 mb-0">No worries, we'll send you reset instructions.</p>
+        </div>
+
+        <div class="card-body p-4 pt-5">
+            <?php if ($message): ?>
+                <div class="alert alert-<?= $msg_type ?> flash-item d-flex align-items-center">
+                    <i class="bi bi-<?= $msg_type == 'success' ? 'check-circle' : 'exclamation-circle' ?>-fill me-2 fs-5"></i>
+                    <div><?= $message ?></div>
+                </div>
+            <?php endif; ?>
+
+            <form method="POST">
+                <div class="mb-4">
+                    <label for="email" class="form-label">Email Address</label>
+                    <input type="email" name="email" id="email" class="form-control form-control-modern" placeholder="Enter your email" required autofocus>
                 </div>
 
-                <div class="card-body p-4 pt-5">
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-brand">
+                        Send Reset Link
+                    </button>
                     
-                    <?php if ($message): ?>
-                        <div class="alert alert-<?= $msg_type ?> border-0 d-flex align-items-center mb-4 shadow-sm">
-                            <i class="bi bi-<?= $msg_type == 'success' ? 'check-circle' : 'exclamation-circle' ?>-fill me-2 fs-5"></i>
-                            <div><?= $message ?></div>
-                        </div>
-                    <?php endif; ?>
-
-                    <form method="POST">
-                        <div class="mb-4">
-                            <label for="email" class="form-label fw-bold small text-muted text-uppercase">Email Address</label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-envelope"></i></span>
-                                <input type="email" name="email" id="email" class="form-control border-start-0 bg-light" placeholder="Enter your email" required autofocus>
-                            </div>
-                        </div>
-
-                        <div class="d-grid gap-3">
-                            <button type="submit" class="btn btn-brand">
-                                Reset Password
-                            </button>
-                            
-                            <a href="login.php" class="btn btn-light text-muted fw-medium py-2">
-                                <i class="bi bi-arrow-left me-2"></i>Back to Login
-                            </a>
-                        </div>
-                    </form>
+                    <a href="login.php" class="btn-back">
+                        <i class="bi bi-arrow-left me-2"></i>Back to Login
+                    </a>
                 </div>
-            </div>
-
-            <div class="text-center mt-4">
-                <small class="text-muted">&copy; <?= date('Y') ?> <?= htmlspecialchars(SITE_NAME) ?>. All rights reserved.</small>
-            </div>
-
+            </form>
         </div>
     </div>
+    
+    <p class="text-center mt-4 small fw-bold opacity-25">
+        &copy; <?= date('Y') ?> Umoja Drivers Sacco Ltd.
+    </p>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

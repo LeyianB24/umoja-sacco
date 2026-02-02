@@ -1,196 +1,200 @@
 <?php
-// usms/inc/auth.php
-// Central Authentication & Authorization Helper for Umoja Sacco System
+/**
+ * inc/auth.php
+ * The Security Gatekeeper - V18 Master Build
+ * Logic: Granular Permission-Based Access Control (RBAC)
+ */
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// Include configuration and DB connection
-if (!defined('BASE_URL')) {
-    @include_once __DIR__ . '/../config/app_config.php';
+require_once __DIR__ . '/functions.php';
+
+// FORCE REFRESH: Always reload permissions on every page load to ensure consistency
+// FORCE REFRESH: Always reload permissions on every page load to ensure consistency
+if (isset($_SESSION['role_id'])) {
+    // Ensure we have a DB connection first
+    if (!isset($conn)) {
+        if (file_exists(__DIR__ . '/../config/db_connect.php')) {
+            require_once __DIR__ . '/../config/db_connect.php';
+        }
+    }
+    // Perform the reload
+    if (isset($conn)) {
+        Auth::loadPermissions($_SESSION['role_id']);
+    }
 }
-if (!isset($conn)) {
-    @include_once __DIR__ . '/../config/db_connect.php';
-}
 
-/**
- * Attempt to restore session from remember-me cookie.
- */
-function restore_session_from_cookie()
-{
-    global $conn;
+class Auth {
+    /**
+     * Cache all permissions for the logged-in role
+     */
+    /**
+     * Cache all permissions for the logged-in role
+     */
+    public static function loadPermissions($role_id) {
+        global $conn;
+        if (!$conn) {
+             // Try to find db_connect if strict
+             if(file_exists(__DIR__ . '/../config/db_connect.php')) {
+                 require_once __DIR__ . '/../config/db_connect.php';
+             } else {
+                 return false;
+             }
+        }
 
-    if (empty($_COOKIE['usms_rem']) || !$conn) return false;
-
-    $token = $_COOKIE['usms_rem'];
-    $token_hash = hash('sha256', $token);
-
-    // Try member session restore
-    $sql = "SELECT member_id, full_name FROM members
-            WHERE remember_token = ? AND remember_expires > NOW() LIMIT 1";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param('s', $token_hash);
-    $stmt->execute();
-    $res = $stmt->get_result();
-
-    if ($row = $res->fetch_assoc()) {
-        $_SESSION['member_id'] = (int)$row['member_id'];
-        $_SESSION['member_name'] = $row['full_name'];
-        $_SESSION['role'] = 'member';
+        $sql = "SELECT p.slug FROM permissions p 
+                JOIN role_permissions rp ON p.id = rp.permission_id 
+                WHERE rp.role_id = ?";
+        
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("i", $role_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        $permissions = [];
+        while ($row = $result->fetch_assoc()) {
+            $permissions[] = $row['slug'];
+        }
+        
+        // Superadmin Override: If role_id is 1, give them ALL permissions dynamically
+        // forcing it here ensures even if DB is desynced, code knows Superadmin is god.
+        if ($role_id == 1) {
+            $all = $conn->query("SELECT slug FROM permissions");
+            while($r = $all->fetch_assoc()) $permissions[] = $r['slug'];
+            $permissions = array_unique($permissions);
+        }
+        
+        $_SESSION['permissions'] = $permissions;
         return true;
     }
 
-    // Try admin session restore
-    $sql = "SELECT admin_id, full_name, role FROM admins
-            WHERE remember_token = ? AND remember_expires > NOW() LIMIT 1";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param('s', $token_hash);
-    $stmt->execute();
-    $res = $stmt->get_result();
-
-    if ($row = $res->fetch_assoc()) {
-        $_SESSION['admin_id'] = (int)$row['admin_id'];
-        $_SESSION['admin_name'] = $row['full_name'];
-        $_SESSION['role'] = strtolower(trim($row['role']));
-        return true;
-    }
-
-    return false;
-}
-
-/**
- * Auto-restore session if user has a valid remember-me cookie
- */
-if (
-    empty($_SESSION['member_id']) &&
-    empty($_SESSION['admin_id']) &&
-    !empty($_COOKIE['usms_rem'])
-) {
-    restore_session_from_cookie();
-}
-
-/**
- * Enforce member authentication
- */
-function require_member()
-{
-    if (session_status() === PHP_SESSION_NONE) session_start();
-    if (empty($_SESSION['member_id'])) {
-        if (!restore_session_from_cookie()) {
-            header("Location: ../public/login.php?redirect=" . urlencode($_SERVER['REQUEST_URI']));
-            exit;
-        }
-    }
-}
-
-/**
- * Enforce admin authentication
- */
-function require_admin()
-{
-    if (session_status() === PHP_SESSION_NONE) session_start();
-    if (empty($_SESSION['admin_id'])) {
-        if (!restore_session_from_cookie()) {
-            header("Location: ../public/login.php?redirect=" . urlencode($_SERVER['REQUEST_URI']));
-            exit;
-        }
-    }
-}
-
-/**
- * Check role for current admin
- */
-function is_admin_role($role)
-{
-    return isset($_SESSION['role']) && strtolower($_SESSION['role']) === strtolower($role);
-}
-
-/**
- * Require specific admin roles
- */
-function require_superadmin()
-{
-    require_admin();
-    if (!is_admin_role('superadmin')) {
-        header("Location: ../public/login.php?error=unauthorized");
-        exit;
-    }
-}
-
-function require_manager()
-{
-    require_admin();
-    if (!is_admin_role('manager')) {
-        header("Location: ../public/login.php?error=unauthorized");
-        exit;
-    }
-}
-
-function require_accountant()
-{
-    require_admin();
-    if (!is_admin_role('accountant')) {
-        header("Location: ../public/login.php?error=unauthorized");
-        exit;
-    }
-}
-
-/**
- * Logout and clear sessions
- */
-function logout_and_redirect($redirect = null)
-{
-    global $conn;
-
-    if (session_status() === PHP_SESSION_NONE) session_start();
-
-    $cookie_name = 'usms_rem';
-    $token = $_COOKIE[$cookie_name] ?? '';
-
-    if ($token && isset($conn)) {
-        $token_hash = hash('sha256', $token);
-        $queries = [
-            "UPDATE members SET remember_token = NULL, remember_expires = NULL WHERE remember_token = ?",
-            "UPDATE admins  SET remember_token = NULL, remember_expires = NULL WHERE remember_token = ?"
-        ];
-        foreach ($queries as $q) {
-            if ($stmt = $conn->prepare($q)) {
-                $stmt->bind_param('s', $token_hash);
-                $stmt->execute();
-                $stmt->close();
+    /**
+     * The Brain: Check if user has permission
+     */
+    public static function can($slug) {
+        // Always ensure permissions are loaded for the current session/request
+        if (!isset($_SESSION['permissions']) || empty($_SESSION['permissions'])) {
+            if (isset($_SESSION['role_id'])) {
+                self::loadPermissions($_SESSION['role_id']);
+            } else {
+                return false;
             }
         }
+        
+        // RELOAD CHECK: If we suspect stale data, we could force reload here. 
+        // But for now, let's rely on the calling page to have handled the session start.
+        // To be absolutely sure "Role Matrix" updates work immediately:
+        // We will reload if the session setup time is older than the last permission update? 
+        // Simplest: Just reload every time. It's a few ms query.
+        if (isset($_SESSION['role_id'])) {
+             self::loadPermissions($_SESSION['role_id']);
+        }
+
+        // Strict Check: Is the slug in our "Passport"?
+        return in_array($slug, $_SESSION['permissions'] ?? []);
     }
 
-    // Clear session + cookies
-    setcookie($cookie_name, '', time() - 3600, '/', '', false, true);
-    $_SESSION = [];
-
-    if (ini_get("session.use_cookies")) {
-        $params = session_get_cookie_params();
-        setcookie(session_name(), '', time() - 42000,
-            $params["path"], $params["domain"],
-            $params["secure"], $params["httponly"]
-        );
+    /**
+     * Middlewares
+     */
+    public static function requireAdmin() {
+        if (!isset($_SESSION['admin_id'])) {
+            header("Location: " . BASE_URL . "/public/login.php?error=unauthorized");
+            exit;
+        }
     }
 
-    session_destroy();
+    public static function requirePermission($slug = null) {
+        if ($slug === null) {
+            $slug = basename($_SERVER['PHP_SELF']);
+        }
+        self::requireAdmin();
+        if (!self::can($slug)) {
+            if ($slug === 'dashboard.php') {
+                // If they can't even see the dashboard, send them to login with a clear error
+                // to prevent infinite redirect loops.
+                header("Location: " . BASE_URL . "/public/login.php?error=no_dashboard_access");
+                exit;
+            }
+            header("Location: " . BASE_URL . "/admin/pages/dashboard.php?error=no_permission&perm=$slug");
+            exit;
+        }
+    }
 
-    // Redirect
-    $redirect ??= '../public/login.php';
-    header("Location: $redirect");
-    exit;
+    /**
+     * V22: The Superadmin Gatekeeper
+     */
+    public static function requireSuperAdmin() {
+        self::requireAdmin();
+        if (!isset($_SESSION['role_id']) || $_SESSION['role_id'] != 1) {
+            // Log the attempt
+            error_log("Unauthorized access attempt to System Files by Admin ID: " . ($_SESSION['admin_id'] ?? 'Unknown'));
+            http_response_code(403);
+            die("<h1>403 Forbidden</h1><p>Restricted Area: Superadmin Access Only.</p>");
+        }
+    }
+
+    /**
+     * Terminate Session
+     */
+    public static function logout($redirect_url = 'login.php') {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+        
+        // Unset all session variables
+        $_SESSION = array();
+
+        // Destroy the session cookie
+        if (ini_get("session.use_cookies")) {
+            $params = session_get_cookie_params();
+            setcookie(session_name(), '', time() - 42000,
+                $params["path"], $params["domain"],
+                $params["secure"], $params["httponly"]
+            );
+        }
+
+        // Destroy the session
+        session_destroy();
+
+        // Redirect
+        header("Location: " . $redirect_url);
+        exit;
+    }
 }
 
 /**
- * Debug helper (optional)
+ * Procedural Helpers for ease of use
  */
-function whoami()
-{
-    if (isset($_SESSION['role'])) {
-        return ucfirst($_SESSION['role']);
+function can($slug) {
+    return Auth::can($slug);
+}
+
+function has_permission($slug) {
+    return Auth::can($slug);
+}
+
+function require_admin() {
+    Auth::requireAdmin();
+}
+
+function require_permission($slug = null) {
+    Auth::requirePermission($slug);
+}
+
+function require_superadmin() {
+    Auth::requireSuperAdmin();
+}
+
+function require_member() {
+    if (session_status() === PHP_SESSION_NONE) session_start();
+    
+    if (!isset($_SESSION['member_id'])) {
+        header("Location: " . BASE_URL . "/public/login.php?error=member_only");
+        exit;
     }
-    return 'Guest';
 }
 ?>
+

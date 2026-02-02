@@ -1,0 +1,11 @@
+# Usms V7 Security Hardening
+# Prevent PHP Script Execution in Uploads
+
+<FilesMatch "\.(php|php3|php4|php5|phtml|pl|py|jsp|asp|sh|cgi)$">
+    Require all denied
+    # Apache 2.2 compat
+    Order Deny,Allow
+    Deny from all
+</FilesMatch>
+
+Options -Indexes

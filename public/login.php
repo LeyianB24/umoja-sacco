@@ -1,6 +1,7 @@
 <?php
 ob_start(); // <--- FIX 1: Add Output Buffering to prevent header errors
 require_once __DIR__ . '/../inc/functions.php'; // Includes session_start()
+require_once __DIR__ . '/../inc/Auth.php'; // RBAC Logic
 require_once __DIR__ . '/../config/app_config.php';
 require_once __DIR__ . '/../config/db_connect.php';
 
@@ -65,7 +66,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $user_found = false;
 
         // --- 1. Attempt Admin Login ---
-        $stmt_admin = $conn->prepare("SELECT admin_id, full_name, username, role, password FROM admins WHERE email = ? OR username = ? LIMIT 1");
+        $stmt_admin = $conn->prepare("SELECT a.admin_id, a.full_name, a.username, a.role_id, r.name as role_name, a.password 
+                                    FROM admins a 
+                                    JOIN roles r ON a.role_id = r.id 
+                                    WHERE a.email = ? OR a.username = ? LIMIT 1");
         $stmt_admin->bind_param('ss', $email, $email);
         $stmt_admin->execute();
         $res_admin = $stmt_admin->get_result();
@@ -78,7 +82,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 $_SESSION['admin_id'] = $admin['admin_id'];
                 $_SESSION['admin_name'] = !empty($admin['full_name']) ? $admin['full_name'] : $admin['username'];
-                $_SESSION['role'] = strtolower($admin['role']);
+                $_SESSION['role_id'] = $admin['role_id'];
+                $_SESSION['role'] = strtolower($admin['role_name']);
+                $_SESSION['role_name'] = $admin['role_name'];
+                
+                // Load Permissions into Session
+                Auth::loadPermissions($admin['role_id']);
+                
+                // Superadmin Rule: If role_id == 1, force load all permissions for session visibility
+                if ($_SESSION['role_id'] == 1) {
+                    $res_all = $conn->query("SELECT slug FROM permissions");
+                    $all_perms = [];
+                    while($p = $res_all->fetch_assoc()) $all_perms[] = $p['slug'];
+                    $_SESSION['permissions'] = $all_perms;
+                }
+                
                 $user_found = true;
 
                 // Handle 'Remember Me'
@@ -98,13 +116,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 flash_set('Welcome back, ' . $_SESSION['admin_name'] . '!', 'success');
 
-                // Redirect Map
-                $redirects = [
-                    'superadmin' => '../superadmin/dashboard.php',
-                    'manager'    => '../manager/dashboard.php',
-                    'accountant' => '../accountant/dashboard.php'
-                ];
-                $dest = $redirects[$_SESSION['role']] ?? '../admin/dashboard.php';
+                // Redirect to Admin Dashboard
+                $dest = BASE_URL . '/admin/pages/dashboard.php';
                 
                 header("Location: $dest");
                 exit;
@@ -114,7 +127,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // --- 2. Attempt Member Login (If not Admin) ---
         if (!$user_found) {
-            $stmt_member = $conn->prepare("SELECT member_id, full_name, password FROM members WHERE email = ? LIMIT 1");
+            $stmt_member = $conn->prepare("SELECT member_id, full_name, password, registration_fee_status FROM members WHERE email = ? LIMIT 1");
             $stmt_member->bind_param('s', $email);
             $stmt_member->execute();
             $res_member = $stmt_member->get_result();
@@ -128,9 +141,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $_SESSION['member_id'] = $member['member_id'];
                     $_SESSION['member_name'] = $member['full_name'];
                     $_SESSION['role'] = 'member';
+
+                    // PAY-GATE CHECK
+                    if (($member['registration_fee_status'] ?? 'unpaid') === 'unpaid') {
+                        $_SESSION['pending_pay'] = true;
+                        flash_set('Payment Required: Please settle your registration fee to access the dashboard.', 'warning');
+                        header("Location: " . BASE_URL . "/member/pages/pay_registration.php");
+                        exit;
+                    }
                     
                     flash_set('Welcome, ' . $_SESSION['member_name'] . '! Access your portal.', 'success');
-                    header("Location: ../member/dashboard.php");
+                    header("Location: " . BASE_URL . "/member/pages/dashboard.php");
                     exit;
                 }
             }
@@ -142,194 +163,263 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 ?>
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <title>Login — <?= htmlspecialchars(SITE_NAME) ?></title>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   
-  <link href="<?= ASSET_BASE ?>/css/style.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
-  <script>
-      // Init Theme
-      const theme = localStorage.getItem('theme') || 'light';
-      document.documentElement.setAttribute('data-bs-theme', theme);
-  </script>
-
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
   <style>
     :root {
-      --umoja-green: #0A6B3A;
-      --umoja-dark-green: #085a30;
-      --umoja-golden: #FFC107;
-      --umoja-light-green: #E6F3EB;
+        --forest-green: #0F392B;
+        --forest-mid: #134e3b;
+        --lime: #D0F35D;
+        --glass-bg: rgba(255, 255, 255, 0.9);
+        --glass-border: rgba(255, 255, 255, 0.2);
     }
-    
-    [data-bs-theme="dark"] :root {
-      --umoja-light-green: #0b1210; /* Dark background */
-    }
-    [data-bs-theme="dark"] .login-card {
-        background: rgba(30, 41, 59, 0.95);
-        color: #f1f5f9;
-        border-top-color: var(--umoja-green); /* Less bright gold in dark */
-    }
-    [data-bs-theme="dark"] .input-group-text {
-        background-color: #0f172a;
-        color: var(--umoja-green);
-        border-color: #334155;
-    }
-    [data-bs-theme="dark"] .form-control {
-        background-color: #0f172a;
-        border-color: #334155;
-        color: #f8fafc;
-    }
-    [data-bs-theme="dark"] .text-muted {
-        color: #94a3b8 !important; 
-    }
-    [data-bs-theme="dark"] .btn-sacco-primary {
-        box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-    }
-    [data-bs-theme="dark"] .toggle-password {
-        background-color: #0f172a;
-        border-color: #334155;
-        color: #94a3b8;
-    }
-    
+
     body {
-        background-color: var(--umoja-light-green) !important;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        background: linear-gradient(135deg, rgba(15, 57, 43, 0.85) 0%, rgba(19, 78, 59, 0.90) 100%),
+                    url('<?= BACKGROUND_IMAGE ?>') center/cover no-repeat fixed;
         min-height: 100vh;
         display: flex;
         align-items: center;
         justify-content: center;
+        overflow-x: hidden;
     }
 
-    .bg-image-holder {
-        background-image: url('<?= defined('BACKGROUND_IMAGE') ? BACKGROUND_IMAGE : "" ?>');
-        background-size: cover;
-        background-position: center;
-        position: absolute;
-        top: 0; left: 0; width: 100%; height: 100%;
-        z-index: -1;
-        opacity: 0.15;
+    .login-container {
+        width: 100%;
+        max-width: 450px;
+        padding: 20px;
+        position: relative;
     }
+
+    /* Decorative circles */
+    .deco-circle {
+        position: absolute;
+        width: 300px;
+        height: 300px;
+        border-radius: 50%;
+        background: var(--lime);
+        filter: blur(80px);
+        opacity: 0.15;
+        z-index: -1;
+    }
+    .circle-1 { top: -100px; right: -150px; }
+    .circle-2 { bottom: -100px; left: -150px; background: var(--forest-green); }
 
     .login-card {
-        border: none;
-        border-radius: 1rem;
-        box-shadow: 0 15px 35px rgba(10, 107, 58, 0.12);
-        border-top: 5px solid var(--umoja-golden);
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(10px);
-    }
-    
-    .btn-sacco-primary {
-        background-color: var(--umoja-green);
-        border-color: var(--umoja-green);
-        color: #fff;
-        font-weight: 600;
-        transition: all 0.3s;
-    }
-    .btn-sacco-primary:hover {
-        background-color: var(--umoja-dark-green);
-        border-color: var(--umoja-dark-green);
-        transform: translateY(-1px);
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        border-radius: 30px;
+        padding: 45px;
+        box-shadow: 0 25px 50px -12px rgba(15, 57, 43, 0.15);
+        animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
-    .form-control:focus {
-        border-color: var(--umoja-green);
-        box-shadow: 0 0 0 0.25rem rgba(10, 107, 58, 0.15);
+    @keyframes slideUp {
+        from { opacity: 0; transform: translateY(30px); }
+        to { opacity: 1; transform: translateY(0); }
     }
 
-    .input-group-text {
-        background-color: #f8f9fa;
-        color: var(--umoja-green);
-        border-right: none;
-    }
-    .form-control {
-        border-left: none;
-    }
-    
-    .toggle-password {
-        cursor: pointer;
+    .brand-logo {
+        width: 80px;
+        height: 80px;
         background: white;
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 25px;
+        box-shadow: 0 10px 20px rgba(15, 57, 43, 0.2);
+        border: 2px solid var(--lime);
+        font-size: 2rem;
+        transform: rotate(-5deg);
+    }
+
+    .login-title {
+        font-weight: 800;
+        color: var(--forest-green);
+        letter-spacing: -1px;
+    }
+
+    .form-label {
+        font-weight: 700;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--forest-mid);
+        margin-bottom: 8px;
+        opacity: 0.7;
+    }
+
+    .form-control-modern {
+        background: #f1f3f5 !important;
+        border: 2px solid transparent !important;
+        border-radius: 16px !important;
+        padding: 14px 20px !important;
+        transition: all 0.3s !important;
+        font-weight: 600;
+    }
+
+    .form-control-modern:focus {
+        background: white !important;
+        border-color: var(--forest-green) !important;
+        box-shadow: 0 0 0 5px rgba(15, 57, 43, 0.05) !important;
+    }
+
+    .btn-login {
+        background: var(--forest-green);
+        color: white;
+        border: none;
+        border-radius: 16px;
+        padding: 16px;
+        font-weight: 700;
+        font-size: 1rem;
+        transition: all 0.3s;
+        margin-top: 10px;
+    }
+
+    .btn-login:hover {
+        background: var(--forest-mid);
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(15, 57, 43, 0.2);
+        color: white;
+    }
+
+    .btn-login:active {
+        transform: scale(0.98);
+    }
+
+    .toggle-pass {
+        position: absolute;
+        right: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        cursor: pointer;
+        color: var(--forest-green);
+        opacity: 0.5;
+        transition: 0.2s;
+        z-index: 10;
+    }
+    .toggle-pass:hover { opacity: 1; }
+
+    .forgot-link {
+        color: var(--forest-green);
+        text-decoration: none;
+        font-weight: 700;
+        font-size: 0.85rem;
+        transition: 0.2s;
+    }
+    .forgot-link:hover { opacity: 0.6; }
+
+    .register-footer {
+        margin-top: 30px;
+        text-align: center;
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #64748b;
+    }
+
+    .register-link {
+        color: var(--forest-green);
+        text-decoration: none;
+        font-weight: 800;
+        border-bottom: 2px solid var(--lime);
+    }
+
+    .input-wrapper { position: relative; }
+
+    /* Flash Message UI */
+    .flash-item {
+        border-radius: 15px;
+        border: none;
+        padding: 12px 20px;
+        font-weight: 600;
+        font-size: 0.85rem;
+        margin-bottom: 20px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.05);
     }
   </style>
 </head>
 <body>
 
-<div class="bg-image-holder"></div>
+<div class="deco-circle circle-1"></div>
+<div class="deco-circle circle-2"></div>
 
-<div class="container py-5">
-  <div class="row justify-content-center">
-    <div class="col-md-7 col-lg-4">
-      <div class="card login-card p-2">
-        <div class="card-body p-4">
-          <div class="text-center mb-4">
-            <img src="<?= ASSET_BASE ?>/images/people_logo.png" 
-                 alt="<?= SITE_NAME ?> logo" 
-                 class="rounded-circle mb-3 shadow-sm"
-                 style="width:85px;height:85px;object-fit:cover;border:3px solid var(--umoja-golden);">
-            <h4 class="text-sacco-green fw-bold mb-0"><?= htmlspecialchars(SITE_NAME) ?></h4>
-            <p class="text-muted small"><?= htmlspecialchars(defined('TAGLINE') ? TAGLINE : 'Secure Portal Access') ?></p>
-          </div>
+<div class="login-container">
+    <div class="login-card">
+        <div class="text-center">
+            <div class="brand-logo">
+                <img src="<?= SITE_LOGO ?>" alt="<?= SITE_NAME ?>" style="width: 100%; height: 100%; object-fit: contain; padding: 10px;">
+            
+            </div>
+            <h2 class="login-title mb-1"><?= htmlspecialchars(SITE_NAME) ?></h2>
+            <p class="small text-muted mb-4 fw-medium">Unified Management System</p>
+        </div>
 
-          <?php flash_render(); ?>
+        <?php flash_render(); ?>
 
-          <form method="post" id="loginForm" novalidate>
+        <form method="post" id="loginForm" novalidate>
             <?= csrf_field() ?>
 
-            <div class="mb-3">
-              <label class="form-label fw-semibold small text-secondary">Email or Username</label>
-              <div class="input-group has-validation">
-                <span class="input-group-text border-end-0"><i class="bi bi-person-fill"></i></span>
-                <input type="text" name="email" class="form-control border-start-0 ps-0" required 
-                       placeholder="e.g. john@example.com"
-                       value="<?= htmlspecialchars($_POST['email'] ?? '') ?>">
-              </div>
+            <div class="mb-3 position-relative">
+                <label class="form-label">Email or Username</label>
+                <div class="input-wrapper">
+                    <input type="text" name="email" class="form-control form-control-modern" required 
+                           placeholder="Enter your credentials"
+                           value="<?= htmlspecialchars($_POST['email'] ?? '') ?>">
+                </div>
             </div>
 
-            <div class="mb-3">
-              <label class="form-label fw-semibold small text-secondary">Password</label>
-              <div class="input-group">
-                <span class="input-group-text border-end-0"><i class="bi bi-lock-fill"></i></span>
-                <input type="password" name="password" id="password" class="form-control border-start-0 border-end-0 ps-0" required placeholder="••••••••">
-                <span class="input-group-text toggle-password border-start-0" onclick="togglePassword()">
-                    <i class="bi bi-eye-slash" id="toggleIcon"></i>
-                </span>
-              </div>
+            <div class="mb-4 position-relative">
+                <div class="d-flex justify-content-between align-items-center">
+                    <label class="form-label">Password</label>
+                    <a href="forgot_password.php" class="forgot-link mb-2">Forgot?</a>
+                </div>
+                <div class="input-wrapper">
+                    <input type="password" name="password" id="password" class="form-control form-control-modern" required placeholder="••••••••">
+                    <div class="toggle-pass" onclick="togglePassword()">
+                        <i class="bi bi-eye-slash" id="toggleIcon"></i>
+                    </div>
+                </div>
             </div>
 
-            <div class="d-flex justify-content-between align-items-center mb-4">
-              <div class="form-check">
-                <input class="form-check-input" type="checkbox" name="remember" id="remember" 
-                       <?= isset($_POST['remember']) ? 'checked' : '' ?>>
-                <label class="form-check-label small text-muted" for="remember">Keep me signed in</label>
-              </div>
-              <a href="forgot_password.php" class="small text-decoration-none text-sacco-green fw-bold">Forgot Password?</a>
+            <div class="mb-4">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="remember" id="remember" 
+                           <?= isset($_POST['remember']) ? 'checked' : '' ?>>
+                    <label class="form-check-label small fw-bold text-muted" for="remember">Keep me logged in</label>
+                </div>
             </div>
 
-            <div class="d-grid mb-3">
-              <button type="submit" name="login" class="btn btn-sacco-primary py-2" id="loginBtn">
-                <span class="spinner-border spinner-border-sm d-none me-2" role="status" aria-hidden="true"></span>
-                <span class="btn-text"><i class="bi bi-box-arrow-in-right me-2"></i> Access Portal</span>
-              </button>
+            <div class="d-grid">
+                <button type="submit" class="btn btn-login" id="loginBtn">
+                    <span class="btn-text">Access Portal</span>
+                    <div class="spinner-border spinner-border-sm d-none ms-2" role="status"></div>
+                </button>
             </div>
 
-            <div class="text-center small pt-3 border-top text-muted">
-              Not yet a member? <a href="register.php" class="text-sacco-green fw-bold text-decoration-none">Join Us Today</a>
+            <div class="register-footer">
+                Don't have an account? <a href="register.php" class="register-link">Create Account</a>
             </div>
-          </form>
-        </div>
-      </div>
-      <div class="text-center mt-3 text-muted small">
-        &copy; <?= date('Y') ?> <?= htmlspecialchars(SITE_NAME) ?>. All rights reserved.
-      </div>
+        </form>
     </div>
-  </div>
+    
+    <p class="text-center mt-4 small fw-bold opacity-25">
+        &copy; <?= date('Y') ?> Umoja Drivers Sacco Ltd.
+    </p>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     function togglePassword() {
         const passwordInput = document.getElementById('password');
@@ -348,12 +438,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     document.getElementById('loginForm').addEventListener('submit', function() {
         const btn = document.getElementById('loginBtn');
-        const spinner = btn.querySelector('.spinner-border');
         const text = btn.querySelector('.btn-text');
+        const spinner = btn.querySelector('.spinner-border');
         
         btn.disabled = true;
         spinner.classList.remove('d-none');
-        text.textContent = 'Verifying...';
+        text.textContent = 'Verifying Account...';
     });
 </script>
 </body>

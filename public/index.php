@@ -78,6 +78,71 @@ require_once __DIR__ . '/../inc/header.php';
     background-color: var(--surface-2);
     border: 1px solid var(--surface-3);
 }
+
+/* 7. POKER SLIDESHOW FIX */
+.poker-slideshow {
+    perspective: 1200px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.poker-card {
+    position: absolute;
+    width: 280px;
+    height: 380px;
+    border-radius: 24px;
+    background: #fff;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.15);
+    transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+    cursor: pointer;
+    overflow: hidden;
+    border: 6px solid #fff;
+    transform-origin: bottom center;
+}
+.poker-card img {
+    border-radius: 18px;
+}
+.poker-card[data-active="true"] {
+    z-index: 10;
+    transform: rotateY(0deg) translateZ(0) scale(1.1);
+    opacity: 1;
+}
+.poker-card[data-side="left"] {
+    z-index: 5;
+    transform: rotateY(25deg) translateX(-150px) translateZ(-100px) scale(0.9);
+    opacity: 0.6;
+}
+.poker-card[data-side="right"] {
+    z-index: 5;
+    transform: rotateY(-25deg) translateX(150px) translateZ(-100px) scale(0.9);
+    opacity: 0.6;
+}
+.poker-card[data-hidden="true"] {
+    opacity: 0;
+    transform: translateZ(-200px) scale(0.8);
+    pointer-events: none;
+}
+
+.slideshow-controls {
+    position: absolute;
+    bottom: -60px;
+    display: flex;
+    gap: 15px;
+    z-index: 20;
+}
+.control-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--sacco-green);
+    color: #fff;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: .3s;
+}
+.control-btn:hover { background: var(--sacco-gold); color: #000; transform: scale(1.1); }
 </style>
 
 <section class="hero-section d-flex align-items-center position-relative text-white" style="min-height: 90vh;">
@@ -316,3 +381,49 @@ require_once __DIR__ . '/../inc/header.php';
 </section>
 
 <?php require_once __DIR__ . '/../inc/footer.php'; ?>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const cards = document.querySelectorAll('.poker-card');
+    let currentIndex = 0;
+
+    function updateSlideshow() {
+        cards.forEach((card, index) => {
+            card.removeAttribute('data-active');
+            card.removeAttribute('data-side');
+            card.setAttribute('data-hidden', 'true');
+
+            if (index === currentIndex) {
+                card.removeAttribute('data-hidden');
+                card.setAttribute('data-active', 'true');
+            } else if (index === (currentIndex - 1 + cards.length) % cards.length) {
+                card.removeAttribute('data-hidden');
+                card.setAttribute('data-side', 'left');
+            } else if (index === (currentIndex + 1) % cards.length) {
+                card.removeAttribute('data-hidden');
+                card.setAttribute('data-side', 'right');
+            }
+        });
+    }
+
+    const nextBtn = document.getElementById('slideshow-next');
+    const prevBtn = document.getElementById('slideshow-prev');
+
+    if(nextBtn) nextBtn.addEventListener('click', () => {
+        currentIndex = (currentIndex + 1) % cards.length;
+        updateSlideshow();
+    });
+
+    if(prevBtn) prevBtn.addEventListener('click', () => {
+        currentIndex = (currentIndex - 1 + cards.length) % cards.length;
+        updateSlideshow();
+    });
+
+    if(cards.length > 0) {
+        setInterval(() => {
+            currentIndex = (currentIndex + 1) % cards.length;
+            updateSlideshow();
+        }, 4000);
+        updateSlideshow();
+    }
+});
+</script>
