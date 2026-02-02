@@ -8,6 +8,7 @@ header("Content-Type: application/json");
 require_once __DIR__ . '/../../config/db_connect.php';
 require_once __DIR__ . '/../../config/app_config.php';
 require_once __DIR__ . '/../../inc/email.php';
+require_once __DIR__ . '/../../inc/TransactionHelper.php';
 
 // ---------------------------------------------------
 // 2. Capture Raw Callback
@@ -96,11 +97,94 @@ if (isset($response['Body']['stkCallback'])) {
         $c->execute();
         $c->close();
 
-        // 3. Update Member Balance (Credit)
-        $bm = $conn->prepare("UPDATE members SET account_balance = account_balance + ? WHERE member_id = ?");
-        $bm->bind_param("di", $amount, $member_id);
-        $bm->execute();
-        $bm->close();
+        // 3. Update Member Balance (Optional for registration fee, maybe exclude from balance)
+        // Check if this was a registration fee
+        $stmt_check = $conn->prepare("SELECT contribution_type FROM contributions WHERE reference_no = ?");
+        $stmt_check->bind_param("s", $reference_no);
+        $stmt_check->execute();
+        $c_data = $stmt_check->get_result()->fetch_assoc();
+        $stmt_check->close();
+
+        $type = $c_data['contribution_type'] ?? '';
+
+        if ($type === 'registration') {
+            // 1. Activate Member & Mark Fee as Paid
+            $act = $conn->prepare("UPDATE members SET reg_fee_paid = 1, registration_fee_status = 'paid', status = 'active' WHERE member_id = ?");
+            $act->bind_param("i", $member_id);
+            $act->execute();
+            $act->close();
+
+            // 2. Record in Unified Ledger
+            TransactionHelper::record([
+                'member_id'     => $member_id,
+                'amount'        => $amount,
+                'type'          => 'registration_fee',
+                'ref_no'        => $mpesaReceipt,
+                'notes'         => "Registration Fee Paid via M-Pesa ($reference_no)",
+                'related_id'    => $member_id,
+                'related_table' => 'registration_fee',
+                'update_member_balance' => false
+            ]);
+        } elseif ($type === 'loan_repayment') {
+            // 1. Mark Repayment as Completed
+            $updRepay = $conn->prepare("UPDATE loan_repayments SET status = 'Completed', reference_no = ? WHERE reference_no = ?");
+            $updRepay->bind_param("ss", $mpesaReceipt, $reference_no);
+            $updRepay->execute();
+            $updRepay->close();
+
+            // 2. Get Loan ID
+            $stmtLoan = $conn->prepare("SELECT loan_id FROM loan_repayments WHERE reference_no = ? LIMIT 1");
+            $stmtLoan->bind_param("s", $mpesaReceipt);
+            $stmtLoan->execute();
+            $repay_row = $stmtLoan->get_result()->fetch_assoc();
+            $stmtLoan->close();
+
+            if ($repay_row) {
+                $loan_id = $repay_row['loan_id'];
+
+                // 3. Update Loan Balance
+                $updLoan = $conn->prepare("UPDATE loans SET current_balance = GREATEST(0, current_balance - ?) WHERE loan_id = ?");
+                $updLoan->bind_param("di", $amount, $loan_id);
+                $updLoan->execute();
+                $updLoan->close();
+
+                // 4. Record in Ledger
+                TransactionHelper::record([
+                    'member_id'     => $member_id,
+                    'amount'        => $amount,
+                    'type'          => 'loan_repayment',
+                    'ref_no'        => $mpesaReceipt,
+                    'notes'         => "Loan Repayment via M-Pesa (Loan #$loan_id)",
+                    'related_id'    => $loan_id,
+                    'related_table' => 'loans',
+                    'update_member_balance' => false // Repayment doesn't increase wallet balance
+                ]);
+
+                // 5. Check if Loan is complete
+                $stmtCheck = $conn->prepare("SELECT current_balance FROM loans WHERE loan_id = ?");
+                $stmtCheck->bind_param("i", $loan_id);
+                $stmtCheck->execute();
+                $l_data = $stmtCheck->get_result()->fetch_assoc();
+                $stmtCheck->close();
+
+                if ($l_data && $l_data['current_balance'] <= 0) {
+                    $conn->query("UPDATE loans SET status = 'completed' WHERE loan_id = $loan_id");
+                    $conn->query("UPDATE loan_guarantors SET status = 'released' WHERE loan_id = $loan_id");
+                }
+            }
+        } else {
+            // General Credit (Savings/Shares/Welfare)
+            // Handled via TransactionHelper/FinancialEngine to ensure consistency
+            TransactionHelper::record([
+                'member_id'     => $member_id,
+                'amount'        => $amount,
+                'type'          => 'credit', // General inflow
+                'category'      => $type,    // 'savings', 'shares', 'welfare'
+                'ref_no'        => $mpesaReceipt,
+                'notes'         => ucfirst($type) . " deposit via M-Pesa",
+                'method'        => 'mpesa'
+            ]);
+        }
 
         // 4. Send confirmation email
         if (!empty($email)) {

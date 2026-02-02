@@ -22,9 +22,19 @@ if (!function_exists('is_active')) {
     }
 }
 
-// Check if user is logged in (Adjust 'member_id'/'admin_id' based on your auth logic)
+// Check if user is logged in
 $is_logged_in = isset($_SESSION['member_id']) || isset($_SESSION['admin_id']);
-$dashboard_link = isset($_SESSION['admin_id']) ? '/admin/dashboard.php' : '/member/dashboard.php';
+
+$dashboard_link = '/member/pages/dashboard.php'; // Default
+if (isset($_SESSION['admin_id'])) {
+    $role = $_SESSION['role'] ?? 'admin';
+    $dashboard_link = match($role) {
+        'superadmin' => '/superadmin/dashboard.php',
+        'manager'    => '/manager/dashboard.php',
+        'accountant' => '/accountant/dashboard.php',
+        default      => '/admin/pages/dashboard.php'
+    };
+}
 ?>
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="light">
@@ -38,10 +48,11 @@ $dashboard_link = isset($_SESSION['admin_id']) ? '/admin/dashboard.php' : '/memb
     </title>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
 
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
+    <link rel="stylesheet" href="<?= BASE_URL ?>/public/assets/css/variables.css">
     <link rel="stylesheet" href="<?= ASSET_BASE ?>/css/style.css">
 
     <script>
@@ -55,15 +66,15 @@ $dashboard_link = isset($_SESSION['admin_id']) ? '/admin/dashboard.php' : '/memb
         /* ---------------------------------------------------------
            THEME VARIABLES & CORE STYLES
         --------------------------------------------------------- */
-        :root {
-            /* Define colors if not in style.css */
-            --sacco-green: #064e3b; /* Deep Forest Green */
-            --sacco-gold: #fbbf24;  /* Bright Gold */
-            --text-on-green: #ffffff;
+        body {
+            font-family: var(--font-main);
+            background-color: var(--bg-primary);
+            color: var(--text-main);
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
 
-        body {
-            font-family: 'Poppins', sans-serif;
+        .site-header {
+            z-index: 1050;
         }
 
         /* NAVBAR CONTAINER */
@@ -244,9 +255,9 @@ $dashboard_link = isset($_SESSION['admin_id']) ? '/admin/dashboard.php' : '/memb
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2 rounded-3">
                                 <li><a class="dropdown-item py-2" href="<?= BASE_URL . $dashboard_link ?>"><i class="bi bi-speedometer2 me-2"></i> Dashboard</a></li>
-                                <li><a class="dropdown-item py-2" href="<?= BASE_URL ?>/member/profile.php"><i class="bi bi-person-gear me-2"></i> Profile</a></li>
+                                <li><a class="dropdown-item py-2" href="<?= BASE_URL ?>/member/pages/profile.php"><i class="bi bi-person-gear me-2"></i> Profile</a></li>
                                 <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item py-2 text-danger" href="<?= BASE_URL ?>/logout.php"><i class="bi bi-box-arrow-right me-2"></i> Logout</a></li>
+                                <li><a class="dropdown-item py-2 text-danger" href="<?= BASE_URL ?>/public/logout.php"><i class="bi bi-box-arrow-right me-2"></i> Logout</a></li>
                             </ul>
                         </li>
                     <?php else: ?>
@@ -277,15 +288,27 @@ $dashboard_link = isset($_SESSION['admin_id']) ? '/admin/dashboard.php' : '/memb
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         const toggle = document.getElementById('themeToggle');
+        if (!toggle) return;
+        
         const icon = toggle.querySelector('i');
         const html = document.documentElement;
+
+        const updateIcon = (theme) => {
+            icon.className = theme === 'light' ? 'bi bi-moon-stars-fill' : 'bi bi-sun-fill';
+        };
+
+        // Initialize icon
+        updateIcon(html.getAttribute('data-bs-theme'));
 
         toggle.addEventListener('click', () => {
             const current = html.getAttribute('data-bs-theme');
             const next = current === 'light' ? 'dark' : 'light';
             html.setAttribute('data-bs-theme', next);
             localStorage.setItem('theme', next);
-            icon.className = next === 'light' ? 'bi bi-moon-stars-fill' : 'bi bi-sun-fill';
+            updateIcon(next);
+            
+            // Dispatch event for other components
+            window.dispatchEvent(new CustomEvent('themeChanged', { detail: { theme: next } }));
         });
     });
 </script>

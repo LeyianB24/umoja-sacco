@@ -50,14 +50,18 @@ function sendEmailWithNotification($to_email, $subject, $body_html, $member_id =
 
         // Wrap the email body in a cleaner HTML template
         $mail->Body = "
-            <div style='font-family:Arial, sans-serif; line-height:1.6; color:#333;'>
-                <h2 style='color:#009444;'>Umoja Drivers Sacco</h2>
-                <p>$body_html</p>
-                <p style='margin-top:20px; font-size:13px; color:#666;'>
-                    This is an automated message from Umoja Sacco System.
-                </p>
-            </div>
-        ";
+            <div style='font-family:Arial, sans-serif; line-height:1.6; color:#333; max-width:600px; margin:0 auto; border:1px solid #eee; border-radius:10px; overflow:hidden;'>
+                <div style='background:#f8f9fa; padding:20px; text-align:center; border-bottom:3px solid #D0F35D;'>
+                    <img src='" . SITE_URL . "/public/assets/images/people_logo.png' alt='Logo' style='width:60px; height:60px; margin-bottom:10px;'>
+                    <h2 style='color:#0F392B; margin:0;'>Umoja Drivers Sacco</h2>
+                </div>
+                <div style='padding:30px;'>
+                    <p>$body_html</p>
+                </div>
+                <div style='background:#f8f9fa; padding:15px; text-align:center; font-size:12px; color:#666;'>
+                    &copy; " . date('Y') . " Umoja Drivers Sacco Ltd. This is an automated message.
+                </div>
+            </div>";
         $mail->AltBody = strip_tags($body_html);
 
         // ======================

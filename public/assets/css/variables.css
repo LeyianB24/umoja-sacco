@@ -1,0 +1,79 @@
+/* public/assets/css/variables.css */
+/* Global Design System for Umoja Sacco */
+
+:root {
+    /* Fonts */
+    --font-main: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    
+    /* Primary Branding Colors - Forest Green & Lime */
+    --brand-forest: #0F392B;
+    --brand-forest-mid: #134e3b;
+    --brand-forest-dark: #0a2419;
+    --brand-lime: #D0F764;
+    --brand-lime-hover: #bce04b;
+    --brand-gold: #E2B34A;
+    --brand-gold-hover: #d4a438;
+    
+    /* Aliases for backward compatibility */
+    --sacco-green: #0F392B;
+    --sacco-gold: #E2B34A;
+    --sacco-gold-hover: #d4a438;
+    
+    /* Light Mode Palette */
+    --bg-primary: #f0f7f4;
+    --bg-surface: #FFFFFF;
+    --surface-1: #FFFFFF;
+    --surface-2: #f8faf9;
+    --surface-3: #e8f5e9;
+    --text-main: #111827;
+    --text-muted: #6B7280;
+    --border-color: #E5E7EB;
+    --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+/* Dark Mode Palette */
+[data-bs-theme="dark"] {
+    --bg-primary: #0b1210;
+    --bg-surface: #13241f;
+    --text-main: #F9FAFB;
+    --text-muted: #9CA3AF;
+    --border-color: #1F2937;
+}
+
+/* System-Wide Resets for Mobile Friendliness */
+* {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: var(--font-main);
+    background-color: var(--bg-primary);
+    color: var(--text-main);
+    overflow-x: hidden; /* Prevent horizontal scroll on mobile */
+    line-height: 1.6;
+}
+
+/* Utility Classes */
+.card-premium {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    box-shadow: var(--shadow-sm);
+    padding: 1.5rem;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.text-brand-lime { color: var(--brand-lime) !important; }
+.bg-brand-forest { background-color: var(--brand-forest) !important; }
+
+/* Responsive Container Tweak */
+@media (max-width: 576px) {
+    .container-fluid {
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+    }
+    h1 { font-size: 1.75rem; }
+    h2 { font-size: 1.5rem; }
+}
