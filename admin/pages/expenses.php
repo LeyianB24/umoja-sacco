@@ -2,6 +2,13 @@
 declare(strict_types=1);
 if (session_status() === PHP_SESSION_NONE) session_start();
 
+// DEBUG: Add debug info at the very top
+error_log("=== EXPENSES PAGE DEBUG ===");
+error_log("Session ID: " . session_id());
+error_log("Admin ID: " . ($_SESSION['admin_id'] ?? 'NOT SET'));
+error_log("Role ID: " . ($_SESSION['role_id'] ?? 'NOT SET'));
+error_log("Request URI: " . $_SERVER['REQUEST_URI']);
+
 require_once __DIR__ . '/../../config/app_config.php';
 require_once __DIR__ . '/../../config/db_connect.php';
 require_once __DIR__ . '/../../inc/Auth.php';
@@ -12,11 +19,15 @@ $layout = LayoutManager::create('admin');
 
 require_once __DIR__ . '/../../inc/TransactionHelper.php';
 // 1. Auth Check
+error_log("Before require_admin()");
 require_admin();
+error_log("After require_admin() - passed auth check");
 
 // Initialize Layout Manager
 $layout = LayoutManager::create('admin');
+error_log("Before require_permission()");
 require_permission();
+error_log("After require_permission() - passed permission check");
 
 // 2. Handle Form Submission (Add Expense)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'add_expense') {
@@ -166,6 +177,12 @@ while($row = $result->fetch_assoc()) {
     if (!isset($cat_breakdown[$cat])) $cat_breakdown[$cat] = 0;
     $cat_breakdown[$cat] += $row['amount'];
 }
+
+// DEBUG: Log the results
+error_log("Expenses processed: " . count($expenses));
+error_log("Total period expense: " . $total_period_expense);
+error_log("Pending bills count: " . $pending_bills_count);
+error_log("Category breakdown: " . print_r($cat_breakdown, true));
 
 // 4. Fetch Investments for Attribution
 $investments_list = $conn->query("SELECT investment_id, title, category, reg_no FROM investments WHERE status = 'active' ORDER BY category, title ASC");
@@ -553,6 +570,16 @@ $pageTitle = "Expense Management";
             <?php $layout->topbar($pageTitle ?? ''); ?>
             
             <div class="container-fluid">
+
+            <!-- DEBUG INFO -->
+            <div class="alert alert-info mb-3">
+                <strong>DEBUG INFO:</strong><br>
+                Session ID: <?= session_id() ?><br>
+                Admin ID: <?= $_SESSION['admin_id'] ?? 'NOT SET' ?><br>
+                Role ID: <?= $_SESSION['role_id'] ?? 'NOT SET' ?><br>
+                Expenses Found: <?= count($expenses) ?><br>
+                Total Expense: KES <?= number_format($total_period_expense) ?>
+            </div>
 
             <div class="d-flex justify-content-between align-items-center mb-4 animate-slide-up">
                 <div>

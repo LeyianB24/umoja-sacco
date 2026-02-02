@@ -8,6 +8,13 @@
 declare(strict_types=1);
 if (session_status() === PHP_SESSION_NONE) session_start();
 
+// DEBUG: Add debug info at the very top
+error_log("=== LOANS PAGE DEBUG ===");
+error_log("Session ID: " . session_id());
+error_log("Admin ID: " . ($_SESSION['admin_id'] ?? 'NOT SET'));
+error_log("Role ID: " . ($_SESSION['role_id'] ?? 'NOT SET'));
+error_log("Request URI: " . $_SERVER['REQUEST_URI']);
+
 // --- 1. Dependencies & Security ---
 require_once __DIR__ . '/../../config/app_config.php';
 require_once __DIR__ . '/../../config/db_connect.php';
@@ -19,7 +26,9 @@ require_once __DIR__ . '/../../inc/TransactionHelper.php';
 
 // Initialize Layout & Auth
 $layout = LayoutManager::create('admin');
+error_log("Before Auth::requireAdmin()");
 Auth::requireAdmin(); 
+error_log("After Auth::requireAdmin() - passed auth check");
 
 // --- 2. Permission Logic (The Workflow Engine) ---
 // We determine exactly what this specific user can do
