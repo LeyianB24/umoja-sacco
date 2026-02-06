@@ -11,7 +11,7 @@ require_once __DIR__ . '/../../config/app_config.php';
 require_once __DIR__ . '/../../config/db_connect.php';
 require_once __DIR__ . '/../../inc/Auth.php';
 require_once __DIR__ . '/../../inc/functions.php';
-require_once __DIR__ . '/../fpdf/fpdf.php'; 
+require_once __DIR__ . '/../../inc/SystemPDF.php'; 
 
 // 1. AUTH & INPUT
 require_permission('statements.php');
@@ -70,143 +70,140 @@ $opening_bal = (float)($stmt->get_result()->fetch_assoc()['bal'] ?? 0);
 // Note: For Loans (Asset), balance is Debit - Credit. For Liabilities, it's Credit - Debit.
 // Full Ledger balance is net position.
 
-// 6. CSV OUTPUT
-if ($out_format === 'csv') {
-    header('Content-Type: text/csv');
-    header('Content-Disposition: attachment; filename="Statement_' . $member['member_reg_no'] . '_' . date('Ymd') . '.csv"');
-    $output = fopen('php://output', 'w');
-    
-    fputcsv($output, ['UMOJA SACCO OFFICIAL STATEMENT']);
-    fputcsv($output, ['Member:', $member['full_name']]);
-    fputcsv($output, ['Reg No:', $member['member_reg_no']]);
-    fputcsv($output, ['Period:', $start_date . ' to ' . $end_date]);
-    fputcsv($output, []);
-    fputcsv($output, ['Date', 'Reference', 'Type', 'Description', 'Amount', 'Balance']);
-    
+// 6. OUTPUT VIA FINANCIAL EXPORT ENGINE
+require_once __DIR__ . '/../../core/finance/FinancialExportEngine.php';
+
+// Prepare Data for Export
+$exportRows = [];
+
+if ($out_format === 'pdf') {
+    $rows = $txns; // PDF generation callback handles iteration
+} else {
+    // For Excel, we iterate and format first
     $cur_bal = $opening_bal;
-    fputcsv($output, [$start_date, '-', 'OPENING BALANCE', '-', '-', number_format($cur_bal, 2, '.', '')]);
+    $exportRows[] = [$start_date, '-', 'OPENING BALANCE', '-', '-', number_format($cur_bal, 2, '.', '')];
     
     foreach($txns as $t) {
         $impact = ($t['category'] === 'loans') ? ($t['debit'] - $t['credit']) : ($t['credit'] - $t['debit']);
         $cur_bal += $impact;
-        fputcsv($output, [
+        $exportRows[] = [
             date('Y-m-d', strtotime($t['transaction_date'])),
             $t['reference_no'],
             strtoupper($t['transaction_type']),
             $t['notes'],
             number_format(($t['debit'] > 0 ? $t['debit'] : $t['credit']), 2, '.', ''),
             number_format($cur_bal, 2, '.', '')
-        ]);
+        ];
     }
-    fclose($output);
+}
+
+if ($out_format === 'csv' || $out_format === 'excel') {
+    FinancialExportEngine::export('excel', $exportRows, [
+        'title' => 'Statement of Accounts - ' . strtoupper($report_type),
+        'module' => 'Statement Module',
+        'account_ref' => $member['member_reg_no'],
+        'headers' => ['Date', 'Reference', 'Type', 'Description', 'Amount', 'Balance'],
+        'record_count' => count($txns),
+        'total_value' => $opening_bal // Approximate tracking
+    ]);
     exit;
-}
-
-// 7. PDF OUTPUT (V28 Branding)
-class V28PDF extends FPDF {
-    function Header() {
-        // Background Accent
-        $this->SetFillColor(15, 46, 37);
-        $this->Rect(0, 0, 210, 40, 'F');
+} else {
+    // PDF Mode
+    FinancialExportEngine::export('pdf', function($pdf) use ($member, $start_date, $end_date, $report_type, $opening_bal, $txns) {
+        // Info Block
+        $pdf->SetTextColor(15, 46, 37);
+        $pdf->SetFont('Arial', 'B', 14);
+        $pdf->Cell(0, 10, 'MEMBER PORTRAIT', 0, 1);
         
-        $this->SetY(12);
-        $this->SetFont('Arial', 'B', 20);
-        $this->SetTextColor(208, 243, 93); // Lime
-        $this->Cell(0, 10, 'UMOJA SACCO LTD', 0, 1, 'C');
+        $pdf->SetFont('Arial', '', 10);
+        $pdf->SetTextColor(50);
+        $pdf->Cell(40, 7, 'Member Name:', 0, 0);
+        $pdf->SetFont('Arial', 'B', 10);
+        $pdf->Cell(0, 7, strtoupper($member['full_name']), 0, 1);
         
-        $this->SetFont('Arial', '', 9);
-        $this->SetTextColor(255);
-        $this->Cell(0, 5, 'OFFICIAL FINANCIAL STATEMENT | V28 SECURE LEDGER', 0, 1, 'C');
-        $this->Ln(15);
-    }
+        $pdf->SetFont('Arial', '', 10);
+        $pdf->Cell(40, 7, 'Registration No:', 0, 0);
+        $pdf->SetFont('Arial', 'B', 10);
+        $pdf->Cell(0, 7, $member['member_reg_no'], 0, 1);
+        
+        $pdf->SetFont('Arial', '', 10);
+        $pdf->Cell(40, 7, 'Identity No:', 0, 0);
+        $pdf->Cell(0, 7, $member['national_id'], 0, 1);
+        
+        $pdf->SetFont('Arial', '', 10);
+        $pdf->Cell(40, 7, 'Statement Period:', 0, 0);
+        $pdf->Cell(0, 7, date('d M Y', strtotime($start_date)) . ' - ' . date('d M Y', strtotime($end_date)), 0, 1);
+        $pdf->Ln(5);
+        
+        // Summary Bar
+        $pdf->SetFillColor(248, 250, 252);
+        $pdf->Rect(15, $pdf->GetY(), 180, 15, 'F');
+        $pdf->SetY($pdf->GetY() + 4);
+        $pdf->SetFont('Arial', 'B', 9);
+        $pdf->Cell(50, 7, '  REPORT TYPE:', 0, 0);
+        $pdf->SetTextColor(15, 46, 37);
+        $pdf->Cell(40, 7, strtoupper($report_type), 0, 0);
+        $pdf->SetTextColor(50);
+        $pdf->Cell(50, 7, '  OPENING BALANCE:', 0, 0);
+        $pdf->SetTextColor(15, 46, 37);
+        $pdf->Cell(40, 7, 'KES ' . number_format($opening_bal, 2), 0, 1);
+        $pdf->Ln(10);
+        
+        // Table HEADER
+        $w = [25, 35, 65, 30, 35];
+        $headers = ['DATE', 'REFERENCE', 'DESCRIPTION', 'AMOUNT', 'BALANCE'];
+        
+        $pdf->SetFillColor(27, 94, 32);
+        $pdf->SetTextColor(255);
+        $pdf->SetFont('Arial', 'B', 9);
+        foreach($headers as $i => $h) {
+            $pdf->Cell($w[$i], 8, $h, 1, 0, 'L', true);
+        }
+        $pdf->Ln();
+        
+        $pdf->SetTextColor(0);
+        $pdf->SetFont('Arial', '', 8);
+        $running = $opening_bal;
+        $fill = false;
+        
+        foreach($txns as $t) {
+            $impact = ($t['category'] === 'loans') ? ($t['debit'] - $t['credit']) : ($t['credit'] - $t['debit']);
+            $running += $impact;
+            
+            // Draw Row
+            // Manually recreate StyledRow behavior for compatibility check
+            $x = $pdf->GetX();
+            $y = $pdf->GetY();
+            
+            // Date
+            $pdf->Cell($w[0], 7, date('d-m-Y', strtotime($t['transaction_date'])), 1);
+            // Ref
+            $pdf->Cell($w[1], 7, $t['reference_no'], 1);
+            
+            // Description (handle overflow manually if needed, or simple cell)
+            $pdf->Cell($w[2], 7, substr(ucfirst(str_replace('_', ' ', $t['transaction_type'])), 0, 30), 1);
+            
+            // Amount
+            $pdf->Cell($w[3], 7, number_format(($t['debit'] > 0 ? $t['debit'] : $t['credit']), 2), 1, 0, 'R');
+            
+            // Balance
+            $pdf->Cell($w[4], 7, number_format($running, 2), 1, 1, 'R');
+        }
+        
+        $pdf->Ln(10);
+        $pdf->SetFont('Arial', 'B', 10);
+        $pdf->SetTextColor(15, 46, 37);
+        $pdf->Cell(155, 10, 'FINAL SETTLED BALANCE (AS OF ' . date('d/m/Y', strtotime($end_date)) . '):', 0, 0, 'R');
+        $pdf->SetFillColor(208, 243, 93);
+        $pdf->Cell(35, 10, 'KES ' . number_format($running, 2), 0, 1, 'R', true);
 
-    function Footer() {
-        $this->SetY(-25);
-        $this->SetFont('Arial', 'I', 8);
-        $this->SetTextColor(150);
-        $this->Cell(0, 10, 'This is a computer generated statement. Verification Hash: ' . md5(time()), 0, 1, 'C');
-        $this->SetTextColor(15, 46, 37);
-        $this->SetFont('Arial', 'B', 8);
-        $this->Cell(0, 5, 'Page ' . $this->PageNo() . ' of {nb}', 0, 0, 'C');
-    }
+    }, [
+        'title' => 'Member Financial Statement',
+        'module' => 'Statement Module',
+        'account_ref' => $member['member_reg_no'],
+        'record_count' => count($txns),
+        'total_value' => count($txns)
+    ]);
 }
-
-$pdf = new V28PDF();
-$pdf->AliasNbPages();
-$pdf->AddPage();
-
-// Info Block
-$pdf->SetTextColor(15, 46, 37);
-$pdf->SetFont('Arial', 'B', 14);
-$pdf->Cell(0, 10, 'MEMBER PORTRAIT', 0, 1);
-
-$pdf->SetFont('Arial', '', 10);
-$pdf->SetTextColor(50);
-$pdf->Cell(40, 7, 'Member Name:', 0, 0);
-$pdf->SetFont('Arial', 'B', 10);
-$pdf->Cell(0, 7, strtoupper($member['full_name']), 0, 1);
-
-$pdf->SetFont('Arial', '', 10);
-$pdf->Cell(40, 7, 'Registration No:', 0, 0);
-$pdf->SetFont('Arial', 'B', 10);
-$pdf->Cell(0, 7, $member['member_reg_no'], 0, 1);
-
-$pdf->SetFont('Arial', '', 10);
-$pdf->Cell(40, 7, 'Identity No:', 0, 0);
-$pdf->Cell(0, 7, $member['national_id'], 0, 1);
-
-$pdf->SetFont('Arial', '', 10);
-$pdf->Cell(40, 7, 'Statement Period:', 0, 0);
-$pdf->Cell(0, 7, date('d M Y', strtotime($start_date)) . ' - ' . date('d M Y', strtotime($end_date)), 0, 1);
-$pdf->Ln(5);
-
-// Summary Bar
-$pdf->SetFillColor(248, 250, 252);
-$pdf->Rect(10, $pdf->GetY(), 190, 15, 'F');
-$pdf->SetY($pdf->GetY() + 4);
-$pdf->SetFont('Arial', 'B', 9);
-$pdf->Cell(50, 7, '  REPORT TYPE:', 0, 0);
-$pdf->SetTextColor(15, 46, 37);
-$pdf->Cell(40, 7, strtoupper($report_type), 0, 0);
-$pdf->SetTextColor(50);
-$pdf->Cell(50, 7, '  OPENING BALANCE:', 0, 0);
-$pdf->SetTextColor(15, 46, 37);
-$pdf->Cell(40, 7, 'KES ' . number_format($opening_bal, 2), 0, 1);
-$pdf->Ln(10);
-
-// Table
-$pdf->SetFillColor(15, 46, 37);
-$pdf->SetTextColor(255);
-$pdf->SetFont('Arial', 'B', 9);
-$pdf->Cell(25, 10, 'DATE', 0, 0, 'C', true);
-$pdf->Cell(35, 10, 'REFERENCE', 0, 0, 'L', true);
-$pdf->Cell(65, 10, 'DESCRIPTION', 0, 0, 'L', true);
-$pdf->Cell(30, 10, 'AMOUNT', 0, 0, 'R', true);
-$pdf->Cell(35, 10, 'BALANCE ', 0, 1, 'R', true);
-
-$pdf->SetTextColor(0);
-$pdf->SetFont('Arial', '', 9);
-$running = $opening_bal;
-$fill = false;
-
-foreach($txns as $t) {
-    $impact = ($t['category'] === 'loans') ? ($t['debit'] - $t['credit']) : ($t['credit'] - $t['debit']);
-    $running += $impact;
-    
-    $pdf->SetFillColor(245, 245, 245);
-    $pdf->Cell(25, 8, date('d-m-Y', strtotime($t['transaction_date'])), 0, 0, 'C', $fill);
-    $pdf->Cell(35, 8, $t['reference_no'], 0, 0, 'L', $fill);
-    $pdf->Cell(65, 8, substr(ucfirst(str_replace('_', ' ', $t['transaction_type'])), 0, 30), 0, 0, 'L', $fill);
-    $pdf->Cell(30, 8, number_format(($t['debit'] > 0 ? $t['debit'] : $t['credit']), 2), 0, 0, 'R', $fill);
-    $pdf->Cell(35, 8, number_format($running, 2), 0, 1, 'R', $fill);
-    $fill = !$fill;
-}
-
-$pdf->Ln(10);
-$pdf->SetFont('Arial', 'B', 10);
-$pdf->SetTextColor(15, 46, 37);
-$pdf->Cell(155, 10, 'FINAL SETTLED BALANCE (AS OF ' . date('d/m/Y', strtotime($end_date)) . '):', 0, 0, 'R');
-$pdf->SetFillColor(208, 243, 93);
-$pdf->Cell(35, 10, 'KES ' . number_format($running, 2), 0, 1, 'R', true);
-
-$pdf->Output('I', 'Statement_' . $member['member_reg_no'] . '.pdf');
+exit;
+?>

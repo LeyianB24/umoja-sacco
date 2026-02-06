@@ -33,7 +33,8 @@ class FinancialEngine {
      * Strict Double-Entry Architecture
      */
     public function transact($params) {
-        $member_id      = (int)($params['member_id'] ?? 0);
+        $val = $params['member_id'] ?? null;
+        $member_id = (!empty($val) && is_numeric($val) && $val > 0) ? (int)$val : null;
         $amount         = (float)($params['amount'] ?? 0);
         $action_type    = $params['action_type']; 
         $reference      = $params['reference'] ?? ('REF-' . strtoupper(uniqid()));

@@ -48,7 +48,38 @@ $stmt->bind_param("i", $member_id);
 $stmt->execute();
 $result = $stmt->get_result();
 
+// HANDLE EXPORT
+if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_excel', 'print_report'])) {
+    require_once __DIR__ . '/../../core/exports/UniversalExportEngine.php';
+    
+    $format = 'pdf';
+    if ($_GET['action'] === 'export_excel') $format = 'excel';
+    if ($_GET['action'] === 'print_report') $format = 'print';
+
+    $data = [];
+    $result->data_seek(0);
+    while($row = $result->fetch_assoc()) {
+        $units = $row['total_value'] / $current_share_price;
+        $data[] = [
+            'Date' => date('d-M-Y H:i', strtotime($row['created_at'])),
+            'Reference' => $row['reference_no'],
+            'Units' => number_format((float)$units, 2),
+            'Unit Price' => number_format((float)$current_share_price, 2),
+            'Total Paid' => number_format((float)$row['total_value'], 2),
+            'Status' => 'Confirmed'
+        ];
+    }
+
+    UniversalExportEngine::handle($format, $data, [
+        'title' => 'Share Capital Statement',
+        'module' => 'Member Portal',
+        'headers' => ['Date', 'Reference', 'Units', 'Unit Price', 'Total Paid', 'Status']
+    ]);
+    exit;
+}
+
 $transactions = [];
+$result->data_seek(0);
 while ($row = $result->fetch_assoc()) {
     // Calculate units for each transaction
     $row['share_units'] = $row['total_value'] / $current_share_price;
@@ -227,9 +258,16 @@ $pageTitle = "My Share Portfolio";
                 <p class="text-secondary mb-0">Overview of your equity and projected returns.</p>
             </div>
             <div class="d-flex gap-2">
-                <button class="btn btn-white border shadow-sm rounded-pill px-4 fw-medium" id="downloadReport">
+            <div class="dropdown">
+                <button class="btn btn-white border shadow-sm rounded-pill px-4 fw-medium dropdown-toggle" data-bs-toggle="dropdown">
                     <i class="bi bi-download me-2"></i> Report
                 </button>
+                <ul class="dropdown-menu shadow">
+                    <li><a class="dropdown-item" href="?<?= http_build_query(array_merge($_GET, ['action' => 'export_pdf'])) ?>"><i class="bi bi-file-pdf text-danger me-2"></i>Export PDF</a></li>
+                    <li><a class="dropdown-item" href="?<?= http_build_query(array_merge($_GET, ['action' => 'export_excel'])) ?>"><i class="bi bi-file-excel text-success me-2"></i>Export Excel</a></li>
+                    <li><a class="dropdown-item" href="?<?= http_build_query(array_merge($_GET, ['action' => 'print_report'])) ?>" target="_blank"><i class="bi bi-printer text-primary me-2"></i>Print Report</a></li>
+                </ul>
+            </div>
                 <a href="<?= BASE_URL ?>/member/pages/withdraw.php?type=shares&source=shares" class="btn btn-white border shadow-sm rounded-pill px-4 fw-medium">
                     <i class="bi bi-cash-coin me-2"></i> Withdraw
                 </a>
@@ -379,89 +417,41 @@ $pageTitle = "My Share Portfolio";
 <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
 <script>
     // 1. Initialize DataTable
     $(document).ready(function() {
         $('#historyTable').DataTable({
-            order: [[0, 'desc']], // Sort by date desc
+            order: [[0, 'desc']], 
             pageLength: 10,
-            language: {
-                search: "",
-                searchPlaceholder: "Search transactions..."
-            },
-            dom: '<"d-flex justify-content-between align-items-center mb-3"f>t<"d-flex justify-content-between align-items-center mt-3"ip>'
+            dom: 't<"d-flex justify-content-between align-items-center mt-3"ip>'
         });
     });
 
     // 2. Initialize Chart
     const ctx = document.getElementById('growthChart').getContext('2d');
-    
-    // Create gradient
     let gradient = ctx.createLinearGradient(0, 0, 0, 300);
     gradient.addColorStop(0, 'rgba(190, 242, 100, 0.5)');
     gradient.addColorStop(1, 'rgba(190, 242, 100, 0.0)');
 
-    const chartData = {
-        labels: <?= $jsLabels ?>,
-        datasets: [{
-            label: 'Portfolio Value (KES)',
-            data: <?= $jsData ?>,
-            borderColor: '#65a30d',
-            backgroundColor: gradient,
-            borderWidth: 2,
-            pointBackgroundColor: '#ffffff',
-            pointBorderColor: '#65a30d',
-            pointRadius: 3,
-            fill: true,
-            tension: 0.4
-        }]
-    };
-
     new Chart(ctx, {
         type: 'line',
-        data: chartData,
+        data: {
+            labels: <?= $jsLabels ?>,
+            datasets: [{
+                data: <?= $jsData ?>,
+                borderColor: '#65a30d',
+                backgroundColor: gradient,
+                fill: true,
+                tension: 0.4
+            }]
+        },
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    backgroundColor: '#0f172a',
-                    titleColor: '#bef264',
-                    bodyColor: '#fff',
-                    padding: 10,
-                    cornerRadius: 8,
-                    displayColors: false,
-                    callbacks: {
-                        label: function(context) {
-                            return 'KES ' + context.parsed.y.toLocaleString();
-                        }
-                    }
-                }
-            },
-            scales: {
-                x: { display: false },
-                y: { 
-                    display: false,
-                    beginAtZero: true 
-                }
-            }
+            plugins: { legend: { display: false } },
+            scales: { x: { display: false }, y: { display: false } }
         }
-    });
-
-    // 3. PDF Export Logic
-    document.getElementById("downloadReport")?.addEventListener("click", () => {
-        const element = document.querySelector(".table-responsive");
-        const opt = {
-            margin:       0.5,
-            filename:     'Shares_Statement.pdf',
-            image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2 },
-            jsPDF:        { unit: 'in', format: 'a4', orientation: 'landscape' }
-        };
-        html2pdf().set(opt).from(element).save();
     });
 </script>
 </body>

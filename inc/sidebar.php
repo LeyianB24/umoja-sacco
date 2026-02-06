@@ -333,8 +333,8 @@ if (!function_exists('is_active')) {
                 </a>
             <?php endif; ?>
 
-            <?php if (has_permission('vehicles.php')): ?>
-                <a href="<?= $base ?>/admin/pages/vehicles.php" class="hd-nav-item <?= is_active('vehicles.php') ?>">
+            <?php if (has_permission('investments.php')): ?>
+                <a href="<?= $base ?>/admin/pages/investments.php?cat=vehicle_fleet" class="hd-nav-item <?= (isset($_GET['cat']) && $_GET['cat'] === 'vehicle_fleet') ? 'active' : '' ?>">
                     <i class="bi bi-bus-front-fill"></i> <span class="hd-nav-text">Vehicles</span>
                 </a>
             <?php endif; ?>
@@ -342,6 +342,9 @@ if (!function_exists('is_active')) {
             <?php if (has_permission('employees.php')): ?>
                 <a href="<?= $base ?>/admin/pages/employees.php" class="hd-nav-item <?= is_active('employees.php') ?>">
                     <i class="bi bi-person-badge"></i> <span class="hd-nav-text">Employees</span>
+                </a>
+                <a href="<?= $base ?>/admin/pages/payroll.php" class="hd-nav-item <?= is_active('payroll.php') ?>">
+                    <i class="bi bi-cash-stack"></i> <span class="hd-nav-text">Payroll Hub</span>
                 </a>
             <?php endif; ?>
 
@@ -355,6 +358,12 @@ if (!function_exists('is_active')) {
             <?php if (has_permission('payments.php')): ?>
                 <a href="<?= $base ?>/admin/pages/payments.php" class="hd-nav-item <?= is_active('payments.php') ?>">
                     <i class="bi bi-credit-card"></i> <span class="hd-nav-text">Payments</span>
+                </a>
+            <?php endif; ?>
+
+            <?php if (has_permission('transactions.php')): ?>
+                <a href="<?= $base ?>/admin/pages/transactions.php" class="hd-nav-item <?= is_active('transactions.php') ?>">
+                    <i class="bi bi-journal-text"></i> <span class="hd-nav-text">Golden Ledger</span>
                 </a>
             <?php endif; ?>
 

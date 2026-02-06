@@ -60,6 +60,36 @@ if(!empty($params)) {
 $stmt->execute();
 $history = $stmt->get_result();
 
+// HANDLE EXPORT
+if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_excel', 'print_report'])) {
+    require_once __DIR__ . '/../../core/exports/UniversalExportEngine.php';
+    
+    $format = 'pdf';
+    if ($_GET['action'] === 'export_excel') $format = 'excel';
+    if ($_GET['action'] === 'print_report') $format = 'print';
+
+    $data = [];
+    $history->data_seek(0);
+    while($row = $history->fetch_assoc()) {
+        $isDeposit = in_array(strtolower($row['transaction_type']), ['deposit', 'contribution', 'income']);
+        $sign = $isDeposit ? '+' : '-';
+        
+        $data[] = [
+            'Date' => date('d-M-Y H:i', strtotime($row['created_at'])),
+            'Type' => ucwords(str_replace('_', ' ', $row['transaction_type'])),
+            'Notes' => $row['notes'] ?: '-',
+            'Amount' => $sign . ' ' . number_format((float)$row['amount'], 2)
+        ];
+    }
+
+    UniversalExportEngine::handle($format, $data, [
+        'title' => 'Savings Statement',
+        'module' => 'Member Portal',
+        'headers' => ['Date', 'Type', 'Notes', 'Amount']
+    ]);
+    exit;
+}
+
 $pageTitle = "My Savings";
 ?>
 <!DOCTYPE html>
@@ -302,9 +332,16 @@ $pageTitle = "My Savings";
             <div class="hop-card p-0 overflow-hidden">
                 <div class="d-flex justify-content-between align-items-center p-4 border-bottom border-light">
                     <h5 class="fw-bold mb-0">Transaction History</h5>
-                    <button id="downloadPdf" class="btn btn-sm btn-light fw-bold text-muted border">
-                        <i class="bi bi-download me-1"></i> Export PDF
-                    </button>
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-light fw-bold text-muted border dropdown-toggle" data-bs-toggle="dropdown">
+                            <i class="bi bi-download me-1"></i> Export Statement
+                        </button>
+                        <ul class="dropdown-menu shadow">
+                            <li><a class="dropdown-item" href="?<?= http_build_query(array_merge($_GET, ['action' => 'export_pdf'])) ?>"><i class="bi bi-file-pdf text-danger me-2"></i>Export PDF</a></li>
+                            <li><a class="dropdown-item" href="?<?= http_build_query(array_merge($_GET, ['action' => 'export_excel'])) ?>"><i class="bi bi-file-excel text-success me-2"></i>Export Excel</a></li>
+                            <li><a class="dropdown-item" href="?<?= http_build_query(array_merge($_GET, ['action' => 'print_report'])) ?>" target="_blank"><i class="bi bi-printer text-primary me-2"></i>Print Statement</a></li>
+                        </ul>
+                    </div>
                 </div>
                 
                 <div class="table-responsive" id="savingsTable">
@@ -376,21 +413,7 @@ $pageTitle = "My Savings";
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-<script>
-    // PDF Export
-    document.getElementById("downloadPdf")?.addEventListener("click", () => {
-        const element = document.getElementById("savingsTable");
-        const opt = {
-            margin: 0.5,
-            filename: 'Savings_Statement.pdf',
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2 },
-            jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
-        };
-        html2pdf().set(opt).from(element).save();
-    });
-</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
 

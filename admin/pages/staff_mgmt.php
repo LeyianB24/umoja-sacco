@@ -77,8 +77,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $hashed = password_hash($password, PASSWORD_DEFAULT);
             $stmt = $db->prepare("INSERT INTO admins (full_name, email, username, role_id, password, created_at) VALUES (?, ?, ?, ?, ?, NOW())");
             $stmt->bind_param("sssis", $fullname, $email, $username, $role_id, $hashed);
-            if ($stmt->execute()) setFlash("New admin registered successfully.");
-            else setFlash("Error: " . $db->error, "danger");
+            if ($stmt->execute()) {
+                $new_admin_id = $db->insert_id;
+                // Automatically create employee profile
+                $job_title = $defined_roles[$role_id]['label'] ?? 'Administrator';
+                $nid = 'ADMIN-' . $new_admin_id;
+                $emp_stmt = $db->prepare("INSERT INTO employees (full_name, national_id, phone, job_title, salary, hire_date, status, admin_id) VALUES (?, ?, '', ?, 50000.00, NOW(), 'active', ?)");
+                $emp_stmt->bind_param("sssi", $fullname, $nid, $job_title, $new_admin_id);
+                $emp_stmt->execute();
+                
+                setFlash("New admin registered successfully and employee profile created.");
+            } else {
+                setFlash("Error: " . $db->error, "danger");
+            }
         }
     }
 
@@ -138,6 +149,36 @@ $new_admins_today = $db->query("SELECT COUNT(*) as count FROM admins WHERE DATE(
 
 $admin_list_res = $db->query("SELECT * FROM admins ORDER BY created_at DESC");
 if (!$admin_list_res) die("Query failed: " . $db->error);
+
+// HANDLE EXPORT
+if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_excel', 'print_report'])) {
+    require_once __DIR__ . '/../../core/exports/UniversalExportEngine.php';
+    
+    $format = 'pdf';
+    if ($_GET['action'] === 'export_excel') $format = 'excel';
+    if ($_GET['action'] === 'print_report') $format = 'print';
+
+    $data = [];
+    $admin_list_res->data_seek(0);
+    while($row = $admin_list_res->fetch_assoc()) {
+        $rid = $row['role_id'];
+        $roleInfo = $defined_roles[$rid] ?? ['label' => 'Unknown'];
+        $data[] = [
+            'Name' => $row['full_name'],
+            'Username' => $row['username'],
+            'Email' => $row['email'],
+            'Role' => $roleInfo['label'],
+            'Joined' => date('d-M-Y', strtotime($row['created_at']))
+        ];
+    }
+
+    UniversalExportEngine::handle($format, $data, [
+        'title' => 'Administrative Staff Directory',
+        'module' => 'System Management',
+        'headers' => ['Name', 'Username', 'Email', 'Role', 'Joined']
+    ]);
+    exit;
+}
 ?>
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="light">
@@ -255,6 +296,16 @@ if (!$admin_list_res) die("Query failed: " . $db->error);
                 <div class="d-flex justify-content-between align-items-center p-4 border-bottom">
                     <h5 class="fw-bold mb-0 text-forest">System Users</h5>
                     <div class="d-flex gap-2">
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-outline-forest dropdown-toggle rounded-pill" data-bs-toggle="dropdown">
+                                <i class="bi bi-download me-1"></i> Export
+                            </button>
+                            <ul class="dropdown-menu shadow-sm">
+                                <li><a class="dropdown-item" href="?<?= http_build_query(array_merge($_GET, ['action' => 'export_pdf'])) ?>"><i class="bi bi-file-pdf text-danger me-2"></i>Export PDF</a></li>
+                                <li><a class="dropdown-item" href="?<?= http_build_query(array_merge($_GET, ['action' => 'export_excel'])) ?>"><i class="bi bi-file-excel text-success me-2"></i>Export Excel</a></li>
+                                <li><a class="dropdown-item" href="?<?= http_build_query(array_merge($_GET, ['action' => 'print_report'])) ?>" target="_blank"><i class="bi bi-printer text-primary me-2"></i>Print Report</a></li>
+                            </ul>
+                        </div>
                         <div class="input-group input-group-sm" style="max-width: 250px;">
                             <span class="input-group-text bg-transparent border-end-0"><i class="bi bi-search"></i></span>
                             <input type="text" id="adminSearch" class="form-control border-start-0" placeholder="Search staff...">

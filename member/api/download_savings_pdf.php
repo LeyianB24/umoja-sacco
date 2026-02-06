@@ -13,10 +13,7 @@ set_time_limit(300);
 session_start();
 require_once __DIR__ . '/../../config/db_connect.php';
 require_once __DIR__ . '/../../config/app_config.php';
-require_once __DIR__ . '/../../vendor/autoload.php'; // Ensure this path is correct
-
-use Dompdf\Dompdf;
-use Dompdf\Options;
+require_once __DIR__ . '/../../inc/SystemPDF.php';
 
 // 2. Authentication
 if (!isset($_SESSION['member_id'])) {
@@ -74,192 +71,98 @@ foreach ($transactions as $t) {
 
 $net_savings_balance = $total_in - $total_out;
 
-// 6. Prepare Logo (Base64 encoding for PDF compatibility)
-$logo_path = __DIR__ . '/../public/assets/images/people_logo.png'; // Verify this path
-$logo_data = '';
-if (file_exists($logo_path)) {
-    $type = pathinfo($logo_path, PATHINFO_EXTENSION);
-    $data = file_get_contents($logo_path);
-    $logo_data = 'data:image/' . $type . ';base64,' . base64_encode($data);
-}
+// 6. Generate PDF with FinancialExportEngine
+require_once __DIR__ . '/../../core/finance/FinancialExportEngine.php';
 
-// 7. Build HTML Layout
-$html = '
-<!DOCTYPE html>
-<html>
-<head>
-    <style>
-        @page { margin: 100px 40px 60px 40px; } /* Margins for Header/Footer */
-        
-        body { font-family: "Helvetica", sans-serif; font-size: 10pt; color: #333; line-height: 1.4; }
-        
-        /* Fixed Header */
-        header { position: fixed; top: -70px; left: 0; right: 0; height: 70px; border-bottom: 2px solid #0d834b; }
-        .header-table { width: 100%; }
-        .brand-name { font-size: 18pt; font-weight: bold; color: #0d834b; text-transform: uppercase; margin: 0; }
-        .brand-sub { font-size: 9pt; color: #666; }
+FinancialExportEngine::export('pdf', function($pdf) use ($member, $total_in, $total_loans, $total_out, $transactions) {
+    // Member Info Section
+    $pdf->SetFont('Arial', '', 10);
+    $pdf->Cell(30, 6, "Member Name:", 0, 0);
+    $pdf->SetFont('Arial', 'B', 10);
+    $pdf->Cell(70, 6, strtoupper($member['full_name']), 0, 0);
 
-        /* Fixed Footer */
-        footer { position: fixed; bottom: -40px; left: 0; right: 0; height: 30px; text-align: center; font-size: 8pt; color: #888; border-top: 1px solid #eee; padding-top: 10px; }
-        .page-number:after { content: counter(page); }
+    $pdf->SetFont('Arial', '', 10);
+    $pdf->Cell(20, 6, "Email:", 0, 0);
+    $pdf->SetFont('Arial', 'B', 10);
+    $pdf->Cell(70, 6, $member['email'], 0, 1);
 
-        /* Member Info Box */
-        .info-box { width: 100%; background: #f8f9fa; padding: 15px; border: 1px solid #e9ecef; margin-bottom: 25px; border-radius: 5px; }
-        .info-table td { padding: 2px 0; vertical-align: top; }
-        .label { font-weight: bold; color: #555; font-size: 9pt; width: 100px; display: inline-block; }
+    $pdf->SetFont('Arial', '', 10);
+    $pdf->Cell(30, 6, "Member ID:", 0, 0);
+    $pdf->SetFont('Arial', 'B', 10);
+    $pdf->Cell(70, 6, str_pad((string)$member['member_id'], 5, '0', STR_PAD_LEFT), 0, 0);
 
-        /* Summary Cards Table */
-        .summary-table { width: 100%; border-collapse: separate; border-spacing: 10px 0; margin-bottom: 30px; }
-        .summary-box { background: #fff; border: 1px solid #ddd; padding: 10px; text-align: center; border-radius: 4px; }
-        .summary-val { font-size: 14pt; font-weight: bold; margin-top: 5px; }
-        .text-success { color: #0d834b; }
-        .text-danger { color: #dc3545; }
-        .text-primary { color: #0d6efd; }
+    $pdf->SetFont('Arial', '', 10);
+    $pdf->Cell(20, 6, "Phone:", 0, 0);
+    $pdf->SetFont('Arial', 'B', 10);
+    $pdf->Cell(70, 6, $member['phone'], 0, 1);
+    $pdf->Ln(5);
 
-        /* Transaction Table */
-        .txn-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        .txn-table th { background: #0d834b; color: #fff; text-align: left; padding: 8px; font-size: 9pt; text-transform: uppercase; }
-        .txn-table td { padding: 8px; border-bottom: 1px solid #eee; font-size: 9pt; vertical-align: top; }
-        .txn-table tr:nth-child(even) { background-color: #fcfcfc; }
-        .badge { padding: 2px 6px; border-radius: 3px; font-size: 8pt; font-weight: bold; color: #fff; background: #6c757d; }
-        .bg-in { background: #d1e7dd; color: #0f5132; } /* Green tint */
-        .bg-out { background: #f8d7da; color: #842029; } /* Red tint */
-    </style>
-</head>
-<body>
+    // Summary Cards Row
+    $pdf->SetFillColor(240, 240, 240);
+    $pdf->Rect($pdf->GetX(), $pdf->GetY(), 190, 20, 'F');
+    $pdf->SetY($pdf->GetY() + 5);
 
-    <header>
-        <table class="header-table">
-            <tr>
-                <td width="60">
-                    ' . ($logo_data ? '<img src="'.$logo_data.'" width="50" />' : '') . '
-                </td>
-                <td>
-                    <div class="brand-name">' . (defined('SITE_NAME') ? SITE_NAME : 'UMOJA SACCO') . '</div>
-                    <div class="brand-sub">Official Member Statement</div>
-                </td>
-                <td align="right">
-                    <div style="font-weight:bold;">DATE</div>
-                    <div>' . date('d M Y') . '</div>
-                </td>
-            </tr>
-        </table>
-    </header>
+    $pdf->SetFont('Arial', 'B', 9);
+    $pdf->Cell(63, 5, 'TOTAL SAVINGS', 0, 0, 'C');
+    $pdf->Cell(63, 5, 'LOANS REPAID', 0, 0, 'C');
+    $pdf->Cell(63, 5, 'WITHDRAWALS', 0, 1, 'C');
 
-    <footer>
-        Generated by Umoja Sacco Portal • Page <span class="page-number"></span>
-    </footer>
+    $pdf->SetFont('Arial', 'B', 12);
+    $pdf->SetTextColor(13, 131, 75); // Success Green
+    $pdf->Cell(63, 7, 'KES ' . number_format($total_in, 2), 0, 0, 'C');
+    $pdf->SetTextColor(13, 110, 253); // Primary Blue
+    $pdf->Cell(63, 7, 'KES ' . number_format($total_loans, 2), 0, 0, 'C');
+    $pdf->SetTextColor(220, 53, 69); // Danger Red
+    $pdf->Cell(63, 7, 'KES ' . number_format($total_out, 2), 0, 1, 'C');
+    $pdf->SetTextColor(0, 0, 0); // Reset
+    $pdf->Ln(10);
 
-    <main>
-        <div class="info-box">
-            <table class="info-table" width="100%">
-                <tr>
-                    <td width="50%">
-                        <span class="label">Name:</span> ' . htmlspecialchars($member['full_name']) . '<br>
-                        <span class="label">Member ID:</span> ' . str_pad($member['member_id'], 5, '0', STR_PAD_LEFT) . '<br>
-                        <span class="label">National ID:</span> ' . htmlspecialchars($member['national_id']) . '
-                    </td>
-                    <td width="50%">
-                        <span class="label">Email:</span> ' . htmlspecialchars($member['email']) . '<br>
-                        <span class="label">Phone:</span> ' . htmlspecialchars($member['phone']) . '<br>
-                        <span class="label">Address:</span> ' . htmlspecialchars($member['address'] ?? 'N/A') . '
-                    </td>
-                </tr>
-            </table>
-        </div>
-
-        <table class="summary-table">
-            <tr>
-                <td class="summary-box" style="border-top: 3px solid #0d834b;">
-                    <div style="font-size:9pt; color:#666;">TOTAL SAVINGS</div>
-                    <div class="summary-val text-success">KES ' . number_format($total_in, 2) . '</div>
-                </td>
-                <td class="summary-box" style="border-top: 3px solid #0d6efd;">
-                    <div style="font-size:9pt; color:#666;">LOANS REPAID</div>
-                    <div class="summary-val text-primary">KES ' . number_format($total_loans, 2) . '</div>
-                </td>
-                <td class="summary-box" style="border-top: 3px solid #dc3545;">
-                    <div style="font-size:9pt; color:#666;">WITHDRAWALS</div>
-                    <div class="summary-val text-danger">KES ' . number_format($total_out, 2) . '</div>
-                </td>
-            </tr>
-        </table>
-
-        <h4 style="border-bottom: 1px solid #ccc; padding-bottom: 5px; color:#444;">Detailed History</h4>
-        
-        <table class="txn-table">
-            <thead>
-                <tr>
-                    <th width="15%">Date</th>
-                    <th width="15%">Type</th>
-                    <th width="15%">Reference</th>
-                    <th width="40%">Description</th>
-                    <th width="15%" align="right">Amount</th>
-                </tr>
-            </thead>
-            <tbody>';
-
-if (count($transactions) > 0) {
-    foreach ($transactions as $row) {
-        $type = strtolower($row['transaction_type']);
-        $date = date('d M Y', strtotime($row['t_date']));
-        $ref = htmlspecialchars($row['reference_no'] ?? '-');
-        $desc = htmlspecialchars($row['notes'] ?? $row['payment_channel']);
-        $amt = number_format($row['amount'], 2);
-        
-        // Styling Logic
-        $row_class = '';
-        $sign = '';
-        
-        if (in_array($type, ['deposit', 'savings', 'shares', 'loan_repayment'])) {
-            $row_class = 'bg-in';
-            $sign = '+';
-        } elseif ($type === 'withdrawal') {
-            $row_class = 'bg-out';
-            $sign = '-';
-        }
-
-        $type_display = ucfirst(str_replace('_', ' ', $type));
-
-        $html .= '
-            <tr>
-                <td>' . $date . '</td>
-                <td><b>' . $type_display . '</b></td>
-                <td style="font-family:monospace; font-size:8pt;">' . $ref . '</td>
-                <td>' . $desc . '</td>
-                <td align="right" style="font-weight:bold;">' . $sign . ' ' . $amt . '</td>
-            </tr>';
+    // Transactions Table
+    $headers = ['DATE', 'TYPE', 'REFERENCE', 'DESCRIPTION', 'AMOUNT'];
+    $w = [25, 30, 30, 75, 30];
+    
+    $pdf->SetFillColor(27, 94, 32);
+    $pdf->SetTextColor(255);
+    $pdf->SetFont('Arial', 'B', 9);
+    foreach($headers as $i => $h) {
+        $pdf->Cell($w[$i], 8, $h, 1, 0, 'L', true);
     }
-} else {
-    $html .= '<tr><td colspan="5" align="center" style="padding:20px; color:#999;">No transactions found for this account.</td></tr>';
-}
+    $pdf->Ln();
 
-$html .= '
-            </tbody>
-        </table>
-        
-        <div style="margin-top: 30px; font-size: 8pt; color: #777; border-top: 1px solid #eee; padding-top: 10px;">
-            <strong>Disclaimer:</strong> This statement is computer generated and valid without a signature. 
-            If you find any discrepancies, please contact support immediately.
-        </div>
-    </main>
-</body>
-</html>';
+    $pdf->SetTextColor(0);
+    $pdf->SetFont('Arial', '', 8);
+    
+    if (count($transactions) > 0) {
+        foreach ($transactions as $row) {
+            $type = strtolower($row['transaction_type']);
+            $sign = '';
+            if (in_array($type, ['deposit', 'savings', 'shares', 'loan_repayment'])) {
+                $sign = '+ ';
+            } elseif ($type === 'withdrawal') {
+                $sign = '- ';
+            }
 
-// 8. Output PDF
-try {
-    $options = new Options();
-    $options->set('isHtml5ParserEnabled', true);
-    $options->set('isRemoteEnabled', true);
-    
-    $dompdf = new Dompdf($options);
-    $dompdf->loadHtml($html);
-    $dompdf->setPaper('A4', 'portrait');
-    $dompdf->render();
-    
-    $filename = "Statement_" . $member_id . "_" . date('M_Y') . ".pdf";
-    $dompdf->stream($filename, ["Attachment" => true]); // Force Download
-} catch (Exception $e) {
-    echo "PDF Error: " . $e->getMessage();
-}
+            // Simple row rendering
+            $pdf->Cell($w[0], 7, date('d M Y', strtotime($row['t_date'])), 1);
+            $pdf->Cell($w[1], 7, ucfirst(str_replace('_', ' ', $type)), 1);
+            $pdf->Cell($w[2], 7, $row['reference_no'] ?? '-', 1);
+            $pdf->Cell($w[3], 7, substr($row['notes'] ?? $row['payment_channel'], 0, 40), 1);
+            $pdf->Cell($w[4], 7, $sign . number_format((float)$row['amount'], 2), 1, 1, 'R');
+        }
+    } else {
+        $pdf->Cell(190, 10, 'No transactions found.', 1, 1, 'C');
+    }
+
+    $pdf->Ln(10);
+    $pdf->SetFont('Arial', 'I', 8);
+    $pdf->MultiCell(0, 5, "Disclaimer: This statement is computer generated and valid without a signature. If you find any discrepancies, please contact support immediately.");
+
+}, [
+    'title' => 'Official Member Statement',
+    'module' => 'Member Portal',
+    'account_ref' => $member['member_id'], // Or reg no if available
+    'record_count' => count($transactions),
+    'total_value' => $total_in
+]);
+exit;
 ?>

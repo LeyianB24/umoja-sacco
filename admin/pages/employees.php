@@ -105,6 +105,36 @@ if (!empty($params)) $stmt->bind_param($types, ...$params);
 $stmt->execute();
 $staff_res = $stmt->get_result();
 
+// HANDLE EXPORT
+if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_excel', 'print_report'])) {
+    require_once __DIR__ . '/../../core/exports/UniversalExportEngine.php';
+    
+    $format = 'pdf';
+    if ($_GET['action'] === 'export_excel') $format = 'excel';
+    if ($_GET['action'] === 'print_report') $format = 'print';
+
+    $data = [];
+    $staff_res->data_seek(0);
+    while($row = $staff_res->fetch_assoc()) {
+        $data[] = [
+            'Name' => $row['full_name'],
+            'ID No' => $row['national_id'],
+            'Role' => $row['job_title'],
+            'Phone' => $row['phone'],
+            'Salary' => number_format((float)$row['salary'], 2),
+            'Status' => ucfirst($row['status']),
+            'Hired' => date('d-M-Y', strtotime($row['hire_date']))
+        ];
+    }
+
+    UniversalExportEngine::handle($format, $data, [
+        'title' => 'Employee Directory',
+        'module' => 'HR Management',
+        'headers' => ['Name', 'ID No', 'Role', 'Phone', 'Salary', 'Status', 'Hired']
+    ]);
+    exit;
+}
+
 // KPIs
 $total_staff = $db->query("SELECT COUNT(*) as c FROM employees")->fetch_assoc()['c'];
 $monthly_payroll = $db->query("SELECT SUM(salary) as s FROM employees WHERE status='active'")->fetch_assoc()['s'];
@@ -246,7 +276,17 @@ $pageTitle = "Staff Management";
                     <h3 class="fw-bold mb-1 text-gradient">Staff Management</h3>
                     <p class="text-muted small mb-0">Overview of HR, Payroll, and Driver Allocation.</p>
                 </div>
-                <div class="d-none d-md-block">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-dark dropdown-toggle rounded-pill" data-bs-toggle="dropdown">
+                            <i class="bi bi-download me-1"></i> Export
+                        </button>
+                        <ul class="dropdown-menu shadow-sm">
+                            <li><a class="dropdown-item" href="?<?= http_build_query(array_merge($_GET, ['action' => 'export_pdf'])) ?>"><i class="bi bi-file-pdf text-danger me-2"></i>Export PDF</a></li>
+                            <li><a class="dropdown-item" href="?<?= http_build_query(array_merge($_GET, ['action' => 'export_excel'])) ?>"><i class="bi bi-file-excel text-success me-2"></i>Export Excel</a></li>
+                            <li><a class="dropdown-item" href="?<?= http_build_query(array_merge($_GET, ['action' => 'print_report'])) ?>" target="_blank"><i class="bi bi-printer text-primary me-2"></i>Print Report</a></li>
+                        </ul>
+                    </div>
                     <span class="badge bg-dark bg-opacity-10 text-dark border px-3 py-2 rounded-pill">
                         <i class="bi bi-calendar3 me-2"></i> <?= date('F d, Y') ?>
                     </span>
@@ -366,9 +406,16 @@ $pageTitle = "Staff Management";
                                         <?= ksh($emp['salary']) ?>
                                     </td>
                                     <td>
-                                        <span class="badge badge-soft <?= $badge_cls ?>">
-                                            <?= str_replace('_', ' ', ucfirst($emp['status'])) ?>
-                                        </span>
+                                        <div class="d-flex flex-column gap-1">
+                                            <span class="badge badge-soft <?= $badge_cls ?>">
+                                                <?= str_replace('_', ' ', ucfirst($emp['status'])) ?>
+                                            </span>
+                                            <?php if($emp['admin_id']): ?>
+                                                <span class="badge bg-info-subtle text-info border-0 rounded-pill px-2" style="font-size: 0.6rem;">
+                                                    <i class="bi bi-shield-check"></i> System Access
+                                                </span>
+                                            <?php endif; ?>
+                                        </div>
                                     </td>
                                     <td class="text-end pe-4">
                                         <div class="dropdown">
@@ -380,6 +427,11 @@ $pageTitle = "Staff Management";
                                                 <li>
                                                     <a class="dropdown-item" href="#" onclick="openEditModal(<?= htmlspecialchars(json_encode($emp)) ?>)">
                                                         <i class="bi bi-pencil-square me-2 text-primary"></i> Edit Details
+                                                    </a>
+                                                </li>
+                                                <li>
+                                                    <a class="dropdown-item" href="payroll.php?employee_id=<?= $emp['employee_id'] ?>">
+                                                        <i class="bi bi-cash-stack me-2 text-success"></i> View Payroll
                                                     </a>
                                                 </li>
                                                 <li><hr class="dropdown-divider"></li>

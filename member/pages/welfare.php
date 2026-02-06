@@ -83,6 +83,49 @@ ksort($chart_data);
 $json_labels = json_encode(array_keys($chart_data));
 $json_values = json_encode(array_values($chart_data));
 
+// HANDLE EXPORT
+if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_excel', 'print_report'])) {
+    require_once __DIR__ . '/../../core/exports/UniversalExportEngine.php';
+    
+    $format = 'pdf';
+    if ($_GET['action'] === 'export_excel') $format = 'excel';
+    if ($_GET['action'] === 'print_report') $format = 'print';
+
+    $data = [];
+    foreach($all_contribs as $row) {
+        $data[] = [
+            'Date' => date('d-M-Y', strtotime($row['created_at'])),
+            'Reference' => $row['reference_no'],
+            'Type' => 'Contribution',
+            'Amount' => '+ ' . number_format((float)$row['amount'], 2),
+            'Status' => ucfirst($row['status'] ?? 'completed')
+        ];
+    }
+    
+    foreach($all_support as $row) {
+        if (!in_array($row['status'], ['approved', 'disbursed'])) continue;
+        $data[] = [
+            'Date' => date('d-M-Y', strtotime($row['date_granted'])),
+            'Reference' => 'Support: ' . $row['reason'],
+            'Type' => 'Support Received',
+            'Amount' => '- ' . number_format((float)$row['amount'], 2),
+            'Status' => ucfirst($row['status'])
+        ];
+    }
+
+    // Sort combined data by date
+    usort($data, function($a, $b) {
+        return strtotime($b['Date']) - strtotime($a['Date']);
+    });
+
+    UniversalExportEngine::handle($format, $data, [
+        'title' => 'Welfare Fund Statement',
+        'module' => 'Member Portal',
+        'headers' => ['Date', 'Reference', 'Type', 'Amount', 'Status']
+    ]);
+    exit;
+}
+
 $pageTitle = "Welfare Dashboard";
 ?>
 <!DOCTYPE html>
@@ -208,9 +251,16 @@ $pageTitle = "Welfare Dashboard";
                     <p class="text-secondary mb-0">Your benevolent history and support tracking.</p>
                 </div>
                 <div class="d-flex gap-2 mt-3 mt-md-0">
-                    <button onclick="window.print()" class="btn btn-outline-secondary d-flex align-items-center gap-2 rounded-pill px-3 fw-bold border-2">
-                        <i class="bi bi-printer"></i> <span>Report</span>
-                    </button>
+                    <div class="dropdown">
+                        <button class="btn btn-outline-secondary d-flex align-items-center gap-2 rounded-pill px-3 fw-bold border-2 dropdown-toggle" data-bs-toggle="dropdown">
+                            <i class="bi bi-download"></i> <span>Export</span>
+                        </button>
+                        <ul class="dropdown-menu shadow">
+                            <li><a class="dropdown-item" href="?<?= http_build_query(array_merge($_GET, ['action' => 'export_pdf'])) ?>"><i class="bi bi-file-pdf text-danger me-2"></i>Export PDF</a></li>
+                            <li><a class="dropdown-item" href="?<?= http_build_query(array_merge($_GET, ['action' => 'export_excel'])) ?>"><i class="bi bi-file-excel text-success me-2"></i>Export Excel</a></li>
+                            <li><a class="dropdown-item" href="?<?= http_build_query(array_merge($_GET, ['action' => 'print_report'])) ?>" target="_blank"><i class="bi bi-printer text-primary me-2"></i>Print Statement</a></li>
+                        </ul>
+                    </div>
                     <a href="<?= BASE_URL ?>/member/pages/withdraw.php?type=welfare&source=welfare" class="btn btn-outline-secondary d-flex align-items-center gap-2 rounded-pill px-3 fw-bold border-2">
                         <i class="bi bi-cash-coin"></i> <span>Withdraw</span>
                     </a>

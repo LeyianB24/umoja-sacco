@@ -123,7 +123,7 @@ if (!empty($_GET['search'])) {
 }
 
 // Main Query with Guarantor Counts
-$sql = "SELECT l.*, m.full_name, m.national_id, m.profile_pic, m.phone,
+$sql = "SELECT l.*, m.full_name, m.national_id, m.phone,
         (SELECT COUNT(*) FROM loan_guarantors lg WHERE lg.loan_id = l.loan_id) as guarantor_count,
         a.full_name as approver_name
         FROM loans l 
@@ -132,8 +132,13 @@ $sql = "SELECT l.*, m.full_name, m.national_id, m.profile_pic, m.phone,
         WHERE $where 
         ORDER BY l.created_at DESC";
 
-// Execute query directly for debugging
-$loans = $conn->query($sql);
+// Execute Query Safe
+$stmt = $conn->prepare($sql);
+if (!empty($params)) {
+    $stmt->bind_param($types, ...$params);
+}
+$stmt->execute();
+$loans = $stmt->get_result();
 
 // Debug: Check if we have results
 error_log("Loans query result count: " . $loans->num_rows);
@@ -172,7 +177,7 @@ $stats_query = "SELECT
     COUNT(CASE WHEN status='approved' THEN 1 END) as approved_count,
     SUM(CASE WHEN status='approved' THEN amount ELSE 0 END) as approved_val,
     COUNT(CASE WHEN status='completed' THEN 1 END) as completed_count,
-    SUM(CASE WHEN status='completed' THEN current_balance ELSE 0 END) as active_portfolio,
+    SUM(CASE WHEN status='disbursed' THEN current_balance ELSE 0 END) as active_portfolio,
     COUNT(CASE WHEN status='rejected' THEN 1 END) as rejected_count
     FROM loans";
 $stats_result = $conn->query($stats_query);
@@ -199,36 +204,44 @@ if ($table_check->num_rows == 0) {
     error_log("Total loans in database: " . $total_loans);
 }
 
-// --- 5. Export CSV Handler ---
-if (isset($_GET['action']) && $_GET['action'] === 'export_csv') {
-    header('Content-Type: text/csv');
-    header('Content-Disposition: attachment; filename="loans_export_' . date('Y-m-d') . '.csv"');
-    
-    $output = fopen('php://output', 'w');
-    
-    // CSV headers
-    fputcsv($output, ['Loan ID', 'Member Name', 'National ID', 'Phone', 'Amount', 'Status', 'Applied Date', 'Approval Date']);
-    
-    // Re-run query without pagination for export
+// --- 5. Export Handler ---
+if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_excel', 'print_report'])) {
+    // Re-run query without limit for export
     $export_sql = "SELECT l.*, m.full_name, m.national_id, m.phone FROM loans l 
                    JOIN members m ON l.member_id = m.member_id 
+                   WHERE $where 
                    ORDER BY l.created_at DESC";
-    $export_result = $conn->query($export_sql);
+    $stmt_e = $conn->prepare($export_sql);
+    if (!empty($params)) $stmt_e->bind_param($types, ...$params);
+    $stmt_e->execute();
+    $export_result = $stmt_e->get_result();
     
+    require_once __DIR__ . '/../../core/exports/UniversalExportEngine.php';
+    
+    $format = 'pdf';
+    if ($_GET['action'] === 'export_excel') $format = 'excel';
+    if ($_GET['action'] === 'print_report') $format = 'print';
+
+    $data = [];
+    $total_val = 0;
     while ($row = $export_result->fetch_assoc()) {
-        fputcsv($output, [
-            $row['loan_id'],
-            $row['full_name'],
-            $row['national_id'],
-            $row['phone'],
-            $row['amount'],
-            $row['status'],
-            $row['created_at'],
-            $row['approval_date'] ?? 'N/A'
-        ]);
+        $total_val += (float)$row['amount'];
+        $data[] = [
+            'ID' => $row['loan_id'],
+            'Member' => $row['full_name'],
+            'ID No' => $row['national_id'],
+            'Amount' => number_format((float)$row['amount'], 2),
+            'Status' => ucfirst($row['status']),
+            'Applied' => date('d-M-Y', strtotime($row['created_at']))
+        ];
     }
     
-    fclose($output);
+    UniversalExportEngine::handle($format, $data, [
+        'title' => 'Loan Management Report',
+        'module' => 'Loan Portfolio',
+        'headers' => ['ID', 'Member', 'ID No', 'Amount', 'Status', 'Applied'],
+        'total_value' => $total_val
+    ]);
     exit;
 }
 
@@ -245,519 +258,223 @@ $pageTitle = "Loan Management";
     <link rel="stylesheet" href="<?= BASE_URL ?>/public/assets/css/style.css?v=<?= time() ?>">
     <style>
         /* =============================
-           LOANS PAGE - HOPE UI ENHANCEMENTS
-           Using existing design system
+           HOPE UI PREMIUM THEME
+           Forest & Lime Edition
         ============================= */
-        
+        :root {
+            --forest-deep: #0f2e25;
+            --forest-light: #1a4d3d;
+            --lime-vibrant: #d0f35d;
+            --lime-dark: #a8cf12;
+            --glass-bg: rgba(255, 255, 255, 0.95);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --glass-shadow: 0 8px 32px 0 rgba(15, 46, 37, 0.1);
+        }
+
         body {
-            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: #f0f2f5;
+            color: var(--forest-deep);
         }
+
+        /* --- Animations --- */
+        @keyframes slideInUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         
-        .main-content-wrapper {
-            background: var(--bg-body);
-        }
-        
-        /* =============================
-           ENHANCED STAT CARDS
-        ============================= */
+        .fade-in { animation: fadeIn 0.6s ease-out forwards; }
+        .slide-up { animation: slideInUp 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+
+        /* --- Stat Cards --- */
         .stat-card-enhanced {
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: 16px;
-            padding: 2rem;
-            box-shadow: var(--glass-shadow);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: white;
+            border: 1px solid rgba(0,0,0,0.05);
+            border-radius: 20px;
+            padding: 1.5rem;
             position: relative;
             overflow: hidden;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.03);
         }
-        
+
         .stat-card-enhanced:hover {
-            transform: translateY(-4px);
-            box-shadow: var(--glass-shadow-hover);
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(15, 46, 37, 0.08);
+            border-color: var(--lime-vibrant);
         }
-        
-        .stat-card-enhanced::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(208, 243, 93, 0.1), transparent);
-            transition: left 0.6s;
-        }
-        
-        .stat-card-enhanced:hover::before {
-            left: 100%;
-        }
-        
-        .stat-number {
-            font-size: 2.5rem;
-            font-weight: 800;
-            color: var(--forest-deep);
-            line-height: 1;
-            margin-bottom: 0.5rem;
-        }
-        
+
         .stat-icon-box {
-            width: 60px;
-            height: 60px;
+            width: 50px;
+            height: 50px;
             border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 1.5rem;
-            background: var(--lime-vibrant);
+            transition: all 0.3s ease;
+        }
+
+        .stat-card-enhanced:hover .stat-icon-box {
+            transform: scale(1.1) rotate(5deg);
+        }
+
+        .stat-icon-box.warning { background: #fff8e1; color: #f59e0b; }
+        .stat-icon-box.info { background: #e0f2fe; color: #0ea5e9; }
+        .stat-icon-box.success { background: #dcfce7; color: #10b981; }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 800;
             color: var(--forest-deep);
-            box-shadow: 0 4px 12px rgba(208, 243, 93, 0.3);
+            letter-spacing: -0.5px;
         }
-        
-        .stat-icon-box.warning {
-            background: #f59e0b;
-            color: white;
-        }
-        
-        .stat-icon-box.info {
-            background: #3b82f6;
-            color: white;
-        }
-        
-        .stat-icon-box.success {
-            background: #10b981;
-            color: white;
-        }
-        
-        /* =============================
-           ENHANCED SEARCH CONTAINER
-        ============================= */
+
+        /* --- Search & Filter --- */
         .search-enhanced {
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
+            background: white;
+            padding: 1rem;
             border-radius: 16px;
-            padding: 1.5rem;
-            box-shadow: var(--glass-shadow);
-            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+            margin-bottom: 2rem;
         }
-        
+
         .search-input-enhanced {
-            border: 1px solid #e2e8f0;
-            border-radius: 10px;
-            padding: 0.75rem 1rem;
+            border: 2px solid #f3f4f6;
+            border-radius: 12px;
+            padding: 0.8rem 1.2rem;
             font-size: 0.95rem;
-            transition: all 0.2s ease;
+            background: #f8fafc;
+            transition: all 0.2s;
         }
-        
+
         .search-input-enhanced:focus {
+            background: white;
             border-color: var(--forest-deep);
-            box-shadow: 0 0 0 3px rgba(15, 46, 37, 0.1);
+            box-shadow: 0 0 0 4px rgba(15, 46, 37, 0.1);
         }
-        
-        /* =============================
-           ENHANCED TABLE
-        ============================= */
+
+        /* --- Table --- */
         .table-enhanced {
             background: white;
-            border-radius: 12px;
+            border-radius: 20px;
+            box-shadow: 0 5px 25px rgba(0,0,0,0.04);
             overflow: hidden;
-            box-shadow: var(--glass-shadow);
         }
-        
-        .table-enhanced thead {
-            background: var(--forest-deep);
-            color: white;
+
+        .table-custom thead {
+            background: #f8fafc;
+            border-bottom: 2px solid #e2e8f0;
         }
-        
-        .table-enhanced thead th {
-            padding: 1rem 1.25rem;
-            font-weight: 600;
+
+        .table-custom th {
+            font-weight: 700;
             text-transform: uppercase;
             font-size: 0.75rem;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.05em;
+            color: #64748b;
+            padding: 1.2rem 1rem;
             border: none;
         }
-        
-        .table-enhanced tbody td {
-            padding: 1rem 1.25rem;
-            border-bottom: 1px solid #f1f5f9;
+
+        .table-custom td {
             vertical-align: middle;
+            padding: 1.2rem 1rem;
+            border-bottom: 1px solid #f1f5f9;
+            color: #334155;
+            font-size: 0.95rem;
         }
+
+        .table-custom tr:last-child td { border-bottom: none; }
         
-        .table-enhanced tbody tr:last-child td {
-            border-bottom: none;
-        }
-        
-        .table-enhanced tbody tr:hover {
-            background-color: #f8fafc;
-        }
-        
-        /* =============================
-           ENHANCED USER AVATARS
-        ============================= */
+        .table-custom tbody tr { transition: all 0.2s; }
+        .table-custom tbody tr:hover { background-color: #f8fafc; }
+
+        /* --- Avatars --- */
         .user-avatar-enhanced {
-            width: 45px;
-            height: 45px;
-            border-radius: 10px;
-            background: var(--forest-deep);
-            color: white;
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--forest-deep), var(--forest-light));
+            color: var(--lime-vibrant);
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: 700;
             font-size: 1.1rem;
-            box-shadow: 0 2px 8px rgba(15, 46, 37, 0.2);
-            transition: all 0.2s ease;
+            box-shadow: 0 3px 10px rgba(15, 46, 37, 0.2);
         }
-        
-        .user-avatar-enhanced:hover {
-            transform: scale(1.05);
-        }
-        
-        /* =============================
-           ENHANCED STATUS BADGES
-        ============================= */
+
+        /* --- Badges --- */
         .status-badge-enhanced {
-            padding: 0.5rem 0.875rem;
+            padding: 0.4rem 0.8rem;
             border-radius: 8px;
             font-size: 0.75rem;
-            font-weight: 600;
+            font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.375rem;
-            transition: all 0.2s ease;
+            letter-spacing: 0.05em;
         }
-        
-        .status-badge-enhanced:hover {
-            transform: scale(1.02);
-        }
-        
-        .status-pending {
-            background: #fef3c7;
-            color: #92400e;
-        }
-        
-        .status-approved {
-            background: #dbeafe;
-            color: #1e40af;
-        }
-        
-        .status-disbursed {
-            background: #d1fae5;
-            color: #065f46;
-        }
-        
-        .status-rejected {
-            background: #fee2e2;
-            color: #991b1b;
-        }
-        
-        /* =============================
-           ENHANCED ACTION BUTTONS
-        ============================= */
-        .action-btn-enhanced {
-            width: 36px;
-            height: 36px;
-            border-radius: 8px;
+
+        .status-badge-enhanced.status-pending { background: #fff7ed; color: #ea580c; border: 1px solid #ffedd5; }
+        .status-badge-enhanced.status-approved { background: #eff6ff; color: #2563eb; border: 1px solid #dbeafe; }
+        .status-badge-enhanced.status-disbursed { background: #f0fdf4; color: #16a34a; border: 1px solid #dcfce7; }
+        .status-badge-enhanced.status-rejected { background: #fef2f2; color: #dc2626; border: 1px solid #fee2e2; }
+
+        /* --- Buttons --- */
+        .btn-lime {
+            background: var(--lime-vibrant);
+            color: var(--forest-deep);
+            font-weight: 700;
             border: none;
+            padding: 0.6rem 1.2rem;
+            border-radius: 10px;
+            transition: all 0.2s;
+        }
+
+        .btn-lime:hover {
+            background: var(--lime-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(208, 243, 93, 0.4);
+        }
+
+        .action-btn-enhanced {
+            width: 32px;
+            height: 32px;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.2s ease;
-            margin: 0 0.125rem;
-        }
-        
-        .action-btn-enhanced:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        }
-        
-        .btn-view-enhanced {
-            background: var(--forest-deep);
-            color: white;
-        }
-        
-        .btn-approve-enhanced {
-            background: #10b981;
-            color: white;
-        }
-        
-        .btn-reject-enhanced {
-            background: #ef4444;
-            color: white;
-        }
-        
-        .btn-disburse-enhanced {
-            background: var(--lime-vibrant);
-            color: var(--forest-deep);
-            padding: 0.5rem 1rem;
-            width: auto;
             border-radius: 8px;
-            font-weight: 600;
-            font-size: 0.875rem;
-        }
-        
-        /* =============================
-           ANIMATIONS
-        ============================= */
-        @keyframes slideInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        @keyframes slideInLeft {
-            from {
-                opacity: 0;
-                transform: translateX(-30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
-        }
-        
-        @keyframes fadeInScale {
-            from {
-                opacity: 0;
-                transform: scale(0.9);
-            }
-            to {
-                opacity: 1;
-                transform: scale(1);
-            }
-        }
-        
-        @keyframes shimmer {
-            0% {
-                background-position: -1000px 0;
-            }
-            100% {
-                background-position: 1000px 0;
-            }
-        }
-        
-        @keyframes float {
-            0%, 100% {
-                transform: translateY(0px);
-            }
-            50% {
-                transform: translateY(-10px);
-            }
-        }
-        
-        .animate-slide-up {
-            animation: slideInUp 0.6s ease-out;
-        }
-        
-        .animate-slide-left {
-            animation: slideInLeft 0.6s ease-out;
-        }
-        
-        .animate-fade-scale {
-            animation: fadeInScale 0.5s ease-out;
-        }
-        
-        .animate-float {
-            animation: float 3s ease-in-out infinite;
-        }
-        
-        /* Enhanced stat cards */
-        .stat-card-enhanced {
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .stat-card-enhanced::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
-            animation: shimmer 3s infinite;
-        }
-        
-        .stat-card-enhanced:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 40px rgba(15, 46, 37, 0.15);
-        }
-        
-        .stat-icon-box {
-            transition: all 0.3s ease;
-        }
-        
-        .stat-card-enhanced:hover .stat-icon-box {
-            transform: scale(1.1) rotate(5deg);
-        }
-        
-        .stat-number {
-            background: linear-gradient(135deg, var(--forest-deep), var(--hope-green));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            font-weight: 800;
-        }
-        
-        /* Enhanced table */
-        .table-enhanced {
-            border-radius: 16px;
-            overflow: hidden;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.08);
-        }
-        
-        .table-custom thead th {
-            background: linear-gradient(135deg, var(--forest-deep), var(--hope-green));
-            color: white;
-            font-weight: 600;
-            text-transform: uppercase;
-            font-size: 0.85rem;
-            letter-spacing: 1px;
             border: none;
-            padding: 1rem;
+            transition: all 0.2s;
         }
+
+        .action-btn-enhanced:hover { transform: scale(1.1); }
+        .btn-view-enhanced { background: #e2e8f0; color: var(--forest-deep); }
+        .btn-approve-enhanced { background: #dcfce7; color: #16a34a; }
+        .btn-reject-enhanced { background: #fee2e2; color: #dc2626; }
         
-        .table-custom tbody tr {
-            transition: all 0.3s ease;
-            border-bottom: 1px solid rgba(0,0,0,0.05);
-        }
+        /* --- Offcanvas --- */
+        .offcanvas { border-radius: 20px 0 0 20px; border: none; }
+        .offcanvas-header { background: var(--forest-deep); color: white; }
+        .offcanvas-body { background: #f8fafc; }
         
-        .table-custom tbody tr:hover {
-            background: rgba(15, 46, 37, 0.03);
-            transform: scale(1.01);
-            box-shadow: 0 5px 20px rgba(15, 46, 37, 0.1);
-        }
-        
-        .clickable-row {
-            cursor: pointer;
-        }
-        
-        .clickable-row:hover td {
-            color: var(--forest-deep);
-        }
-        
-        /* Enhanced search */
-        .search-enhanced {
+        .detail-card {
             background: white;
             border-radius: 16px;
             padding: 1.5rem;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.05);
-            transition: all 0.3s ease;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
         }
-        
-        .search-enhanced:hover {
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-        }
-        
-        .search-input-enhanced {
-            border-radius: 12px;
-            border: 2px solid transparent;
-            transition: all 0.3s ease;
-        }
-        
-        .search-input-enhanced:focus {
-            border-color: var(--hope-green);
-            box-shadow: 0 0 0 0.2rem rgba(15, 46, 37, 0.1);
-        }
-        
-        /* Enhanced buttons */
-        .btn-outline-primary:hover {
-            background: var(--forest-deep);
-            border-color: var(--forest-deep);
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(15, 46, 37, 0.3);
-        }
-        
-        .btn-accent:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(15, 46, 37, 0.3);
-        }
-        
-        /* Enhanced status badges */
-        .status-badge-enhanced {
-            padding: 0.5rem 1rem;
-            border-radius: 50px;
-            font-weight: 600;
-            font-size: 0.8rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .status-badge-enhanced::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-            transition: left 0.5s ease;
-        }
-        
-        .status-badge-enhanced:hover::before {
-            left: 100%;
-        }
-        
-        /* Enhanced user avatars */
-        .user-avatar-enhanced {
-            width: 45px;
-            height: 45px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--forest-deep), var(--hope-green));
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            font-size: 1.2rem;
-            transition: all 0.3s ease;
-            position: relative;
-        }
-        
-        .user-avatar-enhanced::after {
-            content: '';
-            position: absolute;
-            top: -2px;
-            left: -2px;
-            right: -2px;
-            bottom: -2px;
-            background: linear-gradient(135deg, var(--forest-deep), var(--hope-green));
-            border-radius: 50%;
-            z-index: -1;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-        
-        .clickable-row:hover .user-avatar-enhanced::after {
-            opacity: 0.3;
-        }
-        
-        .clickable-row:hover .user-avatar-enhanced {
-            transform: scale(1.1);
-        }
-        
-        /* =============================
-           RESPONSIVE DESIGN
-        ============================= */
+
+        /* --- Responsive --- */
         @media (max-width: 768px) {
-            .stat-number {
-                font-size: 2rem;
-            }
-            
-            .table-enhanced thead th,
-            .table-enhanced tbody td {
-                padding: 0.75rem 0.5rem;
-                font-size: 0.875rem;
-            }
+            .table-enhanced { overflow-x: auto; }
+            .stat-number { font-size: 1.5rem; }
+        }
+
+        @media print {
+            .sidebar, .topbar, .btn, .no-print, .search-enhanced { display: none !important; }
+            .main-content { margin-left: 0 !important; padding: 0 !important; }
+            .stat-card-enhanced { border: 1px solid #ddd; box-shadow: none; }
+            body { background: white; }
         }
     </style>
 </head>
@@ -773,13 +490,15 @@ $pageTitle = "Loan Management";
             <h6 class="text-uppercase text-secondary fw-bold letter-spacing-1 mb-1">Financial Operations</h6>
             <h2 class="fw-bold text-forest">Loan Management</h2>
         </div>
-        <div class="d-flex gap-2">
-            <button class="btn btn-outline-primary rounded-pill" onclick="window.print()">
-                <i class="bi bi-printer me-2"></i> Print List
+        <div class="dropdown">
+            <button class="btn btn-outline-forest dropdown-toggle rounded-pill shadow-sm" data-bs-toggle="dropdown">
+                <i class="bi bi-download me-2"></i>Export
             </button>
-            <a href="?action=export_csv" class="btn btn-accent rounded-pill">
-                <i class="bi bi-cloud-download me-2"></i> Export CSV
-            </a>
+            <ul class="dropdown-menu shadow-sm">
+                <li><a class="dropdown-item" href="?<?= http_build_query(array_merge($_GET, ['action' => 'export_pdf'])) ?>"><i class="bi bi-file-pdf text-danger me-2"></i>Export PDF</a></li>
+                <li><a class="dropdown-item" href="?<?= http_build_query(array_merge($_GET, ['action' => 'export_excel'])) ?>"><i class="bi bi-file-excel text-success me-2"></i>Export Excel</a></li>
+                <li><a class="dropdown-item" href="?<?= http_build_query(array_merge($_GET, ['action' => 'print_report'])) ?>" target="_blank"><i class="bi bi-printer text-primary me-2"></i>Print Report</a></li>
+            </ul>
         </div>
     </div>
 
@@ -891,10 +610,12 @@ $pageTitle = "Loan Management";
                     <?php else: 
                     // Reset pointer to beginning
                     $loans->data_seek(0);
+                    $loan_count = 0;
                     while($row = $loans->fetch_assoc()): 
+                        $loan_count++;
                         $pct = ($row['amount'] > 0) ? round(($row['amount'] - $row['current_balance']) / $row['amount'] * 100) : 0;
                     ?>
-                    <tr class="clickable-row">
+                    <tr class="clickable-row animate-slide-up" style="animation-delay: <?= $loan_count * 0.1 ?>s;">
                         <td class="ps-4" onclick="openLoanDrawer(<?= htmlspecialchars(json_encode($row)) ?>)">
                             <div class="d-flex align-items-center">
                                 <div class="user-avatar-enhanced me-3">
@@ -909,14 +630,16 @@ $pageTitle = "Loan Management";
 
                         <td>
                             <div class="d-flex flex-column">
-                                <span class="fw-medium"><?= ucfirst($row['loan_type']) ?></span>
-                                <span class="small text-muted"><?= $row['duration_months'] ?> Months @ <?= $row['interest_rate'] ?>%</span>
+                                <span class="fw-medium"><?= ucfirst($row['loan_type'] ?? 'N/A') ?></span>
+                                <span class="small text-muted"><?= $row['duration_months'] ?? 0 ?> Months @ <?= $row['interest_rate'] ?? 0 ?>%</span>
                             </div>
                         </td>
 
                         <td>
                             <?php if($row['guarantor_count'] > 0): ?>
-                                <span class="badge bg-light text-dark border"><i class="bi bi-people-fill me-1"></i> <?= $row['guarantor_count'] ?></span>
+                                <span class="badge bg-light text-dark border">
+                                    <i class="bi bi-people-fill me-1"></i> <?= $row['guarantor_count'] ?>
+                                </span>
                             <?php else: ?>
                                 <span class="badge bg-danger bg-opacity-10 text-danger">None</span>
                             <?php endif; ?>
@@ -981,53 +704,66 @@ $pageTitle = "Loan Management";
                     <?php endwhile; endif; ?>
                 </tbody>
             </table>
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="loanDrawer">
+        <div class="offcanvas-header">
+            <h5 class="offcanvas-title fw-bold">Loan Application Details</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
         </div>
-        </div>
-</div>
-
-<div class="offcanvas offcanvas-end" tabindex="-1" id="loanDrawer" style="width: 450px;">
-    <div class="offcanvas-header">
-        <h5 class="offcanvas-title">Loan Details</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
-    </div>
-    <div class="offcanvas-body">
-        <div class="text-center mb-4">
-            <div id="drawer_avatar" class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center mx-auto mb-2 fs-3" style="width:60px; height:60px;">
+        <div class="offcanvas-body">
+            <div class="text-center mb-4">
+                <div id="drawer_avatar" class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center mx-auto mb-2 fs-3" style="width:70px; height:70px; box-shadow: 0 5px 15px rgba(16, 185, 129, 0.3);">
                 </div>
-            <h5 class="fw-bold mb-0" id="drawer_name">Member Name</h5>
-            <span class="badge bg-secondary rounded-pill" id="drawer_id">ID: ---</span>
-        </div>
-
-        <div class="detail-card">
-            <h6 class="text-uppercase small text-muted fw-bold mb-3">Financials</h6>
-            <div class="d-flex justify-content-between mb-2">
-                <span>Request Amount:</span>
-                <span class="fw-bold" id="drawer_amount">KES 0.00</span>
+                <h5 class="fw-bold mb-0 text-dark" id="drawer_name">Member Name</h5>
+                <span class="badge bg-light text-muted border rounded-pill mt-2" id="drawer_id">ID: ---</span>
             </div>
-            <div class="d-flex justify-content-between mb-2">
-                <span>Interest Rate:</span>
-                <span id="drawer_rate">0%</span>
+
+            <div class="detail-card slide-up" style="animation-delay: 0.1s">
+                <h6 class="text-uppercase small text-muted fw-bold mb-3 letter-spacing-1">Financial Snapshot</h6>
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-secondary">Request Amount</span>
+                    <span class="fw-bold text-dark" id="drawer_amount">KES 0.00</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-secondary">Interest Rate</span>
+                    <span class="badge bg-blue-light text-primary fw-bold" id="drawer_rate">0%</span>
+                </div>
+                <div class="d-flex justify-content-between border-top pt-3 mt-2">
+                    <span class="fw-bold text-dark">Total Repayable</span>
+                    <span class="fw-bold text-primary fs-5" id="drawer_total">KES 0.00</span>
+                </div>
             </div>
-            <div class="d-flex justify-content-between border-top pt-2 mt-2">
-                <span>Total Repayable:</span>
-                <span class="fw-bold text-primary" id="drawer_total">KES 0.00</span>
+
+            <div class="detail-card slide-up" style="animation-delay: 0.2s">
+                <h6 class="text-uppercase small text-muted fw-bold mb-3 letter-spacing-1">Contact Information</h6>
+                <div class="d-flex align-items-center mb-3">
+                    <div class="stat-icon-box info me-3" style="width:40px; height:40px; font-size: 1rem;">
+                        <i class="bi bi-phone"></i>
+                    </div>
+                    <div>
+                        <small class="text-muted d-block">Phone Number</small>
+                        <span class="fw-bold text-dark" id="drawer_phone">...</span>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center">
+                    <div class="stat-icon-box warning me-3" style="width:40px; height:40px; font-size: 1rem;">
+                        <i class="bi bi-person-vcard"></i>
+                    </div>
+                    <div>
+                        <small class="text-muted d-block">National ID</small>
+                        <span class="fw-bold text-dark" id="drawer_nid">...</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="alert alert-warning small border-0 bg-orange-light text-orange-dark d-flex align-items-center mt-4">
+                <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+                <div>Guarantor verification is mandatory before final approval.</div>
             </div>
         </div>
-
-        <div class="detail-card">
-            <h6 class="text-uppercase small text-muted fw-bold mb-2">Contact Info</h6>
-            <p class="mb-1"><i class="bi bi-phone me-2"></i> <span id="drawer_phone">...</span></p>
-            <p class="mb-0"><i class="bi bi-card-heading me-2"></i> <span id="drawer_nid">...</span></p>
-        </div>
-
-        <div class="alert alert-info small">
-            <i class="bi bi-info-circle me-1"></i> Guarantor data verification required before approval.
+        <div class="p-3 bg-light border-top">
+            <button class="btn btn-outline-dark w-100 rounded-pill fw-bold" data-bs-dismiss="offcanvas">Close Drawer</button>
         </div>
     </div>
-    <div class="p-3 bg-white border-top">
-        <button class="btn btn-outline-dark w-100 rounded-pill" data-bs-dismiss="offcanvas">Close</button>
-    </div>
-</div>
 
 <div class="modal fade" id="rejectModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">

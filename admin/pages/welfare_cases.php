@@ -118,6 +118,42 @@ $cases = $conn->query($sql);
 // 6. Fetch Active Members for Dropdown
 $members_res = $conn->query("SELECT member_id, full_name, national_id FROM members WHERE status='active' ORDER BY full_name ASC");
 
+// HANDLE EXPORT
+if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_excel', 'print_report'])) {
+    require_once __DIR__ . '/../../core/exports/UniversalExportEngine.php';
+    
+    $format = 'pdf';
+    if ($_GET['action'] === 'export_excel') $format = 'excel';
+    if ($_GET['action'] === 'print_report') $format = 'print';
+
+    // Fetch all cases for export
+    $sql_e = "SELECT c.*, m.full_name as member_name,
+              (SELECT COALESCE(SUM(amount), 0) FROM welfare_donations WHERE case_id = c.case_id) as raised
+              FROM welfare_cases c 
+              LEFT JOIN members m ON c.related_member_id = m.member_id
+              ORDER BY c.created_at DESC";
+    $stmt_e = $conn->query($sql_e);
+    
+    $data = [];
+    while($row = $stmt_e->fetch_assoc()) {
+        $data[] = [
+            'Date' => date('d-M-Y', strtotime($row['created_at'])),
+            'Beneficiary' => $row['member_name'] ?? 'General',
+            'Title' => $row['title'],
+            'Goal' => number_format((float)$row['target_amount'], 2),
+            'Raised' => number_format((float)$row['raised'], 2),
+            'Status' => ucfirst($row['status'])
+        ];
+    }
+
+    UniversalExportEngine::handle($format, $data, [
+        'title' => 'Welfare Cases Report',
+        'module' => 'Welfare Management',
+        'headers' => ['Date', 'Beneficiary', 'Title', 'Goal', 'Raised', 'Status']
+    ]);
+    exit;
+}
+
 function ksh($val) { return number_format((float)($val ?? 0), 2); }
 ?>
 <!DOCTYPE html>
@@ -196,11 +232,23 @@ function ksh($val) { return number_format((float)($val ?? 0), 2); }
                     <h4 class="fw-bold mb-1" style="color: var(--dark-green);">Benevolent Fund</h4>
                     <p class="text-muted small mb-0">Manage welfare cases and track donations.</p>
                 </div>
-                <?php if ($can_edit): ?>
-                    <button class="btn btn-lime rounded-pill px-4 shadow-sm" data-bs-toggle="modal" data-bs-target="#newCaseModal">
-                        <i class="bi bi-plus-lg me-2"></i> Create Situation
-                    </button>
-                <?php endif; ?>
+                <div class="d-flex gap-2">
+                    <div class="dropdown">
+                        <button class="btn btn-outline-success rounded-pill px-4 shadow-sm dropdown-toggle fw-bold" data-bs-toggle="dropdown">
+                            <i class="bi bi-download me-2"></i> Export
+                        </button>
+                        <ul class="dropdown-menu shadow border-0">
+                            <li><a class="dropdown-item" href="?<?= http_build_query(array_merge($_GET, ['action' => 'export_pdf'])) ?>"><i class="bi bi-file-pdf text-danger me-2"></i>Export PDF</a></li>
+                            <li><a class="dropdown-item" href="?<?= http_build_query(array_merge($_GET, ['action' => 'export_excel'])) ?>"><i class="bi bi-file-excel text-success me-2"></i>Export Excel</a></li>
+                            <li><a class="dropdown-item" href="?<?= http_build_query(array_merge($_GET, ['action' => 'print_report'])) ?>" target="_blank"><i class="bi bi-printer text-primary me-2"></i>Print Report</a></li>
+                        </ul>
+                    </div>
+                    <?php if ($can_edit): ?>
+                        <button class="btn btn-lime rounded-pill px-4 shadow-sm" data-bs-toggle="modal" data-bs-target="#newCaseModal">
+                            <i class="bi bi-plus-lg me-2"></i> Create Situation
+                        </button>
+                    <?php endif; ?>
+                </div>
             </div>
 
             <?php if ($success) echo "<div class='alert alert-success border-0 bg-success bg-opacity-10 text-success rounded-3 mb-4'><i class='bi bi-check-circle me-2'></i>$success</div>"; ?>
