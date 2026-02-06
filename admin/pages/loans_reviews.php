@@ -150,9 +150,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     exit;
 }
 
-// 4. FETCH DATA
-// (Flash handling now handled by flash_render() below)
-
+// 3. FETCH DATA FILTERS (Moved up for Export Logic)
 // Filter Logic
 $filter = $_GET['status'] ?? 'pending';
 $search = trim($_GET['q'] ?? '');
@@ -173,6 +171,49 @@ if ($search) {
     $params[] = $term; $params[] = $term; $params[] = $term;
     $types .= "sss";
 }
+
+// 3b. HANDLE EXPORT ACTIONS
+if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_excel', 'print_report'])) {
+    
+    // Re-fetch data for export
+    $where_sql_export = count($where_clauses) > 0 ? "WHERE " . implode(" AND ", $where_clauses) : "";
+    $sql_export = "SELECT l.*, m.full_name FROM loans l JOIN members m ON l.member_id = m.member_id $where_sql_export ORDER BY l.created_at DESC";
+    $stmt_e = $db->prepare($sql_export);
+    if (!empty($params)) $stmt_e->bind_param($types, ...$params);
+    $stmt_e->execute();
+    $export_loans = $stmt_e->get_result()->fetch_all(MYSQLI_ASSOC);
+
+    require_once __DIR__ . '/../../core/exports/UniversalExportEngine.php';
+    
+    $format = 'pdf';
+    if ($_GET['action'] === 'export_excel') $format = 'excel';
+    if ($_GET['action'] === 'print_report') $format = 'print';
+
+    $data = [];
+    foreach ($export_loans as $l) {
+        $data[] = [
+            'Load ID' => $l['loan_id'],
+            'Applicant' => $l['full_name'],
+            'Amount' => number_format((float)$l['amount'], 2),
+            'Type' => $l['loan_type'],
+            'Duration' => $l['duration_months'] . ' Months',
+            'Status' => ucfirst($l['status']),
+            'Date' => date('d-M-Y', strtotime($l['created_at']))
+        ];
+    }
+
+    UniversalExportEngine::handle($format, $data, [
+        'title' => 'Loan Portfolio Report',
+        'module' => 'Loan Management',
+        'headers' => ['Load ID', 'Applicant', 'Amount', 'Type', 'Duration', 'Status', 'Date'],
+        'total_value' => array_sum(array_column($export_loans, 'amount')),
+        'currency' => 'KES'
+    ]);
+    exit;
+}
+
+// 4. FETCH DATA (Display)
+// (Flash handling now handled by flash_render() below)
 
 $where_sql = count($where_clauses) > 0 ? "WHERE " . implode(" AND ", $where_clauses) : "";
 
@@ -263,10 +304,23 @@ function ksh($v, $d = 2) { return number_format((float)($v ?? 0), $d); }
             
             <div class="container-fluid">
             
-            <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
                     <h4 class="fw-bold mb-1" style="color: var(--dark-green);">Loan Portfolio</h4>
                     <p class="text-muted small mb-0">Review applications and monitor disbursements.</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="?<?= http_build_query(array_merge($_GET, ['action' => 'print_report'])) ?>" target="_blank" class="btn btn-outline-success btn-sm rounded-pill fw-bold">
+                        <i class="bi bi-printer me-1"></i> Print
+                    </a>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-success btn-sm rounded-pill px-3 fw-bold dropdown-toggle" data-bs-toggle="dropdown">
+                            <i class="bi bi-download me-1"></i> Export
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg">
+                            <li><a class="dropdown-item" href="?<?= http_build_query(array_merge($_GET, ['action' => 'export_pdf'])) ?>"><i class="bi bi-file-earmark-pdf text-danger me-2"></i>Export PDF</a></li>
+                            <li><a class="dropdown-item" href="?<?= http_build_query(array_merge($_GET, ['action' => 'export_excel'])) ?>"><i class="bi bi-file-earmark-spreadsheet text-success me-2"></i>Export Excel</a></li>
+                        </ul>
+                    </div>
                 </div>
             </div>
 

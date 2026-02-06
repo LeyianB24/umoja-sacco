@@ -92,6 +92,44 @@ if(!empty($params)) $stmt->bind_param($types, ...$params);
 $stmt->execute();
 $result = $stmt->get_result();
 
+// HANDLE EXPORT
+if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_excel', 'print_report'])) {
+    require_once __DIR__ . '/../../core/exports/UniversalExportEngine.php';
+    
+    $format = 'pdf';
+    if ($_GET['action'] === 'export_excel') $format = 'excel';
+    if ($_GET['action'] === 'print_report') $format = 'print';
+
+    // Fetch all records for export (ignore pagination)
+    $sql_export = "SELECT reference_no, contribution_type, amount, payment_method, created_at, status " . $sql_base . " ORDER BY created_at DESC";
+    $stmt_export = $conn->prepare($sql_export);
+    // Use params/types from before we added limit/offset
+    $export_params = array_slice($params, 0, -2);
+    $export_types = substr($types, 0, -2);
+    if(!empty($export_params)) $stmt_export->bind_param($export_types, ...$export_params);
+    $stmt_export->execute();
+    $res_export = $stmt_export->get_result();
+
+    $data = [];
+    while($row = $res_export->fetch_assoc()) {
+        $data[] = [
+            'Date' => date('d-M-Y H:i', strtotime($row['created_at'])),
+            'Type' => ucwords(str_replace('_', ' ', $row['contribution_type'])),
+            'Reference' => $row['reference_no'] ?: '-',
+            'Method' => $row['payment_method'] ?: 'M-Pesa',
+            'Amount' => '+ ' . number_format((float)$row['amount'], 2),
+            'Status' => ucfirst($row['status'])
+        ];
+    }
+
+    UniversalExportEngine::handle($format, $data, [
+        'title' => 'Contribution History',
+        'module' => 'Member Portal',
+        'headers' => ['Date', 'Type', 'Reference', 'Method', 'Amount', 'Status']
+    ]);
+    exit;
+}
+
 $pageTitle = "My Contributions";
 ?>
 <!DOCTYPE html>
@@ -252,9 +290,16 @@ $pageTitle = "My Contributions";
                     <p class="text-muted mb-0">Track your savings, shares, and welfare contributions.</p>
                 </div>
                 <div class="d-flex gap-2 no-print">
-                    <button onclick="window.print()" class="btn btn-outline-secondary fw-medium rounded-pill px-4">
-                        <i class="bi bi-printer me-2"></i>Print
+                <div class="dropdown no-print">
+                    <button class="btn btn-outline-secondary fw-medium rounded-pill px-4 dropdown-toggle" data-bs-toggle="dropdown">
+                        <i class="bi bi-download me-2"></i>Export
                     </button>
+                    <ul class="dropdown-menu shadow">
+                        <li><a class="dropdown-item" href="?<?= http_build_query(array_merge($_GET, ['action' => 'export_pdf'])) ?>"><i class="bi bi-file-pdf text-danger me-2"></i>Export PDF</a></li>
+                        <li><a class="dropdown-item" href="?<?= http_build_query(array_merge($_GET, ['action' => 'export_excel'])) ?>"><i class="bi bi-file-excel text-success me-2"></i>Export Excel</a></li>
+                        <li><a class="dropdown-item" href="?<?= http_build_query(array_merge($_GET, ['action' => 'print_report'])) ?>" target="_blank"><i class="bi bi-printer text-primary me-2"></i>Print Statement</a></li>
+                    </ul>
+                </div>
                     <a href="<?= BASE_URL ?>/member/pages/mpesa_request.php" class="btn fw-medium shadow-sm rounded-pill px-4" 
                        style="background: var(--theme-lime); color: var(--theme-dark); border: none;">
                        <i class="bi bi-plus-lg me-1"></i> New Deposit

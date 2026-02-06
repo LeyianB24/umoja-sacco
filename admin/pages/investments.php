@@ -9,85 +9,94 @@ require_once __DIR__ . '/../../inc/LayoutManager.php';
 require_once __DIR__ . '/../../inc/functions.php';
 
 $layout = LayoutManager::create('admin');
-
 // usms/admin/pages/investments.php
-// Operations Manager - Asset & Investment Portfolio
-
-if (session_status() === PHP_SESSION_NONE) session_start();
 
 require_permission();
 
-// Initialize Layout Manager
-$layout = LayoutManager::create('admin');
+$admin_id = $_SESSION['admin_id'];
 
-
-// Generate CSRF Token
-if (empty($_SESSION['csrf_token'])) {
-    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-}
-
-$admin_id   = $_SESSION['admin_id'];
-$db = $conn;
-
-// ---------------------------------------------------------
-// 1. HANDLE ACTIONS (Add / Update Asset)
-// ---------------------------------------------------------
+// 1. HANDLE POST ACTIONS
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verify_csrf_token();
     
-    // CSRF Check
-    if (!hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'] ?? '')) {
-        flash_set("Invalid session token.", 'error');
-    } else {
-        // A. ADD NEW INVESTMENT
-        if (isset($_POST['action']) && $_POST['action'] === 'add_asset') {
-            $title    = trim($_POST['title']);
-            $category = $_POST['category'];
-            $cost     = floatval($_POST['purchase_cost']);
-            $value    = floatval($_POST['current_value']);
-            $date     = $_POST['purchase_date'];
-            $desc     = trim($_POST['description']);
-            
-            // Unified fields
-            $reg_no   = trim($_POST['reg_no'] ?? '');
-            $model    = trim($_POST['model'] ?? '');
-            $route    = trim($_POST['assigned_route'] ?? '');
-            $target   = floatval($_POST['target_amount'] ?? 0);
-            $period   = $_POST['target_period'] ?? 'monthly';
+    // A. ADD NEW INVESTMENT
+    if (isset($_POST['action']) && $_POST['action'] === 'add_asset') {
+        $title    = trim($_POST['title']);
+        $category = $_POST['category'];
+        $cost     = floatval($_POST['purchase_cost']);
+        $value    = floatval($_POST['current_value']);
+        $date     = $_POST['purchase_date'];
+        $desc     = trim($_POST['description']);
+        
+        $reg_no   = trim($_POST['reg_no'] ?? '');
+        $model    = trim($_POST['model'] ?? '');
+        $route    = trim($_POST['assigned_route'] ?? '');
+        $target   = floatval($_POST['target_amount'] ?? 0);
+        $period   = $_POST['target_period'] ?? 'monthly';
 
-            if (empty($title) || $cost <= 0) {
-                flash_set("Title and valid cost are required.", 'error');
-            } else {
-                $stmt = $db->prepare("INSERT INTO investments (title, category, reg_no, model, assigned_route, description, purchase_date, purchase_cost, current_value, target_amount, target_period, status, manager_admin_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, NOW())");
-                $stmt->bind_param("ssssssdddds", $title, $category, $reg_no, $model, $route, $desc, $date, $cost, $value, $target, $period, $admin_id);
-                
-                if ($stmt->execute()) {
-                    flash_set("Asset registered successfully.", 'success');
-                } else {
-                    flash_set("Database error: " . $stmt->error, 'error');
-                }
-            }
-        }
-
-        // B. UPDATE ASSET STATUS/VALUE
-        if (isset($_POST['action']) && $_POST['action'] === 'update_asset') {
-            $inv_id = intval($_POST['investment_id']);
-            $val    = floatval($_POST['current_value']);
-            $status = $_POST['status'];
-            
-            $stmt = $db->prepare("UPDATE investments SET current_value = ?, status = ? WHERE investment_id = ?");
-            $stmt->bind_param("dsi", $val, $status, $inv_id);
+        if (empty($title) || $cost <= 0) {
+            flash_set("Title and valid cost are required.", 'error');
+        } else {
+            $stmt = $conn->prepare("INSERT INTO investments (title, category, reg_no, model, assigned_route, description, purchase_date, purchase_cost, current_value, target_amount, target_period, status, manager_admin_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, NOW())");
+            $stmt->bind_param("ssssssdddds", $title, $category, $reg_no, $model, $route, $desc, $date, $cost, $value, $target, $period, $admin_id);
             
             if ($stmt->execute()) {
-                $db->query("INSERT INTO audit_logs (admin_id, action, details, ip_address) VALUES ($admin_id, 'update_asset', 'Updated Asset #$inv_id value/status', '{$_SERVER['REMOTE_ADDR']}')");
-                flash_set("Asset details updated.", 'success');
+                flash_set("Asset registered successfully.", 'success');
+                header("Location: investments.php");
+                exit;
+            } else {
+                flash_set("Database error: " . $stmt->error, 'error');
             }
         }
     }
+
+    // B. UPDATE ASSET
+    if (isset($_POST['action']) && $_POST['action'] === 'update_asset') {
+        $inv_id = intval($_POST['investment_id']);
+        $val    = floatval($_POST['current_value']);
+        $status = $_POST['status'];
+        
+        $stmt = $conn->prepare("UPDATE investments SET current_value = ?, status = ? WHERE investment_id = ?");
+        $stmt->bind_param("dsi", $val, $status, $inv_id);
+        
+        if ($stmt->execute()) {
+            $conn->query("INSERT INTO audit_logs (admin_id, action, details, ip_address) VALUES ($admin_id, 'update_asset', 'Updated Asset #$inv_id valuation', '{$_SERVER['REMOTE_ADDR']}')");
+            flash_set("Investment valuation updated.", 'success');
+            header("Location: investments.php");
+            exit;
+        }
+        // D. SELL / DISPOSE ASSET
+    if (isset($_POST['action']) && $_POST['action'] === 'sell_asset') {
+        $inv_id = intval($_POST['investment_id']);
+        $price  = floatval($_POST['sale_price']);
+        $date   = $_POST['sale_date'];
+        $reason = trim($_POST['sale_reason']);
+
+        $stmt = $conn->prepare("UPDATE investments SET status = 'sold', disposal_status = 'sold', sale_price = ?, sale_date = ?, sale_reason = ? WHERE investment_id = ?");
+        $stmt->bind_param("dssi", $price, $date, $reason, $inv_id);
+
+        if ($stmt->execute()) {
+            require_once __DIR__ . '/../../inc/TransactionHelper.php';
+            // Record Sale in Ledger
+            TransactionHelper::record([
+                'type'           => 'income',
+                'category'       => 'asset_sale',
+                'amount'         => $price,
+                'notes'          => "Proceeds from sale of asset #$inv_id. Reason: $reason",
+                'related_table'  => 'investments',
+                'related_id'     => $inv_id
+            ]);
+
+            $conn->query("INSERT INTO audit_logs (admin_id, action, details, ip_address) VALUES ($admin_id, 'dispose_asset', 'Sold Asset #$inv_id for KES $price', '{$_SERVER['REMOTE_ADDR']}')");
+            flash_set("Asset disposed successfully. Sale proceeds recorded in ledger.", 'success');
+            header("Location: investments.php");
+            exit;
+        }
+    }
+}
 }
 
-// ---------------------------------------------------------
-// 2. FETCH DATA
-// ---------------------------------------------------------
+// 2. DATA AGGREGATION
 $filter = $_GET['cat'] ?? 'all';
 $search = trim($_GET['q'] ?? '');
 
@@ -101,456 +110,662 @@ if ($filter !== 'all') {
     $types .= "s";
 }
 if ($search) {
-    $where[] = "title LIKE ? OR reg_no LIKE ?";
-    $params[] = "%$search%";
-    $params[] = "%$search%";
-    $types .= "ss";
+    $where[] = "(title LIKE ? OR reg_no LIKE ? OR model LIKE ?)";
+    $term = "%$search%";
+    $params[] = $term; $params[] = $term; $params[] = $term;
+    $types .= "sss";
 }
 
+// Global Export Handler
+if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_excel', 'print_report'])) {
+    $where_sql_e = count($where) > 0 ? "WHERE " . implode(" AND ", $where) : "";
+    $sql_e = "SELECT * FROM investments $where_sql_e ORDER BY created_at DESC";
+    $stmt_e = $conn->prepare($sql_e);
+    if (!empty($params)) $stmt_e->bind_param($types, ...$params);
+    $stmt_e->execute();
+    $raw_data = $stmt_e->get_result();
+
+    require_once __DIR__ . '/../../core/exports/UniversalExportEngine.php';
+    
+    $format = 'pdf';
+    if ($_GET['action'] === 'export_excel') $format = 'excel';
+    if ($_GET['action'] === 'print_report') $format = 'print';
+
+    $data = [];
+    $total_val = 0;
+    while($a = $raw_data->fetch_assoc()) {
+        $total_val += $a['current_value'];
+        $data[] = [
+            'Asset' => $a['title'],
+            'Category' => ucfirst(str_replace('_', ' ', $a['category'])),
+            'Reg No' => $a['reg_no'] ?: '-',
+            'Cost' => number_format((float)$a['purchase_cost']),
+            'Valuation' => number_format((float)$a['current_value']),
+            'Status' => strtoupper($a['status']),
+            'Purchased' => date('d-M-Y', strtotime($a['purchase_date']))
+        ];
+    }
+
+    UniversalExportEngine::handle($format, $data, [
+        'title' => 'Investment Portfolio',
+        'module' => 'Asset Management',
+        'headers' => ['Asset', 'Category', 'Reg No', 'Cost', 'Valuation', 'Status', 'Purchased'],
+        'total_value' => $total_val
+    ]);
+    exit;
+}
+
+// Display Data - Optimized Fetch
 $where_sql = count($where) > 0 ? "WHERE " . implode(" AND ", $where) : "";
 $sql = "SELECT * FROM investments $where_sql ORDER BY created_at DESC";
-
-$stmt = $db->prepare($sql);
+$stmt = $conn->prepare($sql);
 if (!empty($params)) $stmt->bind_param($types, ...$params);
 $stmt->execute();
-$portfolio_raw = $stmt->get_result();
+$portfolio_raw = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 
-$portfolio_enriched = [];
-while($a = $portfolio_raw->fetch_assoc()) {
+// Batch fetch performance metrics
+$ledger_stats = [];
+if (!empty($portfolio_raw)) {
+    $ids = array_column($portfolio_raw, 'investment_id');
+    $id_list = implode(',', $ids);
+    $stats_res = $conn->query("
+        SELECT related_id, related_table,
+            SUM(CASE WHEN transaction_type IN ('income','revenue_inflow') THEN amount ELSE 0 END) as rev,
+            SUM(CASE WHEN transaction_type IN ('expense','expense_outflow') THEN amount ELSE 0 END) as exp
+        FROM transactions 
+        WHERE (related_table='investments' OR related_table='vehicles')
+        AND related_id IN ($id_list)
+        GROUP BY related_id, related_table
+    ");
+    while($s = $stats_res->fetch_assoc()) {
+        $ledger_stats[$s['related_table']][$s['related_id']] = $s;
+    }
+}
+
+$portfolio = [];
+foreach($portfolio_raw as $a) {
     $aid = $a['investment_id'];
+    // Merge stats (check both investments and vehicles table mappings for fallback)
+    $st = $ledger_stats['investments'][$aid] ?? $ledger_stats['vehicles'][$aid] ?? ['rev' => 0, 'exp' => 0];
     
-    // A. Realized Income Aggregation (Unified)
-    $inc_stats = $db->query("
-        SELECT (
-            (SELECT COALESCE(SUM(amount), 0) FROM investment_income WHERE investment_id = $aid) +
-            (SELECT COALESCE(SUM(amount), 0) FROM vehicle_income WHERE vehicle_id = $aid)
-        ) as total_yield
-    ")->fetch_assoc();
-    $a['realized_income'] = $inc_stats['total_yield'];
+    $a['revenue'] = (float)$st['rev'];
+    $a['expenses'] = (float)$st['exp'];
+    $a['roi'] = (($a['current_value'] - $a['purchase_cost']) + ($a['revenue'] - $a['expenses'])) / ($a['purchase_cost'] ?: 1) * 100;
     
-    // B. Operating Expenses Aggregation (Unified)
-    $exp_stats = $db->query("
-        SELECT (
-            (SELECT COALESCE(SUM(amount), 0) FROM investment_expenses WHERE investment_id = $aid) +
-            (SELECT COALESCE(SUM(amount), 0) FROM vehicle_expenses WHERE vehicle_id = $aid)
-        ) as total_costs
-    ")->fetch_assoc();
-    $a['total_expenses'] = $exp_stats['total_costs'];
-    
-    // C. Net Balance
-    $a['net_balance'] = $a['realized_income'] - $a['total_expenses'];
-    
-    // D. Performance Metrics
-    $cost = (float)$a['purchase_cost'] ?: 1;
-    $a['roi_pct'] = (($a['current_value'] - $a['purchase_cost']) + $a['net_balance']) / $cost * 100;
-    
-    $portfolio_enriched[] = $a;
+    $portfolio[] = $a;
 }
 
-// Global KPIs
-$total_stats = $db->query("
-    SELECT 
-        SUM(current_value) as total_val, 
-        SUM(purchase_cost) as total_cost,
-        (SELECT COALESCE(SUM(amount), 0) FROM investment_income) + (SELECT COALESCE(SUM(amount), 0) FROM vehicle_income) as total_rev,
-        (SELECT COALESCE(SUM(amount), 0) FROM investment_expenses) + (SELECT COALESCE(SUM(amount), 0) FROM vehicle_expenses) as total_exp
-    FROM investments
-")->fetch_assoc();
-
-$portfolio_valuation = $total_stats['total_val'] ?? 0;
-$portfolio_cost = $total_stats['total_cost'] ?? 0;
-$portfolio_profit = ($total_stats['total_rev'] ?? 0) - ($total_stats['total_exp'] ?? 0);
-
-function ksh($v, $d = 2) { return number_format((float)($v ?? 0), $d); }
-function getIcon($cat) {
-    return match($cat) {
-        'farm' => 'bi-flower1',
-        'vehicle_fleet' => 'bi-truck-front',
-        'petrol_station' => 'bi-fuel-pump',
-        'apartments' => 'bi-building',
-        'land' => 'bi-geo-alt',
-        default => 'bi-briefcase'
-    };
+// Category Distribution for Chart
+$cat_stats = [];
+foreach($portfolio as $p) {
+    $c = ucfirst(str_replace('_', ' ', $p['category']));
+    if(!isset($cat_stats[$c])) $cat_stats[$c] = 0;
+    $cat_stats[$c] += (float)$p['current_value'];
 }
+
+// Global Stats - Financial Intelligence
+$global = $conn->query("SELECT 
+    COUNT(CASE WHEN status='active' THEN 1 END) as active_count,
+    COUNT(*) as total_count,
+    SUM(CASE WHEN status='active' THEN current_value ELSE 0 END) as active_valuation,
+    SUM(CASE WHEN status='active' THEN purchase_cost ELSE 0 END) as active_cost,
+    SUM(CASE WHEN status='sold' THEN (sale_price - purchase_cost) ELSE 0 END) as realized_gains,
+    SUM(CASE WHEN status='sold' THEN sale_price ELSE 0 END) as total_exit_value
+    FROM investments")->fetch_assoc();
+
+$pageTitle = "Investment Portfolio";
 ?>
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="light">
 <head>
-    <meta charset="utf-8">
-    <title>Investment Portfolio</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?= $pageTitle ?> | USMS Administration</title>
     
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     
     <style>
         :root {
-            /* Emerald/Lime Theme */
-            --bg-app: #f0fdf4;       
+            --forest: #0f2e25;
+            --forest-light: #1a4d3d;
+            --lime: #d0f35d;
+            --lime-dark: #a8cf12;
             --glass-bg: rgba(255, 255, 255, 0.95);
-            --glass-border: 1px solid rgba(22, 163, 74, 0.15);
-            
-            --text-dark: #064e3b;    
-            --text-muted: #64748b;
-            
-            --primary-green: #10b981; 
-            --dark-green: #065f46;    
-            --lime-accent: #84cc16;   
+            --glass-border: rgba(15, 46, 37, 0.05);
+            --glass-shadow: 0 10px 40px rgba(15, 46, 37, 0.06);
         }
-        
-        body { background-color: var(--bg-app); color: var(--text-dark); font-family: 'Plus Jakarta Sans', sans-serif; }
-        
-        .main-content-wrapper { margin-left: 260px; transition: margin-left 0.3s; padding: 20px; }
-        @media (max-width: 991.98px) { .main-content-wrapper { margin-left: 0; } }
 
-        /* Cards */
-        .glass-card {
-            background: var(--glass-bg);
-            backdrop-filter: blur(12px);
-            border: var(--glass-border);
-            border-radius: 16px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-            transition: transform 0.2s, box-shadow 0.2s;
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: #f4f7f6;
+            color: var(--forest);
         }
-        .glass-card:hover { transform: translateY(-3px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
 
-        /* Buttons & Pills */
-        .btn-lime { background-color: var(--lime-accent); color: white; border: none; font-weight: 600; }
-        .btn-lime:hover { background-color: #65a30d; color: white; }
+        .main-content { margin-left: 280px; padding: 30px; transition: 0.3s; }
+        
+        /* Banner Styles */
+        .portal-header {
+            background: linear-gradient(135deg, var(--forest) 0%, #1a4d3e 100%);
+            border-radius: 30px; padding: 40px; color: white; margin-bottom: 30px;
+            box-shadow: 0 20px 40px rgba(15, 46, 37, 0.15);
+            position: relative; overflow: hidden;
+        }
 
-        .nav-pills .nav-link { color: var(--text-muted); font-weight: 500; font-size: 0.85rem; padding: 0.5rem 1rem; border-radius: 50px; background: white; border: 1px solid #e2e8f0; margin-right: 0.5rem; transition: all 0.2s; }
-        .nav-pills .nav-link:hover { background: #f1f5f9; }
-        .nav-pills .nav-link.active { background-color: var(--dark-green); color: white; border-color: var(--dark-green); }
+        /* Stat Cards */
+        .stat-card {
+            background: white; border-radius: 24px; padding: 25px;
+            box-shadow: var(--glass-shadow); border: 1px solid var(--glass-border);
+            height: 100%; transition: 0.3s;
+        }
+        .stat-card:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(15, 46, 37, 0.08); }
 
-        /* Badges */
-        .badge-status { padding: 5px 10px; border-radius: 6px; font-weight: 600; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; }
-        .st-active { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
-        .st-disposed { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
+        .icon-circle {
+            width: 50px; height: 50px; border-radius: 15px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.25rem; margin-bottom: 15px;
+        }
+        .bg-lime-soft { background: rgba(208, 243, 93, 0.2); color: var(--forest); }
+        .bg-forest-soft { background: rgba(15, 46, 37, 0.05); color: var(--forest); }
 
-        .asset-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; }
+        /* Ledger Table */
+        .ledger-container {
+            background: white; border-radius: 28px; 
+            box-shadow: var(--glass-shadow); border: 1px solid var(--glass-border);
+            overflow: hidden;
+        }
+        .ledger-header { padding: 30px; border-bottom: 1px solid #f1f5f9; background: #fff; }
+        
+        .table-custom { width: 100%; border-collapse: separate; border-spacing: 0; }
+        .table-custom thead th {
+            background: #f8fafc; color: #64748b; font-weight: 700;
+            text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.05em;
+            padding: 18px 25px; border-bottom: 2px solid #edf2f7;
+        }
+        .table-custom tbody td {
+            padding: 18px 25px; border-bottom: 1px solid #f1f5f9;
+            vertical-align: middle; font-size: 0.95rem;
+        }
+        .table-custom tbody tr:hover td { background-color: #fcfdfe; }
+
+        /* Asset Cards */
+        .asset-card {
+            background: white; border-radius: 24px; padding: 25px;
+            box-shadow: var(--glass-shadow); border: 1px solid var(--glass-border);
+            height: 100%; transition: 0.3s; position: relative;
+        }
+        .asset-card:hover { transform: translateY(-5px); box-shadow: 0 15px 35px rgba(15, 46, 37, 0.08); }
+
+        .asset-icon-box {
+            width: 50px; height: 50px; border-radius: 14px;
+            background: rgba(15, 46, 37, 0.05); color: var(--forest);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.4rem;
+        }
+
+        .status-badge {
+            padding: 6px 12px; border-radius: 8px; font-size: 0.7rem; font-weight: 800;
+            text-transform: uppercase; letter-spacing: 0.05em;
+        }
+        .st-active { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
+        .st-maintenance { background: #fffbeb; color: #d97706; border: 1px solid #fef3c7; }
+        .st-disposed { background: #f3f4f6; color: #6b7280; border: 1px solid #e5e7eb; }
+
+        .btn-lime {
+            background: var(--lime); color: var(--forest);
+            border-radius: 12px; font-weight: 800; border: none; padding: 10px 20px;
+            transition: 0.3s;
+        }
+        .btn-lime:hover { background: var(--lime-dark); transform: translateY(-2px); box-shadow: 0 8px 15px rgba(208, 243, 93, 0.3); }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .fade-in { animation: fadeIn 0.6s ease-out; }
+        .slide-up { animation: slideUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; opacity: 0; }
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        .form-control, .form-select { border-radius: 12px; padding: 10px 15px; border: 1.5px solid #e2e8f0; }
+        .form-control:focus { border-color: var(--forest); box-shadow: 0 0 0 4px rgba(15, 46, 37, 0.05); }
+
+        @media (max-width: 991.98px) { .main-content { margin-left: 0; } }
     </style>
 </head>
 <body>
 
 <div class="d-flex">
-        <?php $layout->sidebar(); ?>
+    <?php $layout->sidebar(); ?>
 
-        <div class="flex-fill main-content-wrapper" style="margin-left: 280px; transition: margin-left 0.3s ease;">
-            
-            <?php $layout->topbar($pageTitle ?? ''); ?>
-            
-            <div class="container-fluid">
-            
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <div>
-                    <h4 class="fw-bold mb-1" style="color: var(--dark-green);">Asset Portfolio</h4>
-                    <p class="text-muted small mb-0">Manage Sacco investments and fixed assets.</p>
+    <div class="flex-fill main-content">
+        <?php $layout->topbar($pageTitle ?? ''); ?>
+        
+        <!-- Header -->
+        <div class="portal-header fade-in">
+            <div class="row align-items-center">
+                <div class="col-lg-8">
+                    <span class="badge bg-white bg-opacity-10 text-white rounded-pill px-3 py-2 mb-3 small fw-bold">Capital Assets Portfolio</span>
+                    <h1 class="display-5 fw-800 mb-2">Asset Management</h1>
+                    <p class="opacity-75 fs-5 mb-0">Managing <?= $global['total_count'] ?> high-value investments and fleet assets.</p>
                 </div>
-            </div>
-
-            <?php flash_render(); ?>
-
-            <div class="row g-4 mb-4">
-                <div class="col-md-4">
-                    <div class="glass-card p-4 d-flex align-items-center justify-content-between">
-                        <div>
-                            <div class="text-uppercase small text-muted fw-bold ls-1 mb-1">Portfolio Value</div>
-                            <h2 class="fw-bold mb-0 text-dark">KES <?= ksh($portfolio_valuation/1000000) ?>M</h2>
-                            <small class="text-success fw-bold"><i class="bi bi-arrow-up"></i> Valuation</small>
-                        </div>
-                        <div class="rounded-circle d-flex align-items-center justify-content-center" 
-                             style="width:50px; height:50px; background: #dcfce7; color: var(--primary-green);">
-                            <i class="bi bi-wallet2 fs-4"></i>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="glass-card p-4 d-flex align-items-center justify-content-between">
-                        <div>
-                            <div class="text-uppercase small text-muted fw-bold ls-1 mb-1">Total Costs</div>
-                            <h2 class="fw-bold mb-0 text-dark">KES <?= ksh($portfolio_cost/1000000) ?>M</h2>
-                            <small class="text-muted">Capital Invested</small>
-                        </div>
-                        <div class="rounded-circle d-flex align-items-center justify-content-center" 
-                             style="width:50px; height:50px; background: #ecfccb; color: #65a30d;">
-                            <i class="bi bi-cash-stack fs-4"></i>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="glass-card p-4 d-flex align-items-center justify-content-between">
-                        <div>
-                            <div class="text-uppercase small text-muted fw-bold ls-1 mb-1">Net Operating Profit</div>
-                            <h2 class="fw-bold mb-0 <?= $portfolio_profit >= 0 ? 'text-success' : 'text-danger' ?>">KES <?= ksh($portfolio_profit/1000) ?>K</h2>
-                            <small class="text-muted">Inflow vs Outflow</small>
-                        </div>
-                        <div class="rounded-circle d-flex align-items-center justify-content-center" 
-                             style="width:50px; height:50px; background: #ccfbf1; color: #0f766e;">
-                            <i class="bi bi-graph-up-arrow fs-4"></i>
-                        </div>
+                <div class="col-lg-4 text-lg-end mt-4 mt-lg-0">
+                    <button class="btn btn-lime shadow-lg px-4 fs-6" data-bs-toggle="modal" data-bs-target="#addAssetModal">
+                        <i class="bi bi-plus-lg me-2"></i>Register New Asset
+                    </button>
+                    <div class="mt-2">
+                        <a href="?action=print_report" target="_blank" class="text-white opacity-75 small text-decoration-none">
+                            <i class="bi bi-printer me-1"></i> Print Portfolio Matrix
+                        </a>
                     </div>
                 </div>
             </div>
-
-            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
-                <div class="nav nav-pills d-flex overflow-auto">
-                    <a href="?cat=all" class="nav-link shadow-sm <?= $filter=='all'?'active':'' ?>">All Assets</a>
-                    <a href="?cat=vehicle_fleet" class="nav-link shadow-sm <?= $filter=='vehicle_fleet'?'active':'' ?>">Vehicles</a>
-                    <a href="?cat=farm" class="nav-link shadow-sm <?= $filter=='farm'?'active':'' ?>">Farms</a>
-                    <a href="?cat=apartments" class="nav-link shadow-sm <?= $filter=='apartments'?'active':'' ?>">Real Estate</a>
-                    <a href="?cat=petrol_station" class="nav-link shadow-sm <?= $filter=='petrol_station'?'active':'' ?>">Fuel</a>
-                </div>
-                
-                <button class="btn btn-lime shadow-sm rounded-pill px-4" data-bs-toggle="modal" data-bs-target="#addAssetModal">
-                    <i class="bi bi-plus-lg me-2"></i> New Investment
-                </button>
-            </div>
-
-            <div class="row g-4">
-                <?php if(empty($portfolio_enriched)): ?>
-                    <div class="col-12 text-center py-5 text-muted">
-                        <i class="bi bi-box-seam fs-1 mb-3 opacity-50"></i>
-                        <p>No assets found in this category.</p>
-                    </div>
-                <?php else: foreach($portfolio_enriched as $a): 
-                    $net_bal = $a['net_balance'];
-                    $bal_class = $net_bal >= 0 ? 'text-success' : 'text-danger';
-                    $status_class = ($a['status'] === 'active') ? 'st-active' : 'st-disposed';
-                    
-                    // Target Progress
-                    $target_raw = $a['target_amount'] ?: 0;
-                    $progress = ($target_raw > 0) ? ($a['realized_income'] / $target_raw) * 100 : 0;
-                ?>
-                    <div class="col-xl-4 col-md-6">
-                        <div class="glass-card h-100 d-flex flex-column position-relative">
-                            
-                            <div class="p-4 pb-0 d-flex justify-content-between align-items-start mb-3">
-                                <div class="asset-icon bg-success bg-opacity-10 text-success">
-                                    <i class="bi <?= getIcon($a['category']) ?>"></i>
-                                </div>
-                                <div class="text-end">
-                                    <span class="badge-status <?= $status_class ?> d-block mb-1"><?= $a['status'] ?></span>
-                                    <small class="fw-bold text-muted"><?= strtoupper($a['target_period'] ?? 'monthly') ?> TARGET</small>
-                                </div>
-                            </div>
-
-                            <div class="card-body px-4 pt-0">
-                                <div class="d-flex align-items-center justify-content-between">
-                                    <h5 class="fw-bold mb-0 text-dark text-truncate"><?= htmlspecialchars($a['title']) ?></h5>
-                                    <?php if($a['reg_no']): ?>
-                                        <span class="badge bg-light text-dark border small"><?= esc($a['reg_no']) ?></span>
-                                    <?php endif; ?>
-                                </div>
-                                <div class="text-uppercase small fw-bold mb-3" style="color: var(--text-muted);"><?= str_replace('_', ' ', $a['category']) ?></div>
-                                
-                                <div class="p-3 bg-light rounded-3 mb-3 border border-light">
-                                    <div class="row g-2">
-                                        <div class="col-6 border-end">
-                                            <div class="small text-muted mb-1" style="font-size:0.65rem">Net Balance</div>
-                                            <div class="fw-bold <?= $bal_class ?>">
-                                                KES <?= number_format((float)$net_bal) ?>
-                                            </div>
-                                        </div>
-                                        <div class="col-6 ps-2">
-                                            <div class="small text-muted mb-1" style="font-size:0.65rem">Total Yield</div>
-                                            <div class="fw-bold text-dark">KES <?= number_format((float)$a['realized_income']) ?></div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="d-flex justify-content-between align-items-center small mb-2">
-                                    <span class="text-muted">Target Progress (<?= number_format((float)$a['target_amount']) ?>)</span>
-                                    <span class="fw-bold <?= $progress >= 100 ? 'text-success' : 'text-primary' ?>"><?= number_format((float)$progress, 1) ?>%</span>
-                                </div>
-                                <div class="progress progress-micro mb-3" style="height:6px; border-radius: 10px;">
-                                    <div class="progress-bar <?= $progress >= 100 ? 'bg-success' : 'bg-primary' ?>" style="width: <?= min(100, $progress) ?>%"></div>
-                                </div>
-
-                                <?php if($a['assigned_route']): ?>
-                                    <div class="small text-muted mb-2">
-                                        <i class="bi bi-geo-alt me-1"></i> <?= esc($a['assigned_route']) ?> 
-                                        <?php if($a['capacity']): ?> • <?= esc($a['capacity']) ?> Pax<?php endif; ?>
-                                    </div>
-                                <?php endif; ?>
-                            </div>
-                            
-                            <div class="p-3 border-top border-light mt-auto">
-                                <button class="btn btn-outline-success btn-sm w-100 rounded-pill fw-semibold" 
-                                        onclick="openEditModal(<?= htmlspecialchars(json_encode($a)) ?>)">
-                                    Audit & Adjust
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                <?php endforeach; endif; ?>
-            </div>
-
         </div>
-        <?php $layout->footer(); ?>
+
+        <?php flash_render(); ?>
+
+        <!-- KPIs -->
+        <div class="row g-4 mb-5">
+            <div class="col-md-9">
+                <div class="row g-4">
+                    <div class="col-md-4">
+                        <div class="stat-card slide-up">
+                            <div class="icon-circle bg-lime-soft">
+                                <i class="bi bi-safe2"></i>
+                            </div>
+                            <div class="text-muted small fw-bold text-uppercase">Active Valuation</div>
+                            <div class="h2 fw-800 text-dark mt-2 mb-0">KES <?= number_format((float)($global['active_valuation'] ?? 0)) ?></div>
+                            <div class="small text-muted mt-1"><i class="bi bi-building-check text-success me-1"></i> Current live assets</div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <div class="stat-card slide-up" style="animation-delay: 0.1s">
+                            <div class="icon-circle bg-forest-soft">
+                                <i class="bi bi-cash-coin"></i>
+                            </div>
+                            <div class="text-muted small fw-bold text-uppercase">Realized Exit Gains</div>
+                            <div class="h2 fw-800 text-dark mt-2 mb-0">KES <?= number_format((float)($global['realized_gains'] ?? 0)) ?></div>
+                            <div class="small text-muted mt-1"><i class="bi bi-check-all text-success me-1"></i> Profit from sold assets</div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="stat-card slide-up" style="animation-delay: 0.2s">
+                           <div class="icon-circle bg-lime-soft" style="background: rgba(208, 243, 93, 0.1);">
+                                <i class="bi bi-graph-up-arrow"></i>
+                            </div>
+                            <div class="text-muted small fw-bold text-uppercase">Projected Multiplier</div>
+                            <?php 
+                                $total_val = ($global['active_valuation'] ?? 0) + ($global['total_exit_value'] ?? 0);
+                                $total_cost = ($global['active_cost'] ?? 0) + ($global['active_cost'] > 0 ? ($global['total_exit_value'] - $global['realized_gains'] ) : 0); // This is complex, better use total cost from investments
+                                $q_cost = $conn->query("SELECT SUM(purchase_cost) as c FROM investments")->fetch_assoc()['c'] ?: 1;
+                                $multiplier = $total_val / $q_cost;
+                            ?>
+                            <div class="h2 fw-800 text-dark mt-2 mb-1"><?= number_format($multiplier, 2) ?>x</div>
+                            <div class="small text-muted mt-1"><i class="bi bi-stars text-success me-1"></i> Overall portfolio growth</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 text-center">
+                <div class="stat-card slide-up" style="animation-delay: 0.3s; padding: 25px;">
+                    <h6 class="small fw-bold text-uppercase text-muted mb-3">Asset Mix</h6>
+                    <div style="height: 140px;">
+                        <canvas id="portfolioChart" data-labels='<?= json_encode(array_keys($cat_stats)) ?>' data-values='<?= json_encode(array_values($cat_stats)) ?>'></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="row g-3 mb-4 align-items-center">
+            <div class="col-lg-6">
+                <div class="d-flex gap-2 overflow-auto py-1">
+                    <a href="?cat=all" class="btn btn-<?= $filter=='all'?'forest':'white' ?> rounded-pill px-4 btn-sm fw-bold border">All Assets</a>
+                    <a href="?cat=vehicle_fleet" class="btn btn-<?= $filter=='vehicle_fleet'?'forest':'white' ?> rounded-pill px-4 btn-sm fw-bold border">Vehicles</a>
+                    <a href="?cat=farm" class="btn btn-<?= $filter=='farm'?'forest':'white' ?> rounded-pill px-4 btn-sm fw-bold border">Farms</a>
+                    <a href="?cat=apartments" class="btn btn-<?= $filter=='apartments'?'forest':'white' ?> rounded-pill px-4 btn-sm fw-bold border">Real Estate</a>
+                    <a href="?cat=petrol_station" class="btn btn-<?= $filter=='petrol_station'?'forest':'white' ?> rounded-pill px-4 btn-sm fw-bold border">Fuel</a>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="position-relative">
+                    <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
+                    <input type="text" id="assetSearch" class="form-control rounded-pill ps-5 border-0 shadow-sm" placeholder="Search assets by name or reg..." value="<?= htmlspecialchars($search) ?>">
+                </div>
+            </div>
+            <div class="col-lg-2 text-lg-end">
+                <div class="dropdown">
+                    <button class="btn btn-light rounded-pill px-4 border dropdown-toggle fw-bold" data-bs-toggle="dropdown">
+                        <i class="bi bi-download me-2"></i> Export
+                    </button>
+                    <ul class="dropdown-menu shadow border-0">
+                        <li><a class="dropdown-item py-2" href="?<?= http_build_query(array_merge($_GET, ['action' => 'export_pdf'])) ?>"><i class="bi bi-file-pdf text-danger me-2"></i>Portfolio PDF</a></li>
+                        <li><a class="dropdown-item py-2" href="?<?= http_build_query(array_merge($_GET, ['action' => 'export_excel'])) ?>"><i class="bi bi-file-excel text-success me-2"></i>Spreadsheet (XLS)</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <?php if(empty($portfolio)): ?>
+                <div class="col-12 text-center py-5">
+                    <div class="opacity-25 mb-4"><i class="bi bi-box-seam display-1"></i></div>
+                    <h5 class="fw-bold text-muted">No assets found</h5>
+                    <p class="text-muted">Register an asset to start tracking its value and performance.</p>
+                </div>
+            <?php else: 
+            foreach($portfolio as $a): 
+                $icon = match($a['category']) {
+                    'farm' => 'bi-flower2',
+                    'vehicle_fleet' => 'bi-truck-front',
+                    'petrol_station' => 'bi-fuel-pump',
+                    'apartments' => 'bi-building',
+                    default => 'bi-box-seam'
+                };
+            ?>
+            <div class="col-xl-4 col-md-6">
+                <div class="asset-card slide-up">
+                    <div class="d-flex justify-content-between align-items-start mb-4">
+                        <div class="asset-icon-box">
+                            <i class="bi <?= $icon ?>"></i>
+                        </div>
+                        <div class="d-flex flex-column align-items-end">
+                            <span class="status-badge st-<?= $a['status'] ?> mb-2"><?= $a['status'] ?></span>
+                            <?php if ($a['status'] === 'active'): ?>
+                                <?php 
+                                    $suggestion = 'Retain Asset';
+                                    $s_class = 'text-primary';
+                                    if ($a['roi'] > 25) { $suggestion = 'Expand/Reinvest'; $s_class = 'text-success'; }
+                                    elseif ($a['roi'] < 5) { $suggestion = 'Optimize or Sell'; $s_class = 'text-danger'; }
+                                ?>
+                                <small class="fw-bold <?= $s_class ?> px-2 py-1 bg-light rounded-pill" style="font-size: 0.6rem;"><?= $suggestion ?></small>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+
+                    <h5 class="fw-800 text-dark mb-1"><?= esc($a['title']) ?></h5>
+                    <div class="small text-muted fw-bold text-uppercase ls-1 mb-3"><?= str_replace('_',' ',$a['category']) ?></div>
+
+                    <div class="row g-2 mb-4">
+                        <div class="col-6">
+                            <div class="p-3 bg-light rounded-4 h-100">
+                                <div class="small text-muted fw-bold text-uppercase mb-1" style="font-size: 0.6rem;">Current Valuation</div>
+                                <div class="fw-800 text-forest">KES <?= number_format((float)$a['current_value']) ?></div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="p-3 bg-light rounded-4 h-100">
+                                <div class="small text-muted fw-bold text-uppercase mb-1" style="font-size: 0.6rem;">Yield (ROI)</div>
+                                <div class="fw-800 <?= $a['roi'] >= 0 ? 'text-success' : 'text-danger' ?>">
+                                    <?= number_format((float)$a['roi'], 1) ?>%
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between align-items-center small mb-2">
+                            <span class="text-muted fw-medium">Net Operating Balance</span>
+                            <span class="fw-bold <?= ($a['revenue'] - $a['expenses']) >= 0 ? 'text-success' : 'text-danger' ?>">
+                                KES <?= number_format((float)$a['revenue'] - $a['expenses']) ?>
+                            </span>
+                        </div>
+                        <?php 
+                        $net_op = $a['revenue'] - $a['expenses'];
+                        $be_pct = ($net_op / ($a['purchase_cost'] ?: 1)) * 100;
+                        ?>
+                        <div class="d-flex justify-content-between align-items-center small mb-1 mt-2">
+                            <span class="text-muted fw-medium">Break-even Progress</span>
+                            <span class="fw-bold text-dark"><?= $be_pct >= 100 ? 'RECOVERED' : number_format($be_pct, 1) . '%' ?></span>
+                        </div>
+                        <div class="progress" style="height: 6px; border-radius: 10px; background: #f1f5f9;">
+                            <div class="progress-bar <?= $be_pct >= 100 ? 'bg-success' : 'bg-forest' ?>" style="width: <?= min(100, $be_pct) ?>%"></div>
+                        </div>
+                        <div class="d-flex justify-content-between mt-1 fs-xs text-muted" style="font-size: 0.65rem;">
+                            <span>Income: <?= number_format((float)$a['revenue']) ?></span>
+                            <span>Target: <?= number_format((float)$a['target_amount']) ?></span>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <?php if ($a['status'] === 'active'): ?>
+                            <button class="btn btn-outline-forest btn-sm flex-grow-1 fw-bold rounded-pill" onclick="openValuationModal(<?= htmlspecialchars(json_encode($a)) ?>)">
+                                Audit Valuation
+                            </button>
+                            <button class="btn btn-outline-danger btn-sm px-3 rounded-pill" onclick="openDisposeModal(<?= htmlspecialchars(json_encode($a)) ?>)" title="Dispose/Sell Asset">
+                                <i class="bi bi-trash3-fill"></i>
+                            </button>
+                        <?php else: ?>
+                            <button class="btn btn-light btn-sm flex-grow-1 fw-bold rounded-pill disabled" style="opacity: 0.6; cursor: not-allowed;">
+                                Asset Disposed
+                            </button>
+                        <?php endif; ?>
+                        <a href="transactions.php?filter=<?= $a['investment_id'] ?>" class="btn btn-light btn-sm border px-3 rounded-pill" title="View Ledger">
+                            <i class="bi bi-list-task"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <?php endforeach; endif; ?>
+        </div>
     </div>
+    
+    <?php $layout->footer(); ?>
 </div>
 
+<!-- Add Asset Modal -->
 <div class="modal fade" id="addAssetModal" tabindex="-1">
     <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
-            <div class="modal-header border-0 bg-success bg-opacity-10">
-                <h5 class="modal-title fw-bold" style="color: var(--dark-green);">Add New Investment</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        <div class="modal-content shadow-2xl">
+            <div class="modal-header">
+                <h5 class="modal-title fw-800"><i class="bi bi-box-seam me-2"></i>Asset Registration</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body p-4">
-                <form method="POST">
-                    <input type="hidden" name="action" value="add_asset">
-                    <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
-                    
-                    <div class="row g-3">
+            <form method="POST">
+                <?= csrf_field() ?>
+                <input type="hidden" name="action" value="add_asset">
+                <div class="modal-body">
+                    <div class="row g-4">
                         <div class="col-md-8">
-                            <label class="form-label small fw-bold text-muted text-uppercase">Asset Title</label>
-                            <input type="text" name="title" class="form-control" required placeholder="e.g. Ruiru Farm A or Toyota Hiace">
+                            <label class="form-label fw-bold">Asset Title / Name</label>
+                            <input type="text" name="title" class="form-control" placeholder="e.g. Ruiru Apartments Block B, Matatu KDA 123" required>
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label small fw-bold text-muted text-uppercase">Category</label>
-                            <select name="category" class="form-select" id="assetCategorySelector" required onchange="toggleVehicleFields(this.value)">
-                                <option value="farm">Farm / Land</option>
-                                <option value="vehicle_fleet">Vehicle Fleet</option>
-                                <option value="petrol_station">Petrol Station</option>
-                                <option value="apartments">Real Estate</option>
-                                <option value="other">Other</option>
+                            <label class="form-label fw-bold">Category</label>
+                            <select name="category" class="form-select" id="catSelector" onchange="checkVehicle(this.value)" required>
+                                <option value="farm">Farming / Agriculture</option>
+                                <option value="vehicle_fleet">Vehicle / Fleet</option>
+                                <option value="petrol_station">Petroleum / Energy</option>
+                                <option value="apartments">Real Estate / Housing</option>
+                                <option value="other">Miscellaneous</option>
                             </select>
                         </div>
 
-                        <!-- Vehicle Specific Fields (Visible when Category is Vehicle) -->
-                        <div class="col-12 d-none" id="vehicleFields">
-                            <div class="row g-3 p-3 rounded-4 border bg-light bg-opacity-50">
-                                <div class="col-md-3">
-                                    <label class="form-label small fw-bold text-muted text-uppercase">Reg No</label>
-                                    <input type="text" name="reg_no" class="form-control" placeholder="KDA 123">
+                        <div id="vehExtra" class="col-12 d-none">
+                            <div class="row g-3 p-3 bg-light rounded-4 border">
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-bold">Registration No.</label>
+                                    <input type="text" name="reg_no" class="form-control" placeholder="e.g. KCA 001X">
                                 </div>
-                                <div class="col-md-3">
-                                    <label class="form-label small fw-bold text-muted text-uppercase">Make/Model</label>
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-bold">Make/Model</label>
                                     <input type="text" name="model" class="form-control" placeholder="Toyota Hiace">
                                 </div>
-                                <div class="col-md-3">
-                                    <label class="form-label small fw-bold text-muted text-uppercase">Capacity</label>
-                                    <input type="text" name="capacity" class="form-control" placeholder="14 Pax">
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label small fw-bold text-muted text-uppercase">Route</label>
-                                    <input type="text" name="assigned_route" class="form-control" placeholder="Nairobi-Thika">
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-bold">Operational Route</label>
+                                    <input type="text" name="assigned_route" class="form-control" placeholder="e.g. Nairobi - Thika">
                                 </div>
                             </div>
                         </div>
 
                         <div class="col-md-6">
-                            <label class="form-label small fw-bold text-muted text-uppercase">Acquisition Cost</label>
+                            <label class="form-label fw-bold">Purchase Cost (KES)</label>
+                            <input type="number" name="purchase_cost" class="form-control fw-bold" step="1" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Opening Valuation (KES)</label>
+                            <input type="number" name="current_value" class="form-control fw-bold" step="1" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Revenue Target</label>
                             <div class="input-group">
-                                <span class="input-group-text bg-light text-muted">KES</span>
-                                <input type="number" name="purchase_cost" class="form-control" step="0.01" required>
+                                <input type="number" name="target_amount" class="form-control" placeholder="Goal amount">
+                                <select name="target_period" class="form-select" style="max-width: 120px;">
+                                    <option value="daily">Daily</option>
+                                    <option value="monthly" selected>Monthly</option>
+                                    <option value="yearly">Yearly</option>
+                                </select>
                             </div>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label small fw-bold text-muted text-uppercase">Opening Valuation</label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-light text-muted">KES</span>
-                                <input type="number" name="current_value" class="form-control" step="0.01" required>
-                            </div>
-                        </div>
-
-                        <div class="col-md-6">
-                            <label class="form-label small fw-bold text-muted text-uppercase">Expected Projection</label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-light text-muted">KES</span>
-                                <input type="number" name="target_amount" class="form-control" placeholder="Target Income">
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label small fw-bold text-muted text-uppercase">Projection Period</label>
-                            <select name="target_period" class="form-select">
-                                <option value="daily">Daily Target</option>
-                                <option value="monthly" selected>Monthly Target</option>
-                                <option value="yearly">Yearly Target</option>
-                            </select>
-                        </div>
-
-                        <div class="col-md-6">
-                            <label class="form-label small fw-bold text-muted text-uppercase">Purchase Date</label>
-                            <input type="date" name="purchase_date" class="form-control" required max="<?= date('Y-m-d') ?>">
+                            <label class="form-label fw-bold">Purchase Date</label>
+                            <input type="date" name="purchase_date" class="form-control" value="<?= date('Y-m-d') ?>" required>
                         </div>
                         <div class="col-12">
-                            <label class="form-label small fw-bold text-muted text-uppercase">Description</label>
-                            <textarea name="description" class="form-control" rows="3" placeholder="Location, specifications, or notes..."></textarea>
+                            <label class="form-label fw-bold">Asset Description / Notes</label>
+                            <textarea name="description" class="form-control" rows="2" placeholder="Audit notes, location details, spec sheet..."></textarea>
                         </div>
                     </div>
-                    <div class="d-grid mt-4">
-                        <button type="submit" class="btn btn-lime py-2 rounded-pill shadow-sm">Register Investment</button>
-                    </div>
-                </form>
-            </div>
+                </div>
+                <div class="modal-footer border-0 p-4 pt-0">
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-lime rounded-pill px-5 shadow-lg">Confirm & Register Asset</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
 
-<div class="modal fade" id="editAssetModal" tabindex="-1">
+<!-- Valuation Modal -->
+<div class="modal fade" id="valuationModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
-            <div class="modal-header border-0 bg-success bg-opacity-10">
-                <h5 class="modal-title fw-bold" style="color: var(--dark-green);">Update Valuation</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        <div class="modal-content shadow-2xl">
+            <div class="modal-header">
+                <h5 class="modal-title fw-800"><i class="bi bi-graph-up me-2"></i>Valuation Audit</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body p-4">
-                <p class="text-muted small mb-3">Update the current market value or status of <strong id="edit_title_display" class="text-dark"></strong>.</p>
-                <form method="POST">
-                    <input type="hidden" name="action" value="update_asset">
-                    <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
-                    <input type="hidden" name="investment_id" id="edit_id">
-                    
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold text-muted text-uppercase">New Current Value</label>
-                        <div class="input-group">
-                            <span class="input-group-text bg-light text-muted">KES</span>
-                            <input type="number" name="current_value" id="edit_value" class="form-control fw-bold" step="0.01" required>
-                        </div>
-                    </div>
+            <form method="POST">
+                <?= csrf_field() ?>
+                <input type="hidden" name="action" value="update_asset">
+                <input type="hidden" name="investment_id" id="val_id">
+                <div class="modal-body p-4">
+                    <h6 class="fw-bold mb-3" id="val_title"></h6>
                     <div class="mb-4">
-                        <label class="form-label small fw-bold text-muted text-uppercase">Status</label>
-                        <select name="status" id="edit_status" class="form-select">
-                            <option value="active">Active (Operating)</option>
+                        <label class="form-label small fw-bold text-muted text-uppercase">New Market Valuation (KES)</label>
+                        <input type="number" name="current_value" id="val_input" class="form-control fw-bold fs-5 py-3" required>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small fw-bold text-muted text-uppercase">Asset Status</label>
+                        <select name="status" id="val_status" class="form-select py-3">
+                            <option value="active">Active & Operating</option>
                             <option value="maintenance">Under Maintenance</option>
-                            <option value="disposed">Disposed / Sold</option>
+                            <option value="disposed">Disposed / Terminated</option>
                         </select>
                     </div>
-                    <div class="d-grid">
-                        <button type="submit" class="btn btn-lime rounded-pill shadow-sm">Save Updates</button>
-                    </div>
-                </form>
-            </div>
+                </div>
+                <div class="modal-footer border-0 p-4 pt-0">
+                    <button type="submit" class="btn btn-lime w-100 rounded-pill py-3 fw-bold">Apply Valuation Change</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Dispose Modal -->
+<div class="modal fade" id="disposeModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <form method="POST">
+                <input type="hidden" name="action" value="sell_asset">
+                <input type="hidden" name="investment_id" id="dispose_id">
+                <div class="modal-header border-0 pb-0 pt-4 px-4">
+                    <h5 class="fw-800">Finalize Asset Disposal</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <p class="text-muted small mb-4">You are about to mark <strong id="dispose_title" class="text-dark"></strong> as sold. This will record the proceeds in the treasury and halt future revenue tracking.</p>
+                    
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">Sale Price (KES)</label>
+                        <input type="number" name="sale_price" id="dispose_price" class="form-control rounded-3" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">Sale Date</label>
+                        <input type="date" name="sale_date" class="form-control rounded-3" value="<?= date('Y-m-d') ?>" required>
+                    </div>
+                    <div class="mb-0">
+                        <label class="form-label small fw-bold text-muted">Reason for Sale</label>
+                        <textarea name="sale_reason" class="form-control rounded-3" rows="3" placeholder="e.g. Asset depreciation, fleet upgrade..." required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 p-4 pt-0">
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger rounded-pill px-4 fw-bold">Confirm Sale & Archive</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="<?= BASE_URL ?>/public/assets/js/main.js?v=<?= time() ?>"></script>
 <script>
-    function openEditModal(data) {
-        document.getElementById('edit_id').value = data.investment_id;
-        document.getElementById('edit_value').value = data.current_value;
-        document.getElementById('edit_status').value = data.status;
-        document.getElementById('edit_title_display').textContent = data.title;
-        new bootstrap.Modal(document.getElementById('editAssetModal')).show();
+    function checkVehicle(val) {
+        const extra = document.getElementById('vehExtra');
+        if(val === 'vehicle_fleet') extra.classList.remove('d-none');
+        else extra.classList.add('d-none');
     }
 
-    function toggleVehicleFields(val) {
-        const wrap = document.getElementById('vehicleFields');
-        if(val === 'vehicle_fleet') {
-            wrap.classList.remove('d-none');
-        } else {
-            wrap.classList.add('d-none');
-        }
+    function openValuationModal(data) {
+        document.getElementById('val_id').value = data.investment_id;
+        document.getElementById('val_input').value = data.current_value;
+        document.getElementById('val_status').value = data.status;
+        document.getElementById('val_title').innerText = data.title;
+        new bootstrap.Modal(document.getElementById('valuationModal')).show();
     }
+
+    function openDisposeModal(data) {
+        document.getElementById('dispose_id').value = data.investment_id;
+        document.getElementById('dispose_title').innerText = data.title;
+        document.getElementById('dispose_price').value = data.current_value;
+        new bootstrap.Modal(document.getElementById('disposeModal')).show();
+    }
+
+    // Interactive Search
+    document.getElementById('assetSearch')?.addEventListener('keyup', function() {
+        const query = this.value.toLowerCase();
+        document.querySelectorAll('.asset-card').forEach(card => {
+            const container = card.closest('[class*="col-"]');
+            const text = card.innerText.toLowerCase();
+            if(container) container.style.display = text.includes(query) ? '' : 'none';
+        });
+    });
+
+    // Portfolio Chart
+    document.addEventListener('DOMContentLoaded', () => {
+        const ctx = document.getElementById('portfolioChart');
+        if(ctx) {
+            const labels = JSON.parse(ctx.getAttribute('data-labels') || '[]');
+            const values = JSON.parse(ctx.getAttribute('data-values') || '[]');
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: values,
+                        backgroundColor: ['#d0f35d', '#0f2e25', '#1a4d3d', '#a8cf12', '#22c55e'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    cutout: '75%'
+                }
+            });
+        }
+    });
 </script>
 </body>
 </html>
-
-
-
-
-

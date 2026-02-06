@@ -134,13 +134,10 @@ $balanceData = $reportGen->getBalanceSheetData($start_date, $end_date);
 
 if (isset($_GET['action'])) {
     if ($_GET['action'] === 'export_pdf') {
-        $pdf = $reportGen->generatePDF("Statement of Financial Position", $balanceData);
-        $pdf->Output('D', 'Umoja_Sacco_Report_' . date('Ymd') . '.pdf');
+        $reportGen->generatePDF("Statement of Financial Position", $balanceData);
         exit;
     } elseif ($_GET['action'] === 'export_excel') {
-        header('Content-Type: text/csv');
-        header('Content-Disposition: attachment; filename="Umoja_Sacco_Report_' . date('Ymd') . '.csv"');
-        echo $reportGen->generateExcel($balanceData);
+        $reportGen->generateExcel($balanceData);
         exit;
     }
 }
@@ -156,9 +153,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_to_all'])) {
     $totalFound = $members->num_rows;
     $sentCount = 0;
     
-    // Generate the PDF once
-    $pdf = $reportGen->generatePDF("General Performance Report", $balanceData);
-    $pdfContent = $pdf->Output('S');
+    // Generate the PDF string using the new engine
+    $pdfContent = $reportGen->generatePDF("General Performance Report", $balanceData, true);
 
     $lastError = "";
     while ($m = $members->fetch_assoc()) {

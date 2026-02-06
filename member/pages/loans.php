@@ -141,11 +141,41 @@ if ($active_loan) {
 }
 
 // D. Fetch History
-$history = [];
 $stmt = $conn->prepare("SELECT * FROM loans WHERE member_id = ? ORDER BY created_at DESC");
 $stmt->bind_param("i", $member_id);
 $stmt->execute();
 $res_history = $stmt->get_result();
+
+// HANDLE EXPORT
+if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_excel', 'print_report'])) {
+    require_once __DIR__ . '/../../core/exports/UniversalExportEngine.php';
+    
+    $format = 'pdf';
+    if ($_GET['action'] === 'export_excel') $format = 'excel';
+    if ($_GET['action'] === 'print_report') $format = 'print';
+
+    $data = [];
+    $res_history->data_seek(0);
+    while($row = $res_history->fetch_assoc()) {
+        $data[] = [
+            'Date' => date('d-M-Y', strtotime($row['created_at'])),
+            'Type' => ucwords(str_replace('_', ' ', $row['loan_type'])),
+            'Amount' => number_format((float)$row['amount'], 2),
+            'Status' => ucfirst($row['status']),
+            'Balance' => number_format((float)$row['current_balance'], 2)
+        ];
+    }
+
+    UniversalExportEngine::handle($format, $data, [
+        'title' => 'My Loan Portfolio',
+        'module' => 'Member Portal',
+        'headers' => ['Date', 'Type', 'Amount', 'Status', 'Balance']
+    ]);
+    exit;
+}
+
+$history = [];
+$res_history->data_seek(0);
 while($row = $res_history->fetch_assoc()) $history[] = $row;
 $stmt->close();
 
@@ -491,7 +521,16 @@ $pageTitle = "My Loans";
                     <div class="card-clean">
                         <div class="p-4 border-bottom border-light d-flex justify-content-between align-items-center">
                             <h6 class="fw-bold mb-0 text-dark">Recent History</h6>
-                            <a href="<?= BASE_URL ?>/inc/ExportHelper.php?action=csv&type=loans" class="btn btn-sm btn-light border"><i class="bi bi-download me-1"></i> Export</a>
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-light border dropdown-toggle" data-bs-toggle="dropdown">
+                                    <i class="bi bi-download me-1"></i> Export
+                                </button>
+                                <ul class="dropdown-menu shadow">
+                                    <li><a class="dropdown-item" href="?<?= http_build_query(array_merge($_GET, ['action' => 'export_pdf'])) ?>"><i class="bi bi-file-pdf text-danger me-2"></i>Export PDF</a></li>
+                                    <li><a class="dropdown-item" href="?<?= http_build_query(array_merge($_GET, ['action' => 'export_excel'])) ?>"><i class="bi bi-file-excel text-success me-2"></i>Export Excel</a></li>
+                                    <li><a class="dropdown-item" href="?<?= http_build_query(array_merge($_GET, ['action' => 'print_report'])) ?>" target="_blank"><i class="bi bi-printer text-primary me-2"></i>Print History</a></li>
+                                </ul>
+                            </div>
                         </div>
                         <div class="table-responsive">
                             <table class="table-premium mb-0">

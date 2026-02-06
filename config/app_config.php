@@ -13,6 +13,11 @@ $host = !empty($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : 'localhost';
 define('SITE_URL', $protocol . "://" . rtrim($host, '/') . '/' . ltrim(BASE_URL, '/'));
 define('ASSET_BASE', BASE_URL . '/public/assets');
 
+// Load Composer Autoloader
+if (file_exists(__DIR__ . '/../vendor/autoload.php')) {
+    require_once __DIR__ . '/../vendor/autoload.php';
+}
+
 // ============================================================
 // 2. COMPANY INFORMATION
 // ============================================================

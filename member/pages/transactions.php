@@ -51,6 +51,38 @@ if(!empty($params)) $stmt->bind_param($types, ...$params);
 $stmt->execute();
 $result = $stmt->get_result();
 
+// HANDLE EXPORT
+if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_excel', 'print_report'])) {
+    require_once __DIR__ . '/../../core/exports/UniversalExportEngine.php';
+    
+    $format = 'pdf';
+    if ($_GET['action'] === 'export_excel') $format = 'excel';
+    if ($_GET['action'] === 'print_report') $format = 'print';
+
+    $data = [];
+    $result->data_seek(0);
+    while($row = $result->fetch_assoc()) {
+        $type = strtolower($row['transaction_type'] ?? '');
+        $is_wd = ($type == 'withdrawal');
+        $sign = $is_wd ? '-' : '+';
+        
+        $data[] = [
+            'Date' => date('d-M-Y H:i', strtotime($row['created_at'])),
+            'Type' => ucwords(str_replace('_', ' ', $type)),
+            'Reference' => $row['reference_no'],
+            'Channel' => strtoupper($row['payment_channel']),
+            'Amount' => $sign . ' ' . number_format((float)$row['amount'], 2)
+        ];
+    }
+
+    UniversalExportEngine::handle($format, $data, [
+        'title' => 'Personal Transaction Ledger',
+        'module' => 'Member Portal',
+        'headers' => ['Date', 'Type', 'Reference', 'Channel', 'Amount']
+    ]);
+    exit;
+}
+
 // 3. KPI Calculations via Financial Engine
 require_once __DIR__ . '/../../inc/FinancialEngine.php';
 $engine = new FinancialEngine($conn);
@@ -254,10 +286,15 @@ $pageTitle = "Transaction Ledger";
                 <h2 class="fw-bold mb-1" style="color: var(--hope-text-main);">Ledger History</h2>
                 <p class="mb-0" style="color: var(--hope-text-muted);">View all your deposits, loans, and welfare payments.</p>
             </div>
-            <div class="d-flex gap-2">
-                <button onclick="window.print()" class="btn btn-outline-secondary rounded-pill px-4 fw-semibold" style="border-color: var(--hope-border); color: var(--hope-text-muted);">
+            <div class="dropdown">
+                <button class="btn btn-outline-secondary dropdown-toggle rounded-pill px-4 fw-semibold shadow-sm" data-bs-toggle="dropdown" style="border-color: var(--hope-border); color: var(--hope-text-muted);">
                     <i class="bi bi-download me-2"></i>Export
                 </button>
+                <ul class="dropdown-menu shadow">
+                    <li><a class="dropdown-item" href="?<?= http_build_query(array_merge($_GET, ['action' => 'export_pdf'])) ?>"><i class="bi bi-file-pdf text-danger me-2"></i>Export PDF</a></li>
+                    <li><a class="dropdown-item" href="?<?= http_build_query(array_merge($_GET, ['action' => 'export_excel'])) ?>"><i class="bi bi-file-excel text-success me-2"></i>Export Excel</a></li>
+                    <li><a class="dropdown-item" href="?<?= http_build_query(array_merge($_GET, ['action' => 'print_report'])) ?>" target="_blank"><i class="bi bi-printer text-primary me-2"></i>Print Ledger</a></li>
+                </ul>
             </div>
         </div>
 

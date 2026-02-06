@@ -38,6 +38,63 @@ if ($search !== "") {
     $types  = "sss";
 }
 
+// HANDLE EXPORT ACTIONS
+if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_excel', 'print_report'])) {
+
+    // Re-Search for Export (Full list or current filter)
+    $where_e = "";
+    $params_e = [];
+    $types_e  = "";
+
+    if ($search !== "") {
+        $where_e = "WHERE (a.action LIKE ? OR a.details LIKE ? OR ad.username LIKE ?)";
+        $params_e = [$term, $term, $term];
+        $types_e  = "sss";
+    }
+
+    $query_e = "
+        SELECT a.*, ad.username, r.name as role, ad.full_name
+        FROM audit_logs a
+        LEFT JOIN admins ad ON a.admin_id = ad.admin_id
+        LEFT JOIN roles r ON ad.role_id = r.id
+        $where_e
+        ORDER BY a.created_at DESC
+        LIMIT 1000
+    ";
+    
+    $stmt_e = $db->prepare($query_e);
+    if (!empty($params_e)) $stmt_e->bind_param($types_e, ...$params_e);
+    $stmt_e->execute();
+    $export_logs = $stmt_e->get_result();
+
+    require_once __DIR__ . '/../../core/exports/UniversalExportEngine.php';
+    
+    $format = 'pdf';
+    if ($_GET['action'] === 'export_excel') $format = 'excel';
+    if ($_GET['action'] === 'print_report') $format = 'print';
+
+    $data = [];
+    while($row = $export_logs->fetch_assoc()) {
+        $name = $row['full_name'] ?? $row['username'] ?? 'System';
+        $data[] = [
+            'Time' => date("d-M-Y H:i", strtotime($row['created_at'])),
+            'Actor' => $name,
+            'Role' => ucfirst($row['role'] ?? 'System'),
+            'Action' => ucwords(str_replace('_', ' ', $row['action'])),
+            'Details' => $row['details'],
+            'IP' => $row['ip_address']
+        ];
+    }
+
+    UniversalExportEngine::handle($format, $data, [
+        'title' => 'System Audit Logs',
+        'module' => 'Security Audit',
+        'headers' => ['Time', 'Actor', 'Role', 'Action', 'Details', 'IP'],
+        'orientation' => 'L' // Landscape for audit logs due to details length
+    ]);
+    exit;
+}
+
 // FETCH AUDITS
 $query = "
     SELECT a.*, ad.username, r.name as role, ad.full_name
@@ -270,13 +327,19 @@ $pageTitle = "Audit Logs";
                 <h2 class="fw-bold mb-1 display-6" style="letter-spacing: -0.03em;">System Audit Trails</h2>
                 <p class="text-muted mb-0">Track admin activities and security events in real-time.</p>
             </div>
-            <div class="col-md-5 text-md-end mt-3 mt-md-0">
-                <button onclick="window.print()" class="btn btn-hope-outline me-2">
+            <div class="col-md-5 text-md-end mt-3 mt-md-0 d-flex justify-content-end gap-2">
+                <a href="?<?= http_build_query(array_merge($_GET, ['action' => 'print_report'])) ?>" target="_blank" class="btn btn-hope-outline">
                     <i class="bi bi-printer me-2"></i> Print
-                </button>
-                <button class="btn btn-dark rounded-pill px-4 fw-bold">
-                    <i class="bi bi-download me-2"></i> Export
-                </button>
+                </a>
+                <div class="btn-group">
+                    <button type="button" class="btn btn-dark rounded-pill px-4 fw-bold dropdown-toggle" data-bs-toggle="dropdown">
+                        <i class="bi bi-download me-2"></i> Export
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg">
+                        <li><a class="dropdown-item" href="?<?= http_build_query(array_merge($_GET, ['action' => 'export_pdf'])) ?>"><i class="bi bi-file-earmark-pdf text-danger me-2"></i>Export PDF</a></li>
+                        <li><a class="dropdown-item" href="?<?= http_build_query(array_merge($_GET, ['action' => 'export_excel'])) ?>"><i class="bi bi-file-earmark-spreadsheet text-success me-2"></i>Export Excel</a></li>
+                    </ul>
+                </div>
             </div>
         </div>
 

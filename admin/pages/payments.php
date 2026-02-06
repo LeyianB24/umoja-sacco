@@ -123,6 +123,47 @@ if (!empty($_GET['search'])) {
     $types .= "ss";
 }
 
+// HANDLE EXPORT
+if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_excel', 'print_report'])) {
+    $sql_export = "SELECT t.*, m.full_name, m.national_id 
+                   FROM transactions t 
+                   LEFT JOIN members m ON t.member_id = m.member_id 
+                   WHERE $where 
+                   ORDER BY t.created_at DESC";
+    $stmt_e = $conn->prepare($sql_export);
+    if (!empty($params)) $stmt_e->bind_param($types, ...$params);
+    $stmt_e->execute();
+    $export_data_raw = $stmt_e->get_result()->fetch_all(MYSQLI_ASSOC);
+
+    require_once __DIR__ . '/../../core/exports/UniversalExportEngine.php';
+    
+    $format = 'pdf';
+    if ($_GET['action'] === 'export_excel') $format = 'excel';
+    if ($_GET['action'] === 'print_report') $format = 'print';
+
+    $data = [];
+    $total_val = 0;
+    foreach ($export_data_raw as $row) {
+        $total_val += (float)$row['amount'];
+        $data[] = [
+            'Date' => date('d-M-Y', strtotime($row['created_at'])),
+            'Reference' => $row['reference_no'],
+            'Member/Entity' => $row['full_name'] ?? 'Office',
+            'Type' => ucwords(str_replace('_', ' ', $row['transaction_type'])),
+            'Amount' => number_format((float)$row['amount'], 2),
+            'Notes' => $row['notes']
+        ];
+    }
+
+    UniversalExportEngine::handle($format, $data, [
+        'title' => 'Payments Ledger',
+        'module' => 'Finance Management',
+        'headers' => ['Date', 'Reference', 'Member/Entity', 'Type', 'Amount', 'Notes'],
+        'total_value' => $total_val
+    ]);
+    exit;
+}
+
 $sql = "SELECT t.*, m.full_name, m.national_id 
         FROM transactions t 
         LEFT JOIN members m ON t.member_id = m.member_id 
@@ -270,7 +311,17 @@ $pageTitle = "Payments Ledger";
                     <h2 class="fw-bold mb-1" style="color: var(--forest-dark);">Transactions Ledger</h2>
                     <p class="text-muted mb-0">Monitor financial inflows and outflows.</p>
                 </div>
-                <div>
+                <div class="d-flex gap-2">
+                    <div class="dropdown">
+                        <button class="btn btn-outline-forest dropdown-toggle shadow-sm" data-bs-toggle="dropdown">
+                            <i class="bi bi-download me-2"></i>Export
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="?<?= http_build_query(array_merge($_GET, ['action' => 'export_pdf'])) ?>">Export PDF</a></li>
+                            <li><a class="dropdown-item" href="?<?= http_build_query(array_merge($_GET, ['action' => 'export_excel'])) ?>">Export Excel</a></li>
+                            <li><a class="dropdown-item" href="?<?= http_build_query(array_merge($_GET, ['action' => 'print_report'])) ?>" target="_blank">Print Report</a></li>
+                        </ul>
+                    </div>
                     <button class="btn btn-lime shadow-sm" data-bs-toggle="modal" data-bs-target="#recordTxnModal">
                         <i class="bi bi-plus-lg me-2"></i>New Transaction
                     </button>
