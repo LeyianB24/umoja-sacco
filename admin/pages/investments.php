@@ -351,6 +351,12 @@ $pageTitle = "Investment Portfolio";
                         <i class="bi bi-plus-lg me-2"></i>Register New Asset
                     </button>
                     <div class="mt-2">
+                        <a href="revenue.php" class="text-white opacity-75 small text-decoration-none me-3">
+                            <i class="bi bi-cash-coin me-1"></i> Track Revenue
+                        </a>
+                        <a href="expenses.php" class="text-white opacity-75 small text-decoration-none me-3">
+                            <i class="bi bi-receipt me-1"></i> Track Expenses
+                        </a>
                         <a href="?action=print_report" target="_blank" class="text-white opacity-75 small text-decoration-none">
                             <i class="bi bi-printer me-1"></i> Print Portfolio Matrix
                         </a>

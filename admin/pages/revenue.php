@@ -275,6 +275,14 @@ $pageTitle = "Revenue Portal";
                     <button class="btn btn-lime shadow-lg px-4" data-bs-toggle="modal" data-bs-target="#recordRevenueModal">
                         <i class="bi bi-plus-lg me-2"></i>Record New Inflow
                     </button>
+                    <div class="mt-2">
+                        <a href="investments.php" class="text-white opacity-75 small text-decoration-none me-3">
+                            <i class="bi bi-briefcase me-1"></i> View Assets
+                        </a>
+                        <a href="expenses.php" class="text-white opacity-75 small text-decoration-none">
+                            <i class="bi bi-receipt me-1"></i> Track Expenses
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
@@ -498,7 +506,7 @@ $pageTitle = "Revenue Portal";
                             <?php endforeach; ?>
                         </div>
                     <?php endif; ?>
-                    <?php endif; ?>
+                <?php endif; ?>
                 </div>
             </div>
         </div>
