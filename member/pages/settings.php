@@ -28,19 +28,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     // Update Profile
     if (isset($_POST['update_profile'])) {
-        $fullname = trim($_POST['full_name']);
         $email    = trim($_POST['email']);
         $phone    = trim($_POST['phone']);
+        $gender   = trim($_POST['gender'] ?? '');
+        $address  = trim($_POST['address'] ?? '');
 
-        if (empty($fullname) || empty($email) || empty($phone)) {
-            $error_message = "All fields are required.";
+        if (empty($email) || empty($phone)) {
+            $error_message = "Email and Phone are required.";
         } else {
-            $stmt = $conn->prepare("UPDATE members SET full_name=?, email=?, phone=? WHERE member_id=?");
-            $stmt->bind_param("sssi", $fullname, $email, $phone, $member_id);
+            $stmt = $conn->prepare("UPDATE members SET email=?, phone=?, gender=?, address=? WHERE member_id=?");
+            $stmt->bind_param("ssssi", $email, $phone, $gender, $address, $member_id);
 
             if ($stmt->execute()) {
                 $success_message = "Profile details updated successfully!";
-                $_SESSION['member_name'] = $fullname;
             } else {
                 $error_message = "Update failed. Please try again.";
             }
@@ -82,7 +82,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // 3. Fetch Current Data
-$stmt = $conn->prepare("SELECT full_name, email, phone, gender, profile_pic, created_at FROM members WHERE member_id = ?");
+$stmt = $conn->prepare("SELECT full_name, email, phone, gender, address, profile_pic, created_at FROM members WHERE member_id = ?");
 $stmt->bind_param("i", $member_id);
 $stmt->execute();
 $user = $stmt->get_result()->fetch_assoc();
@@ -308,8 +308,8 @@ $pageTitle = "Settings";
                                     <h5 class="fw-bold mb-4">Edit Profile</h5>
                                     <div class="row g-4">
                                         <div class="col-12">
-                                            <label class="form-label small fw-bold text-muted text-uppercase">Full Name</label>
-                                            <input type="text" name="full_name" class="form-control" value="<?= htmlspecialchars($user['full_name']) ?>" required>
+                                            <label class="form-label small fw-bold text-muted text-uppercase">Full Name (Locked)</label>
+                                            <input type="text" class="form-control" value="<?= htmlspecialchars($user['full_name']) ?>" readonly>
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label small fw-bold text-muted text-uppercase">Email Address</label>
@@ -318,6 +318,17 @@ $pageTitle = "Settings";
                                         <div class="col-md-6">
                                             <label class="form-label small fw-bold text-muted text-uppercase">Phone Number</label>
                                             <input type="tel" name="phone" class="form-control" value="<?= htmlspecialchars($user['phone']) ?>" required>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label small fw-bold text-muted text-uppercase">Gender</label>
+                                            <select name="gender" class="form-select">
+                                                <option value="male" <?= ($user['gender'] == 'male') ? 'selected' : '' ?>>Male</option>
+                                                <option value="female" <?= ($user['gender'] == 'female') ? 'selected' : '' ?>>Female</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label small fw-bold text-muted text-uppercase">Address</label>
+                                            <input type="text" name="address" class="form-control" value="<?= htmlspecialchars($user['address'] ?? '') ?>">
                                         </div>
                                         <div class="col-12 pt-3">
                                             <button type="submit" name="update_profile" class="btn btn-lime">

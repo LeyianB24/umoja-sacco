@@ -47,6 +47,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email       = trim($_POST['email'] ?? '');
     $password    = $_POST['password'] ?? '';
     $confirm     = $_POST['confirm_password'] ?? '';
+    $gender      = $_POST['gender'] ?? 'male'; // Default to male if not set
 
     $phone = normalize_phone($phone_raw);
 
@@ -82,10 +83,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $reg_no = generate_member_no($conn);
         $status = 'inactive'; // Set to inactive until registration fee is paid
         
-        $insertSql = "INSERT INTO members (member_reg_no, full_name, national_id, phone, email, password, join_date, status, reg_fee_paid) VALUES (?, ?, ?, ?, ?, ?, NOW(), ?, 0)";
+        $insertSql = "INSERT INTO members (member_reg_no, full_name, national_id, phone, email, password, join_date, status, reg_fee_paid, gender) VALUES (?, ?, ?, ?, ?, ?, NOW(), ?, 0, ?)";
         
         if ($ins = $conn->prepare($insertSql)) {
-            $ins->bind_param("sssssss", $reg_no, $full_name, $national_id, $phone, $email, $hashed, $status);
+            $ins->bind_param("ssssssss", $reg_no, $full_name, $national_id, $phone, $email, $hashed, $status, $gender);
             
             if ($ins->execute()) {
                 $newMemberId = $ins->insert_id;
@@ -100,6 +101,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['email'] = $email;
                 $_SESSION['role'] = 'member';
                 $_SESSION['status'] = $status;
+                $_SESSION['gender'] = $gender; // Store gender in session
 
                 header("Location: ../member/pages/pay_registration.php");
                 exit;
@@ -370,8 +372,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
                     
                     <div class="col-md-6">
-                        <label class="form-label">Phone Number</label>
                         <input type="text" name="phone" class="form-control form-control-modern" required value="<?= htmlspecialchars($phone_raw) ?>" placeholder="07xxxxxxxx">
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label">Gender</label>
+                        <select name="gender" class="form-select form-control-modern">
+                            <option value="male">Male</option>
+                            <option value="female">Female</option>
+                        </select>
                     </div>
 
                     <div class="col-12">

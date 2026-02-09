@@ -1,0 +1,110 @@
+
+/* TABLE: investments */
+CREATE TABLE `investments` (
+  `investment_id` int(11) NOT NULL AUTO_INCREMENT,
+  `title` varchar(150) NOT NULL,
+  `category` enum('farm','vehicle_fleet','petrol_station','apartments','land','other') DEFAULT 'other',
+  `reg_no` varchar(50) DEFAULT NULL,
+  `model` varchar(100) DEFAULT NULL,
+  `capacity` varchar(50) DEFAULT NULL,
+  `assigned_route` varchar(150) DEFAULT NULL,
+  `description` text DEFAULT NULL,
+  `purchase_date` date DEFAULT NULL,
+  `purchase_cost` decimal(14,2) DEFAULT NULL,
+  `current_value` decimal(14,2) DEFAULT NULL,
+  `target_amount` decimal(14,2) DEFAULT 0.00,
+  `target_period` enum('daily','monthly','annually') DEFAULT 'monthly',
+  `target_start_date` date DEFAULT NULL,
+  `viability_status` enum('viable','underperforming','loss_making','pending') DEFAULT 'pending',
+  `last_viability_check` datetime DEFAULT NULL,
+  `status` enum('active','disposed','maintenance') DEFAULT 'active',
+  `sale_date` date DEFAULT NULL,
+  `sale_price` decimal(14,2) DEFAULT NULL,
+  `manager_admin_id` int(11) DEFAULT NULL,
+  `created_at` datetime DEFAULT current_timestamp(),
+  PRIMARY KEY (`investment_id`),
+  KEY `manager_admin_id` (`manager_admin_id`),
+  CONSTRAINT `investments_ibfk_1` FOREIGN KEY (`manager_admin_id`) REFERENCES `admins` (`admin_id`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=15 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+/* TABLE: vehicles */
+CREATE TABLE `vehicles` (
+  `vehicle_id` int(11) NOT NULL AUTO_INCREMENT,
+  `reg_no` varchar(50) NOT NULL,
+  `model` varchar(100) DEFAULT NULL,
+  `year` year(4) DEFAULT NULL,
+  `status` enum('active','maintenance','disposed') DEFAULT 'active',
+  `investment_id` int(11) DEFAULT NULL,
+  `purchase_cost` decimal(12,2) DEFAULT NULL,
+  `created_at` datetime DEFAULT current_timestamp(),
+  `assigned_route` varchar(20) NOT NULL,
+  `capacity` varchar(20) NOT NULL,
+  `target_daily_revenue` varchar(20) NOT NULL,
+  PRIMARY KEY (`vehicle_id`),
+  UNIQUE KEY `reg_no` (`reg_no`),
+  KEY `investment_id` (`investment_id`),
+  CONSTRAINT `vehicles_ibfk_1` FOREIGN KEY (`investment_id`) REFERENCES `investments` (`investment_id`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+/* TABLE: transactions */
+CREATE TABLE `transactions` (
+  `transaction_id` int(11) NOT NULL AUTO_INCREMENT,
+  `member_id` int(11) DEFAULT NULL,
+  `transaction_type` varchar(50) NOT NULL,
+  `amount` decimal(15,2) NOT NULL,
+  `type` enum('credit','debit') NOT NULL DEFAULT 'credit',
+  `category` varchar(100) DEFAULT 'General',
+  `reference_no` varchar(50) DEFAULT NULL,
+  `related_id` int(11) DEFAULT NULL,
+  `related_table` varchar(50) DEFAULT NULL,
+  `recorded_by` int(11) DEFAULT NULL,
+  `transaction_date` datetime DEFAULT current_timestamp(),
+  `payment_channel` varchar(80) DEFAULT NULL,
+  `description` varchar(255) DEFAULT NULL,
+  `notes` text DEFAULT NULL,
+  `created_by_admin` int(11) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `mpesa_request_id` varchar(100) DEFAULT NULL,
+  PRIMARY KEY (`transaction_id`),
+  KEY `created_by_admin` (`created_by_admin`),
+  KEY `member_id` (`member_id`),
+  KEY `transaction_date` (`transaction_date`),
+  KEY `idx_transactions_date` (`transaction_date`),
+  KEY `transactions_ibfk_2` (`recorded_by`),
+  KEY `idx_transactions_member` (`member_id`),
+  KEY `idx_transactions_type` (`transaction_type`),
+  KEY `idx_transactions_related` (`related_table`,`related_id`),
+  CONSTRAINT `transactions_ibfk_1` FOREIGN KEY (`member_id`) REFERENCES `members` (`member_id`),
+  CONSTRAINT `transactions_ibfk_2` FOREIGN KEY (`recorded_by`) REFERENCES `admins` (`admin_id`) ON DELETE SET NULL
+) ENGINE=InnoDB AUTO_INCREMENT=1023 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+/* TABLE: ledger_entries */
+CREATE TABLE `ledger_entries` (
+  `entry_id` int(11) NOT NULL AUTO_INCREMENT,
+  `transaction_id` int(11) NOT NULL,
+  `account_id` int(11) NOT NULL,
+  `debit` decimal(15,2) DEFAULT 0.00,
+  `credit` decimal(15,2) DEFAULT 0.00,
+  `balance_after` decimal(15,2) DEFAULT 0.00,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`entry_id`),
+  KEY `transaction_id` (`transaction_id`),
+  KEY `account_id` (`account_id`),
+  CONSTRAINT `ledger_entries_ibfk_1` FOREIGN KEY (`transaction_id`) REFERENCES `ledger_transactions` (`transaction_id`) ON DELETE CASCADE,
+  CONSTRAINT `ledger_entries_ibfk_2` FOREIGN KEY (`account_id`) REFERENCES `ledger_accounts` (`account_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=72 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+/* TABLE: ledger_accounts */
+CREATE TABLE `ledger_accounts` (
+  `account_id` int(11) NOT NULL AUTO_INCREMENT,
+  `account_name` varchar(255) NOT NULL,
+  `account_type` enum('asset','liability','equity','revenue','expense') NOT NULL,
+  `member_id` int(11) DEFAULT NULL,
+  `category` varchar(50) DEFAULT 'general',
+  `current_balance` decimal(15,2) DEFAULT 0.00,
+  `status` enum('active','closed') DEFAULT 'active',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`account_id`),
+  KEY `member_id` (`member_id`),
+  KEY `category` (`category`)
+) ENGINE=InnoDB AUTO_INCREMENT=29 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;

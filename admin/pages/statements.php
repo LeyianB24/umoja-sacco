@@ -143,6 +143,8 @@ $pageTitle = "Statement Portal";
         </div>
     </div>
 
+    <?php include __DIR__ . '/../../inc/finance_nav.php'; ?>
+
     <div class="row g-4">
         <div class="col-lg-7">
             <div class="glass-card">
@@ -156,7 +158,7 @@ $pageTitle = "Statement Portal";
                             <option value="">-- Start typing name or ID --</option>
                             <?php foreach($members as $m): ?>
                                 <option value="<?= $m['member_id'] ?>">
-                                    <?= htmlspecialchars($m['full_name']) ?> (<?= $m['member_reg_no'] ?>) - ID: <?= $m['national_id'] ?>
+                                    <?= esc($m['full_name']) ?> (<?= $m['member_reg_no'] ?>) - ID: <?= $m['national_id'] ?>
                                 </option>
                             <?php endforeach; ?>
                         </select>

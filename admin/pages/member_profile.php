@@ -80,6 +80,12 @@ $q_l_list->bind_param("i", $member_id);
 $q_l_list->execute();
 $member_loans = $q_l_list->get_result()->fetch_all(MYSQLI_ASSOC);
 
+// 5. FETCH KYC DOCUMENTS
+$q_docs = $conn->prepare("SELECT * FROM member_documents WHERE member_id = ?");
+$q_docs->bind_param("i", $member_id);
+$q_docs->execute();
+$member_docs = $q_docs->get_result()->fetch_all(MYSQLI_ASSOC);
+
 $pageTitle = $member['full_name'] . " - Member Profile";
 ?>
 <!DOCTYPE html>
@@ -412,32 +418,33 @@ $pageTitle = $member['full_name'] . " - Member Profile";
         <!-- KYC TAB -->
         <div class="tab-pane fade" id="kyc" role="tabpanel">
             <div class="row g-4">
+                <?php foreach($member_docs as $doc): ?>
                 <div class="col-md-6">
                     <div class="glass-card">
-                        <h6 class="fw-bold mb-3">Identity Proof</h6>
+                        <h6 class="fw-bold mb-3 text-uppercase"><?= str_replace('_', ' ', $doc['document_type']) ?></h6>
                         <div class="d-flex align-items-center gap-3 p-3 bg-light rounded-4 border">
-                            <div class="icon-box bg-white shadow-sm mb-0"><i class="bi bi-card-image"></i></div>
+                            <div class="icon-box bg-white shadow-sm mb-0"><i class="bi bi-file-earmark-text"></i></div>
                             <div class="flex-grow-1">
-                                <div class="fw-bold small">National ID Front.pdf</div>
-                                <div class="text-muted x-small">Uploaded 5 months ago</div>
+                                <div class="fw-bold small"><?= htmlspecialchars($doc['file_path']) ?></div>
+                                <div class="text-muted x-small">Uploaded: <?= date('d M Y', strtotime($doc['uploaded_at'])) ?></div>
                             </div>
-                            <button class="btn btn-sm btn-light border rounded-pill px-3">View</button>
+                            <div class="d-flex gap-2">
+                                <a href="<?= BASE_URL ?>/uploads/kyc/<?= $doc['file_path'] ?>" target="_blank" class="btn btn-sm btn-light border rounded-pill px-3">View</a>
+                                <span class="badge bg-<?= $doc['status'] == 'verified' ? 'success' : 'warning' ?> bg-opacity-10 text-<?= $doc['status'] == 'verified' ? 'success' : 'warning' ?> d-flex align-items-center"><?= strtoupper($doc['status']) ?></span>
+                            </div>
                         </div>
                     </div>
                 </div>
-                <div class="col-md-6">
-                    <div class="glass-card">
-                        <h6 class="fw-bold mb-3">Signature Verification</h6>
-                        <div class="d-flex align-items-center gap-3 p-3 bg-light rounded-4 border">
-                            <div class="icon-box bg-white shadow-sm mb-0"><i class="bi bi-pen"></i></div>
-                            <div class="flex-grow-1">
-                                <div class="fw-bold small">Digital Signature Image</div>
-                                <div class="text-muted x-small">Verified on Onboarding</div>
-                            </div>
-                            <button class="btn btn-sm btn-light border rounded-pill px-3">View</button>
-                        </div>
+                <?php endforeach; ?>
+                <?php if(empty($member_docs)): ?>
+                <div class="col-12">
+                    <div class="glass-card text-center py-5">
+                        <i class="bi bi-shield-exclamation text-muted fs-1 mb-3 d-block"></i>
+                        <h5 class="text-muted">No KYC documents found.</h5>
+                        <p class="text-secondary small">The member hasn't uploaded any verification documents yet.</p>
                     </div>
                 </div>
+                <?php endif; ?>
             </div>
         </div>
     </div>

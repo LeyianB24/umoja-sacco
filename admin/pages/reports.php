@@ -321,9 +321,6 @@ function ksh($v, $d = 0) { return number_format((float)($v ?? 0), $d); }
                     <p class="text-muted small mb-0">Overview from <?= date('M d, Y', strtotime($start_date)) ?> to <?= date('M d, Y', strtotime($end_date)) ?></p>
                 </div>
                 <div class="d-flex gap-2">
-                     <a href="admin/pages/trial_balance.php" class="btn btn-outline-forest shadow-sm">
-                        <i class="bi bi-shield-check me-2"></i> Trial Balance
-                    </a>
                      <div class="dropdown">
                         <button class="btn btn-forest dropdown-toggle shadow-sm" type="button" data-bs-toggle="dropdown">
                             <i class="bi bi-download me-2"></i> Export
@@ -340,6 +337,8 @@ function ksh($v, $d = 0) { return number_format((float)($v ?? 0), $d); }
                     </form>
                 </div>
             </div>
+
+            <?php include __DIR__ . '/../../inc/finance_nav.php'; ?>
 
             <div class="hope-card mb-4 no-print py-4">
                 <form method="GET" class="row g-3 align-items-end" id="filterForm">

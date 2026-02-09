@@ -1,0 +1,477 @@
+{
+    "legacy_tables": [
+        "expenses"
+    ],
+    "structures": {
+        "investments": [
+            {
+                "Field": "investment_id",
+                "Type": "int(11)",
+                "Null": "NO",
+                "Key": "PRI",
+                "Default": null,
+                "Extra": "auto_increment"
+            },
+            {
+                "Field": "title",
+                "Type": "varchar(150)",
+                "Null": "NO",
+                "Key": "",
+                "Default": null,
+                "Extra": ""
+            },
+            {
+                "Field": "category",
+                "Type": "enum('farm','vehicle_fleet','petrol_station','apartments','land','other')",
+                "Null": "YES",
+                "Key": "",
+                "Default": "other",
+                "Extra": ""
+            },
+            {
+                "Field": "reg_no",
+                "Type": "varchar(50)",
+                "Null": "YES",
+                "Key": "",
+                "Default": null,
+                "Extra": ""
+            },
+            {
+                "Field": "model",
+                "Type": "varchar(100)",
+                "Null": "YES",
+                "Key": "",
+                "Default": null,
+                "Extra": ""
+            },
+            {
+                "Field": "capacity",
+                "Type": "varchar(50)",
+                "Null": "YES",
+                "Key": "",
+                "Default": null,
+                "Extra": ""
+            },
+            {
+                "Field": "assigned_route",
+                "Type": "varchar(150)",
+                "Null": "YES",
+                "Key": "",
+                "Default": null,
+                "Extra": ""
+            },
+            {
+                "Field": "description",
+                "Type": "text",
+                "Null": "YES",
+                "Key": "",
+                "Default": null,
+                "Extra": ""
+            },
+            {
+                "Field": "purchase_date",
+                "Type": "date",
+                "Null": "YES",
+                "Key": "",
+                "Default": null,
+                "Extra": ""
+            },
+            {
+                "Field": "purchase_cost",
+                "Type": "decimal(14,2)",
+                "Null": "YES",
+                "Key": "",
+                "Default": null,
+                "Extra": ""
+            },
+            {
+                "Field": "current_value",
+                "Type": "decimal(14,2)",
+                "Null": "YES",
+                "Key": "",
+                "Default": null,
+                "Extra": ""
+            },
+            {
+                "Field": "target_amount",
+                "Type": "decimal(14,2)",
+                "Null": "YES",
+                "Key": "",
+                "Default": "0.00",
+                "Extra": ""
+            },
+            {
+                "Field": "target_period",
+                "Type": "enum('daily','monthly','annually')",
+                "Null": "YES",
+                "Key": "",
+                "Default": "monthly",
+                "Extra": ""
+            },
+            {
+                "Field": "target_start_date",
+                "Type": "date",
+                "Null": "YES",
+                "Key": "",
+                "Default": null,
+                "Extra": ""
+            },
+            {
+                "Field": "viability_status",
+                "Type": "enum('viable','underperforming','loss_making','pending')",
+                "Null": "YES",
+                "Key": "",
+                "Default": "pending",
+                "Extra": ""
+            },
+            {
+                "Field": "last_viability_check",
+                "Type": "datetime",
+                "Null": "YES",
+                "Key": "",
+                "Default": null,
+                "Extra": ""
+            },
+            {
+                "Field": "status",
+                "Type": "enum('active','disposed','maintenance')",
+                "Null": "YES",
+                "Key": "",
+                "Default": "active",
+                "Extra": ""
+            },
+            {
+                "Field": "sale_date",
+                "Type": "date",
+                "Null": "YES",
+                "Key": "",
+                "Default": null,
+                "Extra": ""
+            },
+            {
+                "Field": "sale_price",
+                "Type": "decimal(14,2)",
+                "Null": "YES",
+                "Key": "",
+                "Default": null,
+                "Extra": ""
+            },
+            {
+                "Field": "manager_admin_id",
+                "Type": "int(11)",
+                "Null": "YES",
+                "Key": "MUL",
+                "Default": null,
+                "Extra": ""
+            },
+            {
+                "Field": "created_at",
+                "Type": "datetime",
+                "Null": "YES",
+                "Key": "",
+                "Default": "current_timestamp()",
+                "Extra": ""
+            }
+        ],
+        "vehicles": [
+            {
+                "Field": "vehicle_id",
+                "Type": "int(11)",
+                "Null": "NO",
+                "Key": "PRI",
+                "Default": null,
+                "Extra": "auto_increment"
+            },
+            {
+                "Field": "reg_no",
+                "Type": "varchar(50)",
+                "Null": "NO",
+                "Key": "UNI",
+                "Default": null,
+                "Extra": ""
+            },
+            {
+                "Field": "model",
+                "Type": "varchar(100)",
+                "Null": "YES",
+                "Key": "",
+                "Default": null,
+                "Extra": ""
+            },
+            {
+                "Field": "year",
+                "Type": "year(4)",
+                "Null": "YES",
+                "Key": "",
+                "Default": null,
+                "Extra": ""
+            },
+            {
+                "Field": "status",
+                "Type": "enum('active','maintenance','disposed')",
+                "Null": "YES",
+                "Key": "",
+                "Default": "active",
+                "Extra": ""
+            },
+            {
+                "Field": "investment_id",
+                "Type": "int(11)",
+                "Null": "YES",
+                "Key": "MUL",
+                "Default": null,
+                "Extra": ""
+            },
+            {
+                "Field": "purchase_cost",
+                "Type": "decimal(12,2)",
+                "Null": "YES",
+                "Key": "",
+                "Default": null,
+                "Extra": ""
+            },
+            {
+                "Field": "created_at",
+                "Type": "datetime",
+                "Null": "YES",
+                "Key": "",
+                "Default": "current_timestamp()",
+                "Extra": ""
+            },
+            {
+                "Field": "assigned_route",
+                "Type": "varchar(20)",
+                "Null": "NO",
+                "Key": "",
+                "Default": null,
+                "Extra": ""
+            },
+            {
+                "Field": "capacity",
+                "Type": "varchar(20)",
+                "Null": "NO",
+                "Key": "",
+                "Default": null,
+                "Extra": ""
+            },
+            {
+                "Field": "target_daily_revenue",
+                "Type": "varchar(20)",
+                "Null": "NO",
+                "Key": "",
+                "Default": null,
+                "Extra": ""
+            }
+        ],
+        "transactions": [
+            {
+                "Field": "transaction_id",
+                "Type": "int(11)",
+                "Null": "NO",
+                "Key": "PRI",
+                "Default": null,
+                "Extra": "auto_increment"
+            },
+            {
+                "Field": "member_id",
+                "Type": "int(11)",
+                "Null": "YES",
+                "Key": "MUL",
+                "Default": null,
+                "Extra": ""
+            },
+            {
+                "Field": "transaction_type",
+                "Type": "varchar(50)",
+                "Null": "NO",
+                "Key": "MUL",
+                "Default": null,
+                "Extra": ""
+            },
+            {
+                "Field": "amount",
+                "Type": "decimal(15,2)",
+                "Null": "NO",
+                "Key": "",
+                "Default": null,
+                "Extra": ""
+            },
+            {
+                "Field": "type",
+                "Type": "enum('credit','debit')",
+                "Null": "NO",
+                "Key": "",
+                "Default": "credit",
+                "Extra": ""
+            },
+            {
+                "Field": "category",
+                "Type": "varchar(100)",
+                "Null": "YES",
+                "Key": "",
+                "Default": "General",
+                "Extra": ""
+            },
+            {
+                "Field": "reference_no",
+                "Type": "varchar(50)",
+                "Null": "YES",
+                "Key": "",
+                "Default": null,
+                "Extra": ""
+            },
+            {
+                "Field": "related_id",
+                "Type": "int(11)",
+                "Null": "YES",
+                "Key": "",
+                "Default": null,
+                "Extra": ""
+            },
+            {
+                "Field": "related_table",
+                "Type": "varchar(50)",
+                "Null": "YES",
+                "Key": "MUL",
+                "Default": null,
+                "Extra": ""
+            },
+            {
+                "Field": "recorded_by",
+                "Type": "int(11)",
+                "Null": "YES",
+                "Key": "MUL",
+                "Default": null,
+                "Extra": ""
+            },
+            {
+                "Field": "transaction_date",
+                "Type": "datetime",
+                "Null": "YES",
+                "Key": "MUL",
+                "Default": "current_timestamp()",
+                "Extra": ""
+            },
+            {
+                "Field": "payment_channel",
+                "Type": "varchar(80)",
+                "Null": "YES",
+                "Key": "",
+                "Default": null,
+                "Extra": ""
+            },
+            {
+                "Field": "description",
+                "Type": "varchar(255)",
+                "Null": "YES",
+                "Key": "",
+                "Default": null,
+                "Extra": ""
+            },
+            {
+                "Field": "notes",
+                "Type": "text",
+                "Null": "YES",
+                "Key": "",
+                "Default": null,
+                "Extra": ""
+            },
+            {
+                "Field": "created_by_admin",
+                "Type": "int(11)",
+                "Null": "YES",
+                "Key": "MUL",
+                "Default": null,
+                "Extra": ""
+            },
+            {
+                "Field": "created_at",
+                "Type": "timestamp",
+                "Null": "NO",
+                "Key": "",
+                "Default": "current_timestamp()",
+                "Extra": ""
+            },
+            {
+                "Field": "mpesa_request_id",
+                "Type": "varchar(100)",
+                "Null": "YES",
+                "Key": "",
+                "Default": null,
+                "Extra": ""
+            }
+        ],
+        "expenses": [
+            {
+                "Field": "expense_id",
+                "Type": "int(11)",
+                "Null": "NO",
+                "Key": "PRI",
+                "Default": null,
+                "Extra": "auto_increment"
+            },
+            {
+                "Field": "category",
+                "Type": "varchar(50)",
+                "Null": "NO",
+                "Key": "",
+                "Default": "operational",
+                "Extra": ""
+            },
+            {
+                "Field": "amount",
+                "Type": "decimal(12,2)",
+                "Null": "NO",
+                "Key": "",
+                "Default": null,
+                "Extra": ""
+            },
+            {
+                "Field": "expense_date",
+                "Type": "date",
+                "Null": "NO",
+                "Key": "",
+                "Default": null,
+                "Extra": ""
+            },
+            {
+                "Field": "description",
+                "Type": "text",
+                "Null": "YES",
+                "Key": "",
+                "Default": null,
+                "Extra": ""
+            },
+            {
+                "Field": "investment_id",
+                "Type": "int(11)",
+                "Null": "YES",
+                "Key": "MUL",
+                "Default": null,
+                "Extra": ""
+            },
+            {
+                "Field": "recorded_by",
+                "Type": "int(11)",
+                "Null": "YES",
+                "Key": "MUL",
+                "Default": null,
+                "Extra": ""
+            },
+            {
+                "Field": "created_at",
+                "Type": "timestamp",
+                "Null": "NO",
+                "Key": "",
+                "Default": "current_timestamp()",
+                "Extra": ""
+            }
+        ]
+    },
+    "counts": {
+        "investments": "13",
+        "vehicles": "4",
+        "transactions": "214",
+        "expenses": "1"
+    }
+}

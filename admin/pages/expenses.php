@@ -42,8 +42,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
         $conn->begin_transaction();
         try {
-            $inv_id = !empty($_POST['investment_id']) ? intval($_POST['investment_id']) : NULL;
+            $unified_id = $_POST['unified_asset_id'] ?? '';
+            $inv_id = null;
+            $related_id = 0;
+            $related_table = null;
+
+            if ($unified_id && $unified_id !== 'other_0') {
+                list($source, $related_id) = explode('_', $unified_id);
+                $related_id = (int)$related_id;
+                $related_table = 'investments';
+                $inv_id = $related_id;
+            }
+
             $method = $_POST['payment_method'] ?? 'cash';
+            
+            // Validate asset is active if specified
+            if ($related_table && $related_id) {
+                $check_sql = "SELECT status FROM investments WHERE investment_id = ?";
+                $stmt_check = $conn->prepare($check_sql);
+                $stmt_check->bind_param("i", $related_id);
+                $stmt_check->execute();
+                $status_result = $stmt_check->get_result()->fetch_assoc();
+                
+                if (!$status_result || $status_result['status'] !== 'active') {
+                    throw new Exception("Cannot record expenses for inactive or disposed assets.");
+                }
+            }
             
             // Record in Central Ledger via TransactionHelper/FinancialEngine
             $ok = TransactionHelper::record([
@@ -54,8 +78,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 'method'        => $method,
                 'ref_no'        => $ref_no,
                 'notes'         => $notes,
-                'related_id'    => $inv_id,
-                'related_table' => ($inv_id ? 'investments' : null),
+                'related_id'    => $related_id,
+                'related_table' => $related_table,
             ]);
 
             if (!$ok) throw new Exception("Ledger recording failed.");
@@ -100,7 +124,7 @@ if ($duration !== 'all') {
     $date_filter = " AND created_at BETWEEN '$start_date 00:00:00' AND '$end_date 23:59:59'";
 }
 
-$where = "transaction_type = 'expense' $date_filter";
+$where = "transaction_type IN ('expense', 'expense_outflow') $date_filter";
 $sql = "SELECT * FROM transactions WHERE $where ORDER BY created_at DESC";
 $result = $conn->query($sql);
 
@@ -164,8 +188,8 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
     exit;
 }
 
-// 5. Fetch Investments for Attribution
-$investments_list = $conn->query("SELECT investment_id, title, category, reg_no FROM investments WHERE status = 'active' ORDER BY category, title ASC");
+// 5. Fetch Assets for Attribution
+$investments_list = $conn->query("SELECT investment_id, title, category FROM investments WHERE status = 'active' ORDER BY title ASC");
 
 $pageTitle = "Expenses Portal";
 ?>
@@ -360,6 +384,8 @@ $pageTitle = "Expenses Portal";
             </form>
         </div>
 
+        <?php include __DIR__ . '/../../inc/finance_nav.php'; ?>
+
         <!-- KPIs -->
         <div class="row g-4 mb-4">
             <div class="col-md-4">
@@ -551,15 +577,17 @@ $pageTitle = "Expenses Portal";
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Link to Asset (Optional)</label>
-                            <select name="investment_id" class="form-select">
-                                <option value="">-- General Operational --</option>
-                                <?php 
-                                mysqli_data_seek($investments_list, 0);
-                                while($inv = $investments_list->fetch_assoc()): ?>
-                                    <option value="<?= $inv['investment_id'] ?>">
-                                        [<?= strtoupper(str_replace('_',' ',$inv['category'])) ?>] <?= esc($inv['title']) ?>
-                                    </option>
-                                <?php endwhile; ?>
+                            <select name="unified_asset_id" class="form-select">
+                                <option value="other_0">-- General Operational (Unlinked) --</option>
+                                <optgroup label="Active Portfolio">
+                                    <?php 
+                                    mysqli_data_seek($investments_list, 0);
+                                    while($inv = $investments_list->fetch_assoc()): ?>
+                                        <option value="inv_<?= $inv['investment_id'] ?>">
+                                            [<?= strtoupper(str_replace('_',' ',$inv['category'])) ?>] <?= esc($inv['title']) ?>
+                                        </option>
+                                    <?php endwhile; ?>
+                                </optgroup>
                             </select>
                         </div>
                         <div class="col-12">

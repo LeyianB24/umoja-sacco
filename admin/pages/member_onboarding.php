@@ -6,15 +6,8 @@ require_once __DIR__ . '/../../config/app_config.php';
 require_once __DIR__ . '/../../config/db_connect.php';
 require_once __DIR__ . '/../../inc/Auth.php';
 require_once __DIR__ . '/../../inc/LayoutManager.php';
+require_once __DIR__ . '/../../inc/TransactionHelper.php';
 
-$layout = LayoutManager::create('admin');
-
-// usms/clerk/register_member.php
-if (session_status() === PHP_SESSION_NONE) session_start();
-// Enforce Admin Access
-require_admin();
-
-// Initialize Layout Manager
 $layout = LayoutManager::create('admin');
 require_permission();
 
@@ -28,8 +21,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $national_id = trim($_POST['national_id']);
     $phone       = trim($_POST['phone']);
     $email       = trim($_POST['email']);
+    $address     = trim($_POST['address'] ?? '');
+    $gender      = $_POST['gender'] ?? 'male';
     $password    = $_POST['password'];
-    $pay_method  = $_POST['payment_method']; // cash or mpesa
+    $pay_method  = $_POST['payment_method'] ?? 'cash';
     $paid        = isset($_POST['is_paid']) ? 1 : 0;
 
     // Validation
@@ -48,17 +43,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $status = ($paid) ? 'active' : 'inactive';
             
             // 2. Insert Member
-            $ins = $conn->prepare("INSERT INTO members (member_reg_no, full_name, national_id, phone, email, password, join_date, status, registration_fee_status, reg_fee_paid) VALUES (?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?)");
-            $ins->bind_param("sssssssssi", $reg_no, $full_name, $national_id, $phone, $email, $hashed, $status, $fee_status, $paid);
-            if (!$ins->execute()) throw new Exception("Member registration failed: " . $conn->error);
-            $member_id = $ins->insert_id;
+            $ins = $conn->prepare("INSERT INTO members (member_reg_no, full_name, national_id, phone, email, address, gender, password, join_date, status, registration_fee_status, reg_fee_paid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?)");
+            $ins->bind_param("ssssssssssi", $reg_no, $full_name, $national_id, $phone, $email, $address, $gender, $hashed, $status, $fee_status, $paid);
+            // 2b. Handle File Uploads (KYC)
+            $upload_dir = __DIR__ . '/../../uploads/kyc/';
+            if (!is_dir($upload_dir)) mkdir($upload_dir, 0777, true);
+
+            $files_to_process = [
+                'passport_photo' => 'passport_photo', 
+                'national_id_front' => 'national_id_front'
+            ];
+
+            foreach ($files_to_process as $input_name => $doc_type) {
+                if (!empty($_FILES[$input_name]['name']) && $_FILES[$input_name]['error'] === UPLOAD_ERR_OK) {
+                    $ext = pathinfo($_FILES[$input_name]['name'], PATHINFO_EXTENSION);
+                    $filename = "{$doc_type}_{$member_id}_" . time() . ".$ext";
+                    $target = $upload_dir . $filename;
+                    
+                    if (move_uploaded_file($_FILES[$input_name]['tmp_name'], $target)) {
+                        $sql = "INSERT INTO member_documents (member_id, document_type, file_path, status) VALUES (?, ?, ?, 'verified')";
+                        $doc_stmt = $conn->prepare($sql);
+                        $doc_stmt->bind_param("iss", $member_id, $doc_type, $filename);
+                        $doc_stmt->execute();
+                    }
+                }
+            }
 
             // 3. Record Payment if paid
             if ($paid) {
-                require_once __DIR__ . '/../../inc/TransactionHelper.php';
                 $ref = ($pay_method === 'cash') ? 'CSH-' . strtoupper(bin2hex(random_bytes(3))) : 'MPS-OFFICE';
                 
-                // Unified Financial Engine Record
                 TransactionHelper::record([
                     'member_id'      => $member_id,
                     'amount'         => 1000.00,
@@ -108,7 +122,7 @@ $pageTitle = "Register Member";
         
         <div class="container-fluid py-4">
             <div class="row justify-content-center">
-                <div class="col-lg-7">
+                <div class="col-lg-8">
                     <div class="mb-4">
                         <h2 class="fw-bold text-dark">Member Onboarding</h2>
                         <p class="text-muted">Register a new member and collect the mandatory <strong>KES 1,000</strong> registration fee.</p>
@@ -120,7 +134,7 @@ $pageTitle = "Register Member";
                         </div>
                     <?php endif; ?>
 
-                    <?php if($errors): ?>
+                    <?php if(!empty($errors)): ?>
                         <div class="alert alert-danger border-0 shadow-sm rounded-4 mb-4">
                             <ul class="mb-0">
                                 <?php foreach($errors as $e): ?><li><?= $e ?></li><?php endforeach; ?>
@@ -128,63 +142,75 @@ $pageTitle = "Register Member";
                         </div>
                     <?php endif; ?>
 
-                    <div class="glass-card p-4 p-md-5">
-                        <form method="POST">
+                    <div class="glass-card p-4">
+                        <form method="POST" enctype="multipart/form-data">
                             <?= csrf_field() ?>
-                            <div class="row g-4">
-                                <div class="col-12">
-                                    <label class="form-label">Full Name</label>
-                                    <input type="text" name="full_name" class="form-control form-control-lg" required placeholder="John Doe">
+                            <div class="row g-3">
+                                <div class="col-md-12">
+                                    <label for="full_name" class="form-label">Full Name</label>
+                                    <input type="text" class="form-control" id="full_name" name="full_name" required value="<?= htmlspecialchars($_POST['full_name'] ?? '') ?>">
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label">National ID / Passport</label>
-                                    <input type="text" name="national_id" class="form-control" required placeholder="12345678">
+                                    <label for="national_id" class="form-label">National ID</label>
+                                    <input type="text" class="form-control" id="national_id" name="national_id" required value="<?= htmlspecialchars($_POST['national_id'] ?? '') ?>">
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label">Phone Number</label>
-                                    <input type="text" name="phone" class="form-control" required placeholder="0712345678">
+                                    <label for="phone" class="form-label">Phone Number</label>
+                                    <input type="tel" class="form-control" id="phone" name="phone" required value="<?= htmlspecialchars($_POST['phone'] ?? '') ?>">
                                 </div>
-                                <div class="col-12">
-                                    <label class="form-label">Email Address</label>
-                                    <input type="email" name="email" class="form-control" required placeholder="john@example.com">
+                                <div class="col-md-6">
+                                    <label for="email" class="form-label">Email Address</label>
+                                    <input type="email" class="form-control" id="email" name="email" required value="<?= htmlspecialchars($_POST['email'] ?? '') ?>">
                                 </div>
-                                <div class="col-12">
-                                    <label class="form-label">Temporary Password (Defaults to 'password123')</label>
-                                    <input type="password" name="password" class="form-control" placeholder="Optional">
+                                <div class="col-md-6">
+                                    <label for="gender" class="form-label">Gender</label>
+                                    <select class="form-select" id="gender" name="gender">
+                                        <option value="male" <?= (($_POST['gender'] ?? '') == 'male') ? 'selected' : '' ?>>Male</option>
+                                        <option value="female" <?= (($_POST['gender'] ?? '') == 'female') ? 'selected' : '' ?>>Female</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-12">
+                                    <label for="address" class="form-label">Physical Address</label>
+                                    <input type="text" class="form-control" id="address" name="address" value="<?= htmlspecialchars($_POST['address'] ?? '') ?>">
+                                </div>
+                                <div class="col-md-12">
+                                    <label for="password" class="form-label">Temporary Password (Default: 'password123')</label>
+                                    <input type="password" class="form-control" id="password" name="password" placeholder="Leave blank for default">
                                 </div>
 
-                                <div class="col-12">
-                                    <hr class="my-3">
-                                    <div class="p-3 rounded-4 border bg-light">
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <div>
-                                                <h6 class="fw-bold mb-0">Registration Fee (KES 1,000)</h6>
-                                                <p class="small text-muted mb-0">Mark if member paid the enrollment fee.</p>
-                                            </div>
-                                            <div class="form-check form-switch fs-4">
-                                                <input class="form-check-input" type="checkbox" name="is_paid" checked id="paidSwitch" onchange="togglePayment(this.checked)">
-                                            </div>
+                                <div class="col-12 mt-4">
+                                    <h5 class="fw-bold text-dark border-bottom pb-2">Registration Fee (KES 1,000)</h5>
+                                    <div class="form-check form-switch mb-3">
+                                        <input class="form-check-input" type="checkbox" id="is_paid" name="is_paid" onchange="togglePayment(this.checked)" checked>
+                                        <label class="form-check-label" for="is_paid">Enrollment Fee Paid</label>
+                                    </div>
+
+                                    <div id="paymentDetails">
+                                        <label class="form-label">Payment Method</label>
+                                        <select class="form-select" name="payment_method">
+                                            <option value="cash">Cash Payment</option>
+                                            <option value="mpesa">M-Pesa (At Office)</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="col-12 mt-4">
+                                    <h5 class="fw-bold text-dark border-bottom pb-2">KYC Documents</h5>
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Passport Photo</label>
+                                            <input type="file" name="passport_photo" class="form-control" accept="image/*">
                                         </div>
-                                        
-                                        <div class="mt-3" id="paymentDetails">
-                                            <label class="form-label">Payment Method</label>
-                                            <div class="d-flex gap-3">
-                                                <div class="form-check">
-                                                    <input class="form-check-input" type="radio" name="payment_method" value="cash" checked id="payCash">
-                                                    <label class="form-check-label" for="payCash">Cash Payment</label>
-                                                </div>
-                                                <div class="form-check">
-                                                    <input class="form-check-input" type="radio" name="payment_method" value="mpesa" id="payMpesa">
-                                                    <label class="form-check-label" for="payMpesa">M-Pesa (At Office)</label>
-                                                </div>
-                                            </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">National ID Front</label>
+                                            <input type="file" name="national_id_front" class="form-control" accept="image/*,application/pdf">
                                         </div>
                                     </div>
                                 </div>
 
                                 <div class="col-12 mt-4">
                                     <button type="submit" class="btn btn-green w-100 py-3 fs-5 shadow-sm">
-                                        Confirm & Finalize Registration
+                                        <i class="bi bi-person-plus me-2"></i> Register & Finalize Member
                                     </button>
                                 </div>
                             </div>
@@ -203,8 +229,3 @@ $pageTitle = "Register Member";
 </script>
 </body>
 </html>
-
-
-
-
-
