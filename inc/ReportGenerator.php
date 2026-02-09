@@ -52,9 +52,15 @@ class ReportGenerator {
         // 2. Assets: Liquidity (Cash, M-Pesa, Bank)
         $cash = $getSysBal('Cash at Hand', true) + $getSysBal('M-Pesa Float', true) + $getSysBal('Bank Account', true);
         $data['assets'][] = ['label' => 'Cash & Bank Balances', 'amount' => $cash];
-        $data['totals']['assets'] = $loanPrincipal + $cash;
 
-        // 3. Liabilities: Member Savings & Welfare
+        // 3. Assets: Sacco Investments
+        $totalInvestments = (float)($this->db->query("SELECT SUM(current_value) FROM investments WHERE status = 'active'")->fetch_row()[0] ?? 0);
+        
+        $data['assets'][] = ['label' => 'Strategic Investment Portfolio', 'amount' => $totalInvestments];
+
+        $data['totals']['assets'] = $loanPrincipal + $cash + $totalInvestments;
+
+        // 4. Liabilities: Member Savings & Welfare
         $savings = $getBal('savings', false);
         $welfare = $getBal('welfare', false);
         $data['liabilities_equity'][] = ['label' => 'Member Savings', 'amount' => $savings];

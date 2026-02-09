@@ -12,8 +12,11 @@ $layout = LayoutManager::create('admin');
 
 require_once __DIR__ . '/../../inc/TransactionHelper.php';
 require_once __DIR__ . '/../../inc/ExportHelper.php';
+require_once __DIR__ . '/../../inc/InvestmentViabilityEngine.php';
 Auth::requireAdmin();
 require_permission();
+
+$viability_engine = new InvestmentViabilityEngine($conn);
 
 // 1. Handle Form Submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['record_revenue'])) {
@@ -27,23 +30,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['record_revenue'])) {
     
     validate_not_future($date, "revenue.php");
 
-    $config = [
-        'type'           => 'income',
-        'category'       => ($source === 'vehicle' ? 'vehicle_income' : 'investment_income'),
-        'amount'         => $amount,
-        'method'         => $method,
-        'notes'          => $desc,
-        'related_table'  => ($source === 'vehicle' ? 'vehicles' : 'investments'),
-        'related_id'     => ($source === 'vehicle' ? intval($_POST['vehicle_id']) : intval($_POST['investment_id'])),
-        'transaction_date' => $date
-    ];
-
-    if (TransactionHelper::record($config)) {
-        flash_set("Revenue recorded successfully!", "success");
-        header("Location: revenue.php");
-        exit;
+    $unified_id = $_POST['unified_asset_id'] ?? 'other_0';
+    list($source, $related_id) = explode('_', $unified_id);
+    $related_id = (int)$related_id;
+    $related_table = 'investments';
+    
+    if ($related_id <= 0 && $source !== 'other') {
+        flash_set("Please select a valid revenue source.", "error");
     } else {
-        flash_set("Failed to record revenue. Ensure Financial Engine is active.", "error");
+        // Check if investment is active
+        if ($source !== 'other') {
+            $check_sql = "SELECT status FROM investments WHERE investment_id = ?";
+            $stmt_check = $conn->prepare($check_sql);
+            $stmt_check->bind_param("i", $related_id);
+            $stmt_check->execute();
+            $status_result = $stmt_check->get_result()->fetch_assoc();
+            
+            if (!$status_result || $status_result['status'] !== 'active') {
+                flash_set("Cannot record revenue for inactive or sold assets.", "error");
+                header("Location: revenue.php");
+                exit;
+            }
+        }
+
+        $config = [
+            'type'           => 'income',
+            'category'       => ($source === 'other' ? 'general_income' : 'investment_income'),
+            'amount'         => $amount,
+            'method'         => $method,
+            'notes'          => $desc,
+            'related_table'  => ($source === 'other' ? NULL : 'investments'),
+            'related_id'     => ($source === 'other' ? 0 : $related_id),
+            'transaction_date' => $date
+        ];
+
+        if (TransactionHelper::record($config)) {
+            flash_set("Revenue recorded successfully!", "success");
+            header("Location: revenue.php");
+            exit;
+        } else {
+            flash_set("Failed to record revenue. Ensure Financial Engine is active.", "error");
+        }
     }
 }
 
@@ -64,7 +91,6 @@ if ($duration !== 'all') {
 
 $revenue_qry = "SELECT t.*, 
                 CASE 
-                    WHEN t.related_table = 'vehicles' THEN (SELECT reg_no FROM vehicles WHERE vehicle_id = t.related_id)
                     WHEN t.related_table = 'investments' THEN (SELECT title FROM investments WHERE investment_id = t.related_id)
                     ELSE 'General Fund' 
                 END as source_name 
@@ -85,33 +111,61 @@ foreach ($revenue_data as $r) {
     }
 }
 
-$total_all_time = $conn->query("SELECT SUM(amount) FROM transactions WHERE transaction_type='income'")->fetch_row()[0] ?? 0;
+$total_all_time = $conn->query("SELECT SUM(amount) FROM transactions WHERE transaction_type IN ('income', 'revenue_inflow')")->fetch_row()[0] ?? 0;
 
-// 3b. Investment-Specific Revenue Analytics
-$inv_revenue_sql = "SELECT 
-    i.investment_id, i.title, i.category,
-    SUM(CASE WHEN t.transaction_date BETWEEN ? AND ? THEN t.amount ELSE 0 END) as period_revenue,
-    SUM(t.amount) as total_revenue,
-    COUNT(t.transaction_id) as transaction_count
+// Unified Asset Revenue Analytics
+$asset_revenue_sql = "
+    SELECT 
+        i.investment_id as id, i.title, i.category, i.target_amount, i.target_period, i.viability_status, 'investments' as asset_table,
+        SUM(CASE WHEN t.transaction_date BETWEEN ? AND ? THEN t.amount ELSE 0 END) as period_revenue,
+        COALESCE(SUM(t.amount), 0) as total_revenue,
+        COUNT(t.transaction_id) as transaction_count
     FROM investments i
-    LEFT JOIN transactions t ON t.related_table = 'investments' AND t.related_id = i.investment_id AND t.transaction_type = 'income'
+    LEFT JOIN transactions t ON t.related_table = 'investments' AND t.related_id = i.investment_id AND t.transaction_type IN ('income', 'revenue_inflow')
     WHERE i.status = 'active'
     GROUP BY i.investment_id
-    HAVING total_revenue > 0
-    ORDER BY period_revenue DESC
-    LIMIT 10";
+    ORDER BY period_revenue DESC, total_revenue DESC";
 
-$stmt_inv = $conn->prepare($inv_revenue_sql);
-$stmt_inv->bind_param("ss", $start_date, $end_date);
-$stmt_inv->execute();
-$top_investments = $stmt_inv->get_result()->fetch_all(MYSQLI_ASSOC);
-$stmt_inv->close();
+$stmt_assets = $conn->prepare($asset_revenue_sql);
+$stmt_assets->bind_param("ss", $start_date, $end_date);
+$stmt_assets->execute();
+$all_assets_raw = $stmt_assets->get_result()->fetch_all(MYSQLI_ASSOC);
+$stmt_assets->close();
+
+$top_investments = []; // Reusing variable to minimize UI changes
+foreach ($all_assets_raw as $asset) {
+    $perf = $viability_engine->calculatePerformance((int)$asset['id'], $asset['asset_table']);
+    if ($perf) {
+        $asset['target_achievement'] = $perf['target_achievement_pct'];
+        $asset['is_profitable'] = $perf['is_profitable'];
+        $asset['net_profit'] = $perf['net_profit'];
+        $asset['viability_status'] = $perf['viability_status'];
+    } else {
+        $asset['target_achievement'] = 0;
+        $asset['is_profitable'] = false;
+        $asset['net_profit'] = 0;
+    }
+    $top_investments[] = $asset;
+}
 
 // Category-wise revenue
 $cat_revenue = [];
-foreach ($top_investments as $inv) {
-    $cat = ucfirst(str_replace('_', ' ', $inv['category']));
-    $cat_revenue[$cat] = ($cat_revenue[$cat] ?? 0) + $inv['period_revenue'];
+foreach ($top_investments as $asset) {
+    $cat = ucfirst(str_replace('_', ' ', $asset['category']));
+    $cat_revenue[$cat] = ($cat_revenue[$cat] ?? 0) + $asset['period_revenue'];
+}
+
+// Calculate Global Target Achievement for the period
+$target_summary = $conn->query("SELECT SUM(target_amount) as total_target FROM investments WHERE status = 'active'")->fetch_assoc();
+$total_targets = (float)($target_summary['total_target'] ?? 0);
+$total_achieved = $total_period_rev; 
+$global_target_pct = $total_targets > 0 ? min(100, ($total_achieved / $total_targets) * 100) : 0;
+
+// Fetch all active investments for JS target info
+$inv_data_res = $conn->query("SELECT investment_id, title, target_amount, target_period FROM investments WHERE status = 'active'");
+$inv_js_data = [];
+while ($row = $inv_data_res->fetch_assoc()) {
+    $inv_js_data[$row['investment_id']] = $row;
 }
 
 // 3. Handle Exports
@@ -143,7 +197,6 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
     exit;
 }
 
-$vehicles = $conn->query("SELECT vehicle_id, reg_no, model FROM vehicles WHERE status='active'");
 $investments = $conn->query("SELECT investment_id, title FROM investments WHERE status='active'");
 
 $pageTitle = "Revenue Portal";
@@ -294,11 +347,11 @@ $pageTitle = "Revenue Portal";
         <div class="row g-4 mb-4">
             <div class="col-12">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="fw-800 mb-0"><i class="bi bi-trophy-fill text-warning me-2"></i>Top Revenue-Generating Assets</h5>
+                    <h5 class="fw-800 mb-0"><i class="bi bi-trophy-fill text-warning me-2"></i>Portfolio Revenue Performance</h5>
                     <a href="investments.php" class="btn btn-outline-forest btn-sm rounded-pill px-3">View All Assets</a>
                 </div>
             </div>
-            <?php foreach (array_slice($top_investments, 0, 3) as $inv): 
+            <?php foreach ($top_investments as $inv): 
                 $icon = match($inv['category']) {
                     'farm' => 'bi-flower3',
                     'vehicle_fleet' => 'bi-truck-front',
@@ -306,28 +359,49 @@ $pageTitle = "Revenue Portal";
                     'apartments' => 'bi-building',
                     default => 'bi-box-seam'
                 };
+                $v_badge = match($inv['viability_status']) {
+                    'viable' => '<span class="badge bg-success-soft text-success px-2 py-1" style="font-size: 0.6rem;">VIABLE</span>',
+                    'underperforming' => '<span class="badge bg-warning-soft text-warning px-2 py-1" style="font-size: 0.6rem;">MARGINAL</span>',
+                    'loss_making' => '<span class="badge bg-danger-soft text-danger px-2 py-1" style="font-size: 0.6rem;">AT RISK</span>',
+                    default => '<span class="badge bg-light text-muted px-2 py-1" style="font-size: 0.6rem;">NEW</span>'
+                };
             ?>
             <div class="col-md-4">
-                <div class="stat-card slide-up" style="border-left: 4px solid var(--lime);">
-                    <div class="d-flex align-items-start gap-3">
+                <div class="stat-card slide-up h-100" style="border-left: 4px solid <?= $inv['target_achievement'] >= 100 ? 'var(--success)' : ($inv['target_achievement'] >= 70 ? 'var(--warning)' : 'var(--danger)') ?>;">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
                         <div class="icon-circle bg-lime-soft">
                             <i class="<?= $icon ?>"></i>
                         </div>
-                        <div class="flex-grow-1">
-                            <div class="text-muted small fw-bold text-uppercase mb-1"><?= ucfirst(str_replace('_', ' ', $inv['category'])) ?></div>
-                            <h6 class="fw-800 mb-2"><?= esc($inv['title']) ?></h6>
-                            <div class="h4 fw-800 text-success mb-1">KES <?= number_format((float)$inv['period_revenue']) ?></div>
-                            <div class="small text-muted">
-                                <i class="bi bi-graph-up me-1"></i><?= $inv['transaction_count'] ?> transactions
-                                <span class="ms-2">| Lifetime: KES <?= number_format((float)$inv['total_revenue']) ?></span>
-                            </div>
-                        </div>
+                        <?= $v_badge ?>
+                    </div>
+                    <div class="mb-3">
+                        <div class="text-muted small fw-bold text-uppercase mb-1"><?= ucfirst(str_replace('_', ' ', $inv['category'])) ?></div>
+                        <h6 class="fw-800 mb-0"><?= esc($inv['title']) ?></h6>
+                    </div>
+                    <div class="h4 fw-800 text-dark mb-1">KES <?= number_format((float)$inv['period_revenue']) ?></div>
+                    <div class="small text-muted mb-3">
+                        <i class="bi bi-bullseye me-1"></i>Target: KES <?= number_format((float)$inv['target_amount']) ?>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between align-items-center small mb-1">
+                        <span class="text-muted fw-bold">Achievement</span>
+                        <span class="fw-800"><?= number_format($inv['target_achievement'], 1) ?>%</span>
+                    </div>
+                    <div class="progress" style="height: 6px; background: #f1f5f9;">
+                        <div class="progress-bar <?= $inv['target_achievement'] >= 100 ? 'bg-success' : ($inv['target_achievement'] >= 70 ? 'bg-warning' : 'bg-danger') ?>" 
+                             style="width: <?= min(100, $inv['target_achievement']) ?>%"></div>
+                    </div>
+                    <div class="mt-3 fs-xs text-muted d-flex justify-content-between">
+                        <span><i class="bi bi-clock-history me-1"></i><?= $inv['transaction_count'] ?> inputs</span>
+                        <span class="<?= $inv['net_profit'] >= 0 ? 'text-success' : 'text-danger' ?> fw-bold">Profit: <?= number_format($inv['net_profit']) ?></span>
                     </div>
                 </div>
             </div>
             <?php endforeach; ?>
         </div>
         <?php endif; ?>
+
+        <?php include __DIR__ . '/../../inc/finance_nav.php'; ?>
 
         <!-- KPIs -->
         <div class="row g-4 mb-4">
@@ -345,11 +419,14 @@ $pageTitle = "Revenue Portal";
             <div class="col-md-4">
                 <div class="stat-card slide-up" style="animation-delay: 0.1s">
                     <div class="icon-circle bg-forest-soft">
-                        <i class="bi bi-safe2"></i>
+                        <i class="bi bi-bullseye"></i>
                     </div>
-                    <div class="text-muted small fw-bold text-uppercase">Cumulative Revenue</div>
-                    <div class="h2 fw-800 text-dark mt-2 mb-1">KES <?= number_format((float)$total_all_time) ?></div>
-                    <div class="small text-muted"><i class="bi bi-infinity me-1"></i> Lifetime SACCO earnings</div>
+                    <div class="text-muted small fw-bold text-uppercase">Portfolio Efficiency</div>
+                    <div class="h2 fw-800 text-dark mt-2 mb-1"><?= number_format($global_target_pct, 1) ?>%</div>
+                    <div class="progress" style="height: 4px; background: #f1f5f9; margin-bottom: 8px;">
+                        <div class="progress-bar bg-forest" style="width: <?= $global_target_pct ?>%"></div>
+                    </div>
+                    <div class="small text-muted"><i class="bi bi-info-circle me-1"></i> Actual vs. Projected Targets</div>
                 </div>
             </div>
 
@@ -466,26 +543,29 @@ $pageTitle = "Revenue Portal";
                             </canvas>
                         </div>
                         <?php if (!empty($cat_revenue)): ?>
-                        <div class="mt-4">
-                            <h6 class="fw-bold mb-3">Revenue by Asset Category</h6>
+                        <div class="mt-4 pt-3 border-top">
+                            <h6 class="fw-800 text-dark mb-3">Portfolio Performance Breakdown</h6>
                             <?php 
                             arsort($cat_revenue);
-                            $max_cat = max($cat_revenue);
+                            $total_cat_rev = array_sum($cat_revenue);
                             foreach ($cat_revenue as $name => $val): 
-                                $pct = ($val / $max_cat) * 100;
+                                $cat_pct = ($val / ($total_cat_rev ?: 1)) * 100;
                             ?>
                                 <div class="mb-3">
                                     <div class="d-flex justify-content-between align-items-center mb-1">
-                                        <span class="small fw-600"><?= $name ?></span>
-                                        <span class="small fw-bold text-success">KES <?= number_format((float)$val) ?></span>
+                                        <span class="small fw-800 text-forest"><?= $name ?></span>
+                                        <span class="small fw-bold text-dark"><?= number_format($cat_pct, 1) ?>%</span>
                                     </div>
-                                    <div class="progress" style="height: 8px; border-radius: 10px;">
-                                        <div class="progress-bar bg-gradient" style="width: <?= $pct ?>%; background: linear-gradient(90deg, var(--forest) 0%, var(--lime) 100%);"></div>
+                                    <div class="progress" style="height: 10px; border-radius: 20px; background: #eef2f6;">
+                                        <div class="progress-bar" style="width: <?= $cat_pct ?>%; background: var(--forest); border-radius: 20px;"></div>
+                                    </div>
+                                    <div class="text-end small mt-1 text-muted fw-bold" style="font-size: 0.65rem;">
+                                        KES <?= number_format((float)$val) ?>
                                     </div>
                                 </div>
                             <?php endforeach; ?>
                         </div>
-                    <?php endif; ?>
+                        <?php endif; ?>
                     
                     <?php if (!empty($source_breakdown)): ?>
                         <div class="mt-4">
@@ -528,30 +608,25 @@ $pageTitle = "Revenue Portal";
                 <input type="hidden" name="record_revenue" value="1">
                 <div class="modal-body">
                     <div class="row g-4">
-                        <div class="col-md-6">
-                            <label class="form-label">Revenue Source Type</label>
-                            <select name="source_type" class="form-select" id="sourceSelect" onchange="toggleSource()" required>
-                                <option value="vehicle">Vehicle Fleet Earnings</option>
-                                <option value="investment">Investment Dividends</option>
-                                <option value="other">General Fund / Other</option>
-                            </select>
+                        <div class="col-12">
+                            <label class="form-label">Select Asset / Revenue Source</label>
+                                    <select name="unified_asset_id" id="unified_asset_id" class="form-select search-pill" required onchange="updateTargetInfo()">
+                                        <option value="other_0">General Fund / Unassigned</option>
+                                        <optgroup label="Active Portfolio">
+                                            <?php mysqli_data_seek($investments, 0); while($inv = $investments->fetch_assoc()): ?>
+                                                <option value="inv_<?= $inv['investment_id'] ?>"><?= esc($inv['title']) ?></option>
+                                            <?php endwhile; ?>
+                                        </optgroup>
+                                    </select>
                         </div>
-                        <div class="col-md-6" id="vehField">
-                            <label class="form-label">Select Active Vehicle</label>
-                            <select name="vehicle_id" class="form-select">
-                                <?php mysqli_data_seek($vehicles, 0); while($v = $vehicles->fetch_assoc()): ?>
-                                    <option value="<?= $v['vehicle_id'] ?>"><?= $v['reg_no'] ?> - <?= $v['model'] ?></option>
-                                <?php endwhile; ?>
-                            </select>
-                        </div>
-                        <div class="col-md-6 d-none" id="invField">
-                            <label class="form-label">Select Investment Asset</label>
-                            <select name="investment_id" class="form-select">
-                                <option value="0">-- General Fund Inflow --</option>
-                                <?php mysqli_data_seek($investments, 0); while($i = $investments->fetch_assoc()): ?>
-                                    <option value="<?= $i['investment_id'] ?>"><?= esc($i['title']) ?></option>
-                                <?php endwhile; ?>
-                            </select>
+                        <div class="col-12 mt-3 d-none" id="target_info_box">
+                            <div class="alert alert-info border-0 rounded-4 bg-forest-soft d-flex align-items-center mb-0">
+                                <i class="bi bi-info-circle-fill fs-4 me-3 text-forest"></i>
+                                <div>
+                                    <div class="small fw-800 text-forest text-uppercase mb-1">Asset Performance Target</div>
+                                    <div class="fw-bold text-dark" id="targetText">Target: KES 0.00 / undefined</div>
+                                </div>
+                            </div>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">Amount Received (KES)</label>
@@ -588,16 +663,27 @@ $pageTitle = "Revenue Portal";
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="<?= BASE_URL ?>/public/assets/js/main.js?v=<?= time() ?>"></script>
 <script>
-    function toggleSource() {
-        const type = document.getElementById('sourceSelect').value;
-        const veh = document.getElementById('vehField');
-        const inv = document.getElementById('invField');
+    const invData = <?= json_encode($inv_js_data) ?>;
+    
+    function updateTargetInfo() {
+        const select = document.getElementById('unified_asset_id');
+        const val = select.value;
+        const targetDiv = document.getElementById('target_info_box');
         
-        veh.classList.add('d-none');
-        inv.classList.add('d-none');
+        if (val.startsWith('inv_')) {
+            const id = val.replace('inv_', '');
+            const data = invData[id];
+            if (data && data.target_amount > 0) {
+                targetDiv.innerHTML = `<div class="alert alert-info py-2 small mb-0">
+                    <i class="bi bi-info-circle me-1"></i> 
+                    Target: <strong>KES ${new Intl.NumberFormat().format(data.target_amount)}</strong> (${data.target_period})
+                </div>`;
+                targetDiv.classList.remove('d-none');
+                return;
+            }
+        }
         
-        if(type === 'vehicle') veh.classList.remove('d-none');
-        else if(type === 'investment') inv.classList.remove('d-none');
+        targetDiv.classList.add('d-none');
     }
 
     function toggleDateInputs(val) {

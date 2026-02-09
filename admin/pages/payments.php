@@ -73,6 +73,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                     $related_id = $l_res->fetch_assoc()['loan_id'];
                     $related_table = 'loans';
                 }
+            } elseif (in_array($type, ['expense', 'income'])) {
+                $unified_id = $_POST['unified_asset_id'] ?? 'other_0';
+                if ($unified_id !== 'other_0') {
+                    list($source, $related_id) = explode('_', $unified_id);
+                    $related_id = (int)$related_id;
+                    $related_table = 'investments';
+                }
             }
 
             $ok = TransactionHelper::record([
@@ -100,11 +107,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     }
 }
 
-// 3. Fetch Data
 // A. Members List
 $members = [];
 $res = $conn->query("SELECT member_id, full_name, national_id FROM members ORDER BY full_name ASC");
 while ($row = $res->fetch_assoc()) $members[] = $row;
+
+// B. Active Investments (For attribution)
+$investments = $conn->query("SELECT investment_id, title FROM investments WHERE status = 'active' ORDER BY title ASC");
 
 // B. Transactions List
 $where = "1";
@@ -164,9 +173,10 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
     exit;
 }
 
-$sql = "SELECT t.*, m.full_name, m.national_id 
+$sql = "SELECT t.*, m.full_name, m.national_id, i.title as asset_title
         FROM transactions t 
         LEFT JOIN members m ON t.member_id = m.member_id 
+        LEFT JOIN investments i ON t.related_table = 'investments' AND t.related_id = i.investment_id
         WHERE $where 
         ORDER BY t.created_at DESC LIMIT 50";
 
@@ -328,6 +338,8 @@ $pageTitle = "Payments Ledger";
                 </div>
             </div>
 
+            <?php include __DIR__ . '/../../inc/finance_nav.php'; ?>
+
             <?php if (isset($_SESSION['success'])): ?>
                 <div class="alert alert-success border-0 bg-success bg-opacity-10 text-success rounded-3 mb-4">
                     <i class="bi bi-check-circle-fill me-2"></i> <?= $_SESSION['success']; unset($_SESSION['success']); ?>
@@ -345,7 +357,7 @@ $pageTitle = "Payments Ledger";
                         <label class="form-label small text-muted fw-bold">Search</label>
                         <div class="input-group">
                             <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
-                            <input type="text" name="search" class="form-control border-start-0 ps-0" placeholder="Reference, Member Name..." value="<?= htmlspecialchars($_GET['search'] ?? '') ?>">
+                            <input type="text" name="search" class="form-control border-start-0 ps-0" placeholder="Reference, Member Name..." value="<?= esc($_GET['search'] ?? '') ?>">
                         </div>
                     </div>
                     <div class="col-md-3">
@@ -405,10 +417,10 @@ $pageTitle = "Payments Ledger";
                                             <div>
                                                 <?php if($row['member_id']): ?>
                                                     <a href="member_profile.php?id=<?= $row['member_id'] ?>" class="text-decoration-none">
-                                                        <div class="fw-bold text-dark"><?= htmlspecialchars($name) ?> <i class="bi bi-person-bounding-box ms-1 small opacity-50"></i></div>
+                                                        <div class="fw-bold text-dark"><?= esc($name) ?> <i class="bi bi-person-bounding-box ms-1 small opacity-50"></i></div>
                                                     </a>
                                                 <?php else: ?>
-                                                    <div class="fw-bold text-dark"><?= htmlspecialchars($name) ?></div>
+                                                    <div class="fw-bold text-dark"><?= esc($name) ?></div>
                                                 <?php endif; ?>
                                                 <?php if($row['national_id']): ?>
                                                     <div class="small text-muted" style="font-size: 0.75rem;">ID: <?= $row['national_id'] ?></div>
@@ -417,7 +429,7 @@ $pageTitle = "Payments Ledger";
                                         </div>
                                     </td>
                                     <td>
-                                        <div class="fw-medium text-dark"><?= htmlspecialchars($row['reference_no']) ?></div>
+                                        <div class="fw-medium text-dark"><?= esc($row['reference_no']) ?></div>
                                         <div class="small text-muted"><?= date('M d, Y', strtotime($row['created_at'])) ?></div>
                                     </td>
                                     <td>
@@ -430,8 +442,13 @@ $pageTitle = "Payments Ledger";
                                             <?= $sign ?><?= number_format((float)$row['amount'], 2) ?>
                                         </div>
                                     </td>
-                                    <td class="text-muted small text-truncate" style="max-width: 150px;">
-                                        <?= htmlspecialchars($row['notes']) ?>
+                                    <td class="text-muted small">
+                                        <?php if($row['asset_title']): ?>
+                                            <div class="badge bg-forest text-white rounded-pill mb-1" style="font-size: 0.65rem; background-color: var(--forest-dark) !important;">
+                                                <i class="bi bi-tag-fill me-1"></i> <?= esc($row['asset_title']) ?>
+                                            </div><br>
+                                        <?php endif; ?>
+                                        <?= esc($row['notes']) ?>
                                     </td>
                                     <td class="text-end pe-4">
                                         <button class="btn btn-sm btn-light rounded-circle shadow-sm border text-muted" title="Download Receipt">
@@ -488,12 +505,22 @@ $pageTitle = "Payments Ledger";
                             <option value="">Search Member...</option>
                             <?php foreach ($members as $m): ?>
                                 <option value="<?= $m['member_id'] ?>">
-                                    <?= htmlspecialchars($m['full_name']) ?> (ID: <?= $m['national_id'] ?>)
+                                    <?= esc($m['full_name']) ?> (ID: <?= $m['national_id'] ?>)
                                 </option>
                             <?php endforeach; ?>
                         </select>
                     </div>
 
+                    <div class="mb-3 d-none" id="assetField">
+                        <label class="form-label small fw-bold text-uppercase text-muted">Attribute to Asset (Optional)</label>
+                        <select name="unified_asset_id" class="form-select">
+                            <option value="other_0">General / Unassigned</option>
+                            <?php while($inv = $investments->fetch_assoc()): ?>
+                                <option value="inv_<?= $inv['investment_id'] ?>"><?= esc($inv['title']) ?></option>
+                            <?php endwhile; ?>
+                        </select>
+                    </div>
+                    </div>
                     <div class="row g-3 mb-3">
                         <div class="col-6">
                             <label class="form-label small fw-bold text-uppercase text-muted">Amount (KES)</label>
@@ -539,10 +566,14 @@ $pageTitle = "Payments Ledger";
     function toggleMemberField() {
         const type = document.getElementById('txnType').value;
         const memberDiv = document.getElementById('memberField');
+        const assetDiv = document.getElementById('assetField');
+        
         if (type === 'expense' || type === 'income') {
-            memberDiv.style.display = 'none';
+            memberDiv.classList.add('d-none');
+            assetDiv.classList.remove('d-none');
         } else {
-            memberDiv.style.display = 'block';
+            memberDiv.classList.remove('d-none');
+            assetDiv.classList.add('d-none');
         }
     }
 </script>

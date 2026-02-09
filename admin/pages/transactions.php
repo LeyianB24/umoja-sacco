@@ -21,6 +21,7 @@ $layout = LayoutManager::create('admin');
 
 // 2. Fetch Params
 $filter_related_id = isset($_GET['filter']) ? intval($_GET['filter']) : null;
+$filter_table      = $_GET['related_table'] ?? '';
 $filter_member_id  = isset($_GET['member_id']) ? intval($_GET['member_id']) : null;
 $filter_type       = $_GET['type'] ?? '';
 $search_query      = $_GET['search'] ?? '';
@@ -33,9 +34,16 @@ $params = [];
 $types = "";
 
 if ($filter_related_id) {
-    $where .= " AND t.related_id = ?";
-    $params[] = $filter_related_id;
-    $types .= "i";
+    if ($filter_table) {
+        $where .= " AND t.related_id = ? AND t.related_table = ?";
+        $params[] = $filter_related_id;
+        $params[] = $filter_table;
+        $types .= "is";
+    } else {
+        $where .= " AND t.related_id = ?";
+        $params[] = $filter_related_id;
+        $types .= "i";
+    }
 }
 
 if ($filter_member_id) {
@@ -116,9 +124,10 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
 }
 
 // 5. Fetch Final Data
-$sql = "SELECT t.*, m.full_name, m.national_id 
+$sql = "SELECT t.*, m.full_name, m.national_id, i.title as asset_title
         FROM transactions t 
         LEFT JOIN members m ON t.member_id = m.member_id 
+        LEFT JOIN investments i ON t.related_table = 'investments' AND t.related_id = i.investment_id
         WHERE $where 
         ORDER BY t.created_at DESC LIMIT 100";
 
@@ -238,6 +247,8 @@ $pageTitle = "Golden Ledger Vault";
         </div>
     </div>
 
+    <?php include __DIR__ . '/../../inc/finance_nav.php'; ?>
+
     <!-- Filtering -->
     <div class="ledger-glass p-4 mb-4 slide-up">
         <form method="GET" class="row g-3 align-items-end">
@@ -341,6 +352,11 @@ $pageTitle = "Golden Ledger Vault";
                             <?= $is_in ? '+' : '-' ?> <?= number_format((float)$row['amount'], 2) ?>
                         </td>
                         <td class="small text-muted" style="max-width: 250px;">
+                            <?php if($row['asset_title']): ?>
+                                <div class="badge bg-forest text-white rounded-pill mb-1" style="font-size: 0.65rem;">
+                                    <i class="bi bi-tag-fill me-1"></i> <?= esc($row['asset_title']) ?>
+                                </div><br>
+                            <?php endif; ?>
                             <?= esc($row['notes'] ?: 'No notes attached.') ?>
                         </td>
                     </tr>

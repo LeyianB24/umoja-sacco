@@ -1,0 +1,45 @@
+
+/* TABLE: ledger_transactions */
+CREATE TABLE `ledger_transactions` (
+  `transaction_id` int(11) NOT NULL AUTO_INCREMENT,
+  `reference_no` varchar(100) NOT NULL,
+  `transaction_date` date NOT NULL,
+  `description` text DEFAULT NULL,
+  `action_type` varchar(50) DEFAULT NULL,
+  `recorded_by` int(11) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`transaction_id`),
+  UNIQUE KEY `reference_no` (`reference_no`),
+  KEY `reference_no_2` (`reference_no`)
+) ENGINE=InnoDB AUTO_INCREMENT=38 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+/* TABLE: ledger_accounts */
+CREATE TABLE `ledger_accounts` (
+  `account_id` int(11) NOT NULL AUTO_INCREMENT,
+  `account_name` varchar(255) NOT NULL,
+  `account_type` enum('asset','liability','equity','revenue','expense') NOT NULL,
+  `member_id` int(11) DEFAULT NULL,
+  `category` varchar(50) DEFAULT 'general',
+  `current_balance` decimal(15,2) DEFAULT 0.00,
+  `status` enum('active','closed') DEFAULT 'active',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`account_id`),
+  KEY `member_id` (`member_id`),
+  KEY `category` (`category`)
+) ENGINE=InnoDB AUTO_INCREMENT=29 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+/* TABLE: ledger_entries */
+CREATE TABLE `ledger_entries` (
+  `entry_id` int(11) NOT NULL AUTO_INCREMENT,
+  `transaction_id` int(11) NOT NULL,
+  `account_id` int(11) NOT NULL,
+  `debit` decimal(15,2) DEFAULT 0.00,
+  `credit` decimal(15,2) DEFAULT 0.00,
+  `balance_after` decimal(15,2) DEFAULT 0.00,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`entry_id`),
+  KEY `transaction_id` (`transaction_id`),
+  KEY `account_id` (`account_id`),
+  CONSTRAINT `ledger_entries_ibfk_1` FOREIGN KEY (`transaction_id`) REFERENCES `ledger_transactions` (`transaction_id`) ON DELETE CASCADE,
+  CONSTRAINT `ledger_entries_ibfk_2` FOREIGN KEY (`account_id`) REFERENCES `ledger_accounts` (`account_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=72 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;

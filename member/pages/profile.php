@@ -65,6 +65,13 @@ $stmt->execute();
 $member = $stmt->get_result()->fetch_assoc();
 $stmt->close();
 
+// 3.5 Fetch KYC Documents
+$doc_stmt = $conn->prepare("SELECT * FROM member_documents WHERE member_id = ?");
+$doc_stmt->bind_param("i", $member_id);
+$doc_stmt->execute();
+$kyc_docs = $doc_stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+$doc_stmt->close();
+
 
 // --- MODIFIED PROFILE PIC LOGIC START ---
 
@@ -372,6 +379,26 @@ $pageTitle = "My Profile";
                                                 <label class="form-check-label text-danger small fw-bold" for="remove_pic">
                                                     Remove profile picture
                                                 </label>
+                                            </div>
+
+                                            <div class="mt-4">
+                                                <h6 class="fw-bold mb-3 border-bottom pb-2">Identity Documents (KYC)</h6>
+                                                <div class="list-group list-group-flush">
+                                                    <?php foreach ($kyc_docs as $doc): ?>
+                                                        <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                                            <div>
+                                                                <span class="d-block fw-bold small text-uppercase"><?= str_replace('_', ' ', $doc['document_type']) ?></span>
+                                                                <span class="text-muted x-small">Uploaded: <?= date('d M Y', strtotime($doc['uploaded_at'])) ?></span>
+                                                            </div>
+                                                            <span class="badge rounded-pill bg-<?= $doc['status'] == 'verified' ? 'success' : ($doc['status'] == 'rejected' ? 'danger' : 'warning') ?> bg-opacity-10 text-<?= $doc['status'] == 'verified' ? 'success' : ($doc['status'] == 'rejected' ? 'danger' : 'warning') ?> px-2 py-1">
+                                                                <?= strtoupper($doc['status']) ?>
+                                                            </span>
+                                                        </div>
+                                                    <?php endforeach; ?>
+                                                    <?php if (empty($kyc_docs)): ?>
+                                                        <div class="text-muted small py-2">No documents uploaded.</div>
+                                                    <?php endif; ?>
+                                                </div>
                                             </div>
                                         </div>
 

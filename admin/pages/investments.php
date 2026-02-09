@@ -33,15 +33,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $route    = trim($_POST['assigned_route'] ?? '');
         $target   = floatval($_POST['target_amount'] ?? 0);
         $period   = $_POST['target_period'] ?? 'monthly';
+        $target_start = $_POST['target_start_date'] ?? date('Y-m-d');
 
-        if (empty($title) || $cost <= 0) {
+        // Validate targets are provided
+        if ($target <= 0) {
+            flash_set("Revenue target is required for all investments.", 'error');
+        } elseif (empty($title) || $cost <= 0) {
             flash_set("Title and valid cost are required.", 'error');
         } else {
-            $stmt = $conn->prepare("INSERT INTO investments (title, category, reg_no, model, assigned_route, description, purchase_date, purchase_cost, current_value, target_amount, target_period, status, manager_admin_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, NOW())");
-            $stmt->bind_param("ssssssdddds", $title, $category, $reg_no, $model, $route, $desc, $date, $cost, $value, $target, $period, $admin_id);
+            // Check for duplicate reg_no
+            if (!empty($reg_no)) {
+                $check_stmt = $conn->prepare("SELECT investment_id FROM investments WHERE reg_no = ? AND status != 'disposed'");
+                $check_stmt->bind_param("s", $reg_no);
+                $check_stmt->execute();
+                if ($check_stmt->get_result()->num_rows > 0) {
+                    flash_set("An active asset with registration number $reg_no already exists.", 'error');
+                    header("Location: investments.php");
+                    exit;
+                }
+            }
+
+            $stmt = $conn->prepare("INSERT INTO investments (title, category, reg_no, model, assigned_route, description, purchase_date, purchase_cost, current_value, target_amount, target_period, target_start_date, viability_status, status, manager_admin_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', 'active', ?, NOW())");
+            $stmt->bind_param("sssssssdddssi", $title, $category, $reg_no, $model, $route, $desc, $date, $cost, $value, $target, $period, $target_start, $admin_id);
             
             if ($stmt->execute()) {
-                flash_set("Asset registered successfully.", 'success');
+                flash_set("Asset registered successfully with performance targets.", 'success');
                 header("Location: investments.php");
                 exit;
             } else {
@@ -50,7 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    // B. UPDATE ASSET
+    // B. UPDATE ASSET (Valuation Only)
     if (isset($_POST['action']) && $_POST['action'] === 'update_asset') {
         $inv_id = intval($_POST['investment_id']);
         $val    = floatval($_POST['current_value']);
@@ -60,11 +76,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->bind_param("dsi", $val, $status, $inv_id);
         
         if ($stmt->execute()) {
-            $conn->query("INSERT INTO audit_logs (admin_id, action, details, ip_address) VALUES ($admin_id, 'update_asset', 'Updated Asset #$inv_id valuation', '{$_SERVER['REMOTE_ADDR']}')");
-            flash_set("Investment valuation updated.", 'success');
+            $conn->query("INSERT INTO audit_logs (admin_id, action, details, ip_address) VALUES ($admin_id, 'update_asset', 'Updated investment #$inv_id status to $status', '{$_SERVER['REMOTE_ADDR']}')");
+            flash_set("Asset status updated.", 'success');
             header("Location: investments.php");
             exit;
         }
+    }
+
+    // C. EDIT INVESTMENT (Full Details)
+    if (isset($_POST['action']) && $_POST['action'] === 'edit_investment') {
+        $inv_id = intval($_POST['investment_id']);
+        $title = trim($_POST['title']);
+        $category = $_POST['category'];
+        $desc = trim($_POST['description'] ?? '');
+        $target = floatval($_POST['target_amount']);
+        $period = $_POST['target_period'];
+        
+        if (empty($title) || $target <= 0) {
+            flash_set("Title and valid revenue target are required.", 'error');
+        } else {
+            $stmt = $conn->prepare("UPDATE investments SET title = ?, category = ?, description = ?, target_amount = ?, target_period = ? WHERE investment_id = ?");
+            $stmt->bind_param("sssdsi", $title, $category, $desc, $target, $period, $inv_id);
+            
+            if ($stmt->execute()) {
+                $conn->query("INSERT INTO audit_logs (admin_id, action, details, ip_address) VALUES ($admin_id, 'edit_investment', 'Edited investment #$inv_id', '{$_SERVER['REMOTE_ADDR']}')");
+                flash_set("Investment updated successfully.", 'success');
+                header("Location: investments.php");
+                exit;
+            } else {
+                flash_set("Database error: " . $stmt->error, 'error');
+            }
+        }
+    }
         // D. SELL / DISPOSE ASSET
     if (isset($_POST['action']) && $_POST['action'] === 'sell_asset') {
         $inv_id = intval($_POST['investment_id']);
@@ -72,8 +115,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $date   = $_POST['sale_date'];
         $reason = trim($_POST['sale_reason']);
 
-        $stmt = $conn->prepare("UPDATE investments SET status = 'sold', disposal_status = 'sold', sale_price = ?, sale_date = ?, sale_reason = ? WHERE investment_id = ?");
-        $stmt->bind_param("dssi", $price, $date, $reason, $inv_id);
+        $stmt = $conn->prepare("UPDATE investments SET status = 'sold', sale_price = ?, sale_date = ? WHERE investment_id = ?");
+        $stmt->bind_param("dsi", $price, $date, $inv_id);
 
         if ($stmt->execute()) {
             require_once __DIR__ . '/../../inc/TransactionHelper.php';
@@ -93,7 +136,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
     }
-}
 }
 
 // 2. DATA AGGREGATION
@@ -118,10 +160,17 @@ if ($search) {
 
 // Global Export Handler
 if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_excel', 'print_report'])) {
-    $where_sql_e = count($where) > 0 ? "WHERE " . implode(" AND ", $where) : "";
-    $sql_e = "SELECT * FROM investments $where_sql_e ORDER BY created_at DESC";
+    $where_investments_e = count($where) > 0 ? "WHERE " . implode(" AND ", $where) : "";
+    $search_only_where_e = [];
+    foreach($where as $w) if(strpos($w, 'LIKE') !== false) $search_only_where_e[] = $w;
+    $search_sql_e = count($search_only_where_e) > 0 ? " AND " . implode(" AND ", $search_only_where_e) : "";
+
+    $sql_e = "SELECT title, category, reg_no, purchase_cost, current_value, status, purchase_date FROM investments $where_investments_e ORDER BY purchase_date DESC";
+    
     $stmt_e = $conn->prepare($sql_e);
-    if (!empty($params)) $stmt_e->bind_param($types, ...$params);
+    if (!empty($params)) {
+        $stmt_e->bind_param($types, ...$params);
+    }
     $stmt_e->execute();
     $raw_data = $stmt_e->get_result();
 
@@ -134,7 +183,7 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
     $data = [];
     $total_val = 0;
     while($a = $raw_data->fetch_assoc()) {
-        $total_val += $a['current_value'];
+        $total_val += (float)$a['current_value'];
         $data[] = [
             'Asset' => $a['title'],
             'Category' => ucfirst(str_replace('_', ' ', $a['category'])),
@@ -155,42 +204,74 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
     exit;
 }
 
-// Display Data - Optimized Fetch
-$where_sql = count($where) > 0 ? "WHERE " . implode(" AND ", $where) : "";
-$sql = "SELECT * FROM investments $where_sql ORDER BY created_at DESC";
+// Display Data - Optimized Fetch (Unified Investments + Standalone Vehicles)
+$where_investments = count($where) > 0 ? "WHERE " . implode(" AND ", $where) : "";
+$search_only_where = [];
+foreach($where as $w) if(strpos($w, 'LIKE') !== false) $search_only_where[] = $w;
+$search_sql = count($search_only_where) > 0 ? " AND " . implode(" AND ", $search_only_where) : "";
+
+$sql = "SELECT investment_id as id, title, category, status, purchase_cost, current_value, target_amount, target_period, viability_status, created_at, 'investments' as source_table 
+        FROM investments $where_investments 
+        ORDER BY created_at DESC";
+
 $stmt = $conn->prepare($sql);
-if (!empty($params)) $stmt->bind_param($types, ...$params);
+
+if (!empty($params)) {
+    $stmt->bind_param($types, ...$params);
+}
 $stmt->execute();
 $portfolio_raw = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 
 // Batch fetch performance metrics
 $ledger_stats = [];
 if (!empty($portfolio_raw)) {
-    $ids = array_column($portfolio_raw, 'investment_id');
-    $id_list = implode(',', $ids);
-    $stats_res = $conn->query("
-        SELECT related_id, related_table,
-            SUM(CASE WHEN transaction_type IN ('income','revenue_inflow') THEN amount ELSE 0 END) as rev,
-            SUM(CASE WHEN transaction_type IN ('expense','expense_outflow') THEN amount ELSE 0 END) as exp
-        FROM transactions 
-        WHERE (related_table='investments' OR related_table='vehicles')
-        AND related_id IN ($id_list)
-        GROUP BY related_id, related_table
-    ");
-    while($s = $stats_res->fetch_assoc()) {
-        $ledger_stats[$s['related_table']][$s['related_id']] = $s;
+    foreach($portfolio_raw as $p) {
+        $tid = $p['id'];
+        $stats_res = $conn->query("
+            SELECT 
+                SUM(CASE WHEN transaction_type IN ('income','revenue_inflow') THEN amount ELSE 0 END) as rev,
+                SUM(CASE WHEN transaction_type IN ('expense','expense_outflow') THEN amount ELSE 0 END) as exp
+            FROM transactions 
+            WHERE related_table='investments' AND related_id=$tid
+        ")->fetch_assoc();
+        $ledger_stats[$tid] = $stats_res;
     }
 }
 
+// Initialize Viability Engine
+require_once __DIR__ . '/../../inc/InvestmentViabilityEngine.php';
+$viability_engine = new InvestmentViabilityEngine($conn);
+
 $portfolio = [];
 foreach($portfolio_raw as $a) {
-    $aid = $a['investment_id'];
-    // Merge stats (check both investments and vehicles table mappings for fallback)
-    $st = $ledger_stats['investments'][$aid] ?? $ledger_stats['vehicles'][$aid] ?? ['rev' => 0, 'exp' => 0];
+    $aid = $a['id'];
+    $table = $a['source_table'];
+    
+    // Merge stats from ledger
+    $st = $ledger_stats[$aid] ?? ['rev' => 0, 'exp' => 0];
     
     $a['revenue'] = (float)$st['rev'];
     $a['expenses'] = (float)$st['exp'];
-    $a['roi'] = (($a['current_value'] - $a['purchase_cost']) + ($a['revenue'] - $a['expenses'])) / ($a['purchase_cost'] ?: 1) * 100;
+    $a['roi'] = (($a['current_value'] - $a['purchase_cost']) + ($a['revenue'] - $a['expenses'])) / ((float)($a['purchase_cost'] ?? 0) ?: 1) * 100;
+    
+    // Calculate viability metrics using engine
+    $performance = $viability_engine->calculatePerformance((int)$aid, 'investments');
+    if ($performance) {
+        $a['target_achievement'] = $performance['target_achievement_pct'];
+        $a['net_profit'] = $performance['net_profit'];
+        $a['viability_status'] = $performance['viability_status'];
+        $a['is_profitable'] = $performance['is_profitable'];
+        
+        // Update database with latest viability (only for investments table which has the column)
+        if ($table === 'investments' && $a['viability_status'] != $performance['viability_status']) {
+            $viability_engine->updateViabilityStatus((int)$aid, 'investments');
+        }
+    } else {
+        $a['target_achievement'] = 0;
+        $a['net_profit'] = $a['revenue'] - $a['expenses'];
+        $a['viability_status'] = 'pending';
+        $a['is_profitable'] = $a['net_profit'] > 0;
+    }
     
     $portfolio[] = $a;
 }
@@ -402,7 +483,8 @@ $pageTitle = "Investment Portfolio";
                             <?php 
                                 $total_val = ($global['active_valuation'] ?? 0) + ($global['total_exit_value'] ?? 0);
                                 $total_cost = ($global['active_cost'] ?? 0) + ($global['active_cost'] > 0 ? ($global['total_exit_value'] - $global['realized_gains'] ) : 0); // This is complex, better use total cost from investments
-                                $q_cost = $conn->query("SELECT SUM(purchase_cost) as c FROM investments")->fetch_assoc()['c'] ?: 1;
+                                $q_cost_res = $conn->query("SELECT SUM(purchase_cost) as c FROM investments")->fetch_assoc();
+                                $q_cost = (float)($q_cost_res['c'] ?? 0) ?: 1;
                                 $multiplier = $total_val / $q_cost;
                             ?>
                             <div class="h2 fw-800 text-dark mt-2 mb-1"><?= number_format($multiplier, 2) ?>x</div>
@@ -476,6 +558,16 @@ $pageTitle = "Investment Portfolio";
                         </div>
                         <div class="d-flex flex-column align-items-end">
                             <span class="status-badge st-<?= $a['status'] ?> mb-2"><?= $a['status'] ?></span>
+                            <?php 
+                            // Viability Status Badge
+                            $viability_badge = match($a['viability_status']) {
+                                'viable' => '<span class="badge bg-success text-white px-2 py-1 mb-1" style="font-size: 0.65rem;"><i class="bi bi-check-circle-fill me-1"></i>Viable</span>',
+                                'underperforming' => '<span class="badge bg-warning text-dark px-2 py-1 mb-1" style="font-size: 0.65rem;"><i class="bi bi-exclamation-triangle-fill me-1"></i>Underperforming</span>',
+                                'loss_making' => '<span class="badge bg-danger text-white px-2 py-1 mb-1" style="font-size: 0.65rem;"><i class="bi bi-x-circle-fill me-1"></i>Loss Making</span>',
+                                default => '<span class="badge bg-secondary text-white px-2 py-1 mb-1" style="font-size: 0.65rem;"><i class="bi bi-clock-history me-1"></i>Pending</span>'
+                            };
+                            echo $viability_badge;
+                            ?>
                             <?php if ($a['status'] === 'active'): ?>
                                 <?php 
                                     $suggestion = 'Retain Asset';
@@ -510,30 +602,36 @@ $pageTitle = "Investment Portfolio";
 
                     <div class="mb-4">
                         <div class="d-flex justify-content-between align-items-center small mb-2">
-                            <span class="text-muted fw-medium">Net Operating Balance</span>
-                            <span class="fw-bold <?= ($a['revenue'] - $a['expenses']) >= 0 ? 'text-success' : 'text-danger' ?>">
-                                KES <?= number_format((float)$a['revenue'] - $a['expenses']) ?>
+                            <span class="text-muted fw-medium">Net Profit/Loss</span>
+                            <span class="fw-bold <?= $a['net_profit'] >= 0 ? 'text-success' : 'text-danger' ?>">
+                                KES <?= number_format((float)$a['net_profit']) ?>
                             </span>
                         </div>
-                        <?php 
-                        $net_op = $a['revenue'] - $a['expenses'];
-                        $be_pct = ($net_op / ($a['purchase_cost'] ?: 1)) * 100;
-                        ?>
-                        <div class="d-flex justify-content-between align-items-center small mb-1 mt-2">
-                            <span class="text-muted fw-medium">Break-even Progress</span>
-                            <span class="fw-bold text-dark"><?= $be_pct >= 100 ? 'RECOVERED' : number_format($be_pct, 1) . '%' ?></span>
+                        
+                        <!-- Target Achievement Progress -->
+                        <div class="d-flex justify-content-between align-items-center small mb-1 mt-3">
+                            <span class="text-muted fw-medium">Target Achievement (<?= ucfirst($a['target_period']) ?>)</span>
+                            <span class="fw-bold <?= $a['target_achievement'] >= 100 ? 'text-success' : ($a['target_achievement'] >= 70 ? 'text-warning' : 'text-danger') ?>">
+                                <?= number_format($a['target_achievement'], 1) ?>%
+                            </span>
                         </div>
-                        <div class="progress" style="height: 6px; border-radius: 10px; background: #f1f5f9;">
-                            <div class="progress-bar <?= $be_pct >= 100 ? 'bg-success' : 'bg-forest' ?>" style="width: <?= min(100, $be_pct) ?>%"></div>
+                        <div class="progress" style="height: 8px; border-radius: 10px; background: #f1f5f9;">
+                            <div class="progress-bar <?= $a['target_achievement'] >= 100 ? 'bg-success' : ($a['target_achievement'] >= 70 ? 'bg-warning' : 'bg-danger') ?>" 
+                                 style="width: <?= min(100, $a['target_achievement']) ?>%"></div>
                         </div>
                         <div class="d-flex justify-content-between mt-1 fs-xs text-muted" style="font-size: 0.65rem;">
-                            <span>Income: <?= number_format((float)$a['revenue']) ?></span>
-                            <span>Target: <?= number_format((float)$a['target_amount']) ?></span>
+                            <span>Actual: KES <?= number_format((float)$a['revenue']) ?></span>
+                            <span>Target: KES <?= number_format((float)$a['target_amount']) ?></span>
                         </div>
                     </div>
 
                     <div class="d-flex gap-2">
                         <?php if ($a['status'] === 'active'): ?>
+                            <?php if ($a['source_table'] === 'investments'): ?>
+                                <button class="btn btn-outline-primary btn-sm px-3 rounded-pill" onclick="openEditModal(<?= htmlspecialchars(json_encode($a)) ?>)" title="Edit Investment">
+                                    <i class="bi bi-pencil-fill"></i>
+                                </button>
+                            <?php endif; ?>
                             <button class="btn btn-outline-forest btn-sm flex-grow-1 fw-bold rounded-pill" onclick="openValuationModal(<?= htmlspecialchars(json_encode($a)) ?>)">
                                 Audit Valuation
                             </button>
@@ -545,7 +643,7 @@ $pageTitle = "Investment Portfolio";
                                 Asset Disposed
                             </button>
                         <?php endif; ?>
-                        <a href="transactions.php?filter=<?= $a['investment_id'] ?>" class="btn btn-light btn-sm border px-3 rounded-pill" title="View Ledger">
+                        <a href="transactions.php?filter=<?= $a['id'] ?>&related_table=investments" class="btn btn-light btn-sm border px-3 rounded-pill" title="View Ledger">
                             <i class="bi bi-list-task"></i>
                         </a>
                     </div>
@@ -611,16 +709,30 @@ $pageTitle = "Investment Portfolio";
                             <label class="form-label fw-bold">Opening Valuation (KES)</label>
                             <input type="number" name="current_value" class="form-control fw-bold" step="1" required>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold">Revenue Target</label>
-                            <div class="input-group">
-                                <input type="number" name="target_amount" class="form-control" placeholder="Goal amount">
-                                <select name="target_period" class="form-select" style="max-width: 120px;">
-                                    <option value="daily">Daily</option>
-                                    <option value="monthly" selected>Monthly</option>
-                                    <option value="yearly">Yearly</option>
-                                </select>
+                        <div class="col-12">
+                            <div class="alert alert-info border-0 rounded-4 mb-3">
+                                <i class="bi bi-info-circle-fill me-2"></i>
+                                <strong>Performance Targets Required:</strong> Every investment must have measurable financial goals for viability tracking.
                             </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Revenue Target (KES) <span class="text-danger">*</span></label>
+                            <input type="number" name="target_amount" class="form-control fw-bold" placeholder="Expected revenue" min="1" step="1" required>
+                            <small class="text-muted">Minimum expected revenue per period</small>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Target Period <span class="text-danger">*</span></label>
+                            <select name="target_period" class="form-select" required>
+                                <option value="daily">Daily</option>
+                                <option value="monthly" selected>Monthly</option>
+                                <option value="annually">Annually</option>
+                            </select>
+                            <small class="text-muted">Evaluation frequency</small>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Target Start Date <span class="text-danger">*</span></label>
+                            <input type="date" name="target_start_date" class="form-control" value="<?= date('Y-m-d') ?>" required>
+                            <small class="text-muted">When tracking begins</small>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-bold">Purchase Date</label>
@@ -653,6 +765,7 @@ $pageTitle = "Investment Portfolio";
                 <?= csrf_field() ?>
                 <input type="hidden" name="action" value="update_asset">
                 <input type="hidden" name="investment_id" id="val_id">
+                <input type="hidden" name="source_table" id="val_source">
                 <div class="modal-body p-4">
                     <h6 class="fw-bold mb-3" id="val_title"></h6>
                     <div class="mb-4">
@@ -676,6 +789,60 @@ $pageTitle = "Investment Portfolio";
     </div>
 </div>
 
+<!-- Edit Investment Modal -->
+<div class="modal fade" id="editModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content shadow-2xl">
+            <div class="modal-header">
+                <h5 class="modal-title fw-800"><i class="bi bi-pencil-square me-2"></i>Edit Investment</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST">
+                <?= csrf_field() ?>
+                <input type="hidden" name="action" value="edit_investment">
+                <input type="hidden" name="investment_id" id="edit_id">
+                <div class="modal-body p-4">
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <label class="form-label fw-bold">Investment Title <span class="text-danger">*</span></label>
+                            <input type="text" name="title" id="edit_title" class="form-control" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Category <span class="text-danger">*</span></label>
+                            <select name="category" id="edit_category" class="form-select" required>
+                                <option value="farm">Farm</option>
+                                <option value="apartments">Apartments</option>
+                                <option value="petrol_station">Petrol Station</option>
+                                <option value="vehicle_fleet">Vehicle Fleet</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-bold">Description</label>
+                            <textarea name="description" id="edit_description" class="form-control" rows="3"></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Revenue Target (KES) <span class="text-danger">*</span></label>
+                            <input type="number" name="target_amount" id="edit_target" class="form-control" min="1" step="1" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Target Period <span class="text-danger">*</span></label>
+                            <select name="target_period" id="edit_period" class="form-select" required>
+                                <option value="daily">Daily</option>
+                                <option value="monthly">Monthly</option>
+                                <option value="annually">Annually</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 p-4 pt-0">
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-5 fw-bold">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <!-- Dispose Modal -->
 <div class="modal fade" id="disposeModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
@@ -683,6 +850,7 @@ $pageTitle = "Investment Portfolio";
             <form method="POST">
                 <input type="hidden" name="action" value="sell_asset">
                 <input type="hidden" name="investment_id" id="dispose_id">
+                <input type="hidden" name="source_table" id="dispose_source">
                 <div class="modal-header border-0 pb-0 pt-4 px-4">
                     <h5 class="fw-800">Finalize Asset Disposal</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -723,17 +891,29 @@ $pageTitle = "Investment Portfolio";
     }
 
     function openValuationModal(data) {
-        document.getElementById('val_id').value = data.investment_id;
-        document.getElementById('val_input').value = data.current_value;
+        document.getElementById('val_id').value = data.id;
+        document.getElementById('val_source').value = data.source_table;
+        document.getElementById('val_input').value = data.current_value || 0;
         document.getElementById('val_status').value = data.status;
         document.getElementById('val_title').innerText = data.title;
         new bootstrap.Modal(document.getElementById('valuationModal')).show();
     }
 
+    function openEditModal(data) {
+        document.getElementById('edit_id').value = data.id;
+        document.getElementById('edit_title').value = data.title;
+        document.getElementById('edit_category').value = data.category;
+        document.getElementById('edit_description').value = data.description || '';
+        document.getElementById('edit_target').value = data.target_amount || 0;
+        document.getElementById('edit_period').value = data.target_period || 'monthly';
+        new bootstrap.Modal(document.getElementById('editModal')).show();
+    }
+
     function openDisposeModal(data) {
-        document.getElementById('dispose_id').value = data.investment_id;
+        document.getElementById('dispose_id').value = data.id;
+        document.getElementById('dispose_source').value = data.source_table;
         document.getElementById('dispose_title').innerText = data.title;
-        document.getElementById('dispose_price').value = data.current_value;
+        document.getElementById('dispose_price').value = data.current_value || data.purchase_cost || 0;
         new bootstrap.Modal(document.getElementById('disposeModal')).show();
     }
 
