@@ -7,22 +7,50 @@ header("Content-Type: application/json");
 // ---------------------------------------------------
 require_once __DIR__ . '/../../config/db_connect.php';
 require_once __DIR__ . '/../../config/app_config.php';
+$env_config = require_once __DIR__ . '/../../config/environment.php';
 require_once __DIR__ . '/../../inc/email.php';
 require_once __DIR__ . '/../../inc/TransactionHelper.php';
 
 // ---------------------------------------------------
-// 2. Capture Raw Callback
+// 2. Capture Raw Callback & Log to Database
 // ---------------------------------------------------
 $data = file_get_contents('php://input');
 $logFile = __DIR__ . '/mpesa_error.log';
 
-// Log every callback
+// PRODUCTION: Log to database for audit trail
+$callback_log_id = null;
+try {
+    $log_stmt = $conn->prepare("INSERT INTO callback_logs (callback_type, raw_payload) VALUES (?, ?)");
+    $callback_type = 'UNKNOWN';
+    $log_stmt->bind_param("ss", $callback_type, $data);
+    $log_stmt->execute();
+    $callback_log_id = $conn->insert_id;
+} catch (Exception $e) {
+    // Fallback to file logging if database fails
+    file_put_contents($logFile,
+        "[" . date('Y-m-d H:i:s') . "] DB LOG FAILED: {$e->getMessage()}\n",
+        FILE_APPEND
+    );
+}
+
+// Also keep file logging as backup
 file_put_contents($logFile,
-    "[" . date('Y-m-d H:i:s') . "] RAW CALLBACK:\n" . $data . "\n\n",
+    "[" . date('Y-m-d H:i:s') . "] RAW CALLBACK (Log ID: $callback_log_id):\n" . $data . "\n\n",
     FILE_APPEND
 );
 
 $response = json_decode($data, true);
+
+// Validate JSON payload
+if (json_last_error() !== JSON_ERROR_NONE) {
+    $error = "Invalid JSON: " . json_last_error_msg();
+    if ($callback_log_id) {
+        $conn->query("UPDATE callback_logs SET last_error = '$error', processing_attempts = 1 WHERE log_id = $callback_log_id");
+    }
+    file_put_contents($logFile, "[" . date('Y-m-d H:i:s') . "] $error\n\n", FILE_APPEND);
+    echo json_encode(["ResultCode" => 1, "ResultDesc" => $error]);
+    exit;
+}
 
 // ---------------------------------------------------
 // 3. STK PUSH CALLBACK (C2B Payments)
@@ -33,6 +61,20 @@ if (isset($response['Body']['stkCallback'])) {
     $resultCode   = $callback['ResultCode'];
     $resultDesc   = $callback['ResultDesc'];
     $checkoutID   = $callback['CheckoutRequestID'];
+    $merchantReqID = $callback['MerchantRequestID'] ?? null;
+
+    // Update callback log with STK PUSH metadata
+    if ($callback_log_id) {
+        $update_log = $conn->prepare("UPDATE callback_logs SET 
+            callback_type = 'STK_PUSH',
+            merchant_request_id = ?,
+            checkout_request_id = ?,
+            result_code = ?,
+            result_desc = ?
+            WHERE log_id = ?");
+        $update_log->bind_param("ssisi", $merchantReqID, $checkoutID, $resultCode, $resultDesc, $callback_log_id);
+        $update_log->execute();
+    }
 
     // ---------------------------------------------------
     // Look up original request
@@ -51,10 +93,17 @@ if (isset($response['Body']['stkCallback'])) {
     $stmt->close();
 
     if (!$request) {
-        file_put_contents($logFile,
-            "ERROR: No matching mpesa_request for CheckoutRequestID $checkoutID\n",
-            FILE_APPEND
-        );
+        $error_msg = "No matching mpesa_request for CheckoutRequestID $checkoutID";
+        file_put_contents($logFile, "ERROR: $error_msg\n", FILE_APPEND);
+        
+        // Update callback log with error
+        if ($callback_log_id) {
+            $conn->query("UPDATE callback_logs SET 
+                last_error = '$error_msg',
+                processing_attempts = processing_attempts + 1
+                WHERE log_id = $callback_log_id");
+        }
+        
         echo json_encode(['ResultCode' => 0, 'ResultDesc' => 'Request not found']);
         exit;
     }
@@ -65,6 +114,14 @@ if (isset($response['Body']['stkCallback'])) {
     $email        = $request['email'];
     $full_name    = $request['full_name'];
     $phone        = $request['phone'];
+
+    // Update callback log with member info
+    if ($callback_log_id) {
+        $conn->query("UPDATE callback_logs SET 
+            member_id = $member_id,
+            amount = $amount
+            WHERE log_id = $callback_log_id");
+    }
 
     // ---------------------------------------------------
     // SUCCESSFUL PAYMENT
@@ -84,18 +141,27 @@ if (isset($response['Body']['stkCallback'])) {
         // 1. Update mpesa_requests
         $q = $conn->prepare("
             UPDATE mpesa_requests
-            SET status = 'completed', mpesa_receipt = ?, updated_at = NOW()
+            SET status = 'completed', mpesa_receipt = ?, updated_at = NOW(), callback_log_id = ?
             WHERE checkout_request_id = ?
         ");
-        $q->bind_param("ss", $mpesaReceipt, $checkoutID);
+        $q->bind_param("sis", $mpesaReceipt, $callback_log_id, $checkoutID);
         $q->execute();
         $q->close();
 
-        // 2. Activate contribution
-        $c = $conn->prepare("UPDATE contributions SET status = 'active' WHERE reference_no = ?");
+        // 2. Activate contribution and track callback receipt
+        $c = $conn->prepare("UPDATE contributions SET status = 'active', callback_received_at = NOW() WHERE reference_no = ?");
         $c->bind_param("s", $reference_no);
         $c->execute();
         $c->close();
+
+        // 3. Update callback log with receipt and mark as processed
+        if ($callback_log_id) {
+            $conn->query("UPDATE callback_logs SET 
+                mpesa_receipt_number = '$mpesaReceipt',
+                processed = TRUE,
+                processed_at = NOW()
+                WHERE log_id = $callback_log_id");
+        }
 
         // 3. Update Member Balance (Optional for registration fee, maybe exclude from balance)
         // Check if this was a registration fee

@@ -38,7 +38,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($remove_pic) {
         $pic_data = null;
     } elseif (!empty($_FILES['profile_pic']['name']) && $_FILES['profile_pic']['error'] === UPLOAD_ERR_OK) {
-        $pic_data = file_get_contents($_FILES['profile_pic']['tmp_name']);
+        $max_size = 1 * 1024 * 1024; // 1MB (matches small DB default)
+        $file_size = $_FILES['profile_pic']['size'];
+        $file_tmp = $_FILES['profile_pic']['tmp_name'];
+        $file_type = mime_content_type($file_tmp);
+        
+        $allowed_types = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
+
+        if (!in_array($file_type, $allowed_types)) {
+            $_SESSION['error'] = "Invalid file type. Please upload a JPG, PNG or WEBP image.";
+            header("Location: profile.php");
+            exit;
+        }
+
+        if ($file_size > $max_size) {
+            $_SESSION['error'] = "The image is too large (Maximum 1MB). Please compress it or use a smaller photo.";
+            header("Location: profile.php");
+            exit;
+        }
+
+        $pic_data = file_get_contents($file_tmp);
     }
 
     // Update

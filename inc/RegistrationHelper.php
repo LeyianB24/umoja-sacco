@@ -15,7 +15,7 @@ class RegistrationHelper {
         
         try {
             // 1. Update Member Table
-            $sqlMem = "UPDATE members SET registration_fee_status = 'paid' WHERE member_id = ?";
+            $sqlMem = "UPDATE members SET registration_fee_status = 'paid', status = 'active' WHERE member_id = ?";
             $stmtMem = $conn->prepare($sqlMem);
             $stmtMem->bind_param("i", $member_id);
             if (!$stmtMem->execute()) throw new Exception("Failed to update member status.");

@@ -8,11 +8,10 @@ require_once __DIR__ . '/../../inc/Auth.php';
 require_once __DIR__ . '/../../inc/LayoutManager.php';
 
 $layout = LayoutManager::create('member');
-// member/withdrawal.php (TEST MODE FIXED)
-session_start();
+$env_config = require_once __DIR__ . '/../../config/environment.php';
 
 // 1. CONFIGURATION
-$paystackSecretKey = "sk_test_0aa34fba5149697fcc25c4ae2556983ffc9b2fe6"; 
+$paystackSecretKey = $env_config['paystack']['secret_key']; 
 $minBalance = 50;
 
 // --- HELPER: DETECT CARRIER ---
