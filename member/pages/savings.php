@@ -2,6 +2,11 @@
 declare(strict_types=1);
 if (session_status() === PHP_SESSION_NONE) session_start();
 
+// Prevent caching of balance data
+header("Cache-Control: no-cache, no-store, must-revalidate");
+header("Pragma: no-cache");
+header("Expires: 0");
+
 require_once __DIR__ . '/../../config/app_config.php';
 require_once __DIR__ . '/../../config/db_connect.php';
 require_once __DIR__ . '/../../inc/Auth.php';

@@ -45,6 +45,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // 2. Insert Member
             $ins = $conn->prepare("INSERT INTO members (member_reg_no, full_name, national_id, phone, email, address, gender, password, join_date, status, registration_fee_status, reg_fee_paid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?)");
             $ins->bind_param("ssssssssssi", $reg_no, $full_name, $national_id, $phone, $email, $address, $gender, $hashed, $status, $fee_status, $paid);
+            
+            if (!$ins->execute()) {
+                throw new Exception("Failed to insert member: " . $ins->error);
+            }
+            
+            $member_id = $conn->insert_id;
+            $ins->close();
             // 2b. Handle File Uploads (KYC)
             $upload_dir = __DIR__ . '/../../uploads/kyc/';
             if (!is_dir($upload_dir)) mkdir($upload_dir, 0777, true);

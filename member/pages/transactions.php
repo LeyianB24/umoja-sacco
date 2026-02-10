@@ -2,6 +2,11 @@
 declare(strict_types=1);
 if (session_status() === PHP_SESSION_NONE) session_start();
 
+// Prevent caching of balance data
+header("Cache-Control: no-cache, no-store, must-revalidate");
+header("Pragma: no-cache");
+header("Expires: 0");
+
 require_once __DIR__ . '/../../config/app_config.php';
 require_once __DIR__ . '/../../config/db_connect.php';
 require_once __DIR__ . '/../../inc/Auth.php';
@@ -373,6 +378,7 @@ $pageTitle = "Transaction Ledger";
                             <option value="">All Transactions</option>
                             <option value="deposit" <?= $type_filter === 'deposit' ? 'selected' : '' ?>>Savings Deposit</option>
                             <option value="contribution" <?= $type_filter === 'contribution' ? 'selected' : '' ?>>Contribution</option>
+                            <option value="revenue_inflow" <?= $type_filter === 'revenue_inflow' ? 'selected' : '' ?>>Registration Fee</option>
                             <option value="loan_disbursement" <?= $type_filter === 'loan_disbursement' ? 'selected' : '' ?>>Loan Received</option>
                             <option value="loan_repayment" <?= $type_filter === 'loan_repayment' ? 'selected' : '' ?>>Loan Repayment</option>
                             <option value="withdrawal" <?= $type_filter === 'withdrawal' ? 'selected' : '' ?>>Withdrawal</option>
@@ -407,7 +413,7 @@ $pageTitle = "Transaction Ledger";
                                 $type = strtolower($row['transaction_type'] ?? '');
                                 
                                 // Visual Logic
-                                $is_in = in_array($type, ['deposit', 'loan_repayment', 'contribution', 'welfare']);
+                                $is_in = in_array($type, ['deposit', 'loan_repayment', 'contribution', 'welfare', 'revenue_inflow']);
                                 $is_loan_out = ($type == 'loan_disbursement'); 
                                 $is_wd = ($type == 'withdrawal');
 

@@ -61,7 +61,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $max_limit = $total_savings * 3;
 
     if ($amount > $max_limit) {
-        $_SESSION['error'] = "Loan limit exceeded. Your maximum limit is KES " . number_format($max_limit) . " based on your savings of KES " . number_format($total_savings) . ".";
+        if ($total_savings <= 0) {
+            $_SESSION['error'] = "Your loan limit is currently KES 0 because you haven't made any savings yet. Please make a deposit to your savings account to qualify for a loan (Limit is 3x your savings).";
+        } else {
+            $_SESSION['error'] = "Loan limit exceeded. Your maximum limit is KES " . number_format($max_limit) . " based on your savings of KES " . number_format($total_savings) . ". Try a smaller amount or increase your savings.";
+        }
         header("Location: loans.php");
         exit;
     }

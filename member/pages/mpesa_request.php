@@ -2,11 +2,16 @@
 declare(strict_types=1);
 if (session_status() === PHP_SESSION_NONE) session_start();
 
-require_once __DIR__ . '/../../config/app_config.php';
+// ---------------------------------------------------
+// 1. Load Config & DB
+// ---------------------------------------------------
 require_once __DIR__ . '/../../config/db_connect.php';
+require_once __DIR__ . '/../../config/app_config.php';
+$env_config = require_once __DIR__ . '/../../config/environment.php';
+require_once __DIR__ . '/../../inc/RegistrationHelper.php';
 require_once __DIR__ . '/../../inc/Auth.php';
-require_once __DIR__ . '/../../inc/LayoutManager.php';
-require_once __DIR__ . '/../../inc/functions.php';
+require_once __DIR__ . '/../../inc/LayoutManager.php'; // Added this back as it's needed for LayoutManager::create()
+require_once __DIR__ . '/../../inc/functions.php'; // Added this back as it's a general utility file
 
 $layout = LayoutManager::create('member');
 require_once __DIR__ . '/../../inc/mpesa_lib.php';
