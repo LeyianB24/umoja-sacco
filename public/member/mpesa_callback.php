@@ -326,112 +326,118 @@ if (isset($response['Body']['stkCallback'])) {
 }
 
 // ---------------------------------------------------
-// 4. B2C WITHDRAWAL CALLBACK
+// 4. B2C WITHDRAWAL CALLBACK (Standardized)
 // ---------------------------------------------------
 if (isset($response['Result'])) {
 
     $res            = $response['Result'];
     $resultCode     = $res['ResultCode'];
     $resultDesc     = $res['ResultDesc'];
-    $originatorID   = $res['OriginatorConversationID'] ?? ''; // This links to our DB
+    $originatorID   = $res['OriginatorConversationID'] ?? ''; 
     $transactionID  = $res['TransactionID'] ?? ''; // M-Pesa Receipt
+    $mpesaConvID    = $res['ConversationID'] ?? '';
 
-    // Log
-    file_put_contents($logFile,
-        "B2C CALLBACK:\n" . print_r($response, true) . "\n\n",
-        FILE_APPEND
-    );
+    // Log the callback metadata in callback_logs
+    if ($callback_log_id) {
+        $update_log = $conn->prepare("UPDATE callback_logs SET 
+            callback_type = 'B2C_WITHDRAWAL',
+            merchant_request_id = ?, -- Using ConversationID as merchant ref
+            checkout_request_id = ?, -- Using OriginatorConversationID
+            result_code = ?,
+            result_desc = ?
+            WHERE log_id = ?");
+        $update_log->bind_param("ssisi", $mpesaConvID, $originatorID, $resultCode, $resultDesc, $callback_log_id);
+        $update_log->execute();
+    }
 
-    if ($resultCode == 0) {
-        // --- SUCCESS ---
-        // 1. Update Transaction: Add receipt number
-        $q = $conn->prepare("UPDATE transactions SET notes = CONCAT(notes, ' - Ref: ', ?) WHERE mpesa_request_id = ?"); // Ensure column exists? mpesa_request_id might be virtual/missing in schema provided.
-        // STOP: Schema view of 'transactions' table (Line 122) does NOT showing 'mpesa_request_id'.
-        // It has 'reference_no'. OriginatorConversationID usually matches reference_no or is stored in a separate log?
-        // Assuming 'reference_no' or 'related_id'.
-        // IF B2C request logic stored OriginatorID, we need to find it. 
-        // Typically B2C uses 'ConversationID' or 'OriginatorConversationID'.
-        // If we don't have that column, we might struggle to match. 
-        // However, usually we store it in 'reference_no' for the transaction.
+    // Look up our withdrawal request
+    $stmt = $conn->prepare("SELECT * FROM withdrawal_requests WHERE ref_no = ? LIMIT 1");
+    $stmt->bind_param("s", $originatorID);
+    $stmt->execute();
+    $withdraw = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+
+    if ($withdraw) {
+        $member_id = $withdraw['member_id'];
+        $amount = $withdraw['amount'];
+        $source = $withdraw['source_ledger'];
+
+        // Update withdrawal_requests with callback data
+        $stmt_upd = $conn->prepare("UPDATE withdrawal_requests SET 
+            result_code = ?, 
+            result_desc = ?, 
+            mpesa_receipt = ?, 
+            callback_received_at = NOW(),
+            status = ?
+            WHERE ref_no = ?");
         
-        // Let's assume 'reference_no' holds the ID we can match, or we query 'mpesa_requests' first?
-        // But logic below was querying 'transactions' by 'mpesa_request_id'.
-        // Schema check: 'transactions' has: transaction_id, member_id, transaction_type, amount, related_id, transaction_date, payment_channel, notes, created_by_admin.
-        // It does NOT have 'mpesa_request_id'.
-        
-        // We probably need to match by 'reference_no' = $originatorID or similar.
-        // Let's try matching 'notes' LIKE ...? No.
-        // Given constraints, I will update code to use 'reference_no'.
-        
-        $q = $conn->prepare("UPDATE transactions SET notes = CONCAT(notes, ' - Ref: ', ?) WHERE reference_no = ?");
-        $q->bind_param("ss", $transactionID, $originatorID);
-        $q->execute();
-        $q->close();
+        $new_status = ($resultCode == 0) ? 'completed' : 'failed';
+        $stmt_upd->bind_param("issss", $resultCode, $resultDesc, $transactionID, $new_status, $originatorID);
+        $stmt_upd->execute();
+        $stmt_upd->close();
 
-        // 2. Send Email Notification
-        $stmt = $conn->prepare("SELECT t.member_id, m.email, m.full_name, t.amount 
-                                FROM transactions t 
-                                JOIN members m ON t.member_id = m.member_id 
-                                WHERE t.reference_no = ? LIMIT 1");
-        $stmt->bind_param("s", $originatorID);
-        $stmt->execute();
-        $txn = $stmt->get_result()->fetch_assoc();
-        $stmt->close();
+        if ($resultCode == 0) {
+            // --- SUCCESS ---
+            // Record in Golden Ledger via TransactionHelper
+            $ledger_cat = FinancialEngine::CAT_WALLET;
+            if ($source === 'savings') $ledger_cat = FinancialEngine::CAT_SAVINGS;
+            elseif ($source === 'shares') $ledger_cat = FinancialEngine::CAT_SHARES;
+            elseif ($source === 'welfare') $ledger_cat = FinancialEngine::CAT_WELFARE;
 
-        if ($txn && !empty($txn['email'])) {
-            $subject = "Withdrawal Confirmed";
-            $body = "<p>Dear <strong>{$txn['full_name']}</strong>,</p>
-                     <p>Your withdrawal of <strong>KES " . number_format($txn['amount']) . "</strong> is complete.</p>
-                     <p>M-Pesa Ref: <strong>$transactionID</strong></p>";
-            try { sendEmail($txn['email'], $subject, $body, $txn['member_id']); } catch (Exception $e) {}
+            TransactionHelper::record([
+                'member_id'     => $member_id,
+                'amount'        => $amount,
+                'type'          => 'debit', // Withdrawal is debit from member perspective
+                'category'      => $ledger_cat,
+                'ref_no'        => $transactionID,
+                'notes'         => "Standardized Withdrawal from " . ucfirst($source) . " via M-Pesa",
+                'method'        => 'mpesa',
+                'mpesa_request_id' => $originatorID
+            ]);
+
+            // Notify Member
+            $stmt_m = $conn->prepare("SELECT email, full_name FROM members WHERE member_id = ?");
+            $stmt_m->bind_param("i", $member_id);
+            $stmt_m->execute();
+            $m = $stmt_m->get_result()->fetch_assoc();
+            $stmt_m->close();
+
+            if ($m && !empty($m['email'])) {
+                $subject = "Withdrawal Successful";
+                $body = "<p>Dear <strong>{$m['full_name']}</strong>,</p>
+                         <p>Your withdrawal of <strong>KES " . number_format($amount) . "</strong> has been processed successfully.</p>
+                         <p>M-Pesa Receipt: <strong>$transactionID</strong></p>
+                         <p>Thank you for choosing " . SITE_NAME . ".</p>";
+                try { sendEmail($m['email'], $subject, $body, $member_id); } catch (Exception $e) {}
+            }
+
+            file_put_contents($logFile, "SUCCESS: B2C Withdrawal $originatorID completed with $transactionID\n", FILE_APPEND);
+        } else {
+            // --- FAILURE ---
+            file_put_contents($logFile, "FAILED: B2C Withdrawal $originatorID failed with reason: $resultDesc\n", FILE_APPEND);
+            
+            // Notify Member of failure
+            $stmt_m = $conn->prepare("SELECT email, full_name FROM members WHERE member_id = ?");
+            $stmt_m->bind_param("i", $member_id);
+            $stmt_m->execute();
+            $m = $stmt_m->get_result()->fetch_assoc();
+            $stmt_m->close();
+
+            if ($m && !empty($m['email'])) {
+                $subject = "Withdrawal Failed";
+                $body = "<p>Dear <strong>{$m['full_name']}</strong>,</p>
+                         <p>Your withdrawal request of <strong>KES " . number_format($amount) . "</strong> could not be processed.</p>
+                         <p><strong>Reason:</strong> $resultDesc</p>
+                         <p>Please contact support if you have any questions.</p>";
+                try { sendEmail($m['email'], $subject, $body, $member_id); } catch (Exception $e) {}
+            }
         }
-
+        
+        if ($callback_log_id) {
+            $conn->query("UPDATE callback_logs SET processed = TRUE, processed_at = NOW(), member_id = $member_id, amount = $amount WHERE log_id = $callback_log_id");
+        }
     } else {
-        // --- FAILURE ---
-        // Money was already deducted. Refund it.
-        
-        // 1. Get transaction details
-        $stmt = $conn->prepare("SELECT member_id, amount, reference_no FROM transactions WHERE reference_no = ? LIMIT 1");
-        $stmt->bind_param("s", $originatorID);
-        $stmt->execute();
-        $txn = $stmt->get_result()->fetch_assoc();
-        $stmt->close();
-
-        if ($txn) {
-            $member_id = $txn['member_id'];
-            $amount = $txn['amount'];
-            $ref = $txn['reference_no'];
-
-            // 2. Mark original transaction as FAILED
-            $q = $conn->prepare("UPDATE transactions SET notes = CONCAT(notes, ' [FAILED - REFUNDED]') WHERE reference_no = ?");
-            $q->bind_param("s", $originatorID);
-            $q->execute();
-            $q->close();
-
-            // 3. Refund (Credit back to Contributions ledger and Member Balance)
-            $refundRef = "REF-" . strtoupper(uniqid());
-            
-            // Insert into Contributions (as a mechanism to track incoming/refunded money)
-            $ins = $conn->prepare("INSERT INTO contributions (member_id, contribution_type, amount, payment_method, reference_no, status, created_at) VALUES (?, 'savings', ?, 'system', ?, 'active', NOW())");
-            $ins->bind_param("ids", $member_id, $amount, $refundRef);
-            $ins->execute();
-            $ins->close();
-
-            // Record in Transactions Ledger
-            $insT = $conn->prepare("INSERT INTO transactions (member_id, transaction_type, amount, payment_channel, notes, reference_no, transaction_date) VALUES (?, 'deposit', ?, 'system', 'Refund for failed withdrawal', ?, NOW())");
-            $insT->bind_param("ids", $member_id, $amount, $refundRef);
-            $insT->execute();
-            $insT->close();
-            
-            // 4. Restore Member Balance
-            $upd = $conn->prepare("UPDATE members SET account_balance = account_balance + ? WHERE member_id = ?");
-            $upd->bind_param("di", $amount, $member_id);
-            $upd->execute();
-            $upd->close();
-
-            // 5. Send Failure Email
-            // ... (Fetch email logic similar to above) ...
-        }
+        file_put_contents($logFile, "ERROR: No matching withdrawal_request for B2C OriginatorID $originatorID\n", FILE_APPEND);
     }
 
     echo json_encode(['ResultCode' => 0, 'ResultDesc' => 'B2C Callback Received']);

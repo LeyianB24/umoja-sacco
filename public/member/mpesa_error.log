@@ -7,3 +7,13 @@
 [2025-11-26 23:43:12] RAW CALLBACK:
 {"Body":{"stkCallback":{"MerchantRequestID":"954a-4b36-8f22-8d0678f4628f15916","CheckoutRequestID":"ws_CO_27112025014402340796157265","ResultCode":1037,"ResultDesc":"No response from user."}}}
 
+[2026-02-10 14:16:10] DB LOG FAILED: Table 'umoja_drivers_sacco.callback_logs' doesn't exist
+[2026-02-10 14:16:10] RAW CALLBACK (Log ID: ):
+
+
+[2026-02-10 14:16:10] Invalid JSON: Syntax error
+
+[2026-02-10 14:18:10] DB LOG FAILED: Table 'umoja_drivers_sacco.callback_logs' doesn't exist
+[2026-02-10 14:18:10] RAW CALLBACK (Log ID: ):
+{"Result":{"ResultCode":0,"ResultDesc":"The service request is processed successfully.","OriginatorConversationID":"TEST-WD-5AFFB34E","ConversationID":"AG_698B301203B25","TransactionID":"RE1B20216A","ResultParameters":{"ResultParameter":[{"Name":"TransactionAmount","Value":"1200.00"},{"Name":"TransactionReceipt","Value":"RFF6D560C3"}]}}}
+

@@ -139,11 +139,17 @@ function mpesa_b2c_request($phone, $amount, $reference, $remarks = 'Withdrawal')
     }
 
     $url = mpesa_base_url() . '/mpesa/b2c/v1/paymentrequest';
-    $formatted_phone = preg_replace('/^0/', '254', $phone);
+    
+    // Standardize phone format: Ensure it starts with 254 and has no +
+    $formatted_phone = preg_replace('/^\+/', '', $phone);
+    $formatted_phone = preg_replace('/^0/', '254', $formatted_phone);
+    if (strlen($formatted_phone) === 9) {
+        $formatted_phone = '254' . $formatted_phone;
+    }
 
     // Daraja B2C v1 standard payload
     $payload = [
-        'InitiatorName' => $c['b2c_initiator_name'],
+        'InitiatorName' => $c['b2c_initiator_name'] ?? 'testapi',
         'SecurityCredential' => $security_credential,
         'CommandID' => 'BusinessPayment',
         'Amount' => (int)$amount,
@@ -152,7 +158,8 @@ function mpesa_b2c_request($phone, $amount, $reference, $remarks = 'Withdrawal')
         'Remarks' => $remarks,
         'QueueTimeOutURL' => $c['b2c_timeout_url'],
         'ResultURL' => $c['b2c_result_url'],
-        'Occasion' => $remarks
+        'Occasion' => $remarks,
+        'OriginatorConversationID' => $reference // CRITICAL: Link to our withdrawal_requests table
     ];
 
     // DEBUG: Log the M-Pesa B2C request
@@ -191,7 +198,7 @@ function mpesa_b2c_request($phone, $amount, $reference, $remarks = 'Withdrawal')
     if (isset($json['ResultCode']) && $json['ResultCode'] === '0') {
         return ['success' => true, 'data' => $json];
     } elseif (isset($json['ResponseCode']) && $json['ResponseCode'] === '0') {
-        return ['success' => true, 'data' => $json];
+        return ['success' => true, 'data' => $json, 'conversation_id' => $json['ConversationID'] ?? null];
     } else {
         $msg = $json['errorMessage'] ?? $json['ResponseDescription'] ?? 'M-Pesa B2C Request Failed';
         return ['success' => false, 'message' => $msg];
