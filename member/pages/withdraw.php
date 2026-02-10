@@ -148,89 +148,59 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['withdraw'])) {
         $error = "Phone number is required.";
     } else {
         try {
-            $conn->begin_transaction();
+            $in_txn = $conn->begin_transaction();
             
-            // 1. Process withdrawal via Financial Engine
-            $ref = 'WD-' . strtoupper(substr(md5(uniqid()), 0, 10));
+            // 1. Generate internal reference
+            $ref = 'WD-' . strtoupper(substr(md5(uniqid((string)rand(), true)), 0, 10));
             $ledger = FinancialEngine::CAT_WALLET;
             if ($type === 'savings') $ledger = FinancialEngine::CAT_SAVINGS;
             elseif ($type === 'shares') $ledger = FinancialEngine::CAT_SHARES;
             elseif ($type === 'welfare') $ledger = FinancialEngine::CAT_WELFARE;
 
-            $ok = TransactionHelper::record([
-                'member_id'     => $member_id,
-                'amount'        => $amount,
-                'type'          => 'debit',
-                'category'      => $ledger,
-                'ref_no'        => $ref,
-                'notes'         => "Withdrawal from " . $current_source['title'] . " to $phone",
-                'method'        => 'mpesa'
-            ]);
+            // 2. Record in withdrawal_requests (Standardizing Traceability)
+            $stmt = $conn->prepare("INSERT INTO withdrawal_requests (member_id, ref_no, amount, source_ledger, phone_number, status) VALUES (?, ?, ?, ?, ?, 'initiated')");
+            $stmt->bind_param("isdss", $member_id, $ref, $amount, $type, $phone);
+            if (!$stmt->execute()) {
+                throw new Exception("Failed to initiate withdrawal request record.");
+            }
+            $withdrawal_id = $conn->insert_id;
+            $stmt->close();
 
-            if (!$ok) throw new Exception("Failed to record withdrawal in ledger.");
-
-            // 3. Initiate Paystack transfer
-            require_once __DIR__ . '/../../inc/paystack_lib.php';
-            require_once __DIR__ . '/../../inc/mpesa_lib.php'; // Fallback
-            $paystack_response = initiate_paystack_withdrawal($phone, $amount, $member_name, "Withdrawal - $ref");
+            // 3. Initiate Paystack transfer (Optional / Primarily used for M-Pesa B2C now as per standardization)
+            // Standardization says: mirror the loan payment process, M-Pesa request context.
+            // I will default to M-Pesa B2C for standardization unless Paystack is explicitly required.
+            // Given the SACCO focus, direct B2C is often preferred for control.
             
-            // FALLBACK: If Paystack fails (test mode issue), use M-Pesa B2C
-            if (!$paystack_response['success']) {
-                error_log("Paystack failed: " . $paystack_response['error'] . " - Falling back to M-Pesa B2C");
-                
-                // Try M-Pesa B2C as fallback
-                $mpesa_response = mpesa_b2c_request($phone, $amount, $ref, "Withdrawal - $ref");
-                
-                if ($mpesa_response['success']) {
-                    $conn->commit();
-                    
-                    // Send notifications
-                    if (function_exists('send_notification')) {
-                        send_notification($conn, $member_id, 'withdrawal_success', [
-                            'amount' => $amount,
-                            'reference' => $ref
-                        ]);
-                    }
-                    
-                    // Store referrer for redirect
-                    if (!empty($_SERVER['HTTP_REFERER'])) {
-                        $_SESSION['withdrawal_return_url'] = $_SERVER['HTTP_REFERER'];
-                    }
-                    
-                    $success = "Withdrawal initiated via M-Pesa! KES " . number_format($amount) . " will be sent to $phone.";
-                    $return_url = $_SESSION['withdrawal_return_url'] ?? BASE_URL . "/member/" . $source_page . ".php";
-                    header("Refresh:3; URL=" . $return_url);
-                } else {
-                    // Both Paystack and M-Pesa failed
-                    $conn->rollback();
-                    $error = "Withdrawal failed: " . ($mpesa_response['message'] ?? 'Please try again later');
+            require_once __DIR__ . '/../../inc/mpesa_lib.php';
+            
+            error_log("Initiating M-Pesa B2C for Withdrawal #$withdrawal_id (Ref: $ref)");
+            
+            // Update to 'pending' before calling API
+            $conn->query("UPDATE withdrawal_requests SET status = 'pending' WHERE withdrawal_id = $withdrawal_id");
+            $conn->commit(); // Commit the 'pending' state so callback can reconcile even if API call hangs
+            $in_txn = false;
+
+            $mpesa_response = mpesa_b2c_request($phone, $amount, $ref, "Withdrawal - $ref");
+            
+            if ($mpesa_response['success']) {
+                $mpesa_conv_id = $mpesa_response['conversation_id'] ?? null;
+                if ($mpesa_conv_id) {
+                    $conn->query("UPDATE withdrawal_requests SET mpesa_conversation_id = '$mpesa_conv_id' WHERE withdrawal_id = $withdrawal_id");
                 }
                 
-            } else {
-                // Paystack succeeded
-                $conn->commit();
+                $success = "Withdrawal initiated! KES " . number_format($amount) . " will be sent to $phone promptly. Check your M-Pesa shortly.";
                 
-                // Send notifications
-                if (function_exists('send_notification')) {
-                    send_notification($conn, $member_id, 'withdrawal_success', [
-                        'amount' => $amount,
-                        'reference' => $ref
-                    ]);
-                }
-                
-                // Store referrer for redirect
-                if (!empty($_SERVER['HTTP_REFERER'])) {
-                    $_SESSION['withdrawal_return_url'] = $_SERVER['HTTP_REFERER'];
-                }
-                
-                $success = "Withdrawal initiated! KES " . number_format($amount) . " will be sent to $phone via M-Pesa.";
+                // Set return URL
                 $return_url = $_SESSION['withdrawal_return_url'] ?? BASE_URL . "/member/" . $source_page . ".php";
                 header("Refresh:3; URL=" . $return_url);
-                
+            } else {
+                // API call failed to initiate
+                $conn->query("UPDATE withdrawal_requests SET status = 'failed', result_desc = '" . $conn->real_escape_string($mpesa_response['message']) . "' WHERE withdrawal_id = $withdrawal_id");
+                $error = "Withdrawal initiation failed: " . ($mpesa_response['message'] ?? 'Connection error');
             }
             
         } catch (Exception $e) {
-            $conn->rollback();
+            if (isset($in_txn) && $in_txn) $conn->rollback();
             $error = "System error: " . $e->getMessage();
             error_log("Withdrawal error: " . $e->getMessage());
         }

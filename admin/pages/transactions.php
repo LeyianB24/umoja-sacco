@@ -124,10 +124,11 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
 }
 
 // 5. Fetch Final Data
-$sql = "SELECT t.*, m.full_name, m.national_id, i.title as asset_title
+$sql = "SELECT t.*, m.full_name, m.national_id, i.title as asset_title, wr.status as withdrawal_status, wr.result_desc as withdrawal_result
         FROM transactions t 
         LEFT JOIN members m ON t.member_id = m.member_id 
         LEFT JOIN investments i ON t.related_table = 'investments' AND t.related_id = i.investment_id
+        LEFT JOIN withdrawal_requests wr ON t.mpesa_request_id = wr.ref_no
         WHERE $where 
         ORDER BY t.created_at DESC LIMIT 100";
 
@@ -357,7 +358,15 @@ $pageTitle = "Golden Ledger Vault";
                                     <i class="bi bi-tag-fill me-1"></i> <?= esc($row['asset_title']) ?>
                                 </div><br>
                             <?php endif; ?>
+                            <?php if ($row['withdrawal_status']): ?>
+                                <div class="badge bg-<?= $row['withdrawal_status'] === 'completed' ? 'success' : 'warning' ?> bg-opacity-10 text-<?= $row['withdrawal_status'] === 'completed' ? 'success' : 'warning' ?> rounded-pill mb-1" style="font-size: 0.65rem;">
+                                    WITHDRAWAL: <?= strtoupper($row['withdrawal_status']) ?>
+                                </div><br>
+                            <?php endif; ?>
                             <?= esc($row['notes'] ?: 'No notes attached.') ?>
+                            <?php if ($row['withdrawal_result']): ?>
+                                <div class="mt-1 xsmall opacity-50 text-wrap" style="font-size: 0.6rem;"><?= esc($row['withdrawal_result']) ?></div>
+                            <?php endif; ?>
                         </td>
                     </tr>
                     <?php endwhile; else: ?>

@@ -31,12 +31,13 @@ function send_notification($conn, $member_id, $type, $data = []) {
     
     $success = true;
     
-    // Send Email
+    // Send Email & App Notification (Unified)
     if (EMAIL_ENABLED && !empty($email)) {
         try {
+            // This now handles both SMTP and Database Notification insertion
             sendEmail($email, $notification['email_subject'], $notification['email_body'], $member_id);
-        } catch (Exception $e) {
-            error_log("Email notification failed: " . $e->getMessage());
+        } catch (Throwable $e) {
+            error_log("Notification system failed: " . $e->getMessage());
             $success = false;
         }
     }
@@ -45,17 +46,12 @@ function send_notification($conn, $member_id, $type, $data = []) {
     if (SMS_ENABLED && !empty($phone)) {
         try {
             send_sms($phone, $notification['sms_message']);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             error_log("SMS notification failed: " . $e->getMessage());
             $success = false;
         }
     }
-    
-    // Log notification in database
-    $msg = $notification['sms_message'];
-    $conn->query("INSERT INTO notifications (user_type, user_id, message, is_read, created_at) 
-                  VALUES ('member', $member_id, '" . $conn->real_escape_string($msg) . "', 0, NOW())");
-    
+
     return $success;
 }
 
