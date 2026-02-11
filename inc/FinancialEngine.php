@@ -288,4 +288,14 @@ class FinancialEngine {
         }
         return $bal;
     }
+
+    public function getCategoryWithdrawals($mid, $category) {
+        $acc_id = $this->getMemberAccount($mid, $category);
+        // Withdrawals are DEBITS from Member Liability/Equity accounts
+        $stmt = $this->db->prepare("SELECT SUM(debit) as total FROM ledger_entries WHERE account_id = ?");
+        $stmt->bind_param("i", $acc_id);
+        $stmt->execute();
+        $res = $stmt->get_result()->fetch_assoc();
+        return (float)($res['total'] ?? 0.0);
+    }
 }

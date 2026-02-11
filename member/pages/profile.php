@@ -78,7 +78,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // 3. Fetch Data
-$stmt = $conn->prepare("SELECT full_name, email, phone, national_id, address, join_date, gender, profile_pic FROM members WHERE member_id = ?");
+$stmt = $conn->prepare("SELECT full_name, email, phone, national_id, address, join_date, gender, profile_pic, member_reg_no FROM members WHERE member_id = ?");
 $stmt->bind_param("i", $member_id);
 $stmt->execute();
 $member = $stmt->get_result()->fetch_assoc();
@@ -353,7 +353,7 @@ $pageTitle = "My Profile";
                                 </div>
                                 <h4 class="fw-bold mt-3 mb-1"><?= htmlspecialchars($member['full_name']) ?></h4>
                                 <div class="d-flex justify-content-center gap-2 mt-2">
-                                    <span class="iq-bg-soft-primary small fw-bold">Member ID: <?= str_pad((string)$member_id, 4, '0', STR_PAD_LEFT) ?></span>
+                                    <span class="iq-bg-soft-primary small fw-bold">Member No: <?= htmlspecialchars($member['member_reg_no']) ?></span>
                                     <span class="iq-bg-soft-primary small fw-bold text-uppercase"><?= htmlspecialchars($member['gender'] ?: 'Unknown') ?></span>
                                 </div>
                             </div>

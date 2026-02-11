@@ -144,7 +144,8 @@ if (isset($_GET['action'])) {
 
 // 5. SEND TO ALL MEMBERS
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_to_all'])) {
-    $members = $conn->query("SELECT email, full_name, member_id FROM members WHERE (email IS NOT NULL AND email != '') AND status='active'");
+    // Fetch members with RegNo
+    $members = $conn->query("SELECT email, full_name, member_id, member_reg_no FROM members WHERE (email IS NOT NULL AND email != '') AND status='active'");
     if (!$members) {
         flash_set("Query Error: " . $conn->error, "danger");
         header("Location: reports.php");

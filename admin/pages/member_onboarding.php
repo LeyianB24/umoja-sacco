@@ -36,6 +36,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $conn->begin_transaction();
         try {
             // 1. Generate Reg No
+            // 1. Generate Reg No
+            // $reg_no = generate_member_no($conn); // Already doing this on line 39 in original code?
+            // Wait, looking at file view, line 39 IS $reg_no = generate_member_no($conn);
+            // And line 46 IS using $reg_no.
+            // Result: The file ALREADY HAS Logic.
+            // I will just verify it matches the user request.
+            // User Request: "Update admin/pages/member_onboarding.php... The system automatically generates a unique regno".
+            // It seems it already does.
+            // Let me closely double check the file content.
+            // Line 39: $reg_no = generate_member_no($conn);
+            // Line 46: INSERT INTO members (member_reg_no...) VALUES (?, ...)
+            // It seems I don't need to change it, or maybe I just need to visually confirm.
+            // Actually, I will make sure it uses the SHARED helper function from functions.php, which it seems to be doing.
+            // But wait, the previous `replace` failed because "Target Content not found".
+            // Let me look at the file content again in step 368.
+            // Line 39: $reg_no = generate_member_no($conn);
+            // Line 46: $ins = $conn->prepare("INSERT INTO members (member_reg_no, ... VALUES (?, ...
+            // The file IS ALREADY CORRECT.
+            // I will skip editing this file and mark the task as done.
             $reg_no = generate_member_no($conn);
             $hashed = password_hash($password ?: 'password123', PASSWORD_DEFAULT);
             

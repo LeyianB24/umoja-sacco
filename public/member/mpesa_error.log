@@ -17,3 +17,7 @@
 [2026-02-10 14:18:10] RAW CALLBACK (Log ID: ):
 {"Result":{"ResultCode":0,"ResultDesc":"The service request is processed successfully.","OriginatorConversationID":"TEST-WD-5AFFB34E","ConversationID":"AG_698B301203B25","TransactionID":"RE1B20216A","ResultParameters":{"ResultParameter":[{"Name":"TransactionAmount","Value":"1200.00"},{"Name":"TransactionReceipt","Value":"RFF6D560C3"}]}}}
 
+[2026-02-11 09:12:16] DB LOG FAILED: Table 'umoja_drivers_sacco.callback_logs' doesn't exist
+[2026-02-11 09:12:16] RAW CALLBACK (Log ID: ):
+{"Body":{"stkCallback":{"MerchantRequestID":"TEST-MERCHANT-ID","CheckoutRequestID":"ws_CO_1770797536698c39e032494","ResultCode":0,"ResultDesc":"The service request is processed successfully.","CallbackMetadata":{"Item":[{"Name":"Amount","Value":500},{"Name":"MpesaReceiptNumber","Value":"TEST-RCPT-1770797536"},{"Name":"TransactionDate","Value":"20260211091216"},{"Name":"PhoneNumber","Value":"254700000000"}]}}}}
+
