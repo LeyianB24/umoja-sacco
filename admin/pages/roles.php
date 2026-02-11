@@ -340,10 +340,11 @@ $pageTitle = "Roles & Permissions";
 </head>
 <body>
 
-<?php $layout->sidebar(); ?>
+<div class="d-flex">
+    <?php $layout->sidebar(); ?>
 
-<main class="main-content">
-    <?php $layout->topbar($pageTitle ?? 'Role Matrix'); ?>
+    <div class="flex-fill main-content">
+        <?php $layout->topbar($pageTitle ?? 'Role Matrix'); ?>
     <div class="page-header">
         <div class="row align-items-center">
             <div class="col-md-6">
@@ -460,7 +461,9 @@ $pageTitle = "Roles & Permissions";
     </div>
     <?php endforeach; ?>
     </div>
-</main>
+    <?php $layout->footer(); ?>
+    </div>
+</div>
 
 <!-- Add Role Modal -->
 <div class="modal fade" id="addRoleModal" tabindex="-1">

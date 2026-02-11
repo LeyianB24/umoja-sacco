@@ -143,7 +143,7 @@ $pageTitle = "Register Member";
 
 <div class="d-flex">
     <?php $layout->sidebar(); ?>
-    <div class="flex-fill" style="margin-left: 280px; padding: 20px;">
+    <div class="flex-fill main-content">
         <?php $layout->topbar($pageTitle ?? ''); ?>
         
         <div class="container-fluid py-4">
@@ -245,6 +245,8 @@ $pageTitle = "Register Member";
                 </div>
             </div>
         </div>
+    </div>
+    <?php $layout->footer(); ?>
     </div>
 </div>
 

@@ -221,10 +221,11 @@ $pageTitle = "Golden Ledger Vault";
 </head>
 <body>
 
-<?php $layout->sidebar(); ?>
+<div class="d-flex">
+    <?php $layout->sidebar(); ?>
 
-<div class="main-content">
-    <?php $layout->topbar($pageTitle ?? ''); ?>
+    <div class="flex-fill main-content">
+        <?php $layout->topbar($pageTitle ?? 'Golden Ledger Vault'); ?>
 
     <div class="hp-banner shadow-lg fade-in">
         <div class="row align-items-center">
@@ -381,6 +382,7 @@ $pageTitle = "Golden Ledger Vault";
                 </tbody>
             </table>
         </div>
+    <?php $layout->footer(); ?>
     </div>
 </div>
 

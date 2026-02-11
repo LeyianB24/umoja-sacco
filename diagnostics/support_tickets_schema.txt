@@ -1,0 +1,11 @@
+support_id | int(11) | NO | PRI |  | auto_increment
+admin_id | int(11) | NO | MUL |  | 
+member_id | int(11) | NO | MUL |  | 
+subject | varchar(255) | NO |  |  | 
+message | text | NO |  |  | 
+category | enum('loan','accounting','tech','general') | YES |  | general | 
+priority | enum('low','medium','high','critical') | YES |  | medium | 
+status | varchar(20) | YES |  | Pending | 
+is_resolved | tinyint(1) | YES |  | 0 | 
+created_at | timestamp | NO |  | current_timestamp() | 
+attachment | varchar(255) | YES |  |  | 

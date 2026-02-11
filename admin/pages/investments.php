@@ -654,6 +654,7 @@ $pageTitle = "Investment Portfolio";
     </div>
     
     <?php $layout->footer(); ?>
+    </div>
 </div>
 
 <!-- Add Asset Modal -->

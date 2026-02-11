@@ -66,10 +66,15 @@ if (isset($_POST['action']) && $_POST['action'] === 'activate' && isset($_POST['
 $stuck = $monitor->getStuckPending(5);
 $alerts = $monitor->getActiveAlerts();
 
-$layout->header("Transaction Monitor");
-?>
+$layout->header("Transaction Monitor"); ?>
 
-<div class="container-fluid">
+<div class="d-flex">
+    <?php $layout->sidebar(); ?>
+
+    <div class="flex-fill main-content">
+        <?php $layout->topbar("Transaction Monitor"); ?>
+
+        <div class="container-fluid p-4">
     <div class="row">
         <div class="col-12">
             <div class="card card-flush">
@@ -196,5 +201,6 @@ function viewCallbackLog(checkoutId) {
 }
 </script>
 
-<?php
-$layout->footer();
+    <?php $layout->footer(); ?>
+    </div>
+</div>

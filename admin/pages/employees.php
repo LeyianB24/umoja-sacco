@@ -98,7 +98,12 @@ if ($search) {
 }
 
 $where_sql = count($where) > 0 ? "WHERE " . implode(" AND ", $where) : "";
-$sql = "SELECT * FROM employees $where_sql ORDER BY full_name ASC";
+$sql = "SELECT e.*, r.name as admin_role 
+        FROM employees e 
+        LEFT JOIN admins a ON e.admin_id = a.admin_id 
+        LEFT JOIN roles r ON a.role_id = r.id 
+        $where_sql 
+        ORDER BY e.full_name ASC";
 
 $stmt = $db->prepare($sql);
 if (!empty($params)) $stmt->bind_param($types, ...$params);
@@ -116,10 +121,14 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
     $data = [];
     $staff_res->data_seek(0);
     while($row = $staff_res->fetch_assoc()) {
+        $role_display = $row['job_title'];
+        if ($row['admin_role']) {
+            $role_display .= " (" . $row['admin_role'] . ")";
+        }
         $data[] = [
             'Name' => $row['full_name'],
             'ID No' => $row['national_id'],
-            'Role' => $row['job_title'],
+            'Role' => $role_display,
             'Phone' => $row['phone'],
             'Salary' => number_format((float)$row['salary'], 2),
             'Status' => ucfirst($row['status']),
@@ -410,9 +419,9 @@ $pageTitle = "Staff Management";
                                             <span class="badge badge-soft <?= $badge_cls ?>">
                                                 <?= str_replace('_', ' ', ucfirst($emp['status'])) ?>
                                             </span>
-                                            <?php if($emp['admin_id']): ?>
-                                                <span class="badge bg-info-subtle text-info border-0 rounded-pill px-2" style="font-size: 0.6rem;">
-                                                    <i class="bi bi-shield-check"></i> System Access
+                                            <?php if($emp['admin_role']): ?>
+                                                <span class="badge bg-primary bg-opacity-10 text-primary border-0 rounded-pill px-2" style="font-size: 0.6rem;">
+                                                    <i class="bi bi-shield-check"></i> System: <?= htmlspecialchars($emp['admin_role']) ?>
                                                 </span>
                                             <?php endif; ?>
                                         </div>

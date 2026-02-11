@@ -161,11 +161,10 @@ $pageTitle = $member['full_name'] . " - Member Profile";
         .badge-status { padding: 6px 16px; border-radius: 50px; font-weight: 700; font-size: 0.75rem; }
     </style>
 </head>
-<body>
+<div class="d-flex">
+    <?php $layout->sidebar(); ?>
 
-<?php $layout->sidebar(); ?>
-
-<div class="main-content">
+    <div class="flex-fill main-content">
     <?php $layout->topbar($pageTitle ?? ''); ?>
 
     <!-- Breadcrumb -->
@@ -447,6 +446,7 @@ $pageTitle = $member['full_name'] . " - Member Profile";
                 <?php endif; ?>
             </div>
         </div>
+    <?php $layout->footer(); ?>
     </div>
 </div>
 

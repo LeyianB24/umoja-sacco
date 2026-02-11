@@ -29,6 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $category = $_POST['category'] ?? 'general';
     $subject = trim($_POST['subject'] ?? '');
     $message = trim($_POST['message'] ?? '');
+    $reference_no = trim($_POST['reference_no'] ?? '');
 
     if ($subject === '' || $message === '') {
         $error = "Please fill in all required fields.";
@@ -56,20 +57,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if (empty($error)) {
-            $assigned_admin = 1; // Default to main support admin
-            $sql = "INSERT INTO support_tickets (admin_id, member_id, category, subject, message, status, attachment, created_at) VALUES (?, ?, ?, ?, ?, 'Pending', ?, NOW())";
+            // DYNAMIC ROUTING: Find Role ID that has permission to handle this category
+            $perm_slug = "support_" . $category;
+            $assigned_role_id = null;
+            
+            $stmt_role = $conn->prepare("SELECT rp.role_id FROM role_permissions rp JOIN permissions p ON rp.permission_id = p.id WHERE p.slug = ? LIMIT 1");
+            $stmt_role->bind_param("s", $perm_slug);
+            $stmt_role->execute();
+            $res_role = $stmt_role->get_result();
+            if ($row_role = $res_role->fetch_assoc()) {
+                $assigned_role_id = (int)$row_role['role_id'];
+            }
+            $stmt_role->close();
+
+            // Default to SuperAdmin (Role ID 1) if no specific role found
+            if (!$assigned_role_id) $assigned_role_id = 1;
+
+            $sql = "INSERT INTO support_tickets (member_id, category, assigned_role_id, subject, message, status, attachment, created_at) VALUES (?, ?, ?, ?, ?, 'Pending', ?, NOW())";
             $stmt = $conn->prepare($sql);
-            $stmt->bind_param("iissss", $assigned_admin, $member_id, $category, $subject, $message, $attachmentPath);
+            $stmt->bind_param("isisss", $member_id, $category, $assigned_role_id, $subject, $message, $attachmentPath);
             
             if ($stmt->execute()) {
                 $ticket_id = $stmt->insert_id;
-                // Notify member
-                $notif_msg = "Your support ticket #$ticket_id has been created. Our team will review it shortly.";
+                
+                // If reference no provided, append to message
+                if ($reference_no) {
+                    $ref_update = "UPDATE support_tickets SET message = CONCAT(message, '\n\nReference/Transaction ID: ', ?) WHERE support_id = ?";
+                    $stmt_ref = $conn->prepare($ref_update);
+                    $stmt_ref->bind_param("si", $reference_no, $ticket_id);
+                    $stmt_ref->execute();
+                    $stmt_ref->close();
+                }
+
+                // Notify Member
+                $notif_msg = "Your support ticket #$ticket_id ($category) has been created. Our team will review it shortly.";
                 $conn->query("INSERT INTO notifications (member_id, title, message, status, user_type, user_id, created_at) 
                              VALUES ($member_id, 'Ticket #$ticket_id', '$notif_msg', 'unread', 'member', $member_id, NOW())");
+                
+                // NOTIFY ADMIN ROLE
+                $admin_notif_msg = "New support ticket #$ticket_id ($category) submitted by Member ID: $member_id.";
+                $conn->query("INSERT INTO notifications (title, message, status, user_type, user_id, created_at) 
+                             SELECT 'New Ticket #$ticket_id', '$admin_notif_msg', 'unread', 'admin', admin_id, NOW() 
+                             FROM admins WHERE role_id = $assigned_role_id OR role_id = 1");
+
                 $success = "Ticket #$ticket_id submitted successfully!";
             } else {
-                $error = "System Error: Unable to save ticket. Please try again later.";
+                $error = "System Error: Unable to save ticket. Please try again later. " . $conn->error;
             }
             if(isset($stmt)) $stmt->close();
         }
@@ -291,13 +324,22 @@ $pageTitle = "Support Center";
                             <div class="row g-3">
                                 <div class="col-md-12">
                                     <label class="form-label small fw-bold text-muted">Ticket Category</label>
-                                    <select name="category" class="form-select">
-                                        <option value="general">General Inquiry</option>
-                                        <option value="funds">Savings & Withdrawals</option>
-                                        <option value="loans">Loan Applications</option>
+                                    <select name="category" class="form-select" required>
+                                        <option value="" disabled selected>Select a Category</option>
+                                        <option value="loans">Loan Applications & Repayments</option>
+                                        <option value="savings">Savings & Deposits</option>
+                                        <option value="shares">Shares & Equity</option>
                                         <option value="welfare">Welfare & Benefits</option>
-                                        <option value="technical">Technical Support</option>
+                                        <option value="withdrawals">Withdrawals & M-Pesa</option>
+                                        <option value="technical">Technical Issue</option>
+                                        <option value="profile">Account / Profile Update</option>
+                                        <option value="investments">Investments</option>
+                                        <option value="general">General Inquiry</option>
                                     </select>
+                                </div>
+                                <div class="col-md-12">
+                                    <label class="form-label small fw-bold text-muted">Reference / Transaction ID (Optional)</label>
+                                    <input type="text" name="reference_no" class="form-control" placeholder="e.g. S9K1234567, Loan #123">
                                 </div>
                                 <div class="col-md-12">
                                     <label class="form-label small fw-bold text-muted">Subject</label>

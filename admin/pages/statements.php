@@ -116,10 +116,11 @@ $pageTitle = "Statement Portal";
 </head>
 <body>
 
-<?php $layout->sidebar(); ?>
+<div class="d-flex">
+    <?php $layout->sidebar(); ?>
 
-<div class="main-content">
-    <?php $layout->topbar($pageTitle ?? ''); ?>
+    <div class="flex-fill main-content">
+        <?php $layout->topbar($pageTitle ?? 'Statement Portal'); ?>
 
     <div class="portal-banner shadow">
         <div class="row align-items-center">
@@ -256,13 +257,11 @@ $pageTitle = "Statement Portal";
             </div>
         </div>
     </div>
+    <?php $layout->footer(); ?>
+    </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <!-- Opting out of Select2 for simplicity in this turn unless requested, standard select is styled -->
 </body>
 </html>
-
-
-
-
