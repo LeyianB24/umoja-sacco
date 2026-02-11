@@ -54,7 +54,8 @@ $balances = $engine->getBalances($member_id);
 
 $netSavings       = (float)($balances['savings'] ?? 0.0);
 $totalSavings     = (float)($conn->query("SELECT SUM(amount) as total FROM contributions WHERE member_id = $member_id AND contribution_type = 'savings'")->fetch_assoc()['total'] ?? 0.0);
-$totalWithdrawals = (float)($conn->query("SELECT SUM(amount) as total FROM transactions WHERE member_id = $member_id AND (transaction_type = 'withdrawal' OR transaction_type = 'debit') AND (notes LIKE '%savings%' OR notes LIKE '%Savings%')")->fetch_assoc()['total'] ?? 0.0);
+// Use FinancialEngine for accurate Withdrawal sum (Debits from Savings Ledger)
+$totalWithdrawals = $engine->getCategoryWithdrawals($member_id, 'savings');
 
 // 4. Fetch History from transactions table
 $sqlHistory = "SELECT * FROM transactions $where ORDER BY created_at DESC";

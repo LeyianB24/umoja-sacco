@@ -253,17 +253,18 @@ if (isset($response['Body']['stkCallback'])) {
         }
 
         // 4. Send confirmation email
-        if (!empty($email)) {
-            $subject = "Payment Confirmed ($mpesaReceipt)";
-            $body = "
-                <p>Hello <strong>$full_name</strong>,</p>
-                <p>Your payment of <strong>KES " . number_format($amount) . "</strong> was successful.</p>
-                <p><strong>Receipt:</strong> $mpesaReceipt<br>
-                <strong>Reference:</strong> $reference_no</p>
-                <p style='color:green;'>Thank you for your payment.</p>
-            ";
-            try { sendEmail($email, $subject, $body, $member_id); } catch (Exception $e) {}
-        }
+        // 4. Send confirmation notification (and email if available)
+        $subject = "Payment Confirmed ($mpesaReceipt)";
+        $body = "
+            <p>Hello <strong>$full_name</strong>,</p>
+            <p>Your payment of <strong>KES " . number_format($amount) . "</strong> was successful.</p>
+            <p><strong>Receipt:</strong> $mpesaReceipt<br>
+            <strong>Reference:</strong> $reference_no</p>
+            <p style='color:green;'>Thank you for your payment.</p>
+        ";
+        // sendEmail handles notification insertion internally.
+        // We pass email (can be empty) and member_id (required for notification).
+        try { sendEmail($email, $subject, $body, $member_id); } catch (Exception $e) {}
 
         file_put_contents($logFile,
             "SUCCESS: Payment $mpesaReceipt processed for Ref $reference_no\n",
@@ -302,17 +303,15 @@ if (isset($response['Body']['stkCallback'])) {
         $t->execute();
         $t->close();
 
-        // Email failure notice
-        if (!empty($email)) {
-            $subject = "Payment Failed";
-            $body = "
-                <p>Hello <strong>$full_name</strong>,</p>
-                <p>Your payment attempt failed.</p>
-                <p><strong>Reason:</strong> $resultDesc</p>
-                <p>Please try again.</p>
-            ";
-            try { sendEmail($email, $subject, $body, $member_id); } catch (Exception $e) {}
-        }
+        // Email failure notice (and internal notification)
+        $subject = "Payment Failed";
+        $body = "
+            <p>Hello <strong>$full_name</strong>,</p>
+            <p>Your payment attempt failed.</p>
+            <p><strong>Reason:</strong> $resultDesc</p>
+            <p>Please try again.</p>
+        ";
+        try { sendEmail($email, $subject, $body, $member_id); } catch (Exception $e) {}
 
         file_put_contents($logFile,
             "FAILED: Ref $reference_no - Reason: $resultDesc\n",

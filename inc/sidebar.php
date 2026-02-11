@@ -217,7 +217,7 @@ if (!function_exists('is_active')) {
                     <?= defined('SITE_NAME') ? htmlspecialchars(SITE_NAME) : 'UMOJA SACCO' ?>
                 </div>
                 <small class="text-uppercase text-muted" style="font-size: 0.65rem; letter-spacing: 0.5px;">
-                    <?= $role === 'admin' ? 'IT ADMIN' : htmlspecialchars($role) ?> PANEL
+                    <?= $role === 'member' ? ($_SESSION['reg_no'] ?? 'MEMBER PANEL') : 'ADMIN PANEL' ?>
                 </small>
             </div>
         </div>

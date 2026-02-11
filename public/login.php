@@ -127,8 +127,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // --- 2. Attempt Member Login (If not Admin) ---
         if (!$user_found) {
-            $stmt_member = $conn->prepare("SELECT member_id, full_name, password, registration_fee_status FROM members WHERE email = ? LIMIT 1");
-            $stmt_member->bind_param('s', $email);
+            // Check by Email OR RegNo
+            $stmt_member = $conn->prepare("SELECT member_id, full_name, member_reg_no, password, registration_fee_status FROM members WHERE email = ? OR member_reg_no = ? LIMIT 1");
+            $stmt_member->bind_param('ss', $email, $email);
             $stmt_member->execute();
             $res_member = $stmt_member->get_result();
 
@@ -140,6 +141,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     
                     $_SESSION['member_id'] = $member['member_id'];
                     $_SESSION['member_name'] = $member['full_name'];
+                    $_SESSION['reg_no']      = $member['member_reg_no']; // Store RegNo in session
                     $_SESSION['role'] = 'member';
 
                     // PAY-GATE CHECK
@@ -375,7 +377,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <label class="form-label">Email or Username</label>
                 <div class="input-wrapper">
                     <input type="text" name="email" class="form-control form-control-modern" required 
-                           placeholder="Enter your credentials"
+                           placeholder="Email or Member No (e.g. UDS-202X-XXXX)"
                            value="<?= htmlspecialchars($_POST['email'] ?? '') ?>">
                 </div>
             </div>

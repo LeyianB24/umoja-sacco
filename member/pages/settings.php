@@ -82,7 +82,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // 3. Fetch Current Data
-$stmt = $conn->prepare("SELECT full_name, email, phone, gender, address, profile_pic, created_at FROM members WHERE member_id = ?");
+$stmt = $conn->prepare("SELECT full_name, email, phone, gender, address, profile_pic, created_at, member_reg_no FROM members WHERE member_id = ?");
 $stmt->bind_param("i", $member_id);
 $stmt->execute();
 $user = $stmt->get_result()->fetch_assoc();
@@ -271,7 +271,7 @@ $pageTitle = "Settings";
                         
                         <div class="d-flex gap-2 mb-4">
                             <span class="badge bg-white bg-opacity-10 border border-white border-opacity-25 rounded-pill px-3 py-2 fw-normal">
-                                ID: #<?= str_pad((string)$member_id, 4, '0', STR_PAD_LEFT) ?>
+                                ID: #<?= htmlspecialchars($user['member_reg_no']) ?>
                             </span>
                             <span class="badge bg-white bg-opacity-10 border border-white border-opacity-25 rounded-pill px-3 py-2 fw-normal">
                                 Member

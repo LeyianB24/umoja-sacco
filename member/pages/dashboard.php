@@ -26,12 +26,14 @@ $member_id = (int) $_SESSION['member_id'];
 $member_name = htmlspecialchars($_SESSION['member_name'] ?? 'Member', ENT_QUOTES);
 
 // Fetch Live Balance
-$stmt = $conn->prepare("SELECT account_balance, full_name FROM members WHERE member_id = ?");
+$stmt = $conn->prepare("SELECT account_balance, full_name, member_reg_no FROM members WHERE member_id = ?");
 $stmt->bind_param("i", $member_id);
 $stmt->execute();
 $member_data = $stmt->get_result()->fetch_assoc();
 $cur_bal = $member_data['account_balance'] ?? 0;
 $member_name = htmlspecialchars($member_data['full_name'] ?? 'Member');
+$reg_no = htmlspecialchars($member_data['member_reg_no'] ?? 'N/A');
+$_SESSION['reg_no'] = $reg_no; // Ensure session is updated
 $stmt->close();
 
 // 2. FETCH BALANCES VIA FINANCIAL ENGINE
@@ -191,7 +193,7 @@ function ksh($v) { return number_format((float)($v ?? 0), 2); }
             <div class="d-flex justify-content-between align-items-end mb-5">
                 <div>
                     <h1 class="fw-bold mb-1">Hi, <?= explode(' ', $member_name)[0] ?>! 👋</h1>
-                    <p class="text-secondary mb-0">Here's your financial overview today.</p>
+                    <p class="text-secondary mb-0">Member No: <span class="fw-bold text-dark"><?= $reg_no ?></span> | Financial Overview</p>
                 </div>
                 <div class="d-flex gap-2">
                     <?php if($cur_bal > 0): ?>

@@ -9,14 +9,11 @@ require_once __DIR__ . '/../../inc/LayoutManager.php';
 require_once __DIR__ . '/../../inc/functions.php';
 require_once __DIR__ . '/../../inc/FinancialEngine.php';
 require_once __DIR__ . '/../../inc/TransactionHelper.php';
-require_once __DIR__ . '/../../inc/paystack_lib.php';
-require_once __DIR__ . '/../../inc/notification_helpers.php';
+require_once __DIR__ . '/../../inc/mpesa_lib.php';
 
 $layout = LayoutManager::create('member');
 // member/withdraw.php
-// Unified Withdrawal Page - Works like mpesa_request.php but for withdrawals
-// Uses Paystack for M-Pesa transfers (sandbox compatible)
-
+// Unified Withdrawal Page - Real-Time Ledger Updates
 
 // Auth check
 if (!isset($_SESSION['member_id'])) {
@@ -25,9 +22,10 @@ if (!isset($_SESSION['member_id'])) {
 }
 
 $member_id = $_SESSION['member_id'];
+$engine = new FinancialEngine($conn);
 
-// Fetch member details
-$stmt = $conn->prepare("SELECT full_name, phone, email, account_balance FROM members WHERE member_id = ?");
+// Fetch member details & Real-Time Balances
+$stmt = $conn->prepare("SELECT full_name, phone, email FROM members WHERE member_id = ?");
 $stmt->bind_param("i", $member_id);
 $stmt->execute();
 $member = $stmt->get_result()->fetch_assoc();
@@ -37,97 +35,70 @@ if (!$member) die("Member not found");
 
 $member_name = $member['full_name'];
 $member_phone = $member['phone'];
-$member_email = $member['email'];
-$available_balance = $member['account_balance'];
+$balances = $engine->getBalances($member_id);
 
-// Get withdrawal type (like mpesa_request.php)
-$type = $_GET['type'] ?? 'wallet';
-$source_page = $_GET['source'] ?? 'dashboard';
+// Get withdrawal type and source context
+$type = $_GET['type'] ?? 'wallet'; // What account to withdraw FROM (ledger category)
+$source_page = $_GET['source'] ?? 'dashboard'; // Where to redirect AFTER
 
-// Determine what we're withdrawing from
+// Configuration for Source Accounts
 $withdrawal_sources = [
     'wallet' => [
         'title' => 'Wallet Balance',
         'description' => 'Withdraw from your available wallet balance',
         'icon' => 'wallet2',
-        'balance' => $available_balance
+        'balance' => $balances['wallet'],
+        'ledger_cat' => FinancialEngine::CAT_WALLET
     ],
     'savings' => [
         'title' => 'Savings Account',
-        'description' => 'Withdraw from your savings (subject to rules)',
+        'description' => 'Withdraw from your savings (Min. bal KES 500)',
         'icon' => 'piggy-bank',
-        'balance' => 0 // Will be fetched from savings table
-    ],
-    'shares' => [
-        'title' => 'Share Capital',
-        'description' => 'Withdraw from your share capital',
-        'icon' => 'pie-chart',
-        'balance' => 0
-    ],
-    'welfare' => [
-        'title' => 'Welfare Fund',
-        'description' => 'Withdraw from your welfare contributions',
-        'icon' => 'heart-pulse',
-        'balance' => 0
+        'balance' => $balances['savings'],
+        'ledger_cat' => FinancialEngine::CAT_SAVINGS
     ],
     'loans' => [
         'title' => 'Loan Funds',
-        'description' => 'Withdraw your disbursed loan amount',
+        'description' => 'Withdraw disbursed loan funds from wallet',
         'icon' => 'cash-stack',
-        'balance' => $available_balance // Loan funds are typically in the wallet
+        // Loan withdrawals usually come from the Wallet (where loans are disbursed to)
+        'balance' => $balances['wallet'], 
+        'ledger_cat' => FinancialEngine::CAT_WALLET 
+    ],
+    'shares' => [
+        'title' => 'Share Capital',
+        'description' => 'Non-withdrawable',
+        'icon' => 'pie-chart',
+        'balance' => $balances['shares'],
+        'ledger_cat' => FinancialEngine::CAT_SHARES,
+        'error' => "Share Capital cannot be withdrawn directly."
+    ],
+    'welfare' => [
+        'title' => 'Welfare Fund',
+        'description' => 'Restricted Withdrawal',
+        'icon' => 'heart-pulse',
+        'balance' => $balances['welfare'],
+        'ledger_cat' => FinancialEngine::CAT_WELFARE,
+        'error' => "Welfare contributions are only accessible via support cases."
     ]
 ];
 
-// Fetch actual balance based on type
-if ($type === 'savings') {
-    $stmt = $conn->prepare("SELECT SUM(amount) as total FROM savings WHERE member_id = ?");
-    $stmt->bind_param("i", $member_id);
-    $stmt->execute();
-    $result = $stmt->get_result()->fetch_assoc();
-    $withdrawal_sources['savings']['balance'] = $result['total'] ?? 0;
-    $stmt->close();
-} elseif ($type === 'shares') {
-    $stmt = $conn->prepare("SELECT SUM(total_value) as total FROM shares WHERE member_id = ?");
-    $stmt->bind_param("i", $member_id);
-    $stmt->execute();
-    $result = $stmt->get_result()->fetch_assoc();
-    $withdrawal_sources['shares']['balance'] = $result['total'] ?? 0;
-    $stmt->close();
-} elseif ($type === 'welfare') {
-    // Net welfare standing: Contributions - Support received
-    $stmtIn = $conn->prepare("SELECT SUM(amount) as total FROM contributions WHERE member_id = ? AND contribution_type IN ('welfare', 'welfare_case') AND status IN ('active', 'completed')");
-    $stmtIn->bind_param("i", $member_id);
-    $stmtIn->execute();
-    $totalIn = $stmtIn->get_result()->fetch_assoc()['total'] ?? 0;
-    $stmtIn->close();
+// Fallback if type not found
+if (!isset($withdrawal_sources[$type])) $type = 'wallet';
+$current_source = $withdrawal_sources[$type];
 
-    $stmtOut = $conn->prepare("SELECT SUM(amount) as total FROM welfare_support WHERE member_id = ? AND status IN ('approved', 'disbursed')");
-    $stmtOut->bind_param("i", $member_id);
-    $stmtOut->execute();
-    $totalOut = $stmtOut->get_result()->fetch_assoc()['total'] ?? 0;
-    $stmtOut->close();
-
-    if ($type === 'savings' && $withdrawal_sources['savings']['balance'] > 0) {
-        if ($withdrawal_sources['savings']['balance'] < 500) {
-            $withdrawal_sources['savings']['balance'] = 0;
-            $withdrawal_sources['savings']['error'] = "A minimum balance of KES 500 must be maintained in your Savings Account.";
-        } else {
-            $withdrawal_sources['savings']['balance'] -= 500;
-        }
-    }
-
-    $withdrawal_sources['welfare']['balance'] = 0; 
-    $withdrawal_sources['welfare']['error'] = "Welfare contributions are only accessible via specific support cases.";
-}
-
-// 4. SHARES RESTRICTION: Usually non-withdrawable
-if ($type === 'shares') {
-    $withdrawal_sources['shares']['balance'] = 0;
-    $withdrawal_sources['shares']['error'] = "Share Capital cannot be withdrawn directly. Please contact the office for membership exit process.";
-}
-
-$current_source = $withdrawal_sources[$type] ?? $withdrawal_sources['wallet'];
+// Apply Business Rules
 $max_withdrawal = $current_source['balance'];
+
+// Rule: Savings Min Balance
+if ($type === 'savings') {
+    if ($max_withdrawal < 500) {
+        $current_source['error'] = "Insufficient savings. Minimum balance of KES 500 required.";
+        $max_withdrawal = 0;
+    } else {
+        $max_withdrawal -= 500; // Leave 500
+    }
+}
 
 $success = '';
 $error = '';
@@ -147,62 +118,54 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['withdraw'])) {
     } elseif (empty($phone)) {
         $error = "Phone number is required.";
     } else {
+        $conn->begin_transaction();
         try {
-            $in_txn = $conn->begin_transaction();
-            
-            // 1. Generate internal reference
+            // 1. GENERATE REFERENCE
             $ref = 'WD-' . strtoupper(substr(md5(uniqid((string)rand(), true)), 0, 10));
-            $ledger = FinancialEngine::CAT_WALLET;
-            if ($type === 'savings') $ledger = FinancialEngine::CAT_SAVINGS;
-            elseif ($type === 'shares') $ledger = FinancialEngine::CAT_SHARES;
-            elseif ($type === 'welfare') $ledger = FinancialEngine::CAT_WELFARE;
+            
+            // 2. IMMEDIATE DEBIT (The "Real-Time" fix)
+            $txn_id = $engine->transact([
+                'member_id'   => $member_id,
+                'amount'      => $amount,
+                'action_type' => 'withdrawal',
+                'method'      => 'mpesa', // Destination
+                'source_cat'  => $current_source['ledger_cat'], // debit this
+                'reference'   => $ref,
+                'notes'       => "Withdrawal Initiated ($ref) to $phone"
+            ]);
 
-            // 2. Record in withdrawal_requests (Standardizing Traceability)
+            // 3. LOG REQUEST
             $stmt = $conn->prepare("INSERT INTO withdrawal_requests (member_id, ref_no, amount, source_ledger, phone_number, status) VALUES (?, ?, ?, ?, ?, 'initiated')");
             $stmt->bind_param("isdss", $member_id, $ref, $amount, $type, $phone);
-            if (!$stmt->execute()) {
-                throw new Exception("Failed to initiate withdrawal request record.");
-            }
+            if (!$stmt->execute()) throw new Exception("Failed to log request.");
             $withdrawal_id = $conn->insert_id;
             $stmt->close();
 
-            // 3. Initiate Paystack transfer (Optional / Primarily used for M-Pesa B2C now as per standardization)
-            // Standardization says: mirror the loan payment process, M-Pesa request context.
-            // I will default to M-Pesa B2C for standardization unless Paystack is explicitly required.
-            // Given the SACCO focus, direct B2C is often preferred for control.
-            
-            require_once __DIR__ . '/../../inc/mpesa_lib.php';
-            
-            error_log("Initiating M-Pesa B2C for Withdrawal #$withdrawal_id (Ref: $ref)");
-            
-            // Update to 'pending' before calling API
-            $conn->query("UPDATE withdrawal_requests SET status = 'pending' WHERE withdrawal_id = $withdrawal_id");
-            $conn->commit(); // Commit the 'pending' state so callback can reconcile even if API call hangs
-            $in_txn = false;
+            // 4. CALL M-PESA API
+            $mpesa_response = mpesa_b2c_request($phone, $amount, $ref, "Withdrawal");
 
-            $mpesa_response = mpesa_b2c_request($phone, $amount, $ref, "Withdrawal - $ref");
-            
             if ($mpesa_response['success']) {
                 $mpesa_conv_id = $mpesa_response['conversation_id'] ?? null;
-                if ($mpesa_conv_id) {
-                    $conn->query("UPDATE withdrawal_requests SET mpesa_conversation_id = '$mpesa_conv_id' WHERE withdrawal_id = $withdrawal_id");
-                }
+                $originator_id = $mpesa_response['data']['OriginatorConversationID'] ?? $ref; // Fallback
                 
-                $success = "Withdrawal initiated! KES " . number_format($amount) . " will be sent to $phone promptly. Check your M-Pesa shortly.";
+                // Update request with M-Pesa Trace IDs
+                $conn->query("UPDATE withdrawal_requests SET status = 'pending', mpesa_conversation_id = '$mpesa_conv_id' WHERE withdrawal_id = $withdrawal_id");
                 
-                // Set return URL
-                $return_url = $_SESSION['withdrawal_return_url'] ?? BASE_URL . "/member/" . $source_page . ".php";
-                header("Refresh:3; URL=" . $return_url);
+                $conn->commit(); // COMMIT THE DEBIT
+                
+                $success = "Processing: KES " . number_format($amount) . " has been deducted. Waiting for M-Pesa confirmation.";
+                
+                // Redirect back to source context
+                $return_url = BASE_URL . "/member/pages/" . $source_page . ".php?msg=withdrawal_initiated";
+                header("Refresh:2; URL=" . $return_url);
             } else {
-                // API call failed to initiate
-                $conn->query("UPDATE withdrawal_requests SET status = 'failed', result_desc = '" . $conn->real_escape_string($mpesa_response['message']) . "' WHERE withdrawal_id = $withdrawal_id");
-                $error = "Withdrawal initiation failed: " . ($mpesa_response['message'] ?? 'Connection error');
+                throw new Exception("M-Pesa API Failed: " . $mpesa_response['message']);
             }
-            
+
         } catch (Exception $e) {
-            if (isset($in_txn) && $in_txn) $conn->rollback();
-            $error = "System error: " . $e->getMessage();
-            error_log("Withdrawal error: " . $e->getMessage());
+            $conn->rollback(); // Rollback the debit if API call fails immediately
+            $error = "Transaction Failed: " . $e->getMessage();
+            error_log("Withdrawal Exception: " . $e->getMessage());
         }
     }
 }
@@ -238,11 +201,11 @@ $pageTitle = "Withdraw Funds";
             <div class="col-lg-6">
                 
                 <div class="mb-4">
-                    <a href="<?= BASE_URL ?>/member/<?= $source_page ?>.php" class="text-decoration-none text-muted d-inline-flex align-items-center mb-2">
-                        <i class="bi bi-arrow-left me-2"></i> Back to <?= ucfirst($source_page) ?>
+                    <a href="<?= BASE_URL ?>/member/pages/<?= htmlspecialchars($source_page) ?>.php" class="text-decoration-none text-muted d-inline-flex align-items-center mb-2">
+                        <i class="bi bi-arrow-left me-2"></i> Back to <?= ucfirst(htmlspecialchars($source_page)) ?>
                     </a>
                     <h2 class="fw-bold mb-1">Withdraw Funds</h2>
-                    <p class="text-muted mb-0">Cash out to M-Pesa via Paystack</p>
+                    <p class="text-muted mb-0">Withdraw from <?= htmlspecialchars($current_source['title']) ?></p>
                 </div>
 
                 <?php if ($success): ?>
@@ -298,9 +261,11 @@ $pageTitle = "Withdraw Funds";
                                            placeholder="0.00" step="0.01" min="10" 
                                            max="<?= $max_withdrawal ?>" required>
                                 </div>
-                                <small class="text-muted">Maximum: KES <?= number_format((float)$max_withdrawal, 2) ?></small>
+                                <div class="d-flex justify-content-between mt-2">
+                                    <small class="text-muted">Max: KES <?= number_format((float)$max_withdrawal, 2) ?></small>
+                                    <small class="text-muted">Min: KES 10.00</small>
+                                </div>
                             </div>
-                            <!-- Rest of form... -->
 
                         <div class="mb-4">
                             <label class="form-label fw-bold">M-Pesa Phone Number</label>
@@ -312,7 +277,7 @@ $pageTitle = "Withdraw Funds";
 
                         <div class="alert alert-info border-0 mb-4">
                             <i class="bi bi-info-circle me-2"></i>
-                            <strong>Processing:</strong> Funds will be sent to your M-Pesa within 1-5 minutes via Paystack.
+                            <strong>Processing:</strong> Funds will be sent to your M-Pesa immediately.
                         </div>
 
                         <button type="submit" name="withdraw" class="btn btn-lime w-100 py-3">
@@ -349,9 +314,3 @@ $pageTitle = "Withdraw Funds";
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
-
-
-
-
-
-
