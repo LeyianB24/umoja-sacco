@@ -45,7 +45,17 @@ define('SITE_FAVICON', ASSET_BASE . '/images/people_logo.png');
 define('BACKGROUND_IMAGE', ASSET_BASE . '/images/sacco4.jpg');
 
 // ============================================================
-// 4. SECURITY
+// 4. SOCIAL MEDIA & CONTACT LINKS
+// ============================================================
+define('SOCIAL_FACEBOOK', 'https://facebook.com/umojadriverssacco');
+define('SOCIAL_TWITTER', 'https://twitter.com/umojadrivers');
+define('SOCIAL_INSTAGRAM', 'https://instagram.com/umojadriverssacco');
+define('SOCIAL_YOUTUBE', 'https://youtube.com/umojadriverssacco');
+define('SOCIAL_TIKTOK', 'https://tiktok.com/@umojadriverssacco');
+// WhatsApp uses COMPANY_PHONE logic in footers
+
+// ============================================================
+// 5. SECURITY
 // ============================================================
 define('APP_SECRET', 'a-very-long-random-secret-you-generate');
 define('APP_ENV', 'development'); // 'development' or 'production'

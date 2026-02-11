@@ -7,13 +7,6 @@ require_once __DIR__ . '/../../config/db_connect.php';
 require_once __DIR__ . '/../../inc/Auth.php';
 require_once __DIR__ . '/../../inc/LayoutManager.php';
 
-$layout = LayoutManager::create('admin');
-
-// usms/admin/pages/support.php
-// IT Admin Support Console - Hope UI Edition (Lime & Forest Green)
-
-if (session_status() === PHP_SESSION_NONE) session_start();
-
 // Auth Check
 require_admin();
 
@@ -41,15 +34,34 @@ $category_filter = $_GET['category'] ?? 'all';
 $search_query    = trim($_GET['q'] ?? '');
 $where_clauses   = [];
 
-// Role-based visibility: Admins only see what's routed to them OR general
-if ($_SESSION['role'] === 'manager') {
-    $where_clauses[] = "(s.category = 'loan' OR s.category = 'general')";
-} elseif ($_SESSION['role'] === 'accountant') {
-    $where_clauses[] = "(s.category = 'accounting' OR s.category = 'general')";
-} elseif ($_SESSION['role'] === 'admin') {
-    $where_clauses[] = "(s.category = 'tech' OR s.category = 'general')";
+// Role-based visibility: Filter tickets by assigned_role_id OR if category permission is held
+$my_role_id = (int)($_SESSION['role_id'] ?? 0);
+
+// Superadmin (Role 1) sees everything
+if ($my_role_id !== 1) {
+    // For non-superadmins, we show tickets assigned to their role OR tickets they have permission to handle
+    $stmt_perms = $conn->prepare("
+        SELECT p.slug 
+        FROM role_permissions rp 
+        JOIN permissions p ON rp.permission_id = p.id 
+        WHERE rp.role_id = ? AND p.slug LIKE 'support_%'
+    ");
+    $stmt_perms->bind_param("i", $my_role_id);
+    $stmt_perms->execute();
+    $res_perms = $stmt_perms->get_result();
+    $my_categories = [];
+    while ($p_row = $res_perms->fetch_assoc()) {
+        $my_categories[] = str_replace('support_', '', $p_row['slug']);
+    }
+    $stmt_perms->close();
+
+    if (!empty($my_categories)) {
+        $cat_list = "'" . implode("','", $my_categories) . "'";
+        $where_clauses[] = "(s.category IN ($cat_list) OR s.assigned_role_id = $my_role_id)";
+    } else {
+        $where_clauses[] = "s.assigned_role_id = $my_role_id";
+    }
 }
-// Superadmin sees all (no clause)
 
 if ($status_filter !== 'all') $where_clauses[] = "s.status = '" . $db->real_escape_string($status_filter) . "'";
 if ($category_filter !== 'all') $where_clauses[] = "s.category = '" . $db->real_escape_string($category_filter) . "'";
@@ -62,11 +74,11 @@ $where_sql = count($where_clauses) > 0 ? "WHERE " . implode(' AND ', $where_clau
 // FETCH TICKETS
 $sql = "
     SELECT 
-        s.support_id, s.admin_id, s.member_id, s.subject, s.message, 
+        s.support_id, s.member_id, s.subject, s.message, 
         s.status, s.created_at, s.attachment, s.category,
         CASE 
             WHEN s.member_id > 0 THEN m.full_name
-            ELSE a.full_name
+            ELSE 'System'
         END AS sender_name,
         CASE 
             WHEN s.member_id > 0 THEN 'Member'
@@ -74,9 +86,8 @@ $sql = "
         END AS sender_role
     FROM support_tickets s
     LEFT JOIN members m ON s.member_id = m.member_id
-    LEFT JOIN admins a  ON s.member_id = 0 AND s.admin_id = a.admin_id
     $where_sql
-    ORDER BY FIELD(s.priority, 'critical', 'high', 'medium', 'low'), s.created_at DESC
+    ORDER BY s.created_at DESC
 ";
 
 $res = $db->query($sql);
@@ -122,7 +133,6 @@ $pageTitle = "Helpdesk Support";
             min-height: 100vh;
         }
 
-        /* --- Custom Hope Cards --- */
         .hope-card {
             background: var(--hope-card-bg);
             border-radius: 24px;
@@ -138,7 +148,6 @@ $pageTitle = "Helpdesk Support";
             border: none;
         }
 
-        /* --- KPI Circles/Icons --- */
         .icon-box {
             width: 48px;
             height: 48px;
@@ -149,7 +158,6 @@ $pageTitle = "Helpdesk Support";
             font-size: 1.2rem;
         }
 
-        /* --- Table Styling --- */
         .table-hope thead th {
             background-color: #f9fafb;
             text-transform: uppercase;
@@ -167,7 +175,6 @@ $pageTitle = "Helpdesk Support";
             border-bottom: 1px solid var(--hope-border);
         }
 
-        /* --- Buttons & Badges --- */
         .btn-hope-lime {
             background-color: var(--hope-lime);
             color: var(--hope-green-dark);
@@ -188,10 +195,9 @@ $pageTitle = "Helpdesk Support";
         .bg-open { background: #dcfce7; color: #166534; }
         .bg-closed { background: #f3f4f6; color: #374151; }
 
-        .main-content-wrapper { margin-left: 260px; }
+        .main-content-wrapper { margin-left: 280px; }
         @media (max-width: 991px) { .main-content-wrapper { margin-left: 0; } }
 
-        /* Initials Avatar */
         .avatar-initial {
             width: 35px;
             height: 35px;
@@ -209,13 +215,13 @@ $pageTitle = "Helpdesk Support";
 <body>
 
 <div class="d-flex">
-        <?php $layout->sidebar(); ?>
+    <?php $layout->sidebar(); ?>
 
-        <div class="flex-fill main-content-wrapper" style="margin-left: 280px; transition: margin-left 0.3s ease;">
-            
-            <?php $layout->topbar($pageTitle ?? ''); ?>
-            
-            <div class="container-fluid">
+    <div class="flex-fill main-content-wrapper" style="transition: margin-left 0.3s ease;">
+        
+        <?php $layout->topbar($pageTitle ?? ''); ?>
+        
+        <div class="container-fluid">
             <div class="d-flex justify-content-between align-items-center mb-5">
                 <div>
                     <h2 class="fw-bold mb-1">Helpdesk Console</h2>
@@ -291,29 +297,37 @@ $pageTitle = "Helpdesk Support";
             <div class="hope-card shadow-sm mb-5">
                 <div class="p-4 border-bottom bg-white">
                     <form method="get" class="row g-3 align-items-center">
-                        <div class="col-md-2">
+                        <div class="col-md-3">
                             <select name="status" class="form-select bg-light border-0 shadow-none" onchange="this.form.submit()">
-                                <option value="all" <?= $status_filter=='all'?'selected':'' ?>>Status</option>
+                                <option value="all" <?= $status_filter=='all'?'selected':'' ?>>Status (All)</option>
                                 <option value="Pending" <?= $status_filter=='Pending'?'selected':'' ?>>Pending</option>
-                                <option value="Open" <?= $status_filter=='Open'?'selected':'' ?>>Open</option>
+                                <option value="Open" <?= $status_filter=='Open'?'selected':'' ?>>In Progress</option>
                                 <option value="Closed" <?= $status_filter=='Closed'?'selected':'' ?>>Resolved</option>
                             </select>
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-md-3">
                             <select name="category" class="form-select bg-light border-0 shadow-none" onchange="this.form.submit()">
                                 <option value="all" <?= $category_filter=='all'?'selected':'' ?>>All Categories</option>
-                                <option value="loan" <?= $category_filter=='loan'?'selected':'' ?>>Loans</option>
-                                <option value="accounting" <?= $category_filter=='accounting'?'selected':'' ?>>Financial</option>
-                                <option value="tech" <?= $category_filter=='tech'?'selected':'' ?>>Technical</option>
+                                <option value="loans" <?= $category_filter=='loans'?'selected':'' ?>>Loans</option>
+                                <option value="savings" <?= $category_filter=='savings'?'selected':'' ?>>Savings</option>
+                                <option value="shares" <?= $category_filter=='shares'?'selected':'' ?>>Shares</option>
+                                <option value="welfare" <?= $category_filter=='welfare'?'selected':'' ?>>Welfare</option>
+                                <option value="withdrawals" <?= $category_filter=='withdrawals'?'selected':'' ?>>Withdrawals</option>
+                                <option value="technical" <?= $category_filter=='technical'?'selected':'' ?>>Technical</option>
+                                <option value="profile" <?= $category_filter=='profile'?'selected':'' ?>>Profile</option>
+                                <option value="investments" <?= $category_filter=='investments'?'selected':'' ?>>Investments</option>
                                 <option value="general" <?= $category_filter=='general'?'selected':'' ?>>General</option>
                             </select>
                         </div>
-                        <div class="col-md-3">
-                            <button class="btn btn-hope-lime w-100">Apply Filters</button>
+                        <div class="col-md-4">
+                            <div class="input-group">
+                                <input type="text" name="q" class="form-control bg-light border-0 shadow-none" placeholder="Search subject or ID..." value="<?= htmlspecialchars($search_query) ?>">
+                                <button class="btn btn-hope-lime px-3" type="submit"><i class="bi bi-search"></i></button>
+                            </div>
                         </div>
                         <?php if($status_filter !== 'all' || $category_filter !== 'all' || $search_query): ?>
-                        <div class="col-md-1">
-                            <a href="support.php" class="btn btn-light rounded-pill w-100 fw-bold" title="Clear Filters"><i class="bi bi-x-lg"></i></a>
+                        <div class="col-md-2 text-end">
+                            <a href="support.php" class="small text-danger text-decoration-none fw-bold"><i class="bi bi-x-circle me-1"></i>Clear Filters</a>
                         </div>
                         <?php endif; ?>
                     </form>
@@ -334,7 +348,7 @@ $pageTitle = "Helpdesk Support";
                         </thead>
                         <tbody>
                             <?php if(empty($tickets)): ?>
-                                <tr><td colspan="6" class="text-center py-5 text-muted">No tickets found matching criteria.</td></tr>
+                                <tr><td colspan="7" class="text-center py-5 text-muted">No tickets found matching your permissions or filters.</td></tr>
                             <?php else: foreach($tickets as $t): 
                                 $statusClass = match($t['status']){
                                     'Pending'=>'bg-pending',
@@ -383,18 +397,5 @@ $pageTitle = "Helpdesk Support";
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        window.addEventListener('themeChanged', (e) => {
-            document.documentElement.setAttribute('data-bs-theme', e.detail.theme);
-        });
-    });
-</script>
 </body>
 </html>
-
-
-
-
-
-

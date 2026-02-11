@@ -57,10 +57,15 @@ if (isset($_GET['action']) && $_GET['action'] === 'run_audit') {
     exit;
 }
 
-$layout->header("System Health");
-?>
+$layout->header("System Health"); ?>
 
-<div class="container-fluid">
+<div class="d-flex">
+    <?php $layout->sidebar(); ?>
+
+    <div class="flex-fill main-content">
+        <?php $layout->topbar("System Health"); ?>
+
+        <div class="container-fluid p-4">
     <!-- Summary Cards -->
     <div class="row g-5 g-xl-10 mb-5 mb-xl-10">
         <div class="col-md-6 col-lg-3">
@@ -156,5 +161,6 @@ $layout->header("System Health");
     </div>
 </div>
 
-<?php
-$layout->footer();
+    <?php $layout->footer(); ?>
+    </div>
+</div>

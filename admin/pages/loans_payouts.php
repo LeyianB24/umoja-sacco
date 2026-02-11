@@ -479,9 +479,10 @@ $pageTitle = "Loan Management";
     </style>
 </head>
 
-<?php $layout->sidebar(); ?>
+<div class="d-flex">
+    <?php $layout->sidebar(); ?>
 
-<div class="main-content" style="margin-left: 280px; padding: 40px; min-height: 100vh;">
+    <div class="flex-fill main-content" style="padding: 40px; min-height: 100vh;">
     <?php $layout->topbar($pageTitle); ?>
     <?php flash_render(); ?>
     
@@ -870,5 +871,10 @@ $pageTitle = "Loan Management";
         new bootstrap.Offcanvas(document.getElementById('loanDrawer')).show();
     }
 </script>
+    <?php $layout->footer(); ?>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

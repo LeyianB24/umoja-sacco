@@ -85,24 +85,34 @@ if (!defined('OFFICE_PHONE')) {
                 <h6 class="fw-bold small mb-3">Follow Us</h6>
 
                 <div class="d-flex gap-2 flex-wrap">
-                    <a href="https://wa.me/<?= preg_replace('/[^0-9]/', '', OFFICE_PHONE) ?>" class="social-btn" target="_blank" title="WhatsApp">
+                    <a href="https://wa.me/<?= preg_replace('/[^0-9]/', '', COMPANY_PHONE) ?>" class="social-btn" target="_blank" title="WhatsApp">
                         <i class="bi bi-whatsapp"></i>
                     </a>
-                    <a href="https://facebook.com" class="social-btn" target="_blank" title="Facebook">
+                    <?php if (defined('SOCIAL_FACEBOOK') && SOCIAL_FACEBOOK): ?>
+                    <a href="<?= SOCIAL_FACEBOOK ?>" class="social-btn" target="_blank" title="Facebook">
                         <i class="bi bi-facebook"></i>
                     </a>
-                    <a href="https://twitter.com" class="social-btn" target="_blank" title="Twitter/X">
+                    <?php endif; ?>
+                    <?php if (defined('SOCIAL_TWITTER') && SOCIAL_TWITTER): ?>
+                    <a href="<?= SOCIAL_TWITTER ?>" class="social-btn" target="_blank" title="Twitter/X">
                         <i class="bi bi-twitter"></i>
                     </a>
-                    <a href="https://instagram.com" class="social-btn" target="_blank" title="Instagram">
+                    <?php endif; ?>
+                    <?php if (defined('SOCIAL_INSTAGRAM') && SOCIAL_INSTAGRAM): ?>
+                    <a href="<?= SOCIAL_INSTAGRAM ?>" class="social-btn" target="_blank" title="Instagram">
                         <i class="bi bi-instagram"></i>
                     </a>
-                    <a href="https://youtube.com" class="social-btn" target="_blank" title="YouTube">
+                    <?php endif; ?>
+                    <?php if (defined('SOCIAL_YOUTUBE') && SOCIAL_YOUTUBE): ?>
+                    <a href="<?= SOCIAL_YOUTUBE ?>" class="social-btn" target="_blank" title="YouTube">
                         <i class="bi bi-youtube"></i>
                     </a>
-                    <a href="https://tiktok.com" class="social-btn" target="_blank" title="TikTok">
+                    <?php endif; ?>
+                    <?php if (defined('SOCIAL_TIKTOK') && SOCIAL_TIKTOK): ?>
+                    <a href="<?= SOCIAL_TIKTOK ?>" class="social-btn" target="_blank" title="TikTok">
                         <i class="bi bi-tiktok"></i>
                     </a>
+                    <?php endif; ?>
                 </div>
 
             </div>

@@ -111,10 +111,11 @@ $pageTitle = "Universal Payroll Hub";
 </head>
 <body>
 
-<?php $layout->sidebar(); ?>
+<div class="d-flex">
+    <?php $layout->sidebar(); ?>
 
-<div class="main-content">
-    <?php $layout->topbar($pageTitle); ?>
+    <div class="flex-fill main-content">
+        <?php $layout->topbar($pageTitle); ?>
 
     <div class="hp-banner fade-in">
         <div class="row align-items-center">
@@ -241,8 +242,11 @@ $pageTitle = "Universal Payroll Hub";
         document.getElementById('pay_emp_name').innerText = emp.full_name;
         document.getElementById('pay_emp_name_val').value = emp.full_name;
         document.getElementById('pay_salary').value = emp.salary;
-        new bootstrap.Modal(document.getElementById('payModal')).show();
-    }
+        new bootstrap.Modal(document.getElementById('payModal')).show();    }
 </script>
+    <?php $layout->footer(); ?>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
-</html>

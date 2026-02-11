@@ -180,10 +180,11 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
 </head>
 <body>
 
-<?php $layout->sidebar(); ?>
+<div class="d-flex">
+    <?php $layout->sidebar(); ?>
 
-<div class="main-content-wrapper">
-    <?php $layout->topbar($pageTitle ?? ''); ?>
+    <div class="flex-fill main-content">
+        <?php $layout->topbar($pageTitle ?? 'Trial Balance Proof'); ?>
 
     <div class="container-fluid p-4">
         
@@ -297,6 +298,7 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
                 Golden Ledger Verification System &bull; <?= date('d M Y H:i:s') ?> &bull; Internal Audit Protocol V10.4
             </div>
         </div>
+    <?php $layout->footer(); ?>
     </div>
 </div>
 

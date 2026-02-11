@@ -547,6 +547,7 @@ $pageTitle = "Expenses Portal";
     </div>
     
     <?php $layout->footer(); ?>
+    </div>
 </div>
 
 <!-- Modal -->
