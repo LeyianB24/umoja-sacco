@@ -21,3 +21,51 @@
 [2026-02-11 09:12:16] RAW CALLBACK (Log ID: ):
 {"Body":{"stkCallback":{"MerchantRequestID":"TEST-MERCHANT-ID","CheckoutRequestID":"ws_CO_1770797536698c39e032494","ResultCode":0,"ResultDesc":"The service request is processed successfully.","CallbackMetadata":{"Item":[{"Name":"Amount","Value":500},{"Name":"MpesaReceiptNumber","Value":"TEST-RCPT-1770797536"},{"Name":"TransactionDate","Value":"20260211091216"},{"Name":"PhoneNumber","Value":"254700000000"}]}}}}
 
+[2026-02-12 16:21:07] RAW CALLBACK (Log ID: 1):
+{"Body":{"stkCallback":{"MerchantRequestID":"19465-780693-1","CheckoutRequestID":"ws_CO_120220261806199997796157265","ResultCode":0,"ResultDesc":"The service request is processed successfully.","CallbackMetadata":{"Item":[{"Name":"Amount","Value":100},{"Name":"MpesaReceiptNumber","Value":"SIMULATED_RECEIPT_4884"},{"Name":"TransactionDate","Value":"20260212162107"},{"Name":"PhoneNumber","Value":"254700000000"}]}}}}
+
+[2026-02-12 16:22:56] RAW CALLBACK (Log ID: 2):
+{"Body":{"stkCallback":{"MerchantRequestID":"19465-780693-1","CheckoutRequestID":"ws_CO_120220261806199997796157265","ResultCode":0,"ResultDesc":"The service request is processed successfully.","CallbackMetadata":{"Item":[{"Name":"Amount","Value":100},{"Name":"MpesaReceiptNumber","Value":"SIMULATED_RECEIPT_8007"},{"Name":"TransactionDate","Value":"20260212162256"},{"Name":"PhoneNumber","Value":"254700000000"}]}}}}
+
+ERROR: No matching mpesa_request for CheckoutRequestID ws_CO_120220261806199997796157265
+[2026-02-12 16:25:08] RAW CALLBACK (Log ID: 3):
+{"Body":{"stkCallback":{"MerchantRequestID":"19465-780693-1","CheckoutRequestID":"ws_CO_12022026180619997796157265","ResultCode":0,"ResultDesc":"The service request is processed successfully.","CallbackMetadata":{"Item":[{"Name":"Amount","Value":100},{"Name":"MpesaReceiptNumber","Value":"SIMULATED_RECEIPT_5677"},{"Name":"TransactionDate","Value":"20260212162508"},{"Name":"PhoneNumber","Value":"254700000000"}]}}}}
+
+[2026-02-12 16:25:50] RAW CALLBACK (Log ID: 4):
+{"Body":{"stkCallback":{"MerchantRequestID":"19465-780693-1","CheckoutRequestID":"ws_CO_12022026180619997796157265","ResultCode":0,"ResultDesc":"The service request is processed successfully.","CallbackMetadata":{"Item":[{"Name":"Amount","Value":100},{"Name":"MpesaReceiptNumber","Value":"SIMULATED_RECEIPT_8455"},{"Name":"TransactionDate","Value":"20260212162550"},{"Name":"PhoneNumber","Value":"254700000000"}]}}}}
+
+[2026-02-12 16:26:53] RAW CALLBACK (Log ID: 5):
+{"Body":{"stkCallback":{"MerchantRequestID":"19465-780693-1","CheckoutRequestID":"ws_CO_12022026180619997796157265","ResultCode":0,"ResultDesc":"The service request is processed successfully.","CallbackMetadata":{"Item":[{"Name":"Amount","Value":100},{"Name":"MpesaReceiptNumber","Value":"SIMULATED_RECEIPT_2303"},{"Name":"TransactionDate","Value":"20260212162653"},{"Name":"PhoneNumber","Value":"254700000000"}]}}}}
+
+[2026-02-12 16:27:52] RAW CALLBACK (Log ID: 6):
+{"Body":{"stkCallback":{"MerchantRequestID":"19465-780693-1","CheckoutRequestID":"ws_CO_12022026180619997796157265","ResultCode":0,"ResultDesc":"The service request is processed successfully.","CallbackMetadata":{"Item":[{"Name":"Amount","Value":100},{"Name":"MpesaReceiptNumber","Value":"SIMULATED_RECEIPT_5731"},{"Name":"TransactionDate","Value":"20260212162752"},{"Name":"PhoneNumber","Value":"254700000000"}]}}}}
+
+[2026-02-12 16:28:30] RAW CALLBACK (Log ID: 7):
+{"Body":{"stkCallback":{"MerchantRequestID":"19465-780693-1","CheckoutRequestID":"ws_CO_12022026180619997796157265","ResultCode":0,"ResultDesc":"The service request is processed successfully.","CallbackMetadata":{"Item":[{"Name":"Amount","Value":100},{"Name":"MpesaReceiptNumber","Value":"SIMULATED_RECEIPT_4830"},{"Name":"TransactionDate","Value":"20260212162830"},{"Name":"PhoneNumber","Value":"254700000000"}]}}}}
+
+[2026-02-12 16:33:35] RAW CALLBACK (Log ID: 8):
+{"Body":{"stkCallback":{"MerchantRequestID":"19465-780693-1","CheckoutRequestID":"ws_CO_12022026180619997796157265","ResultCode":0,"ResultDesc":"The service request is processed successfully.","CallbackMetadata":{"Item":[{"Name":"Amount","Value":100},{"Name":"MpesaReceiptNumber","Value":"SIMULATED_RECEIPT_2134"},{"Name":"TransactionDate","Value":"20260212163335"},{"Name":"PhoneNumber","Value":"254700000000"}]}}}}
+
+[2026-02-12 16:33:50] RAW CALLBACK (Log ID: 9):
+{"Body":{"stkCallback":{"MerchantRequestID":"19465-780693-1","CheckoutRequestID":"ws_CO_12022026180619997796157265","ResultCode":0,"ResultDesc":"The service request is processed successfully.","CallbackMetadata":{"Item":[{"Name":"Amount","Value":100},{"Name":"MpesaReceiptNumber","Value":"SIMULATED_RECEIPT_5757"},{"Name":"TransactionDate","Value":"20260212163350"},{"Name":"PhoneNumber","Value":"254700000000"}]}}}}
+
+[2026-02-12 16:41:45] RAW CALLBACK (Log ID: 10):
+{"Body":{"stkCallback":{"MerchantRequestID":"19465-780693-1","CheckoutRequestID":"ws_CO_12022026180619997796157265","ResultCode":0,"ResultDesc":"The service request is processed successfully.","CallbackMetadata":{"Item":[{"Name":"Amount","Value":100},{"Name":"MpesaReceiptNumber","Value":"SIMULATED_RECEIPT_8545"},{"Name":"TransactionDate","Value":"20260212164145"},{"Name":"PhoneNumber","Value":"254700000000"}]}}}}
+
+[2026-02-12 16:41:45] RAW CALLBACK (Log ID: 11):
+{"Body":{"stkCallback":{"MerchantRequestID":"19465-780693-1","CheckoutRequestID":"ws_CO_12022026180619997796157265","ResultCode":0,"ResultDesc":"The service request is processed successfully.","CallbackMetadata":{"Item":[{"Name":"Amount","Value":100},{"Name":"MpesaReceiptNumber","Value":"SIMULATED_RECEIPT_7383"},{"Name":"TransactionDate","Value":"20260212164145"},{"Name":"PhoneNumber","Value":"254700000000"}]}}}}
+
+[2026-02-12 16:42:34] RAW CALLBACK (Log ID: 12):
+{"Body":{"stkCallback":{"MerchantRequestID":"19465-780693-1","CheckoutRequestID":"ws_CO_12022026180619997796157265","ResultCode":0,"ResultDesc":"The service request is processed successfully.","CallbackMetadata":{"Item":[{"Name":"Amount","Value":100},{"Name":"MpesaReceiptNumber","Value":"SIMULATED_RECEIPT_1931"},{"Name":"TransactionDate","Value":"20260212164234"},{"Name":"PhoneNumber","Value":"254700000000"}]}}}}
+
+[2026-02-12 16:42:34] RAW CALLBACK (Log ID: 13):
+{"Body":{"stkCallback":{"MerchantRequestID":"19465-780693-1","CheckoutRequestID":"ws_CO_12022026180619997796157265","ResultCode":0,"ResultDesc":"The service request is processed successfully.","CallbackMetadata":{"Item":[{"Name":"Amount","Value":100},{"Name":"MpesaReceiptNumber","Value":"SIMULATED_RECEIPT_9419"},{"Name":"TransactionDate","Value":"20260212164234"},{"Name":"PhoneNumber","Value":"254700000000"}]}}}}
+
+[2026-02-12 16:43:29] RAW CALLBACK (Log ID: 14):
+{"Body":{"stkCallback":{"MerchantRequestID":"19465-780693-1","CheckoutRequestID":"ws_CO_12022026180619997796157265","ResultCode":0,"ResultDesc":"The service request is processed successfully.","CallbackMetadata":{"Item":[{"Name":"Amount","Value":100},{"Name":"MpesaReceiptNumber","Value":"SIMULATED_RECEIPT_7901"},{"Name":"TransactionDate","Value":"20260212164329"},{"Name":"PhoneNumber","Value":"254700000000"}]}}}}
+
+SUCCESS: Payment SIMULATED_RECEIPT_7901 processed for Ref PAY-0FB758DA1FBD
+[2026-02-12 16:43:32] RAW CALLBACK (Log ID: 15):
+{"Body":{"stkCallback":{"MerchantRequestID":"19465-780693-1","CheckoutRequestID":"ws_CO_12022026164714770797577333","ResultCode":0,"ResultDesc":"The service request is processed successfully.","CallbackMetadata":{"Item":[{"Name":"Amount","Value":100},{"Name":"MpesaReceiptNumber","Value":"SIMULATED_RECEIPT_4471"},{"Name":"TransactionDate","Value":"20260212164332"},{"Name":"PhoneNumber","Value":"254700000000"}]}}}}
+
+SUCCESS: Payment SIMULATED_RECEIPT_4471 processed for Ref PAY-1016C4DFA7AB

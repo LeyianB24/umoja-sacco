@@ -1,4 +1,0 @@
-[2026-02-09 17:58:22] [System Bot] [TC-SYS-01] [Pass] [Database connection established]
-[2026-02-09 17:58:22] [System Bot] [TC-UNIT-FE-01] [Pass] [FinancialEngine loaded. System 'cash' account ID: 1]
-[2026-02-09 17:58:22] [System Bot] [TC-UNIT-LH-01] [Pass] [LoanHelper loaded and getFreeShares method exists]
-[2026-02-09 17:58:22] [System Bot] [TC-UNIT-AUTH-01] [Pass] [Auth::can() verified permission correctly]

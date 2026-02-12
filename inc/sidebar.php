@@ -396,6 +396,9 @@ if (!function_exists('is_active')) {
 
             <div class="hd-nav-header">Maintenance</div>
             <?php if (has_permission('audit_logs.php')): ?>
+                <a href="<?= $base ?>/admin/pages/monitor.php" class="hd-nav-item <?= is_active('monitor.php') ?>">
+                    <i class="bi bi-broadcast-pin text-danger"></i> <span class="hd-nav-text">Live Monitor</span>
+                </a>
                 <a href="<?= $base ?>/admin/pages/audit_logs.php" class="hd-nav-item <?= is_active('audit_logs.php') ?>">
                     <i class="bi bi-activity"></i> <span class="hd-nav-text">Audit Logs</span>
                 </a>

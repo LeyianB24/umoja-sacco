@@ -14,7 +14,6 @@ require_once __DIR__ . '/../../inc/LayoutManager.php'; // Added this back as it'
 require_once __DIR__ . '/../../inc/functions.php'; // Added this back as it's a general utility file
 
 $layout = LayoutManager::create('member');
-require_once __DIR__ . '/../../inc/mpesa_lib.php';
 require_once __DIR__ . '/../../inc/email.php';
 require_once __DIR__ . '/../../inc/sms.php';
 
@@ -112,19 +111,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($type === 'welfare_case' && empty($case_id)) {
         $error = "Please select a Welfare Situation.";
     } else {
-        $inTransaction = false;
-        try {
-            // (Assumed Functions from inc/mpesa_lib.php)
-            $cfg = mpesa_config(); 
-            if (empty($cfg) || empty($cfg['shortcode'])) {
-                throw new Exception("M-Pesa configuration unavailable.");
-            }
+        // Idempotency: Avoid double-submissions within 60 seconds for same amount/phone
+        $stmt_check = $conn->prepare("SELECT id FROM mpesa_requests WHERE member_id = ? AND amount = ? AND status = 'pending' AND created_at > DATE_SUB(NOW(), INTERVAL 1 MINUTE) LIMIT 1");
+        $stmt_check->bind_param("id", $member_id, $amount);
+        $stmt_check->execute();
+        if ($stmt_check->get_result()->fetch_assoc()) {
+            $error = "A similar request is already pending. Please wait a minute before trying again.";
+        } else {
+            $inTransaction = false;
+            try {
+            require_once __DIR__ . '/../../inc/GatewayFactory.php';
+            $gateway = GatewayFactory::get('mpesa');
 
-            $token = mpesa_get_access_token($conn);
-            if (empty($token)) throw new Exception("Failed to get M-Pesa access token.");
-
-            $timestamp = date('YmdHis');
-            $password = base64_encode($cfg['shortcode'] . ($cfg['passkey'] ?? '') . $timestamp);
             $ref = 'PAY-' . strtoupper(bin2hex(random_bytes(6))); 
             $txn_desc_map = [
                 'savings' => 'Savings Deposit',
@@ -135,54 +133,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ];
             $txn_desc = $txn_desc_map[$type] ?? 'Payment';
 
-            $payload = [
-                'BusinessShortCode' => $cfg['shortcode'],
-                'Password' => $password,
-                'Timestamp' => $timestamp,
-                'TransactionType' => 'CustomerPayBillOnline',
-                'Amount' => (int)round($amount),
-                'PartyA' => $phone,
-                'PartyB' => $cfg['shortcode'],
-                'PhoneNumber' => $phone,
-                'CallBackURL' => $cfg['callback_url'],
-                'AccountReference' => $ref,
-                'TransactionDesc' => $txn_desc
-            ];
-
-            $ch = curl_init(mpesa_base_url() . '/mpesa/stkpush/v1/processrequest');
-            curl_setopt_array($ch, [
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_HTTPHEADER => [
-                    'Authorization: Bearer ' . $token,
-                    'Content-Type: application/json'
-                ],
-                CURLOPT_POST => true,
-                CURLOPT_POSTFIELDS => json_encode($payload),
-                CURLOPT_TIMEOUT => 30,
-                CURLOPT_SSL_VERIFYPEER => false,
-                CURLOPT_SSL_VERIFYHOST => 0,
-            ]);
-            $raw_resp = curl_exec($ch);
-            $curl_err = curl_error($ch);
-            curl_close($ch);
-
-            if ($raw_resp === false || !empty($curl_err)) {
-                throw new Exception("Connection to M-Pesa failed: " . $curl_err);
+            // Simulated realistic processing delays (2–5 seconds) in sandbox
+            if ($gateway->getEnvironment() === 'sandbox') {
+                sleep(rand(2, 4));
             }
 
-            $json = json_decode($raw_resp, true);
-            if (!is_array($json)) {
-                throw new Exception("Invalid response from M-Pesa.");
-            }
+            $result = $gateway->initiateDeposit($phone, (float)$amount, $ref, $txn_desc);
 
-            if (($json['ResponseCode'] ?? '') !== '0') {
-                $msg = $json['errorMessage'] ?? $json['ResponseDescription'] ?? json_encode($json);
-                throw new Exception("STK Push Failed: " . $msg);
+            if (!$result['success']) {
+                throw new Exception($result['message']);
             }
-            $checkoutRequestID = $json['CheckoutRequestID'] ?? ($json['checkoutrequestid'] ?? null);
-            if (!$checkoutRequestID) {
-                throw new Exception("Missing CheckoutRequestID from M-Pesa response.");
-            }
+            $checkoutRequestID = $result['checkout_id'];
 
             $conn->begin_transaction();
             $inTransaction = true;
@@ -291,9 +252,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['mpesa_return_url'] = $_SERVER['HTTP_REFERER'];
             }
 
-            $success = "STK Push Sent. Please check your phone to complete the transaction.";
+            // Store success message in session for Dashboard toast
+            $_SESSION['success'] = "Payment request sent successfully. Please complete on your phone.";
+            
             $return_url = $_SESSION['mpesa_return_url'] ?? BASE_URL . "/member/pages/dashboard.php";
-            header("Refresh:3; URL=" . $return_url);
+            header("Location: " . $return_url);
+            exit;
 
         } catch (Throwable $e) {
             if (!empty($inTransaction) && $inTransaction === true) {
@@ -303,6 +267,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             try { log_mpesa_error($conn, (string)$member_id, $error); } catch (Throwable $_) {}
         }
     }
+}
 }
 $theme = $_COOKIE['theme'] ?? 'light';
 ?>
@@ -486,9 +451,46 @@ $theme = $_COOKIE['theme'] ?? 'light';
             color: white;
         }
         [data-bs-theme="dark"] .amount-input-lg { color: white; }
+
+        /* Processing Overlay */
+        #processingOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(8px);
+            z-index: 9999;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            text-align: center;
+        }
+        .spinner-glow {
+            width: 80px;
+            height: 80px;
+            border: 4px solid rgba(57, 181, 74, 0.1);
+            border-left-color: var(--mpesa-green);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            filter: drop-shadow(0 0 15px rgba(57, 181, 74, 0.5));
+            margin: 0 auto 20px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
+    <div id="processingOverlay">
+        <div>
+            <div class="spinner-glow"></div>
+            <h3 class="fw-bold mb-2">Processing Payment...</h3>
+            <p class="text-white-50">Please do not refresh or close this page.</p>
+        </div>
+    </div>
 
  <div class="d-flex">
         <?php $layout->sidebar(); ?>
@@ -634,6 +636,14 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize & Listen
     toggleFields();
     typeSelect.addEventListener('change', toggleFields);
+
+    // Show overlay on submit
+    const paymentForm = document.getElementById('paymentForm');
+    paymentForm.addEventListener('submit', function() {
+        if (paymentForm.checkValidity()) {
+            document.getElementById('processingOverlay').style.display = 'flex';
+        }
+    });
 });
 </script>
 

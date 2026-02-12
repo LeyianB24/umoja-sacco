@@ -58,6 +58,10 @@ if ($my_role_id === 1) {
 // Recent Tickets (Role-Filtered)
 $tickets = $conn->query("SELECT s.*, COALESCE(m.full_name,'Guest') AS sender FROM support_tickets s LEFT JOIN members m ON s.member_id=m.member_id $where_sql ORDER BY s.created_at DESC LIMIT 5")->fetch_all(MYSQLI_ASSOC);
 
+// LIVE SIMULATION: System Health Metrics
+require_once __DIR__ . '/../../inc/SystemHealthHelper.php';
+$health = getSystemHealth($conn);
+
 $pageTitle = "System Dashboard";
 ?>
 <!DOCTYPE html>
@@ -188,7 +192,49 @@ $pageTitle = "System Dashboard";
         </div>
     </div>
 
-    <div class="row g-4">
+    <div class="row g-4 mb-5">
+        <div class="col-12">
+            <div class="glass-stat border-0 shadow-sm" style="background: linear-gradient(to right, #ffffff, #f8fafc);">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h5 class="fw-bold mb-1"><i class="bi bi-shield-check text-success me-2"></i>Live Operations Health</h5>
+                        <p class="small text-muted mb-0">Real-time status of payment gateways and notification engines.</p>
+                    </div>
+                    <?php if ($health['ledger_imbalance']): ?>
+                        <span class="badge bg-danger rounded-pill px-3 py-2"><i class="bi bi-exclamation-triangle-fill me-1"></i> Ledger Imbalance Detected</span>
+                    <?php else: ?>
+                        <span class="badge bg-success-subtle text-success rounded-pill px-3 py-2"><i class="bi bi-check-circle-fill me-1"></i> All Systems Nominal</span>
+                    <?php endif; ?>
+                </div>
+                
+                <div class="row g-4">
+                    <div class="col-md-3 border-end">
+                        <div class="small text-muted mb-1">Callback Success Rate</div>
+                        <div class="h4 fw-bold mb-0"><?= $health['callback_success_rate'] ?>%</div>
+                        <div class="progress mt-2" style="height: 4px;">
+                            <div class="progress-bar bg-success" style="width: <?= $health['callback_success_rate'] ?>%"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 border-end">
+                        <div class="small text-muted mb-1">Pending STK (>5m)</div>
+                        <div class="h4 fw-bold mb-0 <?= $health['pending_transactions'] > 0 ? 'text-warning' : '' ?>">
+                            <?= $health['pending_transactions'] ?> Transactions
+                        </div>
+                    </div>
+                    <div class="col-md-3 border-end">
+                        <div class="small text-muted mb-1">Failed Comms (Today)</div>
+                        <div class="h4 fw-bold mb-0 <?= $health['failed_notifications'] > 0 ? 'text-danger' : '' ?>">
+                            <?= $health['failed_notifications'] ?> Alerts
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="small text-muted mb-1">Daily Volume</div>
+                        <div class="h4 fw-bold mb-0">KES <?= number_format($health['daily_volume']) ?></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
         <div class="col-lg-8">
             <div class="table-glass shadow-sm p-4">
                 <div class="d-flex justify-content-between align-items-center mb-4">
