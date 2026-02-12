@@ -263,5 +263,41 @@ function initWelfareChart() {
 }
 
 // Update DOMContentLoaded to include initWelfareChart
-// Note: We need to re-attach the event listener or just call it if we are appending. 
-// Since we are replacing the end of file, we can just rewrite the listener block.
+document.addEventListener('DOMContentLoaded', function() {
+    initSuperAdminFeatures();
+    initExpenseChart();
+    initWelfareChart();
+});
+
+// Toast System
+function showToast(message, type = 'success') {
+    let container = document.querySelector('.toast-container-custom');
+    if (!container) {
+        container = document.createElement('div');
+        container.className = 'toast-container-custom';
+        document.body.appendChild(container);
+    }
+
+    const toast = document.createElement('div');
+    toast.className = `toast-custom ${type}`;
+    
+    let icon = 'bi-check-circle-fill text-success';
+    if(type === 'error') icon = 'bi-exclamation-triangle-fill text-danger';
+    if(type === 'info') icon = 'bi-info-circle-fill text-info';
+
+    toast.innerHTML = `
+        <i class="bi ${icon} toast-icon"></i>
+        <div class="toast-message">${message}</div>
+    `;
+
+    container.appendChild(toast);
+
+    // Trigger animation
+    setTimeout(() => toast.classList.add('show'), 100);
+
+    // Auto remove
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 500);
+    }, 4000);
+}

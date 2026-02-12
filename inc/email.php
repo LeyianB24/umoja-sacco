@@ -17,99 +17,107 @@ if (file_exists(__DIR__ . '/../vendor/phpmailer/src/Exception.php')) {
 
 require_once __DIR__ . '/../config/db_connect.php';
 
-function sendEmailWithNotification($to_email, $subject, $body_html, $member_id = null, $admin_id = null)
+function sendEmailWithNotification($to_email, $subject, $body_content, $member_id = null, $admin_id = null, $metadata = [])
 {
     global $conn;
-    $notification_success = false;
     $email_success = false;
+    $delivery_error = null;
 
-    // 1. STORE NOTIFICATION (Prioritize this!)
+    // 1. Prepare Branded HTML Body
+    $site_name = defined('SITE_NAME') ? SITE_NAME : 'Umoja Drivers Sacco';
+    $site_url  = defined('SITE_URL') ? SITE_URL : 'http://localhost/usms';
+    $logo_url  = defined('SITE_LOGO') ? SITE_LOGO : $site_url . '/public/assets/images/people_logo.png';
+    $date_now  = date('jS M, Y H:i:s');
+    
+    // Transaction details if available in metadata
+    $trx_id = $metadata['trx_id'] ?? 'N/A';
+    $reg_no = $metadata['reg_no'] ?? 'N/A';
+    $balance = isset($metadata['balance']) ? 'KES ' . number_format($metadata['balance'], 2) : 'N/A';
+
+    $body_html = "
+    <div style='font-family:\"Segoe UI\", Tahoma, Geneva, Verdana, sans-serif; line-height:1.6; color:#1e293b; max-width:600px; margin:20px auto; border:1px solid #e2e8f0; border-radius:12px; overflow:hidden; box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);'>
+        <div style='background:#f8fafc; padding:30px; text-align:center; border-bottom:4px solid #39B54A;'>
+            <img src='{$logo_url}' alt='Logo' style='height:60px; margin-bottom:10px;'>
+            <h2 style='color:#0F392B; margin:0; font-size:22px;'>{$site_name}</h2>
+            <p style='color:#64748b; font-size:12px; margin:5px 0 0;'>Official Communication</p>
+        </div>
+        <div style='padding:40px; background:#ffffff;'>
+            <div style='margin-bottom:25px;'>
+                {$body_content}
+            </div>
+            
+            <div style='background:#f1f5f9; border-radius:8px; padding:20px; font-size:13px;'>
+                <table style='width:100%;'>
+                    <tr><td style='color:#64748b; padding:4px 0;'>Transaction ID:</td><td style='font-weight:600; text-align:right;'>{$trx_id}</td></tr>
+                    <tr><td style='color:#64748b; padding:4px 0;'>Date & Time:</td><td style='font-weight:600; text-align:right;'>{$date_now}</td></tr>
+                    <tr><td style='color:#64748b; padding:4px 0;'>Member RegNo:</td><td style='font-weight:600; text-align:right;'>{$reg_no}</td></tr>
+                    <tr><td style='color:#64748b; padding:4px 0;'>Current Balance:</td><td style='font-weight:600; text-align:right; color:#1d7c2a;'>{$balance}</td></tr>
+                </table>
+            </div>
+        </div>
+        <div style='background:#f8fafc; padding:25px; text-align:center; font-size:11px; color:#94a3b8; border-top:1px solid #f1f5f9;'>
+            <p style='margin:0;'>&copy; " . date('Y') . " {$site_name}. All Rights Reserved.</p>
+            <p style='margin:5px 0;'>This is an automated message. Do not reply.</p>
+            <div style='margin-top:10px;'>
+                <a href='{$site_url}' style='color:#39B54A; text-decoration:none;'>Home</a> | 
+                <a href='{$site_url}/member/pages/profile.php' style='color:#39B54A; text-decoration:none;'>My Account</a>
+            </div>
+        </div>
+    </div>";
+
+    // 2. SEND EMAIL
+    $mail = new PHPMailer(true);
+    try {
+        $mail->isSMTP();
+        $mail->Host       = 'smtp.gmail.com';
+        $mail->SMTPAuth   = true;
+        $mail->Username   = 'leyianbeza24@gmail.com'; 
+        $mail->Password   = 'duzb mbqt fnsz ipkg';    
+        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS; 
+        $mail->Port       = 587;
+        $mail->SMTPOptions = ['ssl' => ['verify_peer' => false, 'verify_peer_name' => false, 'allow_self_signed' => true]];
+
+        $mail->setFrom('leyianbeza24@gmail.com', $site_name);
+        $mail->addAddress($to_email);
+        $mail->isHTML(true);
+        $mail->Subject = $subject;
+        $mail->Body    = $body_html;
+        $mail->AltBody = strip_tags($body_content);
+
+        $mail->send();
+        $email_success = true;
+    } catch (Exception $e) {
+        $delivery_error = $mail->ErrorInfo;
+        error_log("Mailer Error: " . $delivery_error);
+    }
+
+    // 3. LOG TO NOTIFICATIONS (Live-Simulation Requirement)
     if ($conn && ($member_id || $admin_id)) {
         try {
             $to_role = $member_id ? 'member' : 'admin';
             $user_id = $member_id ?: $admin_id;
             $user_type = $member_id ? 'member' : 'admin';
+            $delivery_status = $email_success ? 'sent' : 'failed';
+            $json_meta = json_encode($metadata);
             
-            // Clean plain-text version for notifications
-            $plain_message = trim(strip_tags($body_html));
-            if (strlen($plain_message) > 180) {
-                $plain_message = substr($plain_message, 0, 180) . '...';
-            }
+            $plain_msg = trim(strip_tags($body_content));
+            if (strlen($plain_msg) > 180) $plain_msg = substr($plain_msg, 0, 180) . '...';
 
             $sql = "INSERT INTO notifications 
-                    (member_id, admin_id, user_id, user_type, to_role, title, message, status, is_read, created_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, 'unread', 0, NOW())";
+                    (member_id, admin_id, user_id, user_type, to_role, comms_type, delivery_status, recipient, title, message, delivery_error, metadata, is_read, created_at)
+                    VALUES (?, ?, ?, ?, ?, 'email', ?, ?, ?, ?, ?, ?, 0, NOW())";
 
             if ($stmt = $conn->prepare($sql)) {
-                $stmt->bind_param("iiissss", $member_id, $admin_id, $user_id, $user_type, $to_role, $subject, $plain_message);
-                if ($stmt->execute()) {
-                    $notification_success = true;
-                } else {
-                     error_log("Notification Execute Failed: " . $stmt->error);
-                }
+                $stmt->bind_param("iiissssssss", $member_id, $admin_id, $user_id, $user_type, $to_role, $delivery_status, $to_email, $subject, $plain_msg, $delivery_error, $json_meta);
+                $stmt->execute();
                 $stmt->close();
-            } else {
-                 error_log("Notification Prepare Failed: " . $conn->error);
             }
         } catch (Throwable $e) {
-            error_log("Notification Insert Failed: " . $e->getMessage());
+            error_log("Notification Log Failed: " . $e->getMessage());
         }
     }
 
-    // 2. SEND EMAIL (Development SSL Bypass)
-    $mail = new PHPMailer(true);
-    try {
-        // SMTP Configuration
-        $mail->isSMTP();
-        $mail->Host       = 'smtp.gmail.com';
-        $mail->SMTPAuth   = true;
-        // Use App Password provided
-        $mail->Username   = 'leyianbeza24@gmail.com'; 
-        $mail->Password   = 'duzb mbqt fnsz ipkg';    
-        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS; 
-        $mail->Port       = 587;
-
-        // SSL Bypass for Localhost/XAMPP
-        $mail->SMTPOptions = array(
-            'ssl' => array(
-                'verify_peer' => false,
-                'verify_peer_name' => false,
-                'allow_self_signed' => true
-            )
-        );
-
-        // Email Content
-        $mail->setFrom('leyianbeza24@gmail.com', 'Umoja Drivers Sacco');
-        $mail->addAddress($to_email);
-        $mail->isHTML(true);
-        $mail->Subject = $subject;
-
-        // Formatted Body
-        $site_url = defined('SITE_URL') ? SITE_URL : 'http://localhost/usms';
-        $mail->Body = "
-            <div style='font-family:Arial, sans-serif; line-height:1.6; color:#333; max-width:600px; margin:0 auto; border:1px solid #eee; border-radius:10px; overflow:hidden;'>
-                <div style='background:#f8f9fa; padding:20px; text-align:center; border-bottom:3px solid #D0F35D;'>
-                    <h2 style='color:#0F392B; margin:0;'>Umoja Drivers Sacco</h2>
-                </div>
-                <div style='padding:30px;'>
-                    <p>$body_html</p>
-                </div>
-                <div style='background:#f8f9fa; padding:15px; text-align:center; font-size:12px; color:#666;'>
-                    &copy; " . date('Y') . " Umoja Drivers Sacco Ltd. Automated message.
-                </div>
-            </div>";
-        $mail->AltBody = strip_tags($body_html);
-
-        $mail->send();
-        $email_success = true;
-
-    } catch (Exception $e) {
-        // Log SMTP error but don't crash script
-        error_log("Mailer Error: " . $mail->ErrorInfo);
-    }
-
-    // Success if notification created OR email sent
-    return $notification_success || $email_success;
+    return $email_success;
 }
 
 // Backward-compatible alias

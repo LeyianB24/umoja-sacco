@@ -4,7 +4,7 @@ session_start();
 require_once __DIR__ . '/../../config/app_config.php';
 require_once __DIR__ . '/../../config/db_connect.php';
 require_once __DIR__ . '/../../inc/functions.php';
-require_once __DIR__ . '/../../inc/mpesa_lib.php';
+require_once __DIR__ . '/../../inc/GatewayFactory.php';
 
 if (!isset($_SESSION['member_id'])) {
     header("Location: login.php");
@@ -30,48 +30,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     $amount = 1000.00;
     $phone_input = trim($_POST['phone']);
-    // Normalize phone (simple version or use library)
+    // Normalize phone (simple version)
     $phone_clean = preg_replace('/\D/', '', $phone_input);
     if (strlen($phone_clean) == 10 && $phone_clean[0] == '0') $phone_clean = '254' . substr($phone_clean, 1);
     
     try {
-        $cfg = mpesa_config();
-        $token = mpesa_get_access_token($conn);
-        if (!$token) throw new Exception("M-Pesa service unavailable.");
-
-        $timestamp = date('YmdHis');
-        $password = base64_encode($cfg['shortcode'] . $cfg['passkey'] . $timestamp);
+        $gateway = GatewayFactory::get('mpesa');
         $ref = 'REG-' . strtoupper(bin2hex(random_bytes(4)));
 
-        $payload = [
-            'BusinessShortCode' => $cfg['shortcode'],
-            'Password' => $password,
-            'Timestamp' => $timestamp,
-            'TransactionType' => 'CustomerPayBillOnline',
-            'Amount' => 1, // Testing: 1 KES. Change to $amount for production
-            'PartyA' => $phone_clean,
-            'PartyB' => $cfg['shortcode'],
-            'PhoneNumber' => $phone_clean,
-            'CallBackURL' => $cfg['callback_url'],
-            'AccountReference' => $ref,
-            'TransactionDesc' => 'Registration Fee'
-        ];
+        // Initiate STK Push via new Gateway
+        $resp = $gateway->initiateDeposit($phone_clean, (float)$amount, $ref, 'Registration Fee');
 
-        // Perform STK Push (Abstracted for brevity, assuming inc/mpesa_lib.php has this or use curl)
-        // For this task, I'll use the logic from mpesa_request.php
-        $ch = curl_init(mpesa_base_url() . '/mpesa/stkpush/v1/processrequest');
-        curl_setopt_array($ch, [
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_HTTPHEADER => ['Authorization: Bearer ' . $token, 'Content-Type: application/json'],
-            CURLOPT_POST => true,
-            CURLOPT_POSTFIELDS => json_encode($payload),
-            CURLOPT_SSL_VERIFYPEER => false,
-        ]);
-        $resp = json_decode(curl_exec($ch), true);
-        curl_close($ch);
-
-        if (($resp['ResponseCode'] ?? '') === '0') {
-            $checkoutID = $resp['CheckoutRequestID'];
+        if ($resp['success']) {
+            $checkoutID = $resp['checkout_id'];
             
             $conn->begin_transaction();
             // 1. Log M-Pesa Request
@@ -87,7 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $conn->commit();
             $success = "STK Push sent! Please enter your M-Pesa PIN on your phone.";
         } else {
-            throw new Exception($resp['errorMessage'] ?? "STK Push failed.");
+            throw new Exception($resp['message'] ?? "STK Push failed.");
         }
     } catch (Exception $e) {
         $error = $e->getMessage();

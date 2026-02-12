@@ -432,3 +432,33 @@ body {
     height: 96px;
     border-width: 4px;
 }
+
+/* ============================================================================
+   TOAST NOTIFICATIONS (Premium Floating Style)
+   ============================================================================ */
+.toast-container-custom {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    z-index: 10000;
+}
+.toast-custom {
+    background: white;
+    padding: 16px 24px;
+    border-radius: 16px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 300px;
+    transform: translateX(120%);
+    transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    border-left: 4px solid var(--forest-deep);
+}
+.toast-custom.show { transform: translateX(0); }
+.toast-custom.success { border-left-color: #10b981; }
+.toast-custom.error { border-left-color: #ef4444; }
+.toast-custom.info { border-left-color: #3b82f6; }
+.toast-icon { font-size: 1.2rem; }
+.toast-message { font-size: 0.9rem; font-weight: 500; color: var(--text-primary); }

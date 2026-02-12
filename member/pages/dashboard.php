@@ -174,6 +174,47 @@ function ksh($v) { return number_format((float)($v ?? 0), 2); }
 
         .main-content-wrapper { margin-left: 280px; transition: margin-left 0.3s ease; }
         @media (max-width: 991px) { .main-content-wrapper { margin-left: 0; } }
+
+        /* Receipt Modal Premium Styling */
+        .receipt-modal .modal-content {
+            border: none;
+            border-radius: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+        .receipt-header {
+            background: var(--hope-green);
+            color: white;
+            border-radius: 24px 24px 0 0;
+            padding: 40px 20px;
+            text-align: center;
+        }
+        .receipt-body {
+            padding: 30px;
+            background: #fff;
+        }
+        .receipt-dashed-line {
+            border-top: 2px dashed #e2e8f0;
+            margin: 20px 0;
+        }
+        .receipt-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            font-size: 0.9rem;
+        }
+        .receipt-label { color: #64748b; }
+        .receipt-value { font-weight: 600; color: #1e293b; }
+        .receipt-stamp {
+            border: 3px solid #39b54a;
+            color: #39b54a;
+            padding: 5px 15px;
+            border-radius: 8px;
+            display: inline-block;
+            transform: rotate(-15deg);
+            font-weight: 800;
+            text-transform: uppercase;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
@@ -325,6 +366,53 @@ function ksh($v) { return number_format((float)($v ?? 0), 2); }
             </div>
 
         </div>
+
+        <!-- Receipt Modal -->
+        <div class="modal fade receipt-modal" id="receiptModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="receipt-header">
+                        <div class="mb-3">
+                            <i class="bi bi-check-circle-fill text-lime" style="font-size: 3rem;"></i>
+                        </div>
+                        <h4 class="fw-bold mb-1">Transaction Successful</h4>
+                        <p class="opacity-75 mb-0">Receipt Generated Automatically</p>
+                    </div>
+                    <div class="receipt-body">
+                        <div class="text-center mb-4">
+                            <div class="h2 fw-bold mb-0 text-success" id="receiptAmount">KES 0.00</div>
+                            <div class="receipt-stamp">Verified</div>
+                        </div>
+                        
+                        <div class="receipt-dashed-line"></div>
+                        
+                        <div class="receipt-item">
+                            <span class="receipt-label">Receipt Number:</span>
+                            <span class="receipt-value" id="receiptNo">---</span>
+                        </div>
+                        <div class="receipt-item">
+                            <span class="receipt-label">Account:</span>
+                            <span class="receipt-value" id="receiptAccount">---</span>
+                        </div>
+                        <div class="receipt-item">
+                            <span class="receipt-label">Reference ID:</span>
+                            <span class="receipt-value" id="receiptRef">---</span>
+                        </div>
+                        <div class="receipt-item">
+                            <span class="receipt-label">Date & Time:</span>
+                            <span class="receipt-value" id="receiptDate"><?= date('d M, Y H:i:s') ?></span>
+                        </div>
+                        
+                        <div class="receipt-dashed-line"></div>
+                        
+                        <div class="text-center mt-4">
+                            <button type="button" class="btn btn-dark rounded-pill px-5 fw-bold" data-bs-dismiss="modal">Close Receipt</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <?php $layout->footer(); ?>
     </div>
 </div>
@@ -367,6 +455,42 @@ function ksh($v) { return number_format((float)($v ?? 0), 2); }
             }
         }
     });
+
+    // Check for general session notifications
+    <?php if (isset($_SESSION['success'])): ?>
+        showToast(<?= json_encode($_SESSION['success']) ?>, 'success');
+        <?php unset($_SESSION['success']); ?>
+    <?php endif; ?>
+
+    <?php if (isset($_SESSION['error'])): ?>
+        showToast(<?= json_encode($_SESSION['error']) ?>, 'error');
+        <?php unset($_SESSION['error']); ?>
+    <?php endif; ?>
+
+    // Check for success trigger in session (usually from a redirect after payment)
+    <?php if (isset($_SESSION['payment_success_trigger'])): 
+        $t_id = (int)$_SESSION['payment_success_trigger'];
+        unset($_SESSION['payment_success_trigger']);
+        $stmt_r = $conn->prepare("SELECT * FROM transactions WHERE transaction_id = ? AND member_id = ?");
+        $stmt_r->bind_param("ii", $t_id, $member_id);
+        $stmt_r->execute();
+        $t_data = $stmt_r->get_result()->fetch_assoc();
+        $stmt_r->close();
+        if ($t_data):
+    ?>
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('receiptAmount').innerText = 'KES <?= number_format((float)$t_data['amount'], 2) ?>';
+        document.getElementById('receiptNo').innerText = '<?= $t_data['reference_no'] ?>';
+        document.getElementById('receiptAccount').innerText = '<?= ucfirst($t_data['transaction_type']) ?> Account';
+        document.getElementById('receiptRef').innerText = 'TXN-<?= strtoupper(substr(bin2hex(random_bytes(4)), 0, 8)) ?>';
+        
+        const receiptModalElement = document.getElementById('receiptModal');
+        if (receiptModalElement) {
+            const receiptModal = new bootstrap.Modal(receiptModalElement);
+            receiptModal.show();
+        }
+    });
+    <?php endif; endif; ?>
 </script>
 </body>
 </html>

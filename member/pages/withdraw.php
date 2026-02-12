@@ -9,7 +9,9 @@ require_once __DIR__ . '/../../inc/LayoutManager.php';
 require_once __DIR__ . '/../../inc/functions.php';
 require_once __DIR__ . '/../../inc/FinancialEngine.php';
 require_once __DIR__ . '/../../inc/TransactionHelper.php';
-require_once __DIR__ . '/../../inc/mpesa_lib.php';
+require_once __DIR__ . '/../../inc/FinancialEngine.php';
+require_once __DIR__ . '/../../inc/TransactionHelper.php';
+require_once __DIR__ . '/../../inc/GatewayFactory.php';
 
 $layout = LayoutManager::create('member');
 // member/withdraw.php
@@ -128,10 +130,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['withdraw'])) {
                 'member_id'   => $member_id,
                 'amount'      => $amount,
                 'action_type' => 'withdrawal_initiate',
-                'method'      => 'mpesa', // Target destination
+                'method'      => 'paystack', // Now using Paystack as the primary gateway
                 'source_cat'  => $current_source['ledger_cat'], // debit this
                 'reference'   => $ref,
-                'notes'       => "Withdrawal Initiated ($ref) to $phone"
+                'notes'       => "Withdrawal Initiated ($ref) to $phone via Paystack"
             ]);
 
             // 3. LOG REQUEST
@@ -141,24 +143,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['withdraw'])) {
             $withdrawal_id = $conn->insert_id;
             $stmt->close();
 
-            // 4. CALL M-PESA API
-            $mpesa_response = mpesa_b2c_request($phone, $amount, $ref, "Withdrawal");
+            // 4. INITIATE GATEWAY WITHDRAWAL
+            $gateway = GatewayFactory::get('paystack'); // Currently USMS uses Paystack for KES mobile transfers
+            $gw_response = $gateway->initiateWithdrawal($phone, (float)$amount, $ref, "Withdrawal $ref");
 
-            if ($mpesa_response['success']) {
-                $mpesa_conv_id = $mpesa_response['conversation_id'] ?? null;
+            if ($gw_response['success']) {
+                $gw_ref = $gw_response['reference'] ?? null;
                 
-                // Update request with M-Pesa Trace IDs
-                $conn->query("UPDATE withdrawal_requests SET status = 'pending', mpesa_conversation_id = '$mpesa_conv_id' WHERE withdrawal_id = $withdrawal_id");
+                // Update request with Gateway reference
+                $conn->query("UPDATE withdrawal_requests SET status = 'pending', mpesa_conversation_id = '$gw_ref' WHERE withdrawal_id = $withdrawal_id");
                 
                 $conn->commit(); // COMMIT THE HOLD
                 
-                $success = "Processing: KES " . number_format($amount) . " has been reserved. Waiting for M-Pesa confirmation.";
+                $success = "Processing: KES " . number_format($amount) . " has been reserved. Waiting for bank/mobile money confirmation via " . ucfirst($gateway->getProviderName() ?? 'Gateway');
                 
                 // Redirect back to source context
                 $return_url = BASE_URL . "/member/pages/" . $source_page . ".php?msg=withdrawal_initiated";
                 header("Refresh:2; URL=" . $return_url);
             } else {
-                throw new Exception("M-Pesa API Failed: " . $mpesa_response['message']);
+                throw new Exception("Gateway API Failed: " . $gw_response['message']);
             }
 
         } catch (Exception $e) {

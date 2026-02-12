@@ -58,28 +58,12 @@ define('SOCIAL_TIKTOK', 'https://tiktok.com/@umojadriverssacco');
 // 5. SECURITY
 // ============================================================
 define('APP_SECRET', 'a-very-long-random-secret-you-generate');
-define('APP_ENV', 'development'); // 'development' or 'production'
+define('APP_ENV', 'sandbox'); // 'sandbox' or 'production' (Live-Simulation Mode)
 
 // ============================================================
-// 5. M-PESA CONFIGURATION
+// 5. M-PESA CONFIGURATION (LEGACY REMOVED)
 // ============================================================
-// Load M-Pesa credentials from separate config file
-$mpesa_config = require __DIR__ . '/mpesa_config.php';
-
-// Make M-Pesa settings available as constants
-define('MPESA_ENVIRONMENT', $mpesa_config['environment']);
-define('MPESA_CONSUMER_KEY', $mpesa_config['consumer_key']);
-define('MPESA_CONSUMER_SECRET', $mpesa_config['consumer_secret']);
-define('MPESA_SHORTCODE', $mpesa_config['shortcode']);
-define('MPESA_PASSKEY', $mpesa_config['passkey']);
-define('MPESA_B2C_SHORTCODE', $mpesa_config['b2c_shortcode']);
-define('MPESA_B2C_INITIATOR', $mpesa_config['b2c_initiator_name']);
-define('MPESA_B2C_CREDENTIAL', $mpesa_config['b2c_security_credential']);
-define('MPESA_SANDBOX_URL', $mpesa_config['sandbox_url']);
-define('MPESA_LIVE_URL', $mpesa_config['live_url']);
-define('MPESA_CALLBACK_URL', $mpesa_config['callback_url']);
-define('MPESA_B2C_RESULT_URL', $mpesa_config['b2c_result_url']);
-define('MPESA_B2C_TIMEOUT_URL', $mpesa_config['b2c_timeout_url']);
+// Configuration is now handled by GatewayFactory via config/environment.php
 
 // ============================================================
 // 6. NOTIFICATION SETTINGS

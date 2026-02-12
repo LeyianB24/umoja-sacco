@@ -80,8 +80,8 @@ if (isset($response['Body']['stkCallback'])) {
     // Look up original request
     // ---------------------------------------------------
     $stmt = $conn->prepare("
-        SELECT r.request_id, r.member_id, r.amount, r.reference_no,
-               m.email, m.full_name, m.phone
+        SELECT r.id, r.member_id, r.amount, r.reference_no,
+               m.email, m.full_name, m.phone, m.reg_no
         FROM mpesa_requests r
         JOIN members m ON r.member_id = m.member_id
         WHERE r.checkout_request_id = ?
@@ -243,19 +243,38 @@ if (isset($response['Body']['stkCallback'])) {
             ]);
         }
 
-        // 4. Send confirmation email
-        // 4. Send confirmation notification (and email if available)
-        $subject = "Payment Confirmed ($mpesaReceipt)";
-        $body = "
-            <p>Hello <strong>$full_name</strong>,</p>
-            <p>Your payment of <strong>KES " . number_format($amount) . "</strong> was successful.</p>
-            <p><strong>Receipt:</strong> $mpesaReceipt<br>
-            <strong>Reference:</strong> $reference_no</p>
-            <p style='color:green;'>Thank you for your payment.</p>
-        ";
-        // sendEmail handles notification insertion internally.
-        // We pass email (can be empty) and member_id (required for notification).
-        try { sendEmail($email, $subject, $body, $member_id); } catch (Exception $e) {}
+        // 4. Send confirmation notification (Email & SMS)
+        $metadata = [
+            'trx_id' => $mpesaReceipt,
+            'reg_no' => $request['reg_no'] ?? 'N/A',
+            'balance' => 0 // Fallback
+        ];
+
+        // Fetch current balance for metadata
+        $stmt_bal = $conn->prepare("SELECT balance FROM wallet_balances WHERE member_id = ?");
+        if ($stmt_bal) {
+            $stmt_bal->bind_param("i", $member_id);
+            $stmt_bal->execute();
+            $bal_res = $stmt_bal->get_result()->fetch_assoc();
+            $metadata['balance'] = (float)($bal_res['balance'] ?? 0);
+            $stmt_bal->close();
+        }
+
+        $subject = "Payment Confirmed [$mpesaReceipt]";
+        $email_content = "
+            Dear <strong>$full_name</strong>,<br><br>
+            Your payment of <strong>KES " . number_format($amount, 2) . "</strong> has been successfully received and credited to your " . ucfirst($type) . " account.<br>
+            Reference: <strong>$reference_no</strong><br><br>
+            Thank you for your continued support.";
+        
+        try { 
+            sendEmailWithNotification($email, $subject, $email_content, $member_id, null, $metadata); 
+        } catch (Exception $e) { error_log("Callback Email Error: " . $e->getMessage()); }
+
+        try {
+            $sms_msg = "UDS Alert: Payment of KES " . number_format($amount) . " received. Ref: $mpesaReceipt. Wallet Bal: KES " . number_format($metadata['balance']) . ".";
+            send_sms($phone, $sms_msg, $member_id);
+        } catch (Exception $e) { error_log("Callback SMS Error: " . $e->getMessage()); }
 
         file_put_contents($logFile,
             "SUCCESS: Payment $mpesaReceipt processed for Ref $reference_no\n",
@@ -378,26 +397,46 @@ if (isset($response['Result'])) {
                 'amount'      => $amount,
                 'action_type' => 'withdrawal_finalize',
                 'method'      => 'mpesa',
-                'reference'   => $transactionID, // Use MPesa receipt as final ref
+                'reference'   => $transactionID,
                 'notes'       => "Withdrawal Successful ($originatorID)",
                 'related_id'  => $withdraw['withdrawal_id'],
                 'related_table' => 'withdrawal_requests'
             ]);
 
             // Notify Member
-            $stmt_m = $conn->prepare("SELECT email, full_name FROM members WHERE member_id = ?");
+            $stmt_m = $conn->prepare("SELECT email, full_name, phone, reg_no FROM members WHERE member_id = ?");
             $stmt_m->bind_param("i", $member_id);
             $stmt_m->execute();
             $m = $stmt_m->get_result()->fetch_assoc();
             $stmt_m->close();
 
             if ($m && !empty($m['email'])) {
-                $subject = "Withdrawal Successful";
-                $body = "<p>Dear <strong>{$m['full_name']}</strong>,</p>
-                         <p>Your withdrawal of <strong>KES " . number_format($amount) . "</strong> has been processed successfully.</p>
-                         <p>M-Pesa Receipt: <strong>$transactionID</strong></p>
-                         <p>Thank you for choosing " . SITE_NAME . ".</p>";
-                try { sendEmail($m['email'], $subject, $body, $member_id); } catch (Exception $e) {}
+                $metadata = [
+                    'trx_id' => $transactionID,
+                    'reg_no' => $m['reg_no'] ?? 'N/A',
+                    'balance' => 0
+                ];
+                // Fetch wallet balance
+                $stmt_bal = $conn->prepare("SELECT balance FROM wallet_balances WHERE member_id = ?");
+                if ($stmt_bal) {
+                    $stmt_bal->bind_param("i", $member_id);
+                    $stmt_bal->execute();
+                    $bal_res = $stmt_bal->get_result()->fetch_assoc();
+                    $metadata['balance'] = (float)($bal_res['balance'] ?? 0);
+                    $stmt_bal->close();
+                }
+
+                $subject = "Withdrawal Successful [$transactionID]";
+                $email_content = "Dear <strong>{$m['full_name']}</strong>,<br><br>
+                         Your withdrawal of <strong>KES " . number_format($amount, 2) . "</strong> has been processed successfully.<br>
+                         Transaction Reference: <strong>$transactionID</strong>";
+                
+                try { sendEmailWithNotification($m['email'], $subject, $email_content, $member_id, null, $metadata); } catch (Exception $e) {}
+
+                try {
+                    $sms_msg = "UDS Alert: KES " . number_format($amount) . " withdrawn. Ref: $transactionID. Wallet Bal: KES " . number_format($metadata['balance']) . ".";
+                    send_sms($m['phone'] ?? '', $sms_msg, $member_id);
+                } catch (Exception $e) {}
             }
 
             file_put_contents($logFile, "SUCCESS: B2C Withdrawal $originatorID completed with $transactionID\n", FILE_APPEND);
@@ -422,7 +461,7 @@ if (isset($response['Result'])) {
             file_put_contents($logFile, "FAILED: B2C Withdrawal $originatorID failed with reason: $resultDesc. Funds Reverted.\n", FILE_APPEND);
             
             // Notify Member of failure
-            $stmt_m = $conn->prepare("SELECT email, full_name FROM members WHERE member_id = ?");
+            $stmt_m = $conn->prepare("SELECT email, full_name, phone, reg_no FROM members WHERE member_id = ?");
             $stmt_m->bind_param("i", $member_id);
             $stmt_m->execute();
             $m = $stmt_m->get_result()->fetch_assoc();

@@ -87,9 +87,9 @@ class FinancialEngine {
                     break;
 
                 case 'withdrawal_finalize':
-                    // Step 2: Success - Debit Clearing, Credit M-Pesa Float (Actual Outflow)
+                    // Step 2: Success - Debit Clearing, Credit the gateway/method (Actual Outflow)
                     $this->postEntry($txn_id, $this->getSystemAccount('mpesa_clearing'), $amount, 0);
-                    $this->postEntry($txn_id, $this->getSystemAccount('mpesa'), 0, $amount);
+                    $this->postEntry($txn_id, $this->getSystemAccount($method), 0, $amount);
                     
                     // Trigger Notifications with new balance
                     $new_balances = $this->getBalances($member_id);
@@ -256,14 +256,21 @@ class FinancialEngine {
     }
 
     public function getSystemAccount($key) {
+        // Consolidated Settlement Architecture (V28)
+        // All external money movement maps to the Single Master Settlement Account
+        $master_account = 'Paystack Clearing Account';
+        
         $name_map = [
-            'cash' => 'Cash at Hand',
-            'mpesa' => 'M-Pesa Float',
-            'bank' => 'Bank Account',
-            'income' => 'SACCO Revenue',
-            'expense' => 'SACCO Expenses',
-            'welfare' => 'Welfare Fund Pool',
-            'mpesa_clearing' => 'M-Pesa Clearing Account'
+            'cash'           => $master_account,
+            'mpesa'          => $master_account,
+            'bank'           => $master_account,
+            'paystack'       => $master_account,
+            'mpesa_clearing' => $master_account, // Clearing happens directly on the master ledger
+            
+            // Internal Pools (Unchanged)
+            'income'         => 'SACCO Revenue',
+            'expense'        => 'SACCO Expenses',
+            'welfare'        => 'Welfare Fund Pool'
         ];
         $name = $name_map[$key] ?? $key;
         $q = $this->db->query("SELECT account_id FROM ledger_accounts WHERE account_name = '$name' LIMIT 1");
