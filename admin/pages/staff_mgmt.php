@@ -119,7 +119,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt = $db->prepare("UPDATE admins SET full_name=?, email=?, role_id=? WHERE admin_id=?");
             $stmt->bind_param("ssii", $fullname, $email, $role_id, $id);
         }
-        if($stmt->execute()) setFlash("Admin updated successfully.");
+        if($stmt->execute()) {
+            // Sync with employees table
+            $job_title = $defined_roles[$role_id]['label'] ?? 'Administrator';
+            $emp_upd = $db->prepare("UPDATE employees SET full_name=?, job_title=? WHERE admin_id=?");
+            if ($emp_upd) {
+                $emp_upd->bind_param("ssi", $fullname, $job_title, $id);
+                $emp_upd->execute();
+                $emp_upd->close();
+            }
+            setFlash("Admin updated successfully and synced with HR profile.");
+        }
     }
     
     header("Location: staff_mgmt.php");
@@ -289,7 +299,10 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
                 </div>
             </div>
 
-            <?php flash_render(); ?>
+            <?php 
+            require_once __DIR__ . '/../inc/hr_nav.php';
+            flash_render(); 
+            ?>
 
             <!-- Main Table Card -->
             <div class="glass-card p-0 overflow-hidden shadow-sm-custom slide-in">
@@ -374,6 +387,9 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
                                                     title="Edit Account" onclick='openEditModal(<?= json_encode($row) ?>)'>
                                                 <i class="bi bi-pencil-square"></i>
                                             </button>
+                                            <a href="employees.php?q=<?= urlencode($row['full_name']) ?>" class="btn btn-sm btn-light text-success rounded-3 me-2" title="View HR Profile">
+                                                <i class="bi bi-person-badge"></i>
+                                            </a>
                                             <?php if(!$isMe): ?>
                                                 <a href="?delete_id=<?= $row['admin_id'] ?>" 
                                                    class="btn btn-sm btn-light text-danger rounded-3" 

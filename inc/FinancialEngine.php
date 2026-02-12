@@ -19,6 +19,7 @@ class FinancialEngine {
     const CAT_BANK     = 'bank';     // SACCO Bank account
     const CAT_INCOME   = 'income';   // SACCO Revenue
     const CAT_EXPENSE  = 'expense';  // SACCO Expenses
+    const CAT_MPESA_CLEARING = 'mpesa_clearing'; // Pending B2C funds
 
     private $db;
     private $recorded_by;
@@ -72,10 +73,40 @@ class FinancialEngine {
                     break;
 
                 case 'withdrawal':
-                    // Debit Liability (Member Account), Credit Asset (Cash/Mpesa)
+                    // LEGACY/DIRECT - Prefer using withdrawal_initiate + withdrawal_finalize
                     $source_cat = $params['source_cat'] ?? self::CAT_WALLET;
                     $this->postEntry($txn_id, $this->getMemberAccount($member_id, $source_cat), $amount, 0);
                     $this->postEntry($txn_id, $this->getSystemAccount($method), 0, $amount);
+                    break;
+
+                case 'withdrawal_initiate':
+                    // Step 1: Debit Member, Credit M-Pesa Clearing (Pending Hold)
+                    $source_cat = $params['source_cat'] ?? self::CAT_WALLET;
+                    $this->postEntry($txn_id, $this->getMemberAccount($member_id, $source_cat), $amount, 0);
+                    $this->postEntry($txn_id, $this->getSystemAccount('mpesa_clearing'), 0, $amount);
+                    break;
+
+                case 'withdrawal_finalize':
+                    // Step 2: Success - Debit Clearing, Credit M-Pesa Float (Actual Outflow)
+                    $this->postEntry($txn_id, $this->getSystemAccount('mpesa_clearing'), $amount, 0);
+                    $this->postEntry($txn_id, $this->getSystemAccount('mpesa'), 0, $amount);
+                    
+                    // Trigger Notifications with new balance
+                    $new_balances = $this->getBalances($member_id);
+                    $bal_text = number_format($new_balances['wallet'] ?? 0, 2);
+                    $this->triggerNotification($member_id, "Withdrawal of KES " . number_format($amount) . " successful. New Wallet Balance: KES $bal_text", $txn_id);
+                    break;
+
+                case 'withdrawal_revert':
+                    // Step 2: Failed - Debit Clearing, Credit back to Member
+                    $dest_cat = $params['dest_cat'] ?? self::CAT_WALLET;
+                    $this->postEntry($txn_id, $this->getSystemAccount('mpesa_clearing'), $amount, 0);
+                    $this->postEntry($txn_id, $this->getMemberAccount($member_id, $dest_cat), 0, $amount);
+                    
+                    // Trigger Notifications with new balance
+                    $new_balances = $this->getBalances($member_id);
+                    $bal_text = number_format($new_balances[$dest_cat] ?? 0, 2);
+                    $this->triggerNotification($member_id, "Withdrawal of KES " . number_format($amount) . " failed. Funds returned. New " . ucfirst($dest_cat) . " Balance: KES $bal_text", $txn_id);
                     break;
 
                 case 'loan_disbursement':
@@ -231,7 +262,8 @@ class FinancialEngine {
             'bank' => 'Bank Account',
             'income' => 'SACCO Revenue',
             'expense' => 'SACCO Expenses',
-            'welfare' => 'Welfare Fund Pool'
+            'welfare' => 'Welfare Fund Pool',
+            'mpesa_clearing' => 'M-Pesa Clearing Account'
         ];
         $name = $name_map[$key] ?? $key;
         $q = $this->db->query("SELECT account_id FROM ledger_accounts WHERE account_name = '$name' LIMIT 1");
@@ -305,5 +337,41 @@ class FinancialEngine {
         $stmt->execute();
         $res = $stmt->get_result()->fetch_assoc();
         return (float)($res['total'] ?? 0.0);
+    }
+
+    public function getLifetimeCredits($mid, $category = null) {
+        if (is_array($category)) {
+            $ids = [];
+            foreach($category as $cat) $ids[] = $this->getMemberAccount($mid, $cat);
+            $id_list = implode(',', $ids);
+            $stmt = $this->db->prepare("SELECT SUM(credit) as total FROM ledger_entries WHERE account_id IN ($id_list)");
+        } elseif ($category) {
+            $acc_id = $this->getMemberAccount($mid, $category);
+            $stmt = $this->db->prepare("SELECT SUM(credit) as total FROM ledger_entries WHERE account_id = ?");
+            $stmt->bind_param("i", $acc_id);
+        } else {
+            // All credits for this member across all accounts
+            $stmt = $this->db->prepare("SELECT SUM(le.credit) as total FROM ledger_entries le 
+                                       JOIN ledger_accounts la ON le.account_id = la.account_id 
+                                       WHERE la.member_id = ?");
+            $stmt->bind_param("i", $mid);
+        }
+        $stmt->execute();
+        $res = $stmt->get_result()->fetch_assoc();
+        return (float)($res['total'] ?? 0.0);
+    }
+
+    private function triggerNotification($mid, $message, $txn_id) {
+        $helper_path = __DIR__ . '/notification_helpers.php';
+        if (file_exists($helper_path)) {
+            require_once $helper_path;
+        }
+        
+        // Ensure function exists before calling to prevent fatal error
+        if (function_exists('add_notification')) {
+            add_notification($mid, "Transaction Update", $message, 'info', "member/pages/transactions.php?id=$txn_id");
+        } else {
+            error_log("FinancialEngine: add_notification function missing.");
+        }
     }
 }

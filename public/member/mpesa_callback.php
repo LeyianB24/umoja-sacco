@@ -351,6 +351,9 @@ if (isset($response['Result'])) {
         $member_id = $withdraw['member_id'];
         $amount = $withdraw['amount'];
         $source = $withdraw['source_ledger'];
+        
+        require_once __DIR__ . '/../../inc/FinancialEngine.php';
+        $engine = new FinancialEngine($conn);
 
         // Update withdrawal_requests with callback data
         $stmt_upd = $conn->prepare("UPDATE withdrawal_requests SET 
@@ -369,30 +372,15 @@ if (isset($response['Result'])) {
         if ($resultCode == 0) {
             // --- SUCCESS ---
             
-            // Idempotency Check: Has this TransactionID already been processed for this log?
-            $check_txn = $conn->prepare("SELECT log_id FROM callback_logs WHERE mpesa_receipt_number = ? AND processed = TRUE LIMIT 1");
-            $check_txn->bind_param("s", $transactionID);
-            $check_txn->execute();
-            if ($check_txn->get_result()->fetch_assoc()) {
-                echo json_encode(['ResultCode' => 0, 'ResultDesc' => 'Withdrawal Already Processed']);
-                exit;
-            }
-
-            // Record in Golden Ledger via TransactionHelper
-            $ledger_cat = FinancialEngine::CAT_WALLET;
-            if ($source === 'savings') $ledger_cat = FinancialEngine::CAT_SAVINGS;
-            elseif ($source === 'shares') $ledger_cat = FinancialEngine::CAT_SHARES;
-            elseif ($source === 'welfare') $ledger_cat = FinancialEngine::CAT_WELFARE;
-
-            TransactionHelper::record([
-                'member_id'     => $member_id,
-                'amount'        => $amount,
-                'type'          => 'debit', // Withdrawal is debit from member perspective
-                'category'      => $ledger_cat,
-                'ref_no'        => $transactionID,
-                'notes'         => "Standardized Withdrawal from " . ucfirst($source) . " via M-Pesa",
-                'method'        => 'mpesa',
-                'related_id'    => $withdraw['id'] ?? $originatorID,
+            // Finalize Ledger Transaction (Debit Clearing, Credit Float)
+            $engine->transact([
+                'member_id'   => $member_id,
+                'amount'      => $amount,
+                'action_type' => 'withdrawal_finalize',
+                'method'      => 'mpesa',
+                'reference'   => $transactionID, // Use MPesa receipt as final ref
+                'notes'       => "Withdrawal Successful ($originatorID)",
+                'related_id'  => $withdraw['withdrawal_id'],
                 'related_table' => 'withdrawal_requests'
             ]);
 
@@ -415,7 +403,23 @@ if (isset($response['Result'])) {
             file_put_contents($logFile, "SUCCESS: B2C Withdrawal $originatorID completed with $transactionID\n", FILE_APPEND);
         } else {
             // --- FAILURE ---
-            file_put_contents($logFile, "FAILED: B2C Withdrawal $originatorID failed with reason: $resultDesc\n", FILE_APPEND);
+            
+            // Revert Ledger Transaction (Debit Clearing, Credit back to Source Account)
+            $ledger_cat = FinancialEngine::CAT_WALLET;
+            if ($source === 'savings') $ledger_cat = FinancialEngine::CAT_SAVINGS;
+            elseif ($source === 'shares') $ledger_cat = FinancialEngine::CAT_SHARES;
+            elseif ($source === 'welfare') $ledger_cat = FinancialEngine::CAT_WELFARE;
+
+            $engine->transact([
+                'member_id'   => $member_id,
+                'amount'      => $amount,
+                'action_type' => 'withdrawal_revert',
+                'dest_cat'    => $ledger_cat,
+                'reference'   => 'REV-' . $originatorID,
+                'notes'       => "Withdrawal Failed Reversion ($originatorID) - $resultDesc"
+            ]);
+
+            file_put_contents($logFile, "FAILED: B2C Withdrawal $originatorID failed with reason: $resultDesc. Funds Reverted.\n", FILE_APPEND);
             
             // Notify Member of failure
             $stmt_m = $conn->prepare("SELECT email, full_name FROM members WHERE member_id = ?");
@@ -429,6 +433,7 @@ if (isset($response['Result'])) {
                 $body = "<p>Dear <strong>{$m['full_name']}</strong>,</p>
                          <p>Your withdrawal request of <strong>KES " . number_format($amount) . "</strong> could not be processed.</p>
                          <p><strong>Reason:</strong> $resultDesc</p>
+                         <p>The funds have been returned to your account.</p>
                          <p>Please contact support if you have any questions.</p>";
                 try { sendEmail($m['email'], $subject, $body, $member_id); } catch (Exception $e) {}
             }

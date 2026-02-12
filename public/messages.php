@@ -19,6 +19,16 @@ $my_id = $my_role === 'member'
     ? ($_SESSION['member_id'] ?? 0)
     : ($_SESSION['admin_id'] ?? ($_SESSION['user_id'] ?? 0));
 
+// Load Current User Picture
+if ($my_role === 'member') {
+    if (empty($_SESSION['member_pic'])) {
+        $uPic = $conn->query("SELECT profile_pic FROM members WHERE member_id = $my_id")->fetch_assoc();
+        $_SESSION['member_pic'] = $uPic['profile_pic'] ?? null;
+    }
+} else {
+    $_SESSION['admin_pic'] = null; // Admins currently do not have photos in schema
+}
+
 // CSRF Token Generation
 if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
@@ -246,12 +256,13 @@ if ($active_id && $active_role) {
     }
 }
 
-function renderImg($blob, $name) {
+function renderImg($blob, $name, $size = '56px', $fontSize = '1.3rem') {
     if ($blob) {
-        return "<img src='data:image/jpeg;base64," . base64_encode($blob) . "' class='rounded-circle shadow-sm' style='width:40px;height:40px;object-fit:cover'>";
+        return "<div class='avatar-circle' style='width:$size;height:$size; overflow:hidden; padding:0; background:none;'>
+                  <img src='data:image/jpeg;base64," . base64_encode($blob) . "' style='width:100%;height:100%;object-fit:cover'>
+                </div>";
     }
-    // Using custom primary color for fallback avatar
-    return "<div class='rounded-circle d-flex align-items-center justify-content-center shadow-sm text-white' style='width:40px;height:40px;font-weight:bold;font-size:0.9rem; background: var(--primary-color)'>" . strtoupper(substr($name ?? 'U', 0, 1)) . "</div>";
+    return "<div class='avatar-circle' style='width:$size;height:$size; font-size:$fontSize;'>" . strtoupper(substr((string)($name ?? 'U'), 0, 1)) . "</div>";
 }
 ?>
 
@@ -266,136 +277,159 @@ function renderImg($blob, $name) {
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
+            --forest-deep: #0B241C;
             --forest-green: #0F392B;
-            --forest-mid: #134e3b;
-            --forest-light: #1a634b;
+            --forest-mid: #164e3b;
+            --forest-light: #237a5d;
             --lime: #D0F35D;
-            --glass-bg: rgba(255, 255, 255, 0.9);
-            --glass-border: rgba(255, 255, 255, 0.2);
-            --sidebar-width: 360px;
+            --lime-glow: rgba(208, 243, 93, 0.4);
+            --glass-bg: rgba(255, 255, 255, 0.85);
+            --glass-border: rgba(255, 255, 255, 0.3);
+            --sidebar-width: 380px;
+            --transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            background: radial-gradient(circle at top left, #123329, #0B1D18);
             height: 100vh;
             overflow: hidden;
-            color: var(--forest-green);
+            color: #f8f9fa;
         }
 
         .app-container {
             display: flex;
             height: 100vh;
-            backdrop-filter: blur(10px);
+            backdrop-filter: blur(15px);
+            background: rgba(255,255,255,0.02);
         }
 
-        /* Sidebar Styling */
+        /* Sidebar Styling: Deep Emerald Glass */
         .msg-sidebar {
             width: var(--sidebar-width);
-            background: var(--forest-green);
-            color: white;
+            background: rgba(11, 36, 28, 0.7);
+            backdrop-filter: blur(40px);
             display: flex;
             flex-direction: column;
-            border-right: 1px solid rgba(255,255,255,0.1);
-            transition: all 0.3s ease;
+            border-right: 1px solid rgba(255,255,255,0.08);
+            box-shadow: 20px 0 50px rgba(0,0,0,0.3);
+            z-index: 100;
         }
 
         .sidebar-header {
-            padding: 30px 24px;
-            background: rgba(0,0,0,0.1);
+            padding: 40px 30px 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
         }
 
-        .sidebar-footer {
-            padding: 24px;
-            background: rgba(0,0,0,0.2);
+        .sidebar-header h3 {
+            font-weight: 800;
+            letter-spacing: -1px;
+            background: linear-gradient(to right, #fff, var(--lime));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
         .thread-container {
             flex: 1;
             overflow-y: auto;
-            padding: 12px;
+            padding: 20px;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255,255,255,0.1) transparent;
         }
 
         .thread-item {
             display: flex;
-            padding: 16px;
-            border-radius: 16px;
-            margin-bottom: 8px;
+            padding: 20px;
+            border-radius: 24px;
+            margin-bottom: 12px;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: var(--transition);
             text-decoration: none;
-            color: rgba(255,255,255,0.7);
+            color: rgba(255,255,255,0.6);
             border: 1px solid transparent;
+            position: relative;
+            overflow: hidden;
         }
 
         .thread-item:hover {
-            background: rgba(255,255,255,0.05);
-            color: white;
+            background: rgba(255,255,255,0.04);
+            transform: translateX(8px);
+            color: #fff;
         }
 
         .thread-item.active {
-            background: rgba(255,255,255,0.1);
-            border-color: rgba(255,255,255,0.2);
-            color: white;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            background: rgba(208, 243, 93, 0.08);
+            border-color: rgba(208, 243, 93, 0.2);
+            color: #fff;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .thread-item.active::before {
+            content: '';
+            position: absolute;
+            left: 0; top: 25%; height: 50%;
+            width: 4px;
+            background: var(--lime);
+            border-radius: 0 4px 4px 0;
+            box-shadow: 0 0 15px var(--lime);
         }
 
         .avatar-circle {
-            width: 52px;
-            height: 52px;
-            border-radius: 16px;
-            background: var(--lime);
+            width: 56px; height: 56px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, var(--lime), #b2d54a);
             color: var(--forest-green);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 800;
-            font-size: 1.2rem;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 800; font-size: 1.3rem;
             flex-shrink: 0;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-            border: 2px solid rgba(255,255,255,0.2);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+            transition: var(--transition);
         }
 
-        /* Chat Area Styling */
+        .thread-item:hover .avatar-circle {
+            transform: scale(1.1) rotate(-5deg);
+        }
+
+        /* Chat Area: Modern Satin */
         .chat-container {
             flex: 1;
             display: flex;
             flex-direction: column;
-            background: #f8f9fa;
+            background: radial-gradient(circle at 50% 50%, #fcfdfe, #f0f4f8);
             position: relative;
         }
 
         .chat-header {
-            padding: 20px 30px;
-            background: white;
-            border-bottom: 1px solid #e9ecef;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+            padding: 25px 40px;
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            display: flex; align-items: center; justify-content: space-between;
+            z-index: 50;
         }
 
         .messages-viewport {
             flex: 1;
             overflow-y: auto;
-            padding: 30px;
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-            background: url("https://www.transparenttextures.com/patterns/cubes.png");
+            padding: 40px;
+            display: flex; flex-direction: column; gap: 20px;
+            background: url("https://www.transparenttextures.com/patterns/pinstriped-suit.png");
+            scroll-behavior: smooth;
         }
 
         .chat-input-area {
-            padding: 24px 30px;
-            background: white;
-            border-top: 1px solid #e9ecef;
+            padding: 30px 45px 40px;
+            background: rgba(255,255,255,0.9);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(0,0,0,0.05);
         }
 
-        /* Bubble Styling */
+        /* Bubbles: High Contrast & Depth */
         .bubble-wrapper {
-            display: flex;
-            width: 100%;
-            margin-bottom: 4px;
+            display: flex; width: 100%;
+            margin-bottom: 6px;
+            perspective: 1000px;
         }
 
         .bubble-wrapper.sent { justify-content: flex-end; }
@@ -403,127 +437,134 @@ function renderImg($blob, $name) {
 
         .chat-bubble {
             max-width: 65%;
-            padding: 14px 20px;
-            border-radius: 20px;
+            padding: 16px 24px;
+            border-radius: 28px;
             position: relative;
-            font-size: 0.95rem;
-            line-height: 1.5;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.03);
-            animation: slideIn 0.3s ease-out;
+            font-size: 1rem;
+            line-height: 1.6;
+            transition: var(--transition);
+            animation: bubblePop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
         }
 
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+        @keyframes bubblePop {
+            from { opacity: 0; transform: scale(0.9) translateY(20px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
         }
 
         .sent .chat-bubble {
-            background: var(--forest-green);
-            color: white;
-            border-bottom-right-radius: 4px;
+            background: linear-gradient(135deg, var(--forest-green), var(--forest-mid));
+            color: #fff;
+            border-bottom-right-radius: 6px;
+            box-shadow: 0 10px 25px rgba(15, 57, 43, 0.2);
         }
 
         .received .chat-bubble {
-            background: white;
+            background: #fff;
             color: var(--forest-green);
-            border-bottom-left-radius: 4px;
-            border: 1px solid #e9ecef;
+            border-bottom-left-radius: 6px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+            border: 1px solid #edf2f7;
         }
 
-        .bubble-time {
-            font-size: 0.7rem;
-            margin-top: 6px;
-            opacity: 0.6;
-            display: flex;
-            justify-content: flex-end;
-            align-items: center;
-            gap: 4px;
+        /* Attachment: Premium UI Chips */
+        .attachment-card {
+            background: rgba(255,255,255,0.12);
+            border-radius: 18px;
+            padding: 12px 18px;
+            margin-bottom: 12px;
+            display: flex; align-items: center; gap: 14px;
+            text-decoration: none; color: #fff;
+            border: 1px solid rgba(255,255,255,0.15);
+            transition: var(--transition);
         }
 
-        /* Input Styling */
+        .attachment-card:hover {
+            background: rgba(255,255,255,0.2);
+            transform: translateY(-2px);
+        }
+
+        .received .attachment-card {
+            background: #f1f5f9;
+            color: var(--forest-green);
+            border-color: #e2e8f0;
+        }
+
+        /* Input Area: Floating Glass bar */
+        .input-wrapper {
+            background: #fff;
+            border: 1px solid #edf2f7;
+            padding: 8px 8px 8px 24px;
+            border-radius: 24px;
+            display: flex; align-items: center; gap: 15px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.05);
+            transition: var(--transition);
+        }
+
+        .input-wrapper:focus-within {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.1);
+            border-color: var(--forest-light);
+        }
+
         .input-glass {
-            background: #f1f3f5 !important;
-            border: 2px solid transparent !important;
-            border-radius: 16px !important;
-            padding: 14px 22px !important;
-            transition: all 0.3s !important;
-            font-weight: 500;
+            background: transparent !important;
+            border: none !important;
+            padding: 15px 0 !important;
+            font-size: 1rem !important;
+            font-weight: 500 !important;
+            color: var(--forest-green) !important;
         }
 
-        .input-glass:focus {
-            background: white !important;
-            border-color: var(--forest-green) !important;
-            box-shadow: 0 0 0 4px rgba(15, 57, 43, 0.05) !important;
-        }
+        .input-glass::placeholder { color: #94a3b8; }
 
         .btn-send {
-            width: 54px;
-            height: 54px;
-            border-radius: 16px;
+            width: 56px; height: 56px;
+            border-radius: 18px;
             background: var(--lime);
             border: none;
             color: var(--forest-green);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.3rem;
-            transition: all 0.3s;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.4rem;
+            transition: var(--transition);
+            box-shadow: 0 8px 20px var(--lime-glow);
         }
 
         .btn-send:hover {
-            transform: scale(1.05) translateY(-2px);
-            background: #e1ff8d;
-            box-shadow: 0 5px 15px rgba(208, 243, 93, 0.3);
+            transform: scale(1.1) rotate(10deg);
+            background: #d9f77d;
         }
 
-        /* Misc */
+        /* Custom Badges & Dates */
         .badge-unread {
             background: var(--lime);
             color: var(--forest-green);
-            font-weight: 800;
-            padding: 4px 8px;
-            border-radius: 8px;
-            font-size: 0.7rem;
+            font-weight: 800; padding: 5px 10px;
+            border-radius: 10px; font-size: 0.75rem;
+            box-shadow: 0 5px 15px var(--lime-glow);
         }
 
         .date-chip {
-            text-align: center;
-            margin: 24px 0;
+            text-align: center; margin: 30px 0;
             position: relative;
         }
 
         .date-chip span {
-            background: rgba(15, 57, 43, 0.05);
-            padding: 6px 16px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 8px 20px;
             border-radius: 50px;
-            font-size: 0.75rem;
+            font-size: 0.8rem;
             font-weight: 700;
             color: var(--forest-mid);
-            text-transform: uppercase;
-            letter-spacing: 1px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            text-transform: uppercase; letter-spacing: 1.5px;
         }
 
-        .attachment-card {
-            background: rgba(255,255,255,0.1);
-            border-radius: 12px;
-            padding: 10px;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            text-decoration: none;
-            color: white;
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-
-        .received .attachment-card {
-            background: #f8f9fa;
-            color: var(--forest-green);
-            border-color: #dee2e6;
+        @media (max-width: 1200px) {
+            :root { --sidebar-width: 320px; }
         }
         
         @media (max-width: 991px) {
-            .msg-sidebar { position: fixed; left: -100%; height: 100%; z-index: 1000; }
+            .msg-sidebar { position: fixed; left: -100%; height: 100%; z-index: 1000; transition: 0.5s; }
             .msg-sidebar.show { left: 0; }
         }
     </style>
@@ -537,33 +578,33 @@ function renderImg($blob, $name) {
         <div class="sidebar-header">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <a href="<?= $dashboard_url ?>" class="btn btn-link p-0 text-white opacity-75 text-decoration-none">
-                    <i class="bi bi-chevron-left me-2"></i> Dashboard
+                    <i class="bi bi-chevron-left me-1"></i> Dashboard
                 </a>
-                <button class="btn btn-sm btn-light rounded-pill px-3 fw-bold" data-bs-toggle="modal" data-bs-target="#newChatModal">
-                    <i class="bi bi-plus-lg me-1"></i> New
+                <button class="btn btn-sm btn-light rounded-pill px-4 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#newChatModal">
+                    <i class="bi bi-plus-lg me-1"></i> NEW
                 </button>
             </div>
-            <h3 class="fw-extrabold mb-1">Messages</h3>
-            <p class="small opacity-50 mb-0">Secure Member Communication</p>
+            <h3 class="fw-800 mb-1">Messages</h3>
+            <p class="small opacity-50 mb-0 text-uppercase" style="letter-spacing:1px; font-size: 0.65rem">Secure Encryption Enabled</p>
         </div>
 
         <div class="thread-container">
             <?php if(empty($threads)): ?>
                 <div class="text-center p-5 opacity-25">
                     <i class="bi bi-chat-dots display-1 mb-3"></i>
-                    <p>No conversations found</p>
+                    <p>No conversations yet</p>
                 </div>
             <?php endif; ?>
 
             <?php foreach($threads as $key => $t): ?>
             <a href="?chat_with=<?= $t['id'] ?>&role=<?= $t['role'] ?>" class="thread-item <?= ($active_id == $t['id'] && $active_role == $t['role']) ? 'active' : '' ?>">
-                <div class="avatar-circle me-3">
-                    <?= strtoupper(substr((string)($t['name'] ?? 'U'), 0, 1)) ?>
+                <div class="me-3">
+                    <?= renderImg($t['pic'], $t['name']) ?>
                 </div>
                 <div class="flex-grow-1 overflow-hidden">
                     <div class="d-flex justify-content-between align-items-center mb-1">
-                        <span class="fw-bold text-truncate" style="font-size:0.95rem"><?= htmlspecialchars($t['name']) ?></span>
-                        <small class="opacity-50" style="font-size:0.75rem"><?= date('H:i', strtotime($t['time'])) ?></small>
+                        <span class="fw-bold text-truncate" style="font-size:1rem"><?= htmlspecialchars($t['name']) ?></span>
+                        <small class="opacity-50" style="font-size:0.7rem"><?= date('H:i', strtotime($t['time'])) ?></small>
                     </div>
                     <div class="d-flex justify-content-between align-items-center">
                         <small class="text-truncate opacity-75" style="font-size:0.85rem">
@@ -578,13 +619,11 @@ function renderImg($blob, $name) {
             <?php endforeach; ?>
         </div>
 
-        <div class="sidebar-footer">
+        <div class="p-4" style="background: rgba(0,0,0,0.1)">
             <div class="d-flex align-items-center gap-3">
-                <div class="avatar-circle" style="width:40px;height:40px;font-size:0.9rem">
-                    <?= strtoupper(substr((string)($_SESSION['admin_name'] ?? $_SESSION['member_name'] ?? 'U'), 0, 1)) ?>
-                </div>
+                <?= renderImg($_SESSION['admin_pic'] ?? $_SESSION['member_pic'] ?? null, $_SESSION['admin_name'] ?? $_SESSION['member_name'] ?? 'U', '44px', '1rem') ?>
                 <div class="overflow-hidden">
-                    <div class="fw-bold text-truncate"><?= htmlspecialchars($_SESSION['admin_name'] ?? $_SESSION['member_name'] ?? 'User') ?></div>
+                    <div class="fw-bold text-truncate text-white"><?= htmlspecialchars($_SESSION['admin_name'] ?? $_SESSION['member_name'] ?? 'User') ?></div>
                     <div class="small opacity-50 text-uppercase" style="font-size:0.6rem; letter-spacing:1px"><?= $my_role ?></div>
                 </div>
             </div>
@@ -594,27 +633,31 @@ function renderImg($blob, $name) {
     <!-- Main Chat Area -->
     <main class="chat-container">
         <?php if($active_id): ?>
-            <div class="chat-header">
+            <div class="chat-header shadow-sm">
                 <div class="d-flex align-items-center">
                     <button class="btn d-lg-none me-3 p-0" onclick="document.getElementById('msgSidebar').classList.toggle('show')">
                         <i class="bi bi-list fs-3"></i>
                     </button>
-                    <div class="avatar-circle me-3" style="width:46px;height:46px;border-radius:12px">
-                        <?= strtoupper(substr((string)($partner['name'] ?? 'U'), 0, 1)) ?>
+                    <div class="me-3 shadow-sm">
+                        <?= renderImg($partner['pic'], $partner['name'], '50px', '1.2rem') ?>
                     </div>
                     <div>
-                        <h5 class="fw-bold mb-0"><?= htmlspecialchars((string)($partner['name'] ?? 'Unknown')) ?></h5>
-                        <span class="badge bg-success bg-opacity-10 text-success py-1 px-2 rounded-pill" style="font-size:0.65rem">
-                            <i class="bi bi-circle-fill me-1" style="font-size:0.4rem"></i> ACTIVE NOW
-                        </span>
+                        <h5 class="fw-800 mb-0"><?= htmlspecialchars((string)($partner['name'] ?? 'Unknown')) ?></h5>
+                        <div class="d-flex align-items-center gap-2 mt-1">
+                            <span class="badge bg-success bg-opacity-10 text-success py-1 px-3 rounded-pill" style="font-size:0.65rem; font-weight: 700">
+                                <i class="bi bi-circle-fill me-1" style="font-size:0.4rem"></i> ONLINE
+                            </span>
+                            <small class="text-muted small">ID: #<?= $active_id ?></small>
+                        </div>
                     </div>
                 </div>
                 <div class="dropdown">
-                    <button class="btn btn-light rounded-pill p-2" data-bs-toggle="dropdown">
+                    <button class="btn btn-light rounded-circle p-0" style="width:40px;height:40px" data-bs-toggle="dropdown">
                         <i class="bi bi-three-dots-vertical"></i>
                     </button>
-                    <ul class="dropdown-menu dropdown-menu-end shadow border-0">
-                        <li><a class="dropdown-item" href="messages.php"><i class="bi bi-x-lg me-2"></i> Close Chat</a></li>
+                    <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-4 p-2">
+                        <li><a class="dropdown-item rounded-3 py-2" href="messages.php"><i class="bi bi-x-circle me-2 text-danger"></i> Close Chat</a></li>
+                        <li><a class="dropdown-item rounded-3 py-2" href="#"><i class="bi bi-exclamation-triangle me-2 text-warning"></i> Report Thread</a></li>
                     </ul>
                 </div>
             </div>
@@ -636,20 +679,20 @@ function renderImg($blob, $name) {
                 ?>
 
                 <div class="bubble-wrapper <?= $isMe ? 'sent' : 'received' ?>">
-                    <div class="chat-bubble">
+                    <div class="chat-bubble shadow-sm">
                         <?php if($msg['attachment']): ?>
-                            <a href="<?= $msg['attachment'] ?>" target="_blank" class="attachment-card">
-                                <i class="bi bi-file-earmark-arrow-down-fill fs-4"></i>
+                            <a href="<?= $msg['attachment'] ?>" target="_blank" class="attachment-card shadow-sm">
+                                <i class="bi bi-file-earmark-bar-graph-fill fs-4 text-lime"></i>
                                 <div class="overflow-hidden">
-                                    <div class="fw-bold small">Attachment</div>
-                                    <div class="small opacity-50" style="font-size:0.7rem">Click to view file</div>
+                                    <div class="fw-bold small">Documents Shared</div>
+                                    <div class="small opacity-50" style="font-size:0.65rem">Tap to download</div>
                                 </div>
                             </a>
                         <?php endif; ?>
                         
-                        <?= nl2br(htmlspecialchars($msg['body'])) ?>
+                        <div class="body-text"><?= nl2br(htmlspecialchars($msg['body'])) ?></div>
 
-                        <div class="bubble-time">
+                        <div class="d-flex justify-content-end align-items-center gap-2 mt-2 opacity-50" style="font-size: 0.65rem">
                             <?= date('H:i', strtotime($msg['sent_at'])) ?>
                             <?php if($isMe): ?>
                                 <i class="bi bi-check2-all <?= $msg['is_read'] ? 'text-lime' : '' ?>"></i>
@@ -662,90 +705,104 @@ function renderImg($blob, $name) {
 
             <?php if(!$is_broadcast): ?>
             <div class="chat-input-area">
-                <form method="POST" enctype="multipart/form-data" class="d-flex gap-3 align-items-center">
+                <form method="POST" enctype="multipart/form-data">
                     <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
                     <input type="hidden" name="send_message" value="1">
                     <input type="hidden" name="recipient_role" value="<?= htmlspecialchars($active_role) ?>">
                     <input type="hidden" name="target_id" value="<?= $active_id ?>">
 
-                    <div class="dropup">
-                        <label class="btn btn-light rounded-pill p-3 border" title="Attach File">
-                            <i class="bi bi-paperclip fs-5"></i>
+                    <div class="input-wrapper shadow-lg">
+                        <label class="btn btn-light rounded-circle shadow-sm me-1" style="width:44px;height:44px; display: flex; align-items:center; justify-content:center" title="Attach File">
+                            <i class="bi bi-plus-lg text-forest"></i>
                             <input type="file" name="attachment" class="d-none">
                         </label>
-                    </div>
+                        
+                        <textarea name="body" class="form-control input-glass flex-grow-1" rows="1" placeholder="Craft a message..." required style="resize:none"></textarea>
 
-                    <div class="flex-grow-1">
-                        <textarea name="body" class="form-control input-glass" rows="1" placeholder="Type your message here..." required style="resize:none"></textarea>
+                        <button type="submit" class="btn-send ms-2">
+                            <i class="bi bi-arrow-up-short"></i>
+                        </button>
                     </div>
-
-                    <button type="submit" class="btn-send">
-                        <i class="bi bi-send-fill text-forest"></i>
-                    </button>
                 </form>
             </div>
             <?php else: ?>
-                <div class="p-3 bg-light text-center text-muted small border-top">
-                    <i class="bi bi-megaphone-fill me-2"></i> This is a system broadcast. Replies are disabled.
+                <div class="p-4 bg-light text-center text-muted small border-top fw-500">
+                    <i class="bi bi-shield-lock-fill me-2 text-warning"></i> System Broadcast: Replies are strictly restricted to outgoing only.
                 </div>
             <?php endif; ?>
 
         <?php else: ?>
-            <div class="d-flex flex-column align-items-center justify-content-center h-100 p-5 text-center">
-                <div class="mb-4 bg-white p-4 rounded-circle shadow-sm">
-                    <i class="bi bi-chat-quote display-1 text-forest opacity-25"></i>
+            <div class="d-flex flex-column align-items-center justify-content-center h-100 p-5 text-center fade-in">
+                <div class="mb-5" style="position: relative">
+                    <div class="avatar-circle" style="width: 140px; height: 140px; font-size: 4rem; border-radius: 40px">
+                        <i class="bi bi-chat-heart-fill"></i>
+                    </div>
                 </div>
-                <h3 class="fw-bold">Welcome to SACCO Messages</h3>
-                <p class="text-muted" style="max-width:400px">Select a staff member or another member from the list to start a secure conversation.</p>
-                <button class="btn btn-forest rounded-pill px-5 py-2 mt-3" data-bs-toggle="modal" data-bs-target="#newChatModal">
-                    Start New Chat
-                </button>
+                <h2 class="fw-800 text-forest">Messages Hub</h2>
+                <p class="text-secondary mb-4" style="max-width:420px; font-size: 1.1rem">Unified communication gateway for Umoja Drivers Sacco. Start a secure thread with staff or members.</p>
+                <div class="d-flex gap-3">
+                    <button class="btn btn-forest rounded-pill px-5 py-3 fw-bold shadow-lg" data-bs-toggle="modal" data-bs-target="#newChatModal">
+                        START CONVERSATION
+                    </button>
+                </div>
             </div>
         <?php endif; ?>
     </main>
 </div>
 
-<!-- Modals -->
+<!-- New Chat Modal -->
 <div class="modal fade" id="newChatModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
-            <div class="modal-header border-0 bg-light p-4">
-                <h5 class="modal-title fw-bold">Who would you like to message?</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        <div class="modal-content border-0 shadow-2xl rounded-5 overflow-hidden">
+            <div class="modal-header border-0 bg-forest text-white p-5">
+                <div>
+                    <h4 class="modal-title fw-800">Secure Direct</h4>
+                    <p class="small opacity-50 mb-0">Search registered users within the ecosystem</p>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body p-0">
+            <div class="modal-body p-0 bg-light">
                 <div class="list-group list-group-flush">
                     <?php if ($my_role !== 'member'): ?>
-                        <div class="p-4 border-bottom bg-warning bg-opacity-10 cursor-pointer" data-bs-toggle="modal" data-bs-target="#broadcastModal">
+                        <div class="list-group-item list-group-item-action p-4 border-0 mb-2 mt-2 mx-3 rounded-4 shadow-sm" style="background: var(--lime); cursor:pointer" data-bs-toggle="modal" data-bs-target="#broadcastModal">
                             <div class="d-flex align-items-center gap-3">
-                                <div class="avatar-circle bg-warning text-dark"><i class="bi bi-megaphone"></i></div>
-                                <div><div class="fw-bold">System Broadcast</div><small>Message all members</small></div>
+                                <div class="avatar-circle bg-white text-forest shadow-none" style="border-radius:12px"><i class="bi bi-megaphone"></i></div>
+                                <div><div class="fw-800 text-forest">Pulse Broadcast</div><small class="text-forest opacity-75">Update all active members instantly</small></div>
                             </div>
                         </div>
                     <?php endif; ?>
 
-                    <?php $admins = $conn->query("SELECT admin_id, full_name, r.name as role 
-                                                 FROM admins a 
-                                                 JOIN roles r ON a.role_id = r.id 
-                                                 WHERE admin_id != $my_id"); ?>
-                    <?php while ($a = $admins->fetch_assoc()): ?>
-                        <a href="?chat_with=<?= $a['admin_id'] ?>&role=admin" class="list-group-item list-group-item-action d-flex align-items-center gap-3 p-4">
-                            <div class="avatar-circle"><?= strtoupper(substr((string)($a['full_name'] ?? 'A'), 0, 1)) ?></div>
-                            <div>
-                                <div class="fw-bold"><?= htmlspecialchars($a['full_name']) ?></div>
-                                <small class="text-uppercase opacity-50 small"><?= $a['role'] ?></small>
+                    <div class="px-4 py-3 bg-white sticky-top border-bottom">
+                         <input type="text" class="form-control rounded-pill border-light bg-light px-4" placeholder="Search by name or ID...">
+                    </div>
+
+                    <?php 
+                    $admins = $conn->query("SELECT admin_id, full_name, r.name as role 
+                                         FROM admins a 
+                                         JOIN roles r ON a.role_id = r.id 
+                                         WHERE a.admin_id != $my_id 
+                                         ORDER BY full_name ASC");
+                    while ($a = $admins->fetch_assoc()): ?>
+                        <a href="?chat_with=<?= $a['admin_id'] ?>&role=admin" class="list-group-item list-group-item-action d-flex align-items-center gap-3 p-4 border-0 bg-transparent">
+                            <?= renderImg(null, $a['full_name'], '48px', '1.1rem') ?>
+                            <div class="flex-grow-1">
+                                <div class="fw-bold text-dark"><?= htmlspecialchars($a['full_name']) ?></div>
+                                <div class="badge bg-forest bg-opacity-10 text-forest rounded-pill py-1 px-2 border-0 mt-1" style="font-size:0.6rem"><?= $a['role'] ?></div>
                             </div>
+                            <i class="bi bi-chevron-right opacity-25"></i>
                         </a>
                     <?php endwhile; ?>
 
-                    <?php $members = $conn->query("SELECT member_id, full_name, national_id FROM members WHERE status='active' AND member_id != $my_id LIMIT 50"); ?>
-                    <?php while ($m = $members->fetch_assoc()): ?>
-                        <a href="?chat_with=<?= $m['member_id'] ?>&role=member" class="list-group-item list-group-item-action d-flex align-items-center gap-3 p-4">
-                            <div class="avatar-circle bg-secondary text-white"><?= strtoupper(substr((string)($m['full_name'] ?? 'M'), 0, 1)) ?></div>
-                            <div>
-                                <div class="fw-bold"><?= htmlspecialchars($m['full_name']) ?></div>
-                                <small class="opacity-50 small">Member: <?= $m['national_id'] ?></small>
+                    <?php 
+                    $members = $conn->query("SELECT member_id, full_name, national_id, profile_pic FROM members WHERE status='active' AND member_id != $my_id LIMIT 50");
+                    while ($m = $members->fetch_assoc()): ?>
+                        <a href="?chat_with=<?= $m['member_id'] ?>&role=member" class="list-group-item list-group-item-action d-flex align-items-center gap-3 p-4 border-0 bg-transparent">
+                            <?= renderImg($m['profile_pic'], $m['full_name'], '48px', '1.1rem') ?>
+                            <div class="flex-grow-1">
+                                <div class="fw-bold text-dark"><?= htmlspecialchars($m['full_name']) ?></div>
+                                <div class="small opacity-50" style="font-size:0.75rem">Member #<?= $m['member_id'] ?> • ID <?= $m['national_id'] ?></div>
                             </div>
+                            <i class="bi bi-chevron-right opacity-25"></i>
                         </a>
                     <?php endwhile; ?>
                 </div>
@@ -758,6 +815,18 @@ function renderImg($blob, $name) {
 <script>
     const viewport = document.getElementById('msgViewport');
     if(viewport) viewport.scrollTop = viewport.scrollHeight;
+
+    // Simple Auto-expand Textarea
+    const tx = document.getElementsByTagName('textarea');
+    for (let i = 0; i < tx.length; i++) {
+        tx[i].setAttribute('style', 'height:' + (tx[i].scrollHeight) + 'px;overflow-y:hidden;');
+        tx[i].addEventListener("input", OnInput, false);
+    }
+
+    function OnInput() {
+        this.style.height = 'auto';
+        this.style.height = (this.scrollHeight) + 'px';
+    }
 </script>
 </body>
 </html>

@@ -491,9 +491,11 @@ $pageTitle = "Roles & Permissions";
         </div>
     </div>
     <?php endforeach; ?>
-    </div>
     <?php $layout->footer(); ?>
     </div>
+    
+    </div>
+    
 </div>
 
 <!-- Add Role Modal -->

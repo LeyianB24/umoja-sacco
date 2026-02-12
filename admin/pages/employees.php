@@ -69,6 +69,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->bind_param("sssdsi", $name, $phone, $role, $salary, $status, $emp_id);
 
         if ($stmt->execute()) {
+            // Sync with admins table if this employee is linked
+            $db->query("UPDATE admins SET full_name = '$name' WHERE admin_id = (SELECT admin_id FROM employees WHERE employee_id = $emp_id)");
+            
             $db->query("INSERT INTO audit_logs (admin_id, action, details, ip_address) VALUES ($admin_id, 'update_employee', 'Updated Employee #$emp_id', '{$_SERVER['REMOTE_ADDR']}')");
             flash_set("Employee record updated.", 'success');
         }
@@ -302,7 +305,10 @@ $pageTitle = "Staff Management";
                 </div>
             </div>
 
-            <?php flash_render(); ?>
+            <?php 
+            require_once __DIR__ . '/../inc/hr_nav.php';
+            flash_render(); 
+            ?>
 
             <div class="row g-4 mb-4">
                 <div class="col-md-4">
@@ -407,7 +413,7 @@ $pageTitle = "Staff Management";
                                     </td>
                                     <td>
                                         <span class="badge bg-white text-dark border fw-normal shadow-sm">
-                                            <?= htmlspecialchars($emp['job_title']) ?>
+                                            <?= htmlspecialchars($emp['admin_role'] ? ucwords($emp['admin_role']) : $emp['job_title']) ?>
                                         </span>
                                     </td>
                                     <td class="small"><?= htmlspecialchars($emp['phone']) ?></td>

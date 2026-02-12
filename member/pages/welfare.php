@@ -25,28 +25,21 @@ $theme = $_COOKIE['theme'] ?? 'light';
 
 // --- 1. FETCH & PROCESS DATA FOR ANALYTICS ---
 
-// A. Contributions (Money In) - from contributions table
-$sqlIn = "SELECT * FROM contributions 
-          WHERE member_id = ? 
-          AND contribution_type = 'welfare'
-          ORDER BY created_at DESC";
+// 2. Fetch Chart Data (History of Contributions)
+$sqlIn = "SELECT amount, status, reference_no, created_at FROM contributions 
+          WHERE member_id = ? AND contribution_type = 'welfare'
+          ORDER BY created_at ASC";
 $stmt = $conn->prepare($sqlIn);
 $stmt->bind_param("i", $member_id);
 $stmt->execute();
-$contribsResult = $stmt->get_result();
+$contribsRaw = $stmt->get_result();
 
-$total_given = 0;
+$chart_data = [];
 $all_contribs = [];
-$chart_data = []; // Array for Chart.js
-
-while($row = $contribsResult->fetch_assoc()) {
-    $total_given += $row['amount'];
-    
-    // Group by Month for Chart (Format: Y-m)
+while($row = $contribsRaw->fetch_assoc()) {
     $monthKey = date('Y-m', strtotime($row['created_at']));
     if(!isset($chart_data[$monthKey])) $chart_data[$monthKey] = 0;
     $chart_data[$monthKey] += $row['amount'];
-    
     $all_contribs[] = $row;
 }
 
@@ -68,13 +61,13 @@ while($row = $supportResult->fetch_assoc()) {
 }
 
 // ---------------------------------------------------------
-// C. Ledger Balances via Financial Engine
+// C. Ledger Balances via Financial Engine (Single Source of Truth)
 // ---------------------------------------------------------
 require_once __DIR__ . '/../../inc/FinancialEngine.php';
 $engine = new FinancialEngine($conn);
 $balances = $engine->getBalances($member_id);
 
-$total_given = $balances['welfare'];
+$total_given = $engine->getLifetimeCredits($member_id, 'welfare');
 $net_standing = $total_given - $total_received;
 $standing_status = ($net_standing >= 0) ? 'contributor' : 'beneficiary';
 
@@ -399,7 +392,7 @@ $pageTitle = "Welfare Dashboard";
                                         <td>
                                             <div class="d-flex flex-column">
                                                 <span class="fw-bold text-dark">Welfare Contribution</span>
-                                                <span class="small text-muted font-monospace"><?= $row['reference_no'] ?></span>
+                                                <span class="small text-muted font-monospace"><?= esc($row['reference_no'] ?? 'N/A') ?></span>
                                             </div>
                                         </td>
                                         <td><span class="badge bg-<?= $color ?>-subtle text-<?= $color ?> border border-<?= $color ?>-subtle rounded-pill px-3"><?= ucfirst($status) ?></span></td>

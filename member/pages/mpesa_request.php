@@ -267,27 +267,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // Do not insert into welfare_support.
             }
 
-            // 4) Transactions Ledger
-            $t_type = match($type) {
-                'loan_repayment' => 'loan_repayment',
-                'shares'         => 'shares',
-                'welfare'        => 'welfare',
-                'welfare_case'   => 'welfare',
-                'savings'        => 'deposit',
-                default          => 'deposit'
-            };
-            $note_txt = match($type) {
-                'welfare_case'   => "Donation to Case #{$case_id}",
-                'shares'         => "Share Capital Purchase",
-                'welfare'        => "Monthly Welfare Contribution",
-                'loan_repayment' => "Repayment for Loan #{$loan_id}",
-                default          => "Savings Deposit"
-            };
-
-            $stmt = $conn->prepare("INSERT INTO transactions (member_id, transaction_type, amount, related_id, payment_channel, notes, reference_no, created_at) VALUES (?, ?, ?, ?, 'mpesa', ?, ?, NOW())");
-            $stmt->bind_param("isdiss", $member_id, $t_type, $amount, $related_id, $note_txt, $ref);
-            $stmt->execute();
-            $stmt->close();
+            // 4) Transactions Ledger - Removed. 
+            // Financial records are now 100% ledger-driven and populated via mpesa_callback.php 
+            // only AFTER successful payment confirmation.
 
             $conn->commit();
             $inTransaction = false;

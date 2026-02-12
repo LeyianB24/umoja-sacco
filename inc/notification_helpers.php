@@ -123,3 +123,47 @@ function mark_notification_read($conn, $notif_id, $user_id, $user_role = 'member
     }
     return $stmt->execute();
 }
+/**
+ * Add a persistence notification to the database (and optionally send email)
+ */
+function add_notification($member_id, $title, $message, $type = 'info', $link = null) {
+    global $conn;
+    
+    // Use the existing sendEmailWithNotification to handle both DB insertion and email
+    // This ensures consistency across the platform.
+    require_once __DIR__ . '/email.php';
+    
+    // Build body for email if needed
+    $body = "<strong>$title</strong><br><br>$message";
+    if ($link) {
+        $full_link = BASE_URL . '/' . $link;
+        $body .= "<br><br><a href='$full_link' style='background:#D0F35D; padding:10px 20px; border-radius:10px; color:#0F392B; text-decoration:none; font-weight:bold;'>View Details</a>";
+    }
+
+    // Fetch member email
+    $stmt = $conn->prepare("SELECT email FROM members WHERE member_id = ?");
+    $stmt->bind_param("i", $member_id);
+    $stmt->execute();
+    $email = $stmt->get_result()->fetch_assoc()['email'] ?? null;
+    $stmt->close();
+
+    if ($email) {
+        return sendEmail($email, $title, $body, $member_id);
+    }
+    
+    // Fallback if no email: JUST insert into DB notifications
+    $to_role = 'member';
+    $user_type = 'member';
+    $sql = "INSERT INTO notifications 
+            (member_id, user_id, user_type, to_role, title, message, status, is_read, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, 'unread', 0, NOW())";
+
+    if ($stmt = $conn->prepare($sql)) {
+        $stmt->bind_param("iiisss", $member_id, $member_id, $user_type, $to_role, $title, $message);
+        $result = $stmt->execute();
+        $stmt->close();
+        return $result;
+    }
+    
+    return false;
+}
