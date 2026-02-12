@@ -108,7 +108,22 @@ define('PDF_ORIENTATION', 'portrait');
 define('EXCEL_DEFAULT_FORMAT', 'xlsx');
 
 // ============================================================
-// 8. THEME COLORS (Optional - for PHP usage)
+// 8. SUPPORT SYSTEM CONFIGURATION
+// ============================================================
+define('SUPPORT_ROUTING_MAP', [
+    'loans'       => 'Loans Admin',
+    'savings'     => 'Savings Admin',
+    'shares'      => 'Superadmin', 
+    'welfare'     => 'Welfare Admin',
+    'investments' => 'Investments Admin',
+    'technical'   => 'Superadmin',
+    'profile'     => 'Superadmin',
+    'withdrawals' => 'Savings Admin',
+    'general'     => 'Superadmin'
+]);
+
+// ============================================================
+// 9. THEME COLORS (Optional - for PHP usage)
 // ============================================================
 $theme = [
     'primary'       => '#1b5e20', // Sacco Green

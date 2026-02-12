@@ -121,7 +121,7 @@ if ($my_user_id > 0 && isset($conn)) {
    5. PROFILE IMAGE LOGIC (UNTOUCHED)
 ----------------------------------------------------------- */
 $base = defined("BASE_URL") ? BASE_URL : '..';
-$default_avatar = strtolower($user_gender)==='female'?'female.jpg':'male.jpg';
+$default_avatar = strtolower($user_gender ?? 'male')==='female'?'female.jpg':'male.jpg';
 $pic_src = !empty($profile_pic_db)
     ? "data:image/jpeg;base64,".base64_encode($profile_pic_db)
     : "{$base}/public/assets/uploads/{$default_avatar}";

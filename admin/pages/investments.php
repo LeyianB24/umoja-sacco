@@ -650,11 +650,14 @@ $pageTitle = "Investment Portfolio";
                 </div>
             </div>
             <?php endforeach; endif; ?>
+             <?php $layout->footer(); ?>
         </div>
+         
     </div>
     
-    <?php $layout->footer(); ?>
+   
     </div>
+   
 </div>
 
 <!-- Add Asset Modal -->

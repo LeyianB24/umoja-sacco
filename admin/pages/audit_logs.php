@@ -441,8 +441,9 @@ $pageTitle = "Audit Logs";
             <div class="px-4 py-3 border-top border-light text-center">
                 <small class="text-muted fw-bold">Showing latest 200 entries</small>
             </div>
+            <?php $layout->footer(); ?>
         </div>
-<?php $layout->footer(); ?>
+
     </div>
 </div>
 

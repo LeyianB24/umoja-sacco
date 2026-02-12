@@ -18,7 +18,13 @@ $full_name   = '';
 $national_id = '';
 $phone       = ''; 
 $email       = '';
-$phone_raw   = ''; // <--- Fixed: Initialized here
+$phone_raw   = ''; 
+$dob         = '';
+$occupation  = '';
+$address     = '';
+$nok_name    = '';
+$nok_phone   = '';
+$gender      = 'male';
 
 /**
  * Normalize phone to +254XXXXXXXXX
@@ -43,11 +49,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Collect & Sanitize
     $full_name   = trim($_POST['full_name'] ?? '');
     $national_id = trim($_POST['national_id'] ?? '');
-    $phone_raw   = trim($_POST['phone'] ?? ''); // Assign posted value
+    $phone_raw   = trim($_POST['phone'] ?? ''); 
     $email       = trim($_POST['email'] ?? '');
     $password    = $_POST['password'] ?? '';
     $confirm     = $_POST['confirm_password'] ?? '';
-    $gender      = $_POST['gender'] ?? 'male'; // Default to male if not set
+    $gender      = $_POST['gender'] ?? 'male'; 
+    $dob         = $_POST['dob'] ?? '';
+    $occupation  = trim($_POST['occupation'] ?? '');
+    $address     = trim($_POST['address'] ?? '');
+    $nok_name    = trim($_POST['nok_name'] ?? '');
+    $nok_phone   = trim($_POST['nok_phone'] ?? '');
 
     $phone = normalize_phone($phone_raw);
 
@@ -60,6 +71,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($password === '') $errors[] = "Password is required.";
     if ($password !== $confirm) $errors[] = "Passwords do not match.";
     if (strlen($password) < 6) $errors[] = "Password must be at least 6 characters.";
+    if ($dob === '') $errors[] = "Date of birth is required.";
+    if ($address === '') $errors[] = "Home address is required.";
+    if ($nok_name === '') $errors[] = "Next of kin name is required.";
+    if ($nok_phone === '') $errors[] = "Next of kin phone is required.";
 
     // Uniqueness Checks
     if (empty($errors)) {
@@ -83,10 +98,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $reg_no = generate_member_no($conn);
         $status = 'inactive'; // Set to inactive until registration fee is paid
         
-        $insertSql = "INSERT INTO members (member_reg_no, full_name, national_id, phone, email, password, join_date, status, reg_fee_paid, gender) VALUES (?, ?, ?, ?, ?, ?, NOW(), ?, 0, ?)";
+        $insertSql = "INSERT INTO members (member_reg_no, full_name, national_id, phone, email, password, join_date, status, reg_fee_paid, gender, dob, occupation, address, next_of_kin_name, next_of_kin_phone, kyc_status) VALUES (?, ?, ?, ?, ?, ?, NOW(), ?, 0, ?, ?, ?, ?, ?, ?, 'not_submitted')";
         
         if ($ins = $conn->prepare($insertSql)) {
-            $ins->bind_param("ssssssss", $reg_no, $full_name, $national_id, $phone, $email, $hashed, $status, $gender);
+            $ins->bind_param("sssssssssssss", $reg_no, $full_name, $national_id, $phone, $email, $hashed, $status, $gender, $dob, $occupation, $address, $nok_name, $nok_phone);
             
             if ($ins->execute()) {
                 $newMemberId = $ins->insert_id;
@@ -378,9 +393,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div class="col-12">
                         <label class="form-label">Gender</label>
                         <select name="gender" class="form-select form-control-modern">
-                            <option value="male">Male</option>
-                            <option value="female">Female</option>
+                            <option value="male" <?= $gender === 'male' ? 'selected' : '' ?>>Male</option>
+                            <option value="female" <?= $gender === 'female' ? 'selected' : '' ?>>Female</option>
                         </select>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">Date of Birth</label>
+                        <input type="date" name="dob" class="form-control form-control-modern" required value="<?= htmlspecialchars($dob) ?>">
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">Occupation</label>
+                        <input type="text" name="occupation" class="form-control form-control-modern" value="<?= htmlspecialchars($occupation) ?>" placeholder="e.g. Driver, Mechanic">
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label">Home Address</label>
+                        <input type="text" name="address" class="form-control form-control-modern" required value="<?= htmlspecialchars($address) ?>" placeholder="e.g. Ruiru, Kiambu">
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">Next of Kin Name</label>
+                        <input type="text" name="nok_name" class="form-control form-control-modern" required value="<?= htmlspecialchars($nok_name) ?>" placeholder="Full Name">
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">Next of Kin Phone</label>
+                        <input type="text" name="nok_phone" class="form-control form-control-modern" required value="<?= htmlspecialchars($nok_phone) ?>" placeholder="07xxxxxxxx">
                     </div>
 
                     <div class="col-12">

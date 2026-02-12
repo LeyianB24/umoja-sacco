@@ -57,21 +57,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if (empty($error)) {
-            // DYNAMIC ROUTING: Find Role ID that has permission to handle this category
-            $perm_slug = "support_" . $category;
-            $assigned_role_id = null;
-            
-            $stmt_role = $conn->prepare("SELECT rp.role_id FROM role_permissions rp JOIN permissions p ON rp.permission_id = p.id WHERE p.slug = ? LIMIT 1");
-            $stmt_role->bind_param("s", $perm_slug);
+            // RIGID ROUTING: Map Category to Admin Role
+            $role_mapping = SUPPORT_ROUTING_MAP;
+
+            $target_name = $role_mapping[$category] ?? 'Superadmin';
+            $assigned_role_id = 1; // Default to Superadmin
+
+            $stmt_role = $conn->prepare("SELECT id FROM roles WHERE name = ? LIMIT 1");
+            $stmt_role->bind_param("s", $target_name);
             $stmt_role->execute();
             $res_role = $stmt_role->get_result();
             if ($row_role = $res_role->fetch_assoc()) {
-                $assigned_role_id = (int)$row_role['role_id'];
+                $assigned_role_id = (int)$row_role['id'];
             }
             $stmt_role->close();
-
-            // Default to SuperAdmin (Role ID 1) if no specific role found
-            if (!$assigned_role_id) $assigned_role_id = 1;
 
             $sql = "INSERT INTO support_tickets (member_id, category, assigned_role_id, subject, message, status, attachment, created_at) VALUES (?, ?, ?, ?, ?, 'Pending', ?, NOW())";
             $stmt = $conn->prepare($sql);

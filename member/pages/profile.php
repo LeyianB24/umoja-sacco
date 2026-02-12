@@ -20,10 +20,14 @@ $member_id = $_SESSION['member_id'];
 
 // 2. Handle POST
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $email = trim($_POST['email']);
-    $phone = trim($_POST['phone']);
-    $address = trim($_POST['address']);
-    $gender = trim($_POST['gender']);
+    $email = trim($_POST['email'] ?? '');
+    $phone = trim($_POST['phone'] ?? '');
+    $address = trim($_POST['address'] ?? '');
+    $gender = trim($_POST['gender'] ?? '');
+    $dob = trim($_POST['dob'] ?? '');
+    $occupation = trim($_POST['occupation'] ?? '');
+    $nok_name = trim($_POST['nok_name'] ?? '');
+    $nok_phone = trim($_POST['nok_phone'] ?? '');
     $remove_pic = isset($_POST['remove_pic']);
 
     // Get current pic
@@ -60,12 +64,54 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $pic_data = file_get_contents($file_tmp);
     }
 
-    // Update
-    $sql = "UPDATE members SET email=?, phone=?, address=?, gender=?, profile_pic=? WHERE member_id=?";
+    // KYC Upload Handling
+    if (!empty($_FILES['kyc_doc']['name']) && $_FILES['kyc_doc']['error'] === UPLOAD_ERR_OK) {
+        $doc_type = $_POST['doc_type'] ?? '';
+        $allowed_types = ['image/jpeg', 'image/png', 'application/pdf'];
+        $max_size = 5 * 1024 * 1024; // 5MB
+        
+        $file_type = mime_content_type($_FILES['kyc_doc']['tmp_name']);
+        $file_size = $_FILES['kyc_doc']['size'];
+        
+        if (!in_array($file_type, $allowed_types)) {
+            $_SESSION['error'] = "Invalid file type. Only JPG, PNG, and PDF are allowed.";
+        } elseif ($file_size > $max_size) {
+            $_SESSION['error'] = "File is too large. Max size is 5MB.";
+        } else {
+            $upload_dir = __DIR__ . '/../../uploads/kyc/';
+            if (!is_dir($upload_dir)) mkdir($upload_dir, 0777, true);
+            
+            $file_name = $_FILES['kyc_doc']['name'];
+            $file_tmp = $_FILES['kyc_doc']['tmp_name'];
+            $ext = pathinfo($file_name, PATHINFO_EXTENSION);
+            $new_name = "{$doc_type}_{$member_id}_" . time() . ".$ext";
+            
+            if (move_uploaded_file($file_tmp, $upload_dir . $new_name)) {
+                $stmt = $conn->prepare("INSERT INTO member_documents (member_id, document_type, file_path, status) VALUES (?, ?, ?, 'pending') ON DUPLICATE KEY UPDATE file_path = VALUES(file_path), status = 'pending', uploaded_at = NOW()");
+                $stmt->bind_param("iss", $member_id, $doc_type, $new_name);
+                $stmt->execute();
+                $stmt->close();
+                
+                // Update member's general kyc_status to pending if it was not_submitted
+                $conn->query("UPDATE members SET kyc_status = 'pending' WHERE member_id = $member_id AND kyc_status = 'not_submitted'");
+            }
+        }
+    }
+
+    // Use current values if not provided in POST (for readonly/missing fields)
+    $email = !empty($email) ? $email : $current['email'];
+    $phone = !empty($phone) ? $phone : $current['phone'];
+    $gender = !empty($gender) ? $gender : $current['gender'];
+    $address = !empty($address) ? $address : $current['address'];
+
+    // Update Profile
+    $sql = "UPDATE members SET email=?, phone=?, address=?, gender=?, dob=?, occupation=?, next_of_kin_name=?, next_of_kin_phone=?, profile_pic=? WHERE member_id=?";
     $stmt = $conn->prepare($sql);
     $null = null; 
-    $stmt->bind_param("ssssbi", $email, $phone, $address, $gender, $null, $member_id);
-    $stmt->send_long_data(4, $pic_data);
+    $stmt->bind_param("ssssssssbi", $email, $phone, $address, $gender, $dob, $occupation, $nok_name, $nok_phone, $null, $member_id);
+    if ($pic_data !== null) {
+        $stmt->send_long_data(8, $pic_data);
+    }
     
     if ($stmt->execute()) {
         $_SESSION['success'] = "Profile updated successfully!";
@@ -78,11 +124,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // 3. Fetch Data
-$stmt = $conn->prepare("SELECT full_name, email, phone, national_id, address, join_date, gender, profile_pic, member_reg_no FROM members WHERE member_id = ?");
+$stmt = $conn->prepare("SELECT * FROM members WHERE member_id = ?");
 $stmt->bind_param("i", $member_id);
 $stmt->execute();
 $member = $stmt->get_result()->fetch_assoc();
 $stmt->close();
+
+// 3.1 Fetch Registration Fee Transaction
+$fee_stmt = $conn->prepare("SELECT * FROM transactions WHERE member_id = ? AND transaction_type = 'registration_fee' OR (related_table = 'members' AND description LIKE '%Registration%') ORDER BY created_at DESC LIMIT 1");
+$fee_stmt->bind_param("i", $member_id);
+$fee_stmt->execute();
+$fee_txn = $fee_stmt->get_result()->fetch_assoc();
+$fee_stmt->close();
+
+$reg_fee_paid = ($member['registration_fee_status'] === 'paid' || $member['reg_fee_paid'] == 1);
+
+// 3.2 Determine Dynamic Account Status
+$account_status = 'Incomplete';
+$status_color = 'danger';
+
+if (!$reg_fee_paid) {
+    $account_status = 'Incomplete (Fee Unpaid)';
+} elseif ($member['kyc_status'] === 'not_submitted') {
+    $account_status = 'Pending Verification (No KYC)';
+    $status_color = 'warning';
+} elseif ($member['kyc_status'] === 'pending') {
+    $account_status = 'Under Review';
+    $status_color = 'info';
+} elseif ($member['kyc_status'] === 'approved' && $reg_fee_paid) {
+    $account_status = 'Active';
+    $status_color = 'success';
+} elseif ($member['kyc_status'] === 'rejected') {
+    $account_status = 'KYC Rejected';
+    $status_color = 'danger';
+}
 
 // 3.5 Fetch KYC Documents
 $doc_stmt = $conn->prepare("SELECT * FROM member_documents WHERE member_id = ?");
@@ -315,11 +390,40 @@ $pageTitle = "My Profile";
                     <p class="text-muted mb-0 small mt-1">Manage your account parameters and settings.</p>
                 </div>
                 <div class="col-md-6 text-md-end mt-3 mt-md-0">
-                    <a href="dashboard.php" class="btn btn-light shadow-sm border text-muted fw-bold">
-                        <i class="bi bi-arrow-left me-2"></i> Dashboard
-                    </a>
+                    <span class="badge bg-<?= $status_color ?> bg-opacity-10 text-<?= $status_color ?> px-3 py-2 fs-6 border border-<?= $status_color ?> border-opacity-25 rounded-pill">
+                        Status: <?= strtoupper($account_status) ?>
+                    </span>
                 </div>
             </div>
+
+            <?php if ($member['kyc_status'] === 'not_submitted'): ?>
+                <div class="alert alert-warning border-0 shadow-sm animate__animated animate__shakeX d-flex align-items-center mb-4" role="alert" style="background: #fff3cd; color: #856404;">
+                    <i class="bi bi-shield-exclamation me-3 fs-3"></i>
+                    <div>
+                        <h6 class="fw-bold mb-1">KYC documents are pending!</h6>
+                        <p class="mb-0 small">Please upload your National ID and Passport photo to complete verification and activate your account.</p>
+                    </div>
+                </div>
+            <?php elseif ($member['kyc_status'] === 'rejected'): ?>
+                <div class="alert alert-danger border-0 shadow-sm animate__animated animate__shakeX d-flex align-items-center mb-4" role="alert" style="background: #f8d7da; color: #721c24;">
+                    <i class="bi bi-x-octagon-fill me-3 fs-3"></i>
+                    <div>
+                        <h6 class="fw-bold mb-1">KYC documents were rejected!</h6>
+                        <p class="mb-0 small">Reason: <?= esc($member['kyc_notes'] ?? 'Please re-upload clear documents.') ?></p>
+                    </div>
+                </div>
+            <?php endif; ?>
+
+            <?php if (!$reg_fee_paid): ?>
+                <div class="alert alert-info border-0 shadow-sm d-flex align-items-center mb-4" role="alert" style="background: #d1ecf1; color: #0c5460;">
+                    <i class="bi bi-cash-coin me-3 fs-3"></i>
+                    <div class="flex-grow-1">
+                        <h6 class="fw-bold mb-1">Registration Fee Pending</h6>
+                        <p class="mb-0 small">Your registration fee of KES 1,000 is required to access full member benefits.</p>
+                    </div>
+                    <a href="pay_registration.php" class="btn btn-info btn-sm fw-bold">Pay Now</a>
+                </div>
+            <?php endif; ?>
 
             <?php if (!empty($_SESSION['success'])): ?>
                 <div class="alert alert-success border-0 shadow-sm animate__animated animate__zoomIn d-flex align-items-center mb-4" role="alert" style="background: #d1e7dd; color: #0f5132;">
@@ -360,6 +464,7 @@ $pageTitle = "My Profile";
 
                             <div class="p-4 p-md-5">
                                 <form method="POST" enctype="multipart/form-data">
+                                    <?= csrf_field() ?>
                                     <input type="file" name="profile_pic" id="profile_pic" accept="image/*" class="d-none" onchange="previewImage(event)">
 
                                     <div class="row g-4">
@@ -377,20 +482,22 @@ $pageTitle = "My Profile";
                                             
                                             <div class="mb-3">
                                                 <label class="form-label">Phone Number</label>
-                                                <input type="text" name="phone" class="form-control" value="<?= htmlspecialchars($member['phone']); ?>">
+                                                <input type="text" name="phone" class="form-control" value="<?= htmlspecialchars($member['phone'] ?? ''); ?>">
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <label class="form-label">Date of Birth</label>
+                                                <input type="date" name="dob" class="form-control" value="<?= htmlspecialchars($member['dob'] ?? ''); ?>">
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <label class="form-label">Occupation</label>
+                                                <input type="text" name="occupation" class="form-control" value="<?= htmlspecialchars($member['occupation'] ?? ''); ?>">
                                             </div>
 
                                             <div class="mb-3">
                                                 <label class="form-label">Home Address</label>
-                                                <input type="text" name="address" class="form-control" value="<?= htmlspecialchars($member['address']); ?>">
-                                            </div>
-
-                                            <div class="mb-3">
-                                                <label class="form-label">Gender</label>
-                                                <select name="gender" class="form-select">
-                                                    <option value="male" <?= ($member['gender'] ?? '') === 'male' ? 'selected' : '' ?>>Male</option>
-                                                    <option value="female" <?= ($member['gender'] ?? '') === 'female' ? 'selected' : '' ?>>Female</option>
-                                                </select>
+                                                <input type="text" name="address" class="form-control" value="<?= htmlspecialchars($member['address'] ?? ''); ?>">
                                             </div>
                                             
                                             <div class="form-check mt-3">
@@ -429,20 +536,60 @@ $pageTitle = "My Profile";
 
                                             <div class="mb-3">
                                                 <label class="form-label">Full Name</label>
-                                                <div class="input-group">
+                                                <div class="input-group text-muted">
                                                     <span class="input-group-text"><i class="bi bi-person"></i></span>
                                                     <input type="text" class="form-control" value="<?= htmlspecialchars($member['full_name']); ?>" readonly>
                                                 </div>
-                                                <div class="form-text small">Name changes require admin approval.</div>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <label class="form-label">Gender</label>
+                                                <div class="input-group text-muted">
+                                                    <span class="input-group-text"><i class="bi bi-gender-ambiguous"></i></span>
+                                                    <input type="text" class="form-control" value="<?= ucwords($member['gender'] ?? 'Unknown'); ?>" readonly>
+                                                </div>
                                             </div>
 
                                             <div class="mb-3">
                                                 <label class="form-label">National ID / Passport</label>
-                                                <div class="input-group">
+                                                <div class="input-group text-muted">
                                                     <span class="input-group-text"><i class="bi bi-card-heading"></i></span>
                                                     <input type="text" class="form-control" value="<?= htmlspecialchars($member['national_id']); ?>" readonly>
                                                 </div>
                                             </div>
+
+                                            <div class="row g-3 mb-3">
+                                                <div class="col-md-6">
+                                                    <label class="form-label">Next of Kin</label>
+                                                    <input type="text" name="nok_name" class="form-control" value="<?= htmlspecialchars($member['next_of_kin_name'] ?? ''); ?>" placeholder="Name">
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label">NOK Phone</label>
+                                                    <input type="text" name="nok_phone" class="form-control" value="<?= htmlspecialchars($member['next_of_kin_phone'] ?? ''); ?>" placeholder="Phone">
+                                                </div>
+                                            </div>
+
+                                            <div class="mt-4 p-3 rounded-4 bg-light border">
+                                                <h6 class="fw-bold mb-3 small text-uppercase opacity-75">Registration Payment</h6>
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <div>
+                                                        <span class="d-block fw-bold small">Status: 
+                                                            <span class="text-<?= $reg_fee_paid ? 'success' : 'danger' ?>">
+                                                                <?= $reg_fee_paid ? 'PAID' : 'PENDING' ?>
+                                                            </span>
+                                                        </span>
+                                                        <?php if ($fee_txn): ?>
+                                                            <span class="text-muted x-small">Ref: <?= $fee_txn['reference_no'] ?> | <?= date('d M Y', strtotime($fee_txn['created_at'])) ?></span>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                    <?php if ($reg_fee_paid): ?>
+                                                        <i class="bi bi-patch-check-fill text-success fs-4"></i>
+                                                    <?php else: ?>
+                                                        <i class="bi bi-exclamation-circle-fill text-danger fs-4"></i>
+                                                    <?php endif; ?>
+                                                </div>
+                                            </div>
+                                        </div>
 
                                             <div class="mb-3">
                                                 <label class="form-label">Date Joined</label>
@@ -455,22 +602,75 @@ $pageTitle = "My Profile";
 
                                     </div>
 
-                                    <div class="mt-5 pt-3 border-top d-flex justify-content-end">
+                                    <div class="mt-5 pt-3 border-top d-flex justify-content-between align-items-center">
+                                        <div class="text-muted small">
+                                            <i class="bi bi-info-circle me-1"></i> Locked fields require admin intervention to change.
+                                        </div>
                                         <button type="submit" class="btn btn-iq-primary btn-lg">
                                             <i class="bi bi-check-circle-fill me-2"></i>Save Changes
                                         </button>
                                     </div>
                                 </form>
+
+                                <div class="mt-5 pt-4 border-top">
+                                    <h5 class="fw-bold mb-4">Complete Your KYC</h5>
+                                    <div class="row g-4">
+                                        <?php 
+                                        $required_docs = [
+                                            'national_id_front' => 'National ID (Front)',
+                                            'national_id_back' => 'National ID (Back)',
+                                            'passport_photo' => 'Passport Photo'
+                                        ];
+                                        foreach ($required_docs as $type => $label): 
+                                            $doc = array_filter($kyc_docs, fn($d) => $d['document_type'] === $type);
+                                            $doc = !empty($doc) ? array_shift($doc) : null;
+                                        ?>
+                                            <div class="col-md-4">
+                                                <div class="p-3 rounded-4 border bg-white shadow-sm h-100">
+                                                    <div class="d-flex justify-content-between align-items-start mb-3">
+                                                        <h6 class="fw-bold mb-0"><?= $label ?></h6>
+                                                        <?php if ($doc): ?>
+                                                            <span class="badge rounded-pill bg-<?= $doc['status'] == 'verified' ? 'success' : ($doc['status'] == 'rejected' ? 'danger' : 'warning') ?> bg-opacity-10 text-<?= $doc['status'] == 'verified' ? 'success' : ($doc['status'] == 'rejected' ? 'danger' : 'warning') ?>">
+                                                                <?= strtoupper($doc['status']) ?>
+                                                            </span>
+                                                        <?php else: ?>
+                                                            <span class="badge rounded-pill bg-secondary bg-opacity-10 text-secondary">MISSING</span>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                    
+                                                    <?php if ($doc && $doc['status'] === 'verified'): ?>
+                                                        <div class="text-center py-3">
+                                                            <i class="bi bi-shield-check text-success fs-1"></i>
+                                                            <p class="text-muted small mt-2">Verified on <?= date('d M Y', strtotime($doc['verified_at'] ?? 'now')) ?></p>
+                                                        </div>
+                                                    <?php else: ?>
+                                                        <form method="POST" enctype="multipart/form-data" class="mt-auto">
+                                                            <input type="hidden" name="doc_type" value="<?= $type ?>">
+                                                            <div class="mb-2">
+                                                                <input type="file" name="kyc_doc" class="form-control form-control-sm" required accept="image/*,application/pdf">
+                                                            </div>
+                                                            <button type="submit" class="btn btn-outline-secondary btn-sm w-100 fw-bold">
+                                                                <?= $doc ? 'Re-upload' : 'Upload' ?>
+                                                            </button>
+                                                        </form>
+                                                    <?php endif; ?>
+                                                </div>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
             </div>
+            <?php $layout->footer(); ?>
         </div>
         
-        <?php $layout->footer(); ?>
+       
     </div>
+     
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

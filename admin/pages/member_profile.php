@@ -29,6 +29,47 @@ if ($member_id <= 0) {
     exit;
 }
 
+// 1.5 HANDLE KYC ACTIONS (POST)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['kyc_action'])) {
+    verify_csrf_token();
+    $doc_id = intval($_POST['doc_id']);
+    $action = $_POST['kyc_action']; // 'verify' or 'reject'
+    $notes  = trim($_POST['verification_notes'] ?? '');
+    $status = ($action === 'verify') ? 'verified' : 'rejected';
+    
+    $stmt = $conn->prepare("UPDATE member_documents SET status = ?, verification_notes = ?, verified_by = ?, verified_at = NOW() WHERE document_id = ? AND member_id = ?");
+    $stmt->bind_param("ssiii", $status, $notes, $_SESSION['admin_id'], $doc_id, $member_id);
+    
+    if ($stmt->execute()) {
+        // Recalculate overall KYC status
+        $q = $conn->query("SELECT status FROM member_documents WHERE member_id = $member_id AND document_type IN ('national_id_front', 'national_id_back', 'passport_photo')");
+        $all_docs = $q->fetch_all(MYSQLI_ASSOC);
+        $verified_count = 0;
+        $rejected_count = 0;
+        foreach($all_docs as $d) {
+            if ($d['status'] === 'verified') $verified_count++;
+            if ($d['status'] === 'rejected') $rejected_count++;
+        }
+        
+        $new_kyc_status = 'pending';
+        if ($verified_count >= 3) $new_kyc_status = 'approved'; 
+        elseif ($rejected_count > 0) $new_kyc_status = 'rejected';
+        
+        $sql_update = "UPDATE members SET kyc_status = '$new_kyc_status'";
+        if ($action === 'reject') {
+            $sql_update .= ", kyc_notes = '" . $conn->real_escape_string($notes) . "'";
+        }
+        $sql_update .= " WHERE member_id = $member_id";
+        $conn->query($sql_update);
+        
+        flash_set("Document " . ($action === 'verify' ? 'approved' : 'rejected') . " successfully.", "success");
+    } else {
+        flash_set("Action failed: " . $conn->error, "danger");
+    }
+    header("Location: member_profile.php?id=$member_id#kyc");
+    exit;
+}
+
 // 2. FETCH MEMBER CORE DATA
 $stmt = $conn->prepare("SELECT * FROM members WHERE member_id = ?");
 $stmt->bind_param("i", $member_id);
@@ -247,15 +288,20 @@ $pageTitle = $member['full_name'] . " - Member Profile";
             </div>
         </div>
         <div class="col-md-3">
-            <div class="stat-card">
-                <div class="icon-box bg-warning bg-opacity-10 text-warning">
-                    <i class="bi bi-shield-check"></i>
+                <div class="stat-card">
+                    <div class="icon-box bg-warning bg-opacity-10 text-warning">
+                        <i class="bi bi-shield-check"></i>
+                    </div>
+                    <div class="info-label">KYC Status</div>
+                    <div class="h3 fw-800 text-forest"><?= ucwords(str_replace('_', ' ', $member['kyc_status'] ?? 'pending')) ?></div>
+                    <div class="small text-muted mt-2">
+                        <?php 
+                        $reg_paid = ($member['registration_fee_status'] === 'paid' || $member['reg_fee_paid'] == 1);
+                        echo $reg_paid ? 'Reg Fee Paid' : '<span class="text-danger">Reg Fee Unpaid</span>';
+                        ?>
+                    </div>
                 </div>
-                <div class="info-label">Welfare Point</div>
-                <div class="h3 fw-800 text-forest">Active</div>
-                <div class="small text-muted mt-2">Fully Paid for <?= date('Y') ?></div>
             </div>
-        </div>
     </div>
 
     <!-- Details & History Tabs -->
@@ -429,9 +475,24 @@ $pageTitle = $member['full_name'] . " - Member Profile";
                             </div>
                             <div class="d-flex gap-2">
                                 <a href="<?= BASE_URL ?>/uploads/kyc/<?= $doc['file_path'] ?>" target="_blank" class="btn btn-sm btn-light border rounded-pill px-3">View</a>
-                                <span class="badge bg-<?= $doc['status'] == 'verified' ? 'success' : 'warning' ?> bg-opacity-10 text-<?= $doc['status'] == 'verified' ? 'success' : 'warning' ?> d-flex align-items-center"><?= strtoupper($doc['status']) ?></span>
+                                <span class="badge bg-<?= $doc['status'] == 'verified' ? 'success' : ($doc['status'] == 'rejected' ? 'danger' : 'warning') ?> bg-opacity-10 text-<?= $doc['status'] == 'verified' ? 'success' : ($doc['status'] == 'rejected' ? 'danger' : 'warning') ?> d-flex align-items-center"><?= strtoupper($doc['status']) ?></span>
                             </div>
                         </div>
+                        <?php if ($doc['status'] === 'pending'): ?>
+                            <div class="mt-3 p-3 bg-white rounded-3 border">
+                                <form method="POST" class="d-flex align-items-center gap-2">
+                                    <?= csrf_field() ?>
+                                    <input type="hidden" name="doc_id" value="<?= $doc['document_id'] ?>">
+                                    <input type="text" name="verification_notes" class="form-control form-control-sm" placeholder="Notes (required if rejecting)">
+                                    <button type="submit" name="kyc_action" value="verify" class="btn btn-success btn-sm fw-bold rounded-pill px-3">Verify</button>
+                                    <button type="submit" name="kyc_action" value="reject" class="btn btn-danger btn-sm fw-bold rounded-pill px-3">Reject</button>
+                                </form>
+                            </div>
+                        <?php elseif ($doc['verification_notes']): ?>
+                            <div class="mt-2 x-small text-muted ps-2 border-start ms-4">
+                                <strong>Notes:</strong> <?= esc($doc['verification_notes'] ?? '') ?>
+                            </div>
+                        <?php endif; ?>
                     </div>
                 </div>
                 <?php endforeach; ?>

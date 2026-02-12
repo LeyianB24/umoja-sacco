@@ -24,6 +24,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $address     = trim($_POST['address'] ?? '');
     $gender      = $_POST['gender'] ?? 'male';
     $password    = $_POST['password'];
+    $dob         = $_POST['dob'] ?? null;
+    $occupation  = trim($_POST['occupation'] ?? '');
+    $nok_name    = trim($_POST['nok_name'] ?? '');
+    $nok_phone   = trim($_POST['nok_phone'] ?? '');
     $pay_method  = $_POST['payment_method'] ?? 'cash';
     $paid        = isset($_POST['is_paid']) ? 1 : 0;
 
@@ -60,10 +64,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             $fee_status = ($paid) ? 'paid' : 'unpaid';
             $status = ($paid) ? 'active' : 'inactive';
+            $kyc_status = 'not_submitted'; // Will update if files uploaded below
             
             // 2. Insert Member
-            $ins = $conn->prepare("INSERT INTO members (member_reg_no, full_name, national_id, phone, email, address, gender, password, join_date, status, registration_fee_status, reg_fee_paid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?)");
-            $ins->bind_param("ssssssssssi", $reg_no, $full_name, $national_id, $phone, $email, $address, $gender, $hashed, $status, $fee_status, $paid);
+            $ins = $conn->prepare("INSERT INTO members (member_reg_no, full_name, national_id, phone, email, address, gender, password, join_date, status, registration_fee_status, reg_fee_paid, dob, occupation, next_of_kin_name, next_of_kin_phone, kyc_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?, ?, ?, ?)");
+            $ins->bind_param("ssssssssssissssss", $reg_no, $full_name, $national_id, $phone, $email, $address, $gender, $hashed, $status, $fee_status, $paid, $dob, $occupation, $nok_name, $nok_phone, $kyc_status);
             
             if (!$ins->execute()) {
                 throw new Exception("Failed to insert member: " . $ins->error);
@@ -77,8 +82,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $files_to_process = [
                 'passport_photo' => 'passport_photo', 
-                'national_id_front' => 'national_id_front'
+                'national_id_front' => 'national_id_front',
+                'national_id_back' => 'national_id_back'
             ];
+            
+            $uploaded_count = 0;
 
             foreach ($files_to_process as $input_name => $doc_type) {
                 if (!empty($_FILES[$input_name]['name']) && $_FILES[$input_name]['error'] === UPLOAD_ERR_OK) {
@@ -87,12 +95,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $target = $upload_dir . $filename;
                     
                     if (move_uploaded_file($_FILES[$input_name]['tmp_name'], $target)) {
-                        $sql = "INSERT INTO member_documents (member_id, document_type, file_path, status) VALUES (?, ?, ?, 'verified')";
+                        $sql = "INSERT INTO member_documents (member_id, document_type, file_path, status, verified_at) VALUES (?, ?, ?, 'verified', NOW())";
                         $doc_stmt = $conn->prepare($sql);
                         $doc_stmt->bind_param("iss", $member_id, $doc_type, $filename);
                         $doc_stmt->execute();
+                        $uploaded_count++;
                     }
                 }
+            }
+            
+            // If docs were uploaded by admin, mark KYC as approved
+            if ($uploaded_count > 0) {
+                $conn->query("UPDATE members SET kyc_status = 'approved' WHERE member_id = $member_id");
             }
 
             // 3. Record Payment if paid
@@ -195,9 +209,25 @@ $pageTitle = "Register Member";
                                         <option value="female" <?= (($_POST['gender'] ?? '') == 'female') ? 'selected' : '' ?>>Female</option>
                                     </select>
                                 </div>
+                                <div class="col-md-6">
+                                    <label for="dob" class="form-label">Date of Birth</label>
+                                    <input type="date" class="form-control" id="dob" name="dob" value="<?= htmlspecialchars($_POST['dob'] ?? '') ?>">
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="occupation" class="form-label">Occupation</label>
+                                    <input type="text" class="form-control" id="occupation" name="occupation" value="<?= htmlspecialchars($_POST['occupation'] ?? '') ?>">
+                                </div>
                                 <div class="col-md-12">
                                     <label for="address" class="form-label">Physical Address</label>
                                     <input type="text" class="form-control" id="address" name="address" value="<?= htmlspecialchars($_POST['address'] ?? '') ?>">
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="nok_name" class="form-label">Next of Kin Name</label>
+                                    <input type="text" class="form-control" id="nok_name" name="nok_name" value="<?= htmlspecialchars($_POST['nok_name'] ?? '') ?>">
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="nok_phone" class="form-label">Next of Kin Phone</label>
+                                    <input type="text" class="form-control" id="nok_phone" name="nok_phone" value="<?= htmlspecialchars($_POST['nok_phone'] ?? '') ?>">
                                 </div>
                                 <div class="col-md-12">
                                     <label for="password" class="form-label">Temporary Password (Default: 'password123')</label>
@@ -223,13 +253,17 @@ $pageTitle = "Register Member";
                                 <div class="col-12 mt-4">
                                     <h5 class="fw-bold text-dark border-bottom pb-2">KYC Documents</h5>
                                     <div class="row">
-                                        <div class="col-md-6 mb-3">
+                                        <div class="col-md-4 mb-3">
                                             <label class="form-label">Passport Photo</label>
                                             <input type="file" name="passport_photo" class="form-control" accept="image/*">
                                         </div>
-                                        <div class="col-md-6 mb-3">
+                                        <div class="col-md-4 mb-3">
                                             <label class="form-label">National ID Front</label>
                                             <input type="file" name="national_id_front" class="form-control" accept="image/*,application/pdf">
+                                        </div>
+                                        <div class="col-md-4 mb-3">
+                                            <label class="form-label">National ID Back</label>
+                                            <input type="file" name="national_id_back" class="form-control" accept="image/*,application/pdf">
                                         </div>
                                     </div>
                                 </div>
