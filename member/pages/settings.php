@@ -8,8 +8,6 @@ require_once __DIR__ . '/../../inc/Auth.php';
 require_once __DIR__ . '/../../inc/LayoutManager.php';
 
 $layout = LayoutManager::create('member');
-// Initialize Layout Manager
-$layout = LayoutManager::create('member');
 // member/settings.php
 // Enhanced UI: Forest Green Glassmorphism + Responsive Sidebar
 
@@ -28,6 +26,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     // Update Profile
     if (isset($_POST['update_profile'])) {
+        verify_csrf_token();
         $email    = trim($_POST['email']);
         $phone    = trim($_POST['phone']);
         $gender   = trim($_POST['gender'] ?? '');
@@ -42,7 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($stmt->execute()) {
                 $success_message = "Profile details updated successfully!";
             } else {
-                $error_message = "Update failed. Please try again.";
+                $error_message = "Update failed: " . $conn->error;
             }
             $stmt->close();
         }
@@ -50,6 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Change Password
     if (isset($_POST['change_password'])) {
+        verify_csrf_token();
         $current_password = $_POST['current_password'];
         $new_password     = $_POST['new_password'];
         $confirm_password = $_POST['confirm_password'];
@@ -305,6 +305,7 @@ $pageTitle = "Settings";
                             
                             <div class="tab-pane fade show active" id="profile" role="tabpanel">
                                 <form method="POST">
+                                    <?= csrf_field() ?>
                                     <h5 class="fw-bold mb-4">Edit Profile</h5>
                                     <div class="row g-4">
                                         <div class="col-12">
@@ -341,6 +342,7 @@ $pageTitle = "Settings";
 
                             <div class="tab-pane fade" id="security" role="tabpanel">
                                 <form method="POST">
+                                    <?= csrf_field() ?>
                                     <h5 class="fw-bold mb-4">Change Password</h5>
                                     <div class="row g-4">
                                         <div class="col-12">

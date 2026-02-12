@@ -423,6 +423,37 @@ $pageTitle = "Roles & Permissions";
                 </div>
             </div>
 
+            <!-- Assigned Support Categories Visibility -->
+            <?php
+            $my_categories = [];
+            foreach (SUPPORT_ROUTING_MAP as $cat => $rname) {
+                if ($rname === $role['name']) {
+                    $my_categories[] = ucfirst($cat);
+                }
+            }
+            if (!empty($my_categories) || $is_super):
+            ?>
+            <div class="mb-4 p-3 bg-light rounded-4 border-start border-4 border-success">
+                <div class="category-label mb-2">
+                    <i class="bi bi-headset"></i>
+                    ASSIGNED SUPPORT CATEGORIES
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                    <?php if ($is_super): ?>
+                        <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill">
+                            <i class="bi bi-infinity me-1"></i> All Categories (Full Access)
+                        </span>
+                    <?php else: ?>
+                        <?php foreach ($my_categories as $cat_name): ?>
+                            <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill">
+                                <i class="bi bi-tag-fill me-1"></i> <?= $cat_name ?>
+                            </span>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </div>
+            </div>
+            <?php endif; ?>
+
             <!-- Permissions Grid -->
             <?php foreach ($perms_by_cat as $category => $permissions): ?>
             <div class="perm-category">

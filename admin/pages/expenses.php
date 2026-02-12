@@ -543,10 +543,12 @@ $pageTitle = "Expenses Portal";
                     <?php endif; ?>
                 </div>
             </div>
+       <?php $layout->footer(); ?>
         </div>
+         
     </div>
     
-    <?php $layout->footer(); ?>
+   
     </div>
 </div>
 

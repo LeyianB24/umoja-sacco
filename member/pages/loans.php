@@ -560,9 +560,9 @@ $pageTitle = "My Loans";
                                             <td class="text-capitalize text-secondary"><?= str_replace('_', ' ', $h['loan_type']) ?></td>
                                             <td class="fw-bold">KES <?= number_format((float)$h['amount']) ?></td>
                                             <td><span class="badge-pill <?= $statusClass ?>"><?= ucfirst($h['status']) ?></span></td>
-                                            <td class="text-end pe-4">
-                                                <button class="btn btn-sm btn-light border rounded-circle" style="width:32px; height:32px;"><i class="bi bi-chevron-right"></i></button>
-                                            </td>
+                                             <td class="text-end pe-4">
+                                                 <button onclick="viewRepayments(<?= $h['loan_id'] ?>)" class="btn btn-sm btn-light border rounded-circle" style="width:32px; height:32px;"><i class="bi bi-chevron-right"></i></button>
+                                             </td>
                                         </tr>
                                     <?php endforeach; endif; ?>
                                 </tbody>
@@ -800,6 +800,47 @@ $pageTitle = "My Loans";
     </div>
 </div>
 
+<!-- Repayment History Drawer -->
+<div class="offcanvas offcanvas-end" tabindex="-1" id="repaymentDrawer" style="width: 450px;">
+    <div class="offcanvas-header bg-forest-deep text-white p-4">
+        <div>
+            <h5 class="offcanvas-title fw-bold mb-1">Repayment History</h5>
+            <p class="small opacity-75 mb-0" id="drawerLoanInfo">Loan details & breakdown</p>
+        </div>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+    </div>
+    <div class="offcanvas-body p-0">
+        <div id="repaymentLoading" class="p-5 text-center" style="display: none;">
+            <div class="spinner-border text-success" role="status"></div>
+            <p class="text-muted small mt-2">Loading activity...</p>
+        </div>
+        
+        <div id="repaymentContent">
+            <!-- Summary Header -->
+            <div class="p-4 bg-light border-bottom">
+                <div class="row g-3">
+                    <div class="col-6">
+                        <small class="text-uppercase text-muted fw-bold ls-1 d-block mb-1" style="font-size: 0.65rem;">Total Amount</small>
+                        <h5 class="fw-bold mb-0 text-dark" id="disp_amount">KES 0</h5>
+                    </div>
+                    <div class="col-6 text-end">
+                        <small class="text-uppercase text-muted fw-bold ls-1 d-block mb-1" style="font-size: 0.65rem;">Remaining</small>
+                        <h5 class="fw-bold mb-0 text-success" id="disp_balance">KES 0</h5>
+                    </div>
+                </div>
+            </div>
+
+            <!-- List -->
+            <div class="p-4">
+                <h6 class="fw-bold text-dark mb-4">Transaction Log</h6>
+                <div id="repaymentList" class="d-flex flex-column gap-3">
+                    <!-- Iterated by JS -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     // Constants
@@ -855,6 +896,59 @@ $pageTitle = "My Loans";
     if(amountInput) {
         amountInput.addEventListener('input', updateCalc);
         monthsInput.addEventListener('input', updateCalc);
+    }
+
+    function viewRepayments(loanId) {
+        const drawer = new bootstrap.Offcanvas(document.getElementById('repaymentDrawer'));
+        const list = document.getElementById('repaymentList');
+        const loading = document.getElementById('repaymentLoading');
+        const content = document.getElementById('repaymentContent');
+        
+        loading.style.display = 'block';
+        content.style.opacity = '0.3';
+        list.innerHTML = '';
+        
+        drawer.show();
+        
+        fetch('ajax_get_loan_repayments.php?loan_id=' + loanId)
+            .then(res => res.json())
+            .then(data => {
+                loading.style.display = 'none';
+                content.style.opacity = '1';
+                
+                if (data.success) {
+                    document.getElementById('drawerLoanInfo').innerText = data.loan.loan_type.toUpperCase() + ' | #' + data.loan.loan_id;
+                    document.getElementById('disp_amount').innerText = 'KES ' + parseFloat(data.loan.amount).toLocaleString();
+                    document.getElementById('disp_balance').innerText = 'KES ' + parseFloat(data.loan.current_balance).toLocaleString();
+                    
+                    if (data.repayments.length === 0) {
+                        list.innerHTML = '<div class="text-center py-5"><i class="bi bi-inbox fs-2 text-muted opacity-25"></i><p class="text-muted small">No repayments found.</p></div>';
+                        return;
+                    }
+                    
+                    data.repayments.forEach(p => {
+                        list.innerHTML += `
+                            <div class="p-3 rounded-4 border bg-white shadow-sm d-flex justify-content-between align-items-center">
+                                <div>
+                                    <div class="small fw-bold text-dark">${p.date}</div>
+                                    <div class="text-muted" style="font-size: 0.7rem;">Ref: ${p.ref} | ${p.method}</div>
+                                </div>
+                                <div class="text-end">
+                                    <div class="fw-bold text-success">+ KES ${p.amount.toLocaleString()}</div>
+                                    <div class="small text-muted" style="font-size: 0.65rem;">Repayment</div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                } else {
+                    list.innerHTML = `<div class="alert alert-danger mx-3 mt-3">${data.message}</div>`;
+                }
+            })
+            .catch(err => {
+                loading.style.display = 'none';
+                content.style.opacity = '1';
+                list.innerHTML = '<div class="alert alert-danger mx-3 mt-3">Failed to load repayment data.</div>';
+            });
     }
 </script>
 </body>

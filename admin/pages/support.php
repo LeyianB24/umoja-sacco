@@ -18,7 +18,11 @@ $admin_id   = $_SESSION['admin_id'];
 $admin_name = $_SESSION['full_name'] ?? 'IT Admin';
 $db = $conn;
 
-// KPI COUNTERS
+// Role-based visibility: Filter tickets by assigned_role_id
+$my_role_id = (int)($_SESSION['role_id'] ?? 0);
+$role_where = ($my_role_id === 1) ? "1=1" : "assigned_role_id = $my_role_id";
+
+// KPI COUNTERS (Role-Filtered)
 $stats = $db->query("
     SELECT 
         COUNT(*) as total,
@@ -26,6 +30,7 @@ $stats = $db->query("
         SUM(CASE WHEN status = 'Open' THEN 1 ELSE 0 END) as open,
         SUM(CASE WHEN status = 'Closed' THEN 1 ELSE 0 END) as closed
     FROM support_tickets
+    WHERE $role_where
 ")->fetch_assoc();
 
 // FILTER LOGIC
@@ -34,33 +39,9 @@ $category_filter = $_GET['category'] ?? 'all';
 $search_query    = trim($_GET['q'] ?? '');
 $where_clauses   = [];
 
-// Role-based visibility: Filter tickets by assigned_role_id OR if category permission is held
-$my_role_id = (int)($_SESSION['role_id'] ?? 0);
-
-// Superadmin (Role 1) sees everything
+// Strict filtering for non-superadmins
 if ($my_role_id !== 1) {
-    // For non-superadmins, we show tickets assigned to their role OR tickets they have permission to handle
-    $stmt_perms = $conn->prepare("
-        SELECT p.slug 
-        FROM role_permissions rp 
-        JOIN permissions p ON rp.permission_id = p.id 
-        WHERE rp.role_id = ? AND p.slug LIKE 'support_%'
-    ");
-    $stmt_perms->bind_param("i", $my_role_id);
-    $stmt_perms->execute();
-    $res_perms = $stmt_perms->get_result();
-    $my_categories = [];
-    while ($p_row = $res_perms->fetch_assoc()) {
-        $my_categories[] = str_replace('support_', '', $p_row['slug']);
-    }
-    $stmt_perms->close();
-
-    if (!empty($my_categories)) {
-        $cat_list = "'" . implode("','", $my_categories) . "'";
-        $where_clauses[] = "(s.category IN ($cat_list) OR s.assigned_role_id = $my_role_id)";
-    } else {
-        $where_clauses[] = "s.assigned_role_id = $my_role_id";
-    }
+    $where_clauses[] = "s.assigned_role_id = $my_role_id";
 }
 
 if ($status_filter !== 'all') $where_clauses[] = "s.status = '" . $db->real_escape_string($status_filter) . "'";

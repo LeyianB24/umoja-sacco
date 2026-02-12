@@ -25,30 +25,14 @@ $layout = LayoutManager::create('admin');
 
 $admin_name = htmlspecialchars($_SESSION['admin_name'] ?? 'System Admin');
 
-// --- ROLE-BASED METRICS ---
+// Role-based visibility: Filter tickets by assigned_role_id
 $my_role_id = (int)($_SESSION['role_id'] ?? 0);
-
-// For Tickets and Recent Tickets: Apply same logic as support console
 $where_clauses = ["s.status != 'Closed'"];
+
 if ($my_role_id !== 1) {
-    $stmt_perms = $conn->prepare("
-        SELECT p.slug FROM role_permissions rp 
-        JOIN permissions p ON rp.permission_id = p.id 
-        WHERE rp.role_id = ? AND p.slug LIKE 'support_%'
-    ");
-    $stmt_perms->bind_param("i", $my_role_id);
-    $stmt_perms->execute();
-    $res_perms = $stmt_perms->get_result();
-    $my_categories = [];
-    while ($p_row = $res_perms->fetch_assoc()) { $my_categories[] = str_replace('support_', '', $p_row['slug']); }
-    
-    if (!empty($my_categories)) {
-        $cat_list = "'" . implode("','", $my_categories) . "'";
-        $where_clauses[] = "(s.category IN ($cat_list) OR s.assigned_role_id = $my_role_id)";
-    } else {
-        $where_clauses[] = "s.assigned_role_id = $my_role_id";
-    }
+    $where_clauses[] = "s.assigned_role_id = $my_role_id";
 }
+
 $where_sql = "WHERE " . implode(' AND ', $where_clauses);
 
 $open_tickets = $conn->query("SELECT COUNT(*) AS c FROM support_tickets s $where_sql")->fetch_assoc()['c'] ?? 0;
@@ -291,8 +275,9 @@ $pageTitle = "System Dashboard";
             </a>
             <?php endif; ?>
         </div>
+        <?php $layout->footer(); ?>
     </div>
-    <?php $layout->footer(); ?>
+    
     </div>
 </div>
 

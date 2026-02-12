@@ -288,8 +288,9 @@ function getInitials($n) { return strtoupper(substr($n ?? 'U', 0, 2)); }
                     </div>
                 </div>
             </div>
+            <?php $layout->footer(); ?>
         </div>
-        <?php $layout->footer(); ?>
+        
     </div>
 </div>
 

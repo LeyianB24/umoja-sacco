@@ -35,6 +35,13 @@ $ticket = $stmt->get_result()->fetch_assoc();
 
 if (!$ticket) { header("Location: support.php?msg=NotFound"); exit; }
 
+// GATEKEEPER: Strict Role Access Control
+$my_role_id = (int)($_SESSION['role_id'] ?? 0);
+if ($my_role_id !== 1 && (int)$ticket['assigned_role_id'] !== $my_role_id) {
+    header("Location: support.php?error=unauthorized_access");
+    exit;
+}
+
 $creator_is_member = ($ticket['member_id'] > 0);
 $creator_name      = $creator_is_member ? $ticket['member_name'] : $ticket['admin_name'];
 $creator_email     = $creator_is_member ? $ticket['member_email'] : $ticket['admin_email'];
