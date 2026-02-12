@@ -46,6 +46,10 @@ class TransactionHelper {
             $action = 'revenue_inflow';
         } elseif ($type === 'expense') {
             $action = 'expense_outflow';
+        } elseif ($type === 'registration_fee' || $type === 'registration') {
+            $action = 'registration_fee';
+        } elseif ($type === 'fine' || $type === 'penalty') {
+            $action = 'loan_penalty';
         }
 
         try {

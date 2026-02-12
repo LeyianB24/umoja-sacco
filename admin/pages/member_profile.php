@@ -82,31 +82,28 @@ if (!$member) {
     exit;
 }
 
-// 3. FETCH FINANCIAL SUMMARY
-// Total Contributions (All time)
+// 3. FETCH FINANCIAL SUMMARY (Unified Ledger)
+require_once __DIR__ . '/../../inc/FinancialEngine.php';
+$engine = new FinancialEngine($conn);
+$balances = $engine->getBalances($member_id);
+
+$savings_balance     = $balances['savings'];
+$total_debt          = $balances['loans'];
+$total_shares_value  = $balances['shares'];
+$total_shares_units  = $balances['share_units'] ?? 0;
+
+// Total Contributions (Log only)
 $q_cont = $conn->prepare("SELECT SUM(amount) as total FROM contributions WHERE member_id = ? AND status = 'active'");
 $q_cont->bind_param("i", $member_id);
 $q_cont->execute();
 $total_contributions = $q_cont->get_result()->fetch_assoc()['total'] ?? 0;
+$q_cont->close();
 
-// Savings Balance (Unified V28 Logic)
-$savings_balance = getMemberSavings($member_id, $conn);
-
-// Shares Value
-$q_shares = $conn->prepare("SELECT SUM(share_units * unit_price) as total_value, SUM(share_units) as total_units FROM shares WHERE member_id = ?");
-$q_shares->bind_param("i", $member_id);
-$q_shares->execute();
-$share_data = $q_shares->get_result()->fetch_assoc();
-$total_shares_value = $share_data['total_value'] ?? 0;
-$total_shares_units = $share_data['total_units'] ?? 0;
-
-// Active Loans
-$q_loans = $conn->prepare("SELECT SUM(current_balance) as total_debt, COUNT(*) as active_count FROM loans WHERE member_id = ? AND status IN ('disbursed', 'approved')");
+$q_loans = $conn->prepare("SELECT COUNT(*) as active_count FROM loans WHERE member_id = ? AND status IN ('disbursed', 'active')");
 $q_loans->bind_param("i", $member_id);
 $q_loans->execute();
-$loan_data = $q_loans->get_result()->fetch_assoc();
-$total_debt = $loan_data['total_debt'] ?? 0;
-$active_loans_count = $loan_data['active_count'] ?? 0;
+$active_loans_count = $q_loans->get_result()->fetch_assoc()['active_count'] ?? 0;
+$q_loans->close();
 
 // 4. FETCH ACTIVITY LISTS (Limited for overview)
 // Recent Transactions

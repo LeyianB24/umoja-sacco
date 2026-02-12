@@ -21,15 +21,27 @@ if (!isset($_SESSION['member_id'])) {
 
 $member_id = $_SESSION['member_id'];
 
-// Check if member is active
-$stmt_check = $conn->prepare("SELECT status FROM members WHERE member_id = ?");
+// Check if member is active and has completed required onboarding
+$stmt_check = $conn->prepare("SELECT status, kyc_status, registration_fee_status, reg_fee_paid FROM members WHERE member_id = ?");
 $stmt_check->bind_param("i", $member_id);
 $stmt_check->execute();
-$m_status = $stmt_check->get_result()->fetch_assoc()['status'] ?? '';
+$m_data = $stmt_check->get_result()->fetch_assoc();
 $stmt_check->close();
 
-if ($m_status !== 'active') {
+if (!$m_data || $m_data['status'] !== 'active') {
     $_SESSION['error'] = "Only active members can apply for loans.";
+    header("Location: loans.php");
+    exit;
+}
+
+if ($m_data['kyc_status'] !== 'approved') {
+    $_SESSION['error'] = "Your KYC verification is not yet complete. Please ensure your ID and photo are uploaded and verified before applying for a loan.";
+    header("Location: loans.php");
+    exit;
+}
+
+if ($m_data['registration_fee_status'] !== 'paid' && $m_data['reg_fee_paid'] != 1) {
+    $_SESSION['error'] = "You must pay the mandatory SACCO registration fee before you can apply for a loan.";
     header("Location: loans.php");
     exit;
 }
@@ -56,8 +68,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $g1 = filter_input(INPUT_POST, 'guarantor_1', FILTER_VALIDATE_INT);
     $g2 = filter_input(INPUT_POST, 'guarantor_2', FILTER_VALIDATE_INT);
 
-    // B. Validation
-    $total_savings = getMemberSavings($member_id, $conn);
+    // B. Validation (Sourced from Golden Ledger)
+    require_once __DIR__ . '/../../inc/FinancialEngine.php';
+    $engine = new FinancialEngine($conn);
+    $balances = $engine->getBalances($member_id);
+    
+    $total_savings = $balances['savings'];
     $max_limit = $total_savings * 3;
 
     if ($amount > $max_limit) {
