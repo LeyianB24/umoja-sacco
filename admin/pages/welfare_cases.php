@@ -360,10 +360,11 @@ function ksh($val) { return number_format((float)($val ?? 0), 2); }
                         </tbody>
                     </table>
                 </div>
+                <?php $layout->footer(); ?>
             </div>
 
         </div>
-        <?php $layout->footer(); ?>
+        
     </div>
 </div>
 

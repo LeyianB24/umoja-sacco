@@ -70,9 +70,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 }
 
 // 4. Fetch Employee Payroll Status for Month
-$sql = "SELECT e.*, p.id as payroll_id, p.net_pay, p.payment_date, p.status as p_status
+$sql = "SELECT e.*, p.id as payroll_id, p.net_pay, p.payment_date, p.status as p_status, r.name as admin_role
         FROM employees e
         LEFT JOIN payroll p ON e.employee_id = p.employee_id AND p.month = ?
+        LEFT JOIN admins a ON e.admin_id = a.admin_id
+        LEFT JOIN roles r ON a.role_id = r.id
         WHERE e.status = 'active'
         ORDER BY e.full_name ASC";
 $stmt = $db->prepare($sql);
@@ -135,7 +137,10 @@ $pageTitle = "Universal Payroll Hub";
         </div>
     </div>
 
-    <?php flash_render(); ?>
+    <?php 
+    require_once __DIR__ . '/../inc/hr_nav.php';
+    flash_render(); 
+    ?>
 
     <div class="payroll-card p-4 mb-4">
         <div class="d-flex justify-content-between align-items-center mb-4">
@@ -161,10 +166,12 @@ $pageTitle = "Universal Payroll Hub";
                     <?php while($emp = $payroll_list->fetch_assoc()): ?>
                         <tr>
                             <td>
-                                <div class="fw-bold"><?= esc($emp['full_name']) ?></div>
+                                <a href="employees.php?q=<?= urlencode($emp['full_name']) ?>" class="text-decoration-none">
+                                    <div class="fw-bold text-dark"><?= esc($emp['full_name']) ?></div>
+                                </a>
                                 <div class="small text-muted"><?= esc($emp['national_id']) ?></div>
                             </td>
-                            <td><span class="badge bg-light text-dark border rounded-pill"><?= esc($emp['job_title']) ?></span></td>
+                            <td><span class="badge bg-light text-dark border rounded-pill"><?= esc($emp['admin_role'] ? ucwords($emp['admin_role']) : $emp['job_title']) ?></span></td>
                             <td class="text-end fw-bold text-forest">KES <?= number_format((float)$emp['salary']) ?></td>
                             <td class="text-center">
                                 <?php if($emp['payroll_id']): ?>

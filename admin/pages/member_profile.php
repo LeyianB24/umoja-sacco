@@ -92,12 +92,8 @@ $total_debt          = $balances['loans'];
 $total_shares_value  = $balances['shares'];
 $total_shares_units  = $balances['share_units'] ?? 0;
 
-// Total Contributions (Log only)
-$q_cont = $conn->prepare("SELECT SUM(amount) as total FROM contributions WHERE member_id = ? AND status = 'active'");
-$q_cont->bind_param("i", $member_id);
-$q_cont->execute();
-$total_contributions = $q_cont->get_result()->fetch_assoc()['total'] ?? 0;
-$q_cont->close();
+// Total Contributions (Lifetime Ledger Credits)
+$total_contributions = $engine->getLifetimeCredits($member_id, ['savings', 'shares', 'welfare']);
 
 $q_loans = $conn->prepare("SELECT COUNT(*) as active_count FROM loans WHERE member_id = ? AND status IN ('disbursed', 'active')");
 $q_loans->bind_param("i", $member_id);

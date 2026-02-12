@@ -123,12 +123,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['withdraw'])) {
             // 1. GENERATE REFERENCE
             $ref = 'WD-' . strtoupper(substr(md5(uniqid((string)rand(), true)), 0, 10));
             
-            // 2. IMMEDIATE DEBIT (The "Real-Time" fix)
+            // 2. INITIATE WITHDRAWAL (Pending Hold)
             $txn_id = $engine->transact([
                 'member_id'   => $member_id,
                 'amount'      => $amount,
-                'action_type' => 'withdrawal',
-                'method'      => 'mpesa', // Destination
+                'action_type' => 'withdrawal_initiate',
+                'method'      => 'mpesa', // Target destination
                 'source_cat'  => $current_source['ledger_cat'], // debit this
                 'reference'   => $ref,
                 'notes'       => "Withdrawal Initiated ($ref) to $phone"
@@ -146,14 +146,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['withdraw'])) {
 
             if ($mpesa_response['success']) {
                 $mpesa_conv_id = $mpesa_response['conversation_id'] ?? null;
-                $originator_id = $mpesa_response['data']['OriginatorConversationID'] ?? $ref; // Fallback
                 
                 // Update request with M-Pesa Trace IDs
                 $conn->query("UPDATE withdrawal_requests SET status = 'pending', mpesa_conversation_id = '$mpesa_conv_id' WHERE withdrawal_id = $withdrawal_id");
                 
-                $conn->commit(); // COMMIT THE DEBIT
+                $conn->commit(); // COMMIT THE HOLD
                 
-                $success = "Processing: KES " . number_format($amount) . " has been deducted. Waiting for M-Pesa confirmation.";
+                $success = "Processing: KES " . number_format($amount) . " has been reserved. Waiting for M-Pesa confirmation.";
                 
                 // Redirect back to source context
                 $return_url = BASE_URL . "/member/pages/" . $source_page . ".php?msg=withdrawal_initiated";

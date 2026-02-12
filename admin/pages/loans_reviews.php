@@ -417,11 +417,13 @@ function ksh($v, $d = 2) { return number_format((float)($v ?? 0), $d); }
                         </tbody>
                     </table>
                 </div>
+                <?php $layout->footer(); ?>
             </div>
 
         </div>
-        <?php $layout->footer(); ?>
+        
     </div>
+    
 </div>
 
 <?php 

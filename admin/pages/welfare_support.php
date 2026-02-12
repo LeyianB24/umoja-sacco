@@ -405,9 +405,9 @@ $pageTitle = "Welfare Support";
                 </div>
 
             </div> <!-- Row -->
-
+<?php $layout->footer(); ?>
         </div>
-        <?php $layout->footer(); ?>
+        
     </div>
 </div>
 

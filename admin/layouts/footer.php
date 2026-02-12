@@ -23,7 +23,7 @@ $memory_usage = round(memory_get_usage() / 1024 / 1024, 2);
                 <div class="col-md-4 text-center text-md-start">
                     <div class="d-flex align-items-center gap-2 justify-content-center justify-content-md-start">
                         <span class="text-muted small">&copy; <?= date('Y') ?> <strong><?= defined('SITE_NAME') ? SITE_NAME : 'Umoja Sacco' ?></strong>.</span>
-                        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2" style="font-size: 0.7rem;">v10.0 Pro</span>
+                        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2" style="font-size: 0.7rem;">v1.0 Pro</span>
                     </div>
                     <div class="small text-muted opacity-75 mt-1" style="font-size: 0.75rem;">
                         Empowering Financial Growth
