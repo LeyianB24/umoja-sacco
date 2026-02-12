@@ -23,14 +23,12 @@ require_member();
 $layout = LayoutManager::create('member');
 
 $member_id = (int) $_SESSION['member_id'];
-$member_name = htmlspecialchars($_SESSION['member_name'] ?? 'Member', ENT_QUOTES);
 
-// Fetch Live Balance
-$stmt = $conn->prepare("SELECT account_balance, full_name, member_reg_no FROM members WHERE member_id = ?");
+// Fetch Member Details (excluding legacy account_balance)
+$stmt = $conn->prepare("SELECT full_name, member_reg_no FROM members WHERE member_id = ?");
 $stmt->bind_param("i", $member_id);
 $stmt->execute();
 $member_data = $stmt->get_result()->fetch_assoc();
-$cur_bal = $member_data['account_balance'] ?? 0;
 $member_name = htmlspecialchars($member_data['full_name'] ?? 'Member');
 $reg_no = htmlspecialchars($member_data['member_reg_no'] ?? 'N/A');
 $_SESSION['reg_no'] = $reg_no; // Ensure session is updated
@@ -54,7 +52,7 @@ for ($i = 5; $i >= 0; $i--) {
     $month_end   = date('Y-m-t', strtotime("-$i months"));
     $chart_labels[] = date('M', strtotime($month_start));
     
-    // Monthly Contributions via Golden Ledger
+    // Monthly Savings Growth via Golden Ledger
     $sql = "SELECT COALESCE(SUM(le.credit - le.debit),0) 
             FROM ledger_entries le
             JOIN ledger_accounts la ON le.account_id = la.account_id
