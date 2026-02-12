@@ -57,8 +57,6 @@ class FinancialEngine {
                     // Debit Asset (Cash/Mpesa), Credit Liability (Member Savings)
                     $this->postEntry($txn_id, $this->getSystemAccount($method), $amount, 0);
                     $this->postEntry($txn_id, $this->getMemberAccount($member_id, self::CAT_SAVINGS), 0, $amount);
-                    // Also update legacy wallet if needed
-                    $this->updateLegacyWallet($member_id, $amount, 'credit');
                     break;
 
                 case 'withdrawal':
@@ -66,11 +64,6 @@ class FinancialEngine {
                     $source_cat = $params['source_cat'] ?? self::CAT_WALLET;
                     $this->postEntry($txn_id, $this->getMemberAccount($member_id, $source_cat), $amount, 0);
                     $this->postEntry($txn_id, $this->getSystemAccount($method), 0, $amount);
-                    
-                    // Only update legacy wallet if we are actually withdrawing from it
-                    if ($source_cat === self::CAT_WALLET) {
-                        $this->updateLegacyWallet($member_id, $amount, 'debit');
-                    }
                     break;
 
                 case 'loan_disbursement':
@@ -91,7 +84,6 @@ class FinancialEngine {
                 case 'loan_repayment':
                     if ($method === 'wallet') {
                         $this->postEntry($txn_id, $this->getMemberAccount($member_id, self::CAT_WALLET), $amount, 0);
-                        $this->updateLegacyWallet($member_id, $amount, 'debit');
                     } else {
                         $this->postEntry($txn_id, $this->getSystemAccount($method), $amount, 0);
                     }
@@ -140,7 +132,6 @@ class FinancialEngine {
                     // Debit Liability (Social Pool), Credit Liability (Member Wallet)
                     $this->postEntry($txn_id, $this->getSystemAccount('welfare'), $amount, 0);
                     $this->postEntry($txn_id, $this->getMemberAccount($member_id, self::CAT_WALLET), 0, $amount);
-                    $this->updateLegacyWallet($member_id, $amount, 'credit');
                     break;
 
                 case 'transfer':
@@ -148,8 +139,6 @@ class FinancialEngine {
                     $to_cat = $params['target_ledger'];
                     $this->postEntry($txn_id, $this->getMemberAccount($member_id, $from_cat), $amount, 0);
                     $this->postEntry($txn_id, $this->getMemberAccount($member_id, $to_cat), 0, $amount);
-                    if ($from_cat === self::CAT_WALLET) $this->updateLegacyWallet($member_id, $amount, 'debit');
-                    if ($to_cat === self::CAT_WALLET) $this->updateLegacyWallet($member_id, $amount, 'credit');
                     break;
 
                 case 'opening_balance':
@@ -249,11 +238,6 @@ class FinancialEngine {
         $st->bind_param("ssis", $full_name, $type, $member_id, $category);
         $st->execute();
         return (int)$this->db->insert_id;
-    }
-
-    private function updateLegacyWallet($mid, $amt, $flow) {
-        $op = ($flow === 'credit') ? '+' : '-';
-        $this->db->query("UPDATE members SET account_balance = account_balance $op $amt WHERE member_id = $mid");
     }
 
     private function syncLegacyTransactions($mid, $amt, $action, $ref, $notes, $rid, $rtable) {

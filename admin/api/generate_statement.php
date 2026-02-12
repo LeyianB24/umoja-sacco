@@ -55,7 +55,8 @@ $sql = "SELECT le.created_at as transaction_date, t.reference_no, t.transaction_
 $stmt = $conn->prepare($sql);
 $stmt->bind_param("iss", $member_id, $start_date, $end_date);
 $stmt->execute();
-$txns = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+$txn_result = $stmt->get_result();
+$record_count = $txn_result->num_rows;
 
 // 5. CALCULATE OPENING BALANCE FROM LEDGER
 $sqlOpen = "SELECT SUM(le.credit - le.debit) as bal
@@ -63,27 +64,22 @@ $sqlOpen = "SELECT SUM(le.credit - le.debit) as bal
             JOIN ledger_accounts la ON le.account_id = la.account_id
             WHERE la.member_id = ? AND la.category IN ($cat_list)
             AND DATE(le.created_at) < ?";
-$stmt = $conn->prepare($sqlOpen);
-$stmt->bind_param("is", $member_id, $start_date);
-$stmt->execute();
-$opening_bal = (float)($stmt->get_result()->fetch_assoc()['bal'] ?? 0);
-// Note: For Loans (Asset), balance is Debit - Credit. For Liabilities, it's Credit - Debit.
-// Full Ledger balance is net position.
+$stmtO = $conn->prepare($sqlOpen);
+$stmtO->bind_param("is", $member_id, $start_date);
+$stmtO->execute();
+$opening_bal = (float)($stmtO->get_result()->fetch_assoc()['bal'] ?? 0);
+$stmtO->close();
 
 // 6. OUTPUT VIA FINANCIAL EXPORT ENGINE
 require_once __DIR__ . '/../../core/finance/FinancialExportEngine.php';
 
-// Prepare Data for Export
-$exportRows = [];
-
-if ($out_format === 'pdf') {
-    $rows = $txns; // PDF generation callback handles iteration
-} else {
-    // For Excel, we iterate and format first
+if ($out_format === 'csv' || $out_format === 'excel') {
+    // For Excel, we iterate and format row by row
+    $exportRows = [];
     $cur_bal = $opening_bal;
     $exportRows[] = [$start_date, '-', 'OPENING BALANCE', '-', '-', number_format($cur_bal, 2, '.', '')];
     
-    foreach($txns as $t) {
+    while($t = $txn_result->fetch_assoc()) {
         $impact = ($t['category'] === 'loans') ? ($t['debit'] - $t['credit']) : ($t['credit'] - $t['debit']);
         $cur_bal += $impact;
         $exportRows[] = [
@@ -95,21 +91,19 @@ if ($out_format === 'pdf') {
             number_format($cur_bal, 2, '.', '')
         ];
     }
-}
-
-if ($out_format === 'csv' || $out_format === 'excel') {
+    
     FinancialExportEngine::export('excel', $exportRows, [
         'title' => 'Statement of Accounts - ' . strtoupper($report_type),
         'module' => 'Statement Module',
         'account_ref' => $member['member_reg_no'],
         'headers' => ['Date', 'Reference', 'Type', 'Description', 'Amount', 'Balance'],
-        'record_count' => count($txns),
-        'total_value' => $opening_bal // Approximate tracking
+        'record_count' => $record_count,
+        'total_value' => $opening_bal
     ]);
     exit;
 } else {
-    // PDF Mode
-    FinancialExportEngine::export('pdf', function($pdf) use ($member, $start_date, $end_date, $report_type, $opening_bal, $txns) {
+    // PDF Mode - Optimized Streaming approach inside Closure
+    FinancialExportEngine::export('pdf', function($pdf) use ($member, $start_date, $end_date, $report_type, $opening_bal, $txn_result) {
         // Info Block
         $pdf->SetTextColor(15, 46, 37);
         $pdf->SetFont('Arial', 'B', 14);
@@ -164,29 +158,17 @@ if ($out_format === 'csv' || $out_format === 'excel') {
         $pdf->SetTextColor(0);
         $pdf->SetFont('Arial', '', 8);
         $running = $opening_bal;
-        $fill = false;
         
-        foreach($txns as $t) {
+        // LOOP through database result directly (Memory efficient)
+        while($t = $txn_result->fetch_assoc()) {
             $impact = ($t['category'] === 'loans') ? ($t['debit'] - $t['credit']) : ($t['credit'] - $t['debit']);
             $running += $impact;
             
             // Draw Row
-            // Manually recreate StyledRow behavior for compatibility check
-            $x = $pdf->GetX();
-            $y = $pdf->GetY();
-            
-            // Date
             $pdf->Cell($w[0], 7, date('d-m-Y', strtotime($t['transaction_date'])), 1);
-            // Ref
             $pdf->Cell($w[1], 7, $t['reference_no'], 1);
-            
-            // Description (handle overflow manually if needed, or simple cell)
-            $pdf->Cell($w[2], 7, substr(ucfirst(str_replace('_', ' ', $t['transaction_type'])), 0, 30), 1);
-            
-            // Amount
+            $pdf->Cell($w[2], 7, substr(ucfirst(str_replace('_', ' ', (string)$t['transaction_type'])), 0, 30), 1);
             $pdf->Cell($w[3], 7, number_format(($t['debit'] > 0 ? $t['debit'] : $t['credit']), 2), 1, 0, 'R');
-            
-            // Balance
             $pdf->Cell($w[4], 7, number_format($running, 2), 1, 1, 'R');
         }
         
@@ -201,8 +183,7 @@ if ($out_format === 'csv' || $out_format === 'excel') {
         'title' => 'Member Financial Statement',
         'module' => 'Statement Module',
         'account_ref' => $member['member_reg_no'],
-        'record_count' => count($txns),
-        'total_value' => count($txns)
+        'record_count' => $record_count
     ]);
 }
 exit;
