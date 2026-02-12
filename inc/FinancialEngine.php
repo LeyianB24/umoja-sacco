@@ -45,11 +45,23 @@ class FinancialEngine {
 
         if ($amount <= 0) throw new Exception("Amount must be greater than zero.");
 
+        // 0. Idempotency Check
+        $check = $this->db->prepare("SELECT transaction_id FROM ledger_transactions WHERE reference_no = ?");
+        $check->bind_param("s", $reference);
+        $check->execute();
+        $existing = $check->get_result()->fetch_assoc();
+        if ($existing) {
+            return (int)$existing['transaction_id'];
+        }
+
         $this->db->begin_transaction();
         try {
             
             // 1. Create Transaction Shell
             $txn_id = $this->createTransactionShell($reference, $action_type, $notes);
+
+            // ... cases ...
+            // (I will skip the cases in this chunk but they are between lines 55-160)
 
             // 2. Map Action to Double-Entry Accounts
             switch ($action_type) {
@@ -154,12 +166,24 @@ class FinancialEngine {
                     }
                     break;
 
+                case 'registration_fee':
+                    // Debit Asset (Cash/Mpesa), Credit Revenue (SACCO Income)
+                    $this->postEntry($txn_id, $this->getSystemAccount($method), $amount, 0);
+                    $this->postEntry($txn_id, $this->getSystemAccount('income'), 0, $amount);
+                    break;
+
+                case 'loan_penalty':
+                    // Debit Asset (Cash/Mpesa), Credit Revenue (SACCO Income)
+                    $this->postEntry($txn_id, $this->getSystemAccount($method), $amount, 0);
+                    $this->postEntry($txn_id, $this->getSystemAccount('income'), 0, $amount);
+                    break;
+
                 default:
                     throw new Exception("Core: Unsupported action [$action_type]");
             }
 
             // 3. Sync to human-readable 'transactions' table (Legacy compatibility)
-            $this->syncLegacyTransactions($member_id, $amount, $action_type, $reference, $notes, $related_id, $related_table);
+            $this->syncLegacyTransactions($txn_id, $member_id, $amount, $action_type, $reference, $notes, $related_id, $related_table);
 
             $this->db->commit();
             return $txn_id;
@@ -240,17 +264,17 @@ class FinancialEngine {
         return (int)$this->db->insert_id;
     }
 
-    private function syncLegacyTransactions($mid, $amt, $action, $ref, $notes, $rid, $rtable) {
+    private function syncLegacyTransactions($txn_id, $mid, $amt, $action, $ref, $notes, $rid, $rtable) {
         if ($action === 'opening_balance') return;
         $flow = ($action === 'savings_deposit' || $action === 'loan_disbursement' || $action === 'revenue_inflow' || $action === 'welfare_payout') ? 'credit' : 'debit';
         $cat = explode('_', $action)[0];
         $date = date('Y-m-d');
         
         $sql = "INSERT INTO transactions 
-                (member_id, transaction_type, amount, type, category, reference_no, related_id, related_table, recorded_by, transaction_date, notes, created_at) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
+                (ledger_transaction_id, member_id, transaction_type, amount, type, category, reference_no, related_id, related_table, recorded_by, transaction_date, notes, created_at) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
         $st = $this->db->prepare($sql);
-        $st->bind_param("isdsssisiss", $mid, $action, $amt, $flow, $cat, $ref, $rid, $rtable, $this->recorded_by, $date, $notes);
+        $st->bind_param("iisdsssisiss", $txn_id, $mid, $action, $amt, $flow, $cat, $ref, $rid, $rtable, $this->recorded_by, $date, $notes);
         $st->execute();
     }
 

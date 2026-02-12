@@ -18,6 +18,7 @@ $layout = LayoutManager::create('member');
 
 // --- 1. CONFIG & AUTH ---
 require_once __DIR__ . '/../../inc/TransactionHelper.php';
+require_once __DIR__ . '/../../inc/FinancialEngine.php';
 
 // Validate Login
 if (!isset($_SESSION['member_id'])) {
@@ -27,6 +28,7 @@ if (!isset($_SESSION['member_id'])) {
 
 $member_id = $_SESSION['member_id'];
 $member_name = $_SESSION['member_name'] ?? 'Member';
+$engine = new FinancialEngine($conn);
 
 // --- HANDLE POST ACTIONS ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
@@ -34,12 +36,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     $action = $_POST['action'];
 
     if ($action === 'repay_wallet') {
-        // First fetch current data for validation
-        $stmt = $conn->prepare("SELECT account_balance FROM members WHERE member_id = ?");
-        $stmt->bind_param("i", $member_id);
-        $stmt->execute();
-        $curr_wallet = $stmt->get_result()->fetch_assoc()['account_balance'] ?? 0;
-        $stmt->close();
+        // Fetch current data via FinancialEngine (Single Source of Truth)
+        $balances = $engine->getBalances($member_id);
+        $curr_wallet = $balances['wallet'];
 
         $stmt = $conn->prepare("SELECT * FROM loans WHERE member_id = ? AND status IN ('disbursed', 'active') ORDER BY created_at DESC LIMIT 1");
         $stmt->bind_param("i", $member_id);
@@ -55,18 +54,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             flash_set("Invalid amount.", "error");
         } elseif ($amount > $curr_wallet) {
             flash_set("Insufficient wallet balance.", "error");
-        } elseif ($amount > $l_data['current_balance']) {
+        } elseif ($amount > (float)$l_data['current_balance']) {
             flash_set("Amount exceeds the outstanding balance.", "error");
         } else {
-            $conn->begin_transaction();
             try {
-                $loan_id = $l_data['loan_id'];
+                $loan_id = (int)$l_data['loan_id'];
                 $ref = 'WAL-' . strtoupper(substr(md5(uniqid()), 0, 8));
 
-                require_once __DIR__ . '/../../inc/FinancialEngine.php';
-                $engine = new FinancialEngine($conn);
-                
-                // Unified Ledger Transaction
+                // Unified Ledger Transaction (Handles both Wallet debit and Loan credit + Legacy Sync)
                 $engine->transact([
                     'member_id'     => $member_id,
                     'amount'        => $amount,
@@ -79,11 +74,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 ]);
 
                 flash_set("Repayment of KES " . number_format((float)$amount) . " successful.", "success");
-                $conn->commit();
                 header("Location: loans.php");
                 exit;
             } catch (Exception $e) {
-                $conn->rollback();
                 flash_set("Error: " . $e->getMessage(), "error");
             }
         }
@@ -93,8 +86,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 // --- 2. DATA FETCHING ---
 
 // A. Get Savings & Calculate Limit (Unified V28 Logic)
-require_once __DIR__ . '/../../inc/FinancialEngine.php';
-$engine = new FinancialEngine($conn);
 $balances = $engine->getBalances($member_id);
 
 $total_savings    = $balances['savings'];

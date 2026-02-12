@@ -126,7 +126,19 @@ if (isset($response['Body']['stkCallback'])) {
     // ---------------------------------------------------
     // SUCCESSFUL PAYMENT
     // ---------------------------------------------------
+    // ---------------------------------------------------
+    // SUCCESSFUL PAYMENT
+    // ---------------------------------------------------
     if ($resultCode === 0) {
+
+        // 1. Idempotency Check: Check if this CheckoutRequestID already has a completed log
+        $check_processed = $conn->prepare("SELECT log_id FROM callback_logs WHERE checkout_request_id = ? AND processed = TRUE LIMIT 1");
+        $check_processed->bind_param("s", $checkoutID);
+        $check_processed->execute();
+        if ($check_processed->get_result()->fetch_assoc()) {
+            echo json_encode(['ResultCode' => 0, 'ResultDesc' => 'Already Processed']);
+            exit;
+        }
 
         // Extract M-Pesa receipt
         $mpesaReceipt = '';
@@ -138,7 +150,18 @@ if (isset($response['Body']['stkCallback'])) {
             }
         }
 
-        // 1. Update mpesa_requests
+        // 2. Update status to processed in log first (prevent race conditions)
+        if ($callback_log_id) {
+            $conn->query("UPDATE callback_logs SET 
+                mpesa_receipt_number = '$mpesaReceipt',
+                processed = TRUE,
+                processed_at = NOW(),
+                member_id = $member_id,
+                amount = $amount
+                WHERE log_id = $callback_log_id");
+        }
+
+        // 3. Update mpesa_requests
         $q = $conn->prepare("
             UPDATE mpesa_requests
             SET status = 'completed', mpesa_receipt = ?, updated_at = NOW(), callback_log_id = ?
@@ -148,23 +171,13 @@ if (isset($response['Body']['stkCallback'])) {
         $q->execute();
         $q->close();
 
-        // 2. Activate contribution and track callback receipt
+        // 4. Activate contribution and track callback receipt
         $c = $conn->prepare("UPDATE contributions SET status = 'active', callback_received_at = NOW() WHERE reference_no = ?");
         $c->bind_param("s", $reference_no);
         $c->execute();
         $c->close();
 
-        // 3. Update callback log with receipt and mark as processed
-        if ($callback_log_id) {
-            $conn->query("UPDATE callback_logs SET 
-                mpesa_receipt_number = '$mpesaReceipt',
-                processed = TRUE,
-                processed_at = NOW()
-                WHERE log_id = $callback_log_id");
-        }
-
-        // 3. Update Member Balance (Optional for registration fee, maybe exclude from balance)
-        // Check if this was a registration fee
+        // 5. Look up contribution type
         $stmt_check = $conn->prepare("SELECT contribution_type FROM contributions WHERE reference_no = ?");
         $stmt_check->bind_param("s", $reference_no);
         $stmt_check->execute();
@@ -173,79 +186,57 @@ if (isset($response['Body']['stkCallback'])) {
 
         $type = $c_data['contribution_type'] ?? '';
 
+        // 6. RECORD IN LEDGER (This replaces ALL manual balance updates)
         if ($type === 'registration') {
-            // 1. Activate Member & Mark Fee as Paid
+            // Activate member metadata (Non-financial state)
             $act = $conn->prepare("UPDATE members SET reg_fee_paid = 1, registration_fee_status = 'paid', status = 'active' WHERE member_id = ?");
             $act->bind_param("i", $member_id);
             $act->execute();
             $act->close();
-
-            // 2. Record in Unified Ledger
+            
             TransactionHelper::record([
                 'member_id'     => $member_id,
                 'amount'        => $amount,
                 'type'          => 'registration_fee',
                 'ref_no'        => $mpesaReceipt,
                 'notes'         => "Registration Fee Paid via M-Pesa ($reference_no)",
+                'method'        => 'mpesa',
                 'related_id'    => $member_id,
-                'related_table' => 'registration_fee',
-                'update_member_balance' => false
+                'related_table' => 'registration_fee'
             ]);
         } elseif ($type === 'loan_repayment') {
-            // 1. Mark Repayment as Completed
-            $updRepay = $conn->prepare("UPDATE loan_repayments SET status = 'Completed', reference_no = ? WHERE reference_no = ?");
-            $updRepay->bind_param("ss", $mpesaReceipt, $reference_no);
-            $updRepay->execute();
-            $updRepay->close();
-
-            // 2. Get Loan ID
-            $stmtLoan = $conn->prepare("SELECT loan_id FROM loan_repayments WHERE reference_no = ? LIMIT 1");
-            $stmtLoan->bind_param("s", $mpesaReceipt);
-            $stmtLoan->execute();
-            $repay_row = $stmtLoan->get_result()->fetch_assoc();
-            $stmtLoan->close();
-
-            if ($repay_row) {
-                $loan_id = $repay_row['loan_id'];
-
-                // 3. Update Loan Balance
-                $updLoan = $conn->prepare("UPDATE loans SET current_balance = GREATEST(0, current_balance - ?) WHERE loan_id = ?");
-                $updLoan->bind_param("di", $amount, $loan_id);
-                $updLoan->execute();
-                $updLoan->close();
-
-                // 4. Record in Ledger
+            // Get Loan ID from the repayment request
+            $stmtLR = $conn->prepare("SELECT loan_id FROM loan_repayments WHERE reference_no = ? LIMIT 1");
+            $stmtLR->bind_param("s", $reference_no);
+            $stmtLR->execute();
+            $l_row = $stmtLR->get_result()->fetch_assoc();
+            $stmtLR->close();
+            
+            if ($l_row) {
+                $loan_id = (int)$l_row['loan_id'];
+                
+                // Record repayment in ledger (FinancialEngine handles loan balance sync)
                 TransactionHelper::record([
                     'member_id'     => $member_id,
                     'amount'        => $amount,
                     'type'          => 'loan_repayment',
                     'ref_no'        => $mpesaReceipt,
                     'notes'         => "Loan Repayment via M-Pesa (Loan #$loan_id)",
+                    'method'        => 'mpesa',
                     'related_id'    => $loan_id,
-                    'related_table' => 'loans',
-                    'update_member_balance' => false // Repayment doesn't increase wallet balance
+                    'related_table' => 'loans'
                 ]);
-
-                // 5. Check if Loan is complete
-                $stmtCheck = $conn->prepare("SELECT current_balance FROM loans WHERE loan_id = ?");
-                $stmtCheck->bind_param("i", $loan_id);
-                $stmtCheck->execute();
-                $l_data = $stmtCheck->get_result()->fetch_assoc();
-                $stmtCheck->close();
-
-                if ($l_data && $l_data['current_balance'] <= 0) {
-                    $conn->query("UPDATE loans SET status = 'completed' WHERE loan_id = $loan_id");
-                    $conn->query("UPDATE loan_guarantors SET status = 'released' WHERE loan_id = $loan_id");
-                }
+                
+                // Update specific repayment record status (metadata)
+                $conn->query("UPDATE loan_repayments SET status = 'Completed', mpesa_receipt = '$mpesaReceipt' WHERE reference_no = '$reference_no'");
             }
         } else {
             // General Credit (Savings/Shares/Welfare)
-            // Handled via TransactionHelper/FinancialEngine to ensure consistency
             TransactionHelper::record([
                 'member_id'     => $member_id,
                 'amount'        => $amount,
-                'type'          => 'credit', // General inflow
-                'category'      => $type,    // 'savings', 'shares', 'welfare'
+                'type'          => 'credit',
+                'category'      => $type,
                 'ref_no'        => $mpesaReceipt,
                 'notes'         => ucfirst($type) . " deposit via M-Pesa",
                 'method'        => 'mpesa'
@@ -377,6 +368,16 @@ if (isset($response['Result'])) {
 
         if ($resultCode == 0) {
             // --- SUCCESS ---
+            
+            // Idempotency Check: Has this TransactionID already been processed for this log?
+            $check_txn = $conn->prepare("SELECT log_id FROM callback_logs WHERE mpesa_receipt_number = ? AND processed = TRUE LIMIT 1");
+            $check_txn->bind_param("s", $transactionID);
+            $check_txn->execute();
+            if ($check_txn->get_result()->fetch_assoc()) {
+                echo json_encode(['ResultCode' => 0, 'ResultDesc' => 'Withdrawal Already Processed']);
+                exit;
+            }
+
             // Record in Golden Ledger via TransactionHelper
             $ledger_cat = FinancialEngine::CAT_WALLET;
             if ($source === 'savings') $ledger_cat = FinancialEngine::CAT_SAVINGS;
@@ -391,7 +392,8 @@ if (isset($response['Result'])) {
                 'ref_no'        => $transactionID,
                 'notes'         => "Standardized Withdrawal from " . ucfirst($source) . " via M-Pesa",
                 'method'        => 'mpesa',
-                'mpesa_request_id' => $originatorID
+                'related_id'    => $withdraw['id'] ?? $originatorID,
+                'related_table' => 'withdrawal_requests'
             ]);
 
             // Notify Member

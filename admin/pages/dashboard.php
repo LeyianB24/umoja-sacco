@@ -38,13 +38,10 @@ $where_sql = "WHERE " . implode(' AND ', $where_clauses);
 $open_tickets = $conn->query("SELECT COUNT(*) AS c FROM support_tickets s $where_sql")->fetch_assoc()['c'] ?? 0;
 $today_logs = $conn->query("SELECT COUNT(*) AS c FROM audit_logs WHERE DATE(created_at)=CURDATE()")->fetch_assoc()['c'] ?? 0;
 
-// Total Cash Position (Restricted)
+// Total Cash Position (Sourced from Golden Ledger accounts: Cash, Bank, M-Pesa)
 $cash_position = 0;
 if (Auth::can('view_financials') || $my_role_id === 1) {
-    $cash_res = $conn->query("SELECT 
-        SUM(CASE WHEN type='credit' THEN amount ELSE 0 END) - 
-        SUM(CASE WHEN type='debit' THEN amount ELSE 0 END) 
-        as balance FROM transactions");
+    $cash_res = $conn->query("SELECT SUM(current_balance) as balance FROM ledger_accounts WHERE category IN ('cash', 'bank', 'mpesa')");
     $cash_position = $cash_res->fetch_assoc()['balance'] ?? 0;
 }
 

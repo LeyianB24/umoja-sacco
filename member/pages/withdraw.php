@@ -210,14 +210,14 @@ $pageTitle = "Withdraw Funds";
 
                 <?php if ($success): ?>
                     <div class="alert alert-success alert-dismissible fade show" role="alert">
-                        <i class="bi bi-check-circle me-2"></i><?= $success ?>
+                        <i class="bi bi-check-circle me-2"></i><?= esc($success) ?>
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
                 <?php endif; ?>
 
                 <?php if ($error): ?>
                     <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                        <i class="bi bi-exclamation-triangle me-2"></i><?= $error ?>
+                        <i class="bi bi-exclamation-triangle me-2"></i><?= esc($error) ?>
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
                 <?php endif; ?>
@@ -227,12 +227,12 @@ $pageTitle = "Withdraw Funds";
                     <div class="d-flex align-items-center">
                         <div class="me-3">
                             <div style="width:48px; height:48px; background: #ecfccb; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
-                                <i class="bi bi-<?= $current_source['icon'] ?> fs-4 text-success"></i>
+                                <i class="bi bi-<?= esc($current_source['icon']) ?> fs-4 text-success"></i>
                             </div>
                         </div>
                         <div class="flex-grow-1">
-                            <h6 class="mb-0 fw-bold"><?= $current_source['title'] ?></h6>
-                            <small class="text-muted"><?= $current_source['description'] ?></small>
+                            <h6 class="mb-0 fw-bold"><?= esc($current_source['title']) ?></h6>
+                            <small class="text-muted"><?= esc($current_source['description']) ?></small>
                         </div>
                     </div>
                 </div>
@@ -242,7 +242,7 @@ $pageTitle = "Withdraw Funds";
                     <div class="small text-white-50 mb-2">AVAILABLE FOR WITHDRAWAL</div>
                     <h1 class="display-4 fw-bold mb-0">KES <?= number_format((float)$max_withdrawal, 2) ?></h1>
                     <?php if (isset($current_source['error'])): ?>
-                        <div class="mt-2 small text-warning"><i class="bi bi-exclamation-triangle-fill"></i> <?= $current_source['error'] ?></div>
+                        <div class="mt-2 small text-warning"><i class="bi bi-exclamation-triangle-fill"></i> <?= esc($current_source['error']) ?></div>
                     <?php endif; ?>
                 </div>
 

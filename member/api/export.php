@@ -53,12 +53,11 @@ switch($page) {
         $title = "Savings Statement - $member_name";
         $headers = ['Date', 'Type', 'Amount', 'Balance'];
         
-        // 1. Get Current Balance (Source of Truth)
-        $stmtB = $conn->prepare("SELECT account_balance FROM members WHERE member_id = ?");
-        $stmtB->bind_param("i", $member_id);
-        $stmtB->execute();
-        $cur_bal = (float)($stmtB->get_result()->fetch_assoc()['account_balance'] ?? 0);
-        $stmtB->close();
+        // 1. Get Current Balance from Golden Ledger (Single Source of Truth)
+        require_once __DIR__ . '/../../inc/FinancialEngine.php';
+        $engine = new FinancialEngine($conn);
+        $balances = $engine->getBalances($member_id);
+        $cur_bal = $balances['savings'];
         
         // 2. Fetch Transactions (Newest First)
         $sql = "SELECT transaction_date, transaction_type, amount FROM transactions 

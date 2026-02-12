@@ -20,25 +20,16 @@ class TrialBalanceLogic {
     private function calculateDebits() {
         $debits = [];
         
-        // 1. Cash at Hand (Golden Ledger)
-        // Sum of all inflows - all outflows
-        // Inflows: income, deposit, repayment, share_capital, registration_fee, fine, interest, dividend
-        // Outflows: expense, withdrawal, loan_disbursement
-        $query = "SELECT SUM(
-            CASE 
-                WHEN transaction_type IN ('income', 'deposit', 'repayment', 'share_capital', 'registration_fee', 'fine', 'interest', 'dividend', 'transfer_in') THEN amount
-                WHEN transaction_type IN ('expense', 'withdrawal', 'loan_disbursement', 'transfer', 'transfer_out') THEN -amount
-                ELSE 0 
-            END
-        ) as val FROM transactions";
+        // 1. Cash at Hand (Golden Ledger State)
+        // Sum of all SACCO system accounts (Cash, Bank, Mpesa)
+        $query = "SELECT SUM(current_balance) as val FROM ledger_accounts WHERE category IN ('cash', 'bank', 'mpesa')";
         $res = $this->db->query($query);
         $cash = $res->fetch_assoc()['val'] ?? 0;
         
-        $debits[] = ['category' => 'Cash at Hand', 'amount' => (float)$cash, 'type' => 'Asset'];
+        $debits[] = ['category' => 'Cash & Bank Balances', 'amount' => (float)$cash, 'type' => 'Asset'];
         
-        // 2. Loans Issued (Asset) - State based from Loans table
-        // We use current_balance because it reflects Principal Outstanding
-        $query = "SELECT SUM(current_balance) as val FROM loans WHERE status IN ('disbursed', 'active')";
+        // 2. Loans Issued (Asset) - Ledger State
+        $query = "SELECT SUM(current_balance) as val FROM ledger_accounts WHERE category = 'loans'";
         $res = $this->db->query($query);
         $loans = $res->fetch_assoc()['val'] ?? 0;
         
@@ -72,8 +63,8 @@ class TrialBalanceLogic {
         $credits = [];
         
         // 1. Member Savings (Liability)
-        // Source of Truth: Member Accounts (Faster/Accurate state)
-        $query = "SELECT SUM(account_balance) as val FROM members";
+        // Source of Truth: Ledger Sum for Savings Category
+        $query = "SELECT SUM(current_balance) as val FROM ledger_accounts WHERE category = 'savings'";
         $res = $this->db->query($query);
         $savings = $res->fetch_assoc()['val'] ?? 0;
         
@@ -144,7 +135,7 @@ class TrialBalanceLogic {
                 $query = "SELECT * FROM loans WHERE status IN ('active', 'disbursed') ORDER BY created_at DESC";
                 break;
             case 'Member Savings':
-                $query = "SELECT member_id, full_name, account_balance FROM members ORDER BY account_balance DESC LIMIT 100";
+                $query = "SELECT member_id, account_name, current_balance as account_balance FROM ledger_accounts WHERE category = 'savings' ORDER BY current_balance DESC LIMIT 100";
                 break;
             case 'Vehicle Expenses':
                  $query = "SELECT * FROM transactions WHERE transaction_type = 'expense' AND related_table = 'vehicle' ORDER BY created_at DESC LIMIT 100";
