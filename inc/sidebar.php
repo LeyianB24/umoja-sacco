@@ -19,9 +19,13 @@ $assets = defined('ASSET_BASE') ? ASSET_BASE : $base . '/public/assets';
 
 // Active Link Helper
 if (!function_exists('is_active')) {
-    function is_active($page) {
+    function is_active($page, $aliases = []) {
         $current = basename($_SERVER['PHP_SELF']);
-        return $current === $page ? 'active' : '';
+        if ($current === $page) return 'active';
+        foreach ($aliases as $alias) {
+            if ($current === $alias) return 'active';
+        }
+        return '';
     }
 }
 ?>
@@ -229,39 +233,40 @@ if (!function_exists('is_active')) {
             <a href="<?= $base ?>/member/pages/dashboard.php" class="hd-nav-item <?= is_active('dashboard.php') ?>">
                 <i class="bi bi-grid-fill"></i> <span class="hd-nav-text">Dashboard</span>
             </a>
-            <a href="<?= $base ?>/member/pages/mpesa_request.php" class="hd-nav-item <?= is_active('mpesa_request.php') ?>">
-                <i class="bi bi-phone-vibrate-fill"></i> <span class="hd-nav-text">Pay via M-Pesa</span>
-            </a>
-            <a href="<?= $base ?>/member/pages/withdraw.php" class="hd-nav-item <?= is_active('withdraw.php') ?>">
-                <i class="bi bi-wallet2"></i> <span class="hd-nav-text">Withdraw Funds</span>
-            </a>
-            
-            <div class="hd-nav-header">Finances</div>
+
+            <div class="hd-nav-header">Personal Finances</div>
             <a href="<?= $base ?>/member/pages/savings.php" class="hd-nav-item <?= is_active('savings.php') ?>">
-                <i class="bi bi-piggy-bank"></i> <span class="hd-nav-text">My Savings</span>
+                <i class="bi bi-piggy-bank"></i> <span class="hd-nav-text">Savings</span>
+            </a>
+            <a href="<?= $base ?>/member/pages/shares.php" class="hd-nav-item <?= is_active('shares.php') ?>">
+                <i class="bi bi-pie-chart-fill"></i> <span class="hd-nav-text">Shares Portfolio</span>
             </a>
             <a href="<?= $base ?>/member/pages/loans.php" class="hd-nav-item <?= is_active('loans.php') ?>">
                 <i class="bi bi-cash-stack"></i> <span class="hd-nav-text">My Loans</span>
             </a>
-            <a href="<?= $base ?>/member/pages/shares.php" class="hd-nav-item <?= is_active('shares.php') ?>">
-                <i class="bi bi-pie-chart-fill"></i> <span class="hd-nav-text">Shares</span>
+            <a href="<?= $base ?>/member/pages/contributions.php" class="hd-nav-item <?= is_active('contributions.php') ?>">
+                <i class="bi bi-calendar-check"></i> <span class="hd-nav-text">Contributions History</span>
             </a>
             
-            <div class="hd-nav-header">Welfare</div>
-            <a href="<?= $base ?>/member/pages/welfare_situations.php" class="hd-nav-item <?= is_active('welfare_situations.php') ?>">
-                <i class="bi bi-heart-pulse-fill"></i> <span class="hd-nav-text">Welfare Cases</span>
-            </a>
-            <a href="<?= $base ?>/member/pages/welfare.php" class="hd-nav-item <?= is_active('welfare.php') ?>">
-                <i class="bi bi-shield-check"></i> <span class="hd-nav-text">Welfare Fund</span>
+            <div class="hd-nav-header">Welfare & Solidarity</div>
+            <a href="<?= $base ?>/member/pages/welfare.php" class="hd-nav-item <?= is_active('welfare.php', ['welfare_situations.php']) ?>">
+                <i class="bi bi-heart-pulse-fill"></i> <span class="hd-nav-text">Welfare Hub</span>
             </a>
 
-            <div class="hd-nav-header">History</div>
+            <div class="hd-nav-header">Utilities</div>
+            <a href="<?= $base ?>/member/pages/mpesa_request.php?type=savings" class="hd-nav-item <?= (isset($_GET['type']) && $_GET['type'] === 'savings') ? 'active' : '' ?>">
+                <i class="bi bi-mobile-fill"></i> <span class="hd-nav-text">Pay Via Mpesa</span>
+            </a>
+            <a href="<?= $base ?>/member/pages/withdraw.php" class="hd-nav-item <?= is_active('withdraw.php') ?>">
+                <i class="bi bi-wallet2"></i> <span class="hd-nav-text">Withdraw Funds</span>
+            </a>
             <a href="<?= $base ?>/member/pages/transactions.php" class="hd-nav-item <?= is_active('transactions.php') ?>">
-                <i class="bi bi-arrow-left-right"></i> <span class="hd-nav-text">Transactions</span>
+                <i class="bi bi-arrow-left-right"></i> <span class="hd-nav-text">All Transactions</span>
             </a>
-            <a href="<?= $base ?>/member/pages/contributions.php" class="hd-nav-item <?= is_active('contributions.php') ?>">
-                <i class="bi bi-journal-text"></i> <span class="hd-nav-text">Contributions</span>
+            <a href="<?= $base ?>/member/pages/notifications.php" class="hd-nav-item <?= is_active('notifications.php') ?>">
+                <i class="bi bi-bell"></i> <span class="hd-nav-text">Notifications</span>
             </a>
+            
 
             <div class="hd-nav-header">Account</div>
             <a href="<?= $base ?>/member/pages/profile.php" class="hd-nav-item <?= is_active('profile.php') ?>">
@@ -270,155 +275,142 @@ if (!function_exists('is_active')) {
             <a href="<?= $base ?>/member/pages/settings.php" class="hd-nav-item <?= is_active('settings.php') ?>">
                 <i class="bi bi-gear-wide-connected"></i> <span class="hd-nav-text">Settings</span>
             </a>
-            <a href="<?= $base ?>/member/pages/notifications.php" class="hd-nav-item <?= is_active('notifications.php') ?>">
-                <i class="bi bi-bell"></i> <span class="hd-nav-text">Notifications</span>
-            </a>
-            <a class="hd-nav-item <?= is_active('support.php') ?>" href="<?= $base ?>/member/pages/support.php">
-                <i class="bi bi-headset"></i> <span class="hd-nav-text">Support Center</span>
-            </a>
 
         <?php elseif ($role !== 'guest'): ?>
             
-            <?php 
-                $dash = match($role) {
-                    'superadmin' => "$base/admin/pages/dashboard.php",
-                    'manager'    => "$base/admin/pages/dashboard.php",
-                    'accountant' => "$base/admin/pages/dashboard.php",
-                    'admin'      => "$base/admin/pages/dashboard.php",
-                    default      => "#"
-                };
-            ?>
-            <a href="<?= $dash ?>" class="hd-nav-item <?= is_active('dashboard.php') ?>">
-                <i class="bi bi-grid-1x2-fill"></i> <span class="hd-nav-text">Dashboard</span>
+            <a href="<?= $base ?>/admin/pages/dashboard.php" class="hd-nav-item <?= is_active('dashboard.php') ?>">
+                <i class="bi bi-grid-1x2-fill"></i> <span class="hd-nav-text">Admin Dashboard</span>
             </a>
 
-            <?php if ($role === 'superadmin' || has_permission('staff_mgmt.php')): ?>
-                <div class="hd-nav-header">System</div>
-                <a href="<?= $base ?>/admin/pages/staff_mgmt.php" class="hd-nav-item <?= is_active('staff_mgmt.php') ?>">
-                    <i class="bi bi-shield-lock"></i> <span class="hd-nav-text">Manage Staff</span>
-                </a>
-                <a href="<?= $base ?>/admin/pages/roles.php" class="hd-nav-item <?= is_active('roles.php') ?>">
-                    <i class="bi bi-grid-3x3-gap"></i> <span class="hd-nav-text">Role Matrix</span>
-                </a>
-            <?php endif; ?>
-
-            <div class="hd-nav-header">Operations</div>
-            <?php if (has_permission('members.php')): ?>
-                <a href="<?= $base ?>/admin/pages/members.php" class="hd-nav-item <?= is_active('members.php') ?>">
-                    <i class="bi bi-people-fill"></i> <span class="hd-nav-text">Member Directory</span>
-                </a>
+            <div class="hd-nav-header">Member Management</div>
+            <?php if (has_permission('member_onboarding.php')): ?>
                 <a href="<?= $base ?>/admin/pages/member_onboarding.php" class="hd-nav-item <?= is_active('member_onboarding.php') ?>">
                     <i class="bi bi-person-plus"></i> <span class="hd-nav-text">Member Onboarding</span>
                 </a>
             <?php endif; ?>
-
-            <?php if (has_permission('loans_reviews.php')): ?>
-                <a href="<?= $base ?>/admin/pages/loans_reviews.php" class="hd-nav-item <?= is_active('loans.php') ?>">
-                    <i class="bi bi-bank"></i> <span class="hd-nav-text">Loan Reviews</span>
+            <?php if (has_permission('members.php')): ?>
+                <a href="<?= $base ?>/admin/pages/members.php" class="hd-nav-item <?= is_active('members.php', ['member_profile.php']) ?>">
+                    <i class="bi bi-people-fill"></i> <span class="hd-nav-text">Members List</span>
                 </a>
             <?php endif; ?>
-
-            <?php if (has_permission('welfare_cases.php')): ?>
-                <a href="<?= $base ?>/admin/pages/welfare_cases.php" class="hd-nav-item <?= is_active('welfare_cases.php') ?>">
-                    <i class="bi bi-heart-pulse"></i> <span class="hd-nav-text">Welfare Cases</span>
-                </a>
-                <a href="<?= $base ?>/admin/pages/welfare_support.php" class="hd-nav-item <?= is_active('welfare_support.php') ?>">
-                    <i class="bi bi-hospital"></i> <span class="hd-nav-text">Welfare Support</span>
-                </a>
-            <?php endif; ?>
-
-            <?php if (has_permission('investments.php')): ?>
-                <a href="<?= $base ?>/admin/pages/investments.php" class="hd-nav-item <?= is_active('investments.php') ?>">
-                    <i class="bi bi-buildings"></i> <span class="hd-nav-text">Investments</span>
-                </a>
-            <?php endif; ?>
-
-            <?php if (has_permission('investments.php')): ?>
-                <a href="<?= $base ?>/admin/pages/investments.php?cat=vehicle_fleet" class="hd-nav-item <?= (isset($_GET['cat']) && $_GET['cat'] === 'vehicle_fleet') ? 'active' : '' ?>">
-                    <i class="bi bi-bus-front-fill"></i> <span class="hd-nav-text">Vehicles</span>
-                </a>
-            <?php endif; ?>
-
             <?php if (has_permission('employees.php')): ?>
                 <a href="<?= $base ?>/admin/pages/employees.php" class="hd-nav-item <?= is_active('employees.php') ?>">
-                    <i class="bi bi-person-badge"></i> <span class="hd-nav-text">Employees</span>
+                    <i class="bi bi-person-badge"></i> <span class="hd-nav-text">Employees List</span>
                 </a>
+            <?php endif; ?>
+            <?php if (has_permission('payroll.php')): ?>
                 <a href="<?= $base ?>/admin/pages/payroll.php" class="hd-nav-item <?= is_active('payroll.php') ?>">
                     <i class="bi bi-cash-stack"></i> <span class="hd-nav-text">Payroll Hub</span>
                 </a>
             <?php endif; ?>
 
-            <div class="hd-nav-header">Finance</div>
+            <div class="hd-nav-header">Financial Management</div>
             <?php if (has_permission('revenue.php')): ?>
                 <a href="<?= $base ?>/admin/pages/revenue.php" class="hd-nav-item <?= is_active('revenue.php') ?>">
-                    <i class="bi bi-graph-up"></i> <span class="hd-nav-text">Revenue Tracking</span>
+                    <i class="bi bi-graph-up"></i> <span class="hd-nav-text">Revenue Inflow</span>
                 </a>
             <?php endif; ?>
-
-            <?php if (has_permission('payments.php')): ?>
-                <a href="<?= $base ?>/admin/pages/payments.php" class="hd-nav-item <?= is_active('payments.php') ?>">
-                    <i class="bi bi-credit-card"></i> <span class="hd-nav-text">Payments</span>
-                </a>
-            <?php endif; ?>
-
-            <?php if (has_permission('transactions.php')): ?>
-                <a href="<?= $base ?>/admin/pages/transactions.php" class="hd-nav-item <?= is_active('transactions.php') ?>">
-                    <i class="bi bi-journal-text"></i> <span class="hd-nav-text">Golden Ledger</span>
-                </a>
-            <?php endif; ?>
-
             <?php if (has_permission('expenses.php')): ?>
                 <a href="<?= $base ?>/admin/pages/expenses.php" class="hd-nav-item <?= is_active('expenses.php') ?>">
-                    <i class="bi bi-receipt"></i> <span class="hd-nav-text">Expenses</span>
+                    <i class="bi bi-receipt"></i> <span class="hd-nav-text">Expense Tracker</span>
                 </a>
             <?php endif; ?>
-
-            <?php if (has_permission('loans_payouts.php')): ?>
-                <a href="<?= $base ?>/admin/pages/loans_payouts.php" class="hd-nav-item <?= is_active('loans.php') ?>">
-                    <i class="bi bi-cash-coin"></i> <span class="hd-nav-text">Disbursement</span>
+            <?php if (has_permission('transactions.php')): ?>
+                <a href="<?= $base ?>/admin/pages/transactions.php" class="hd-nav-item <?= is_active('transactions.php') ?>">
+                    <i class="bi bi-journal-text"></i> <span class="hd-nav-text">Live Ledger View</span>
                 </a>
             <?php endif; ?>
-
-            <?php if (has_permission('statements.php') || has_permission('trial_balance.php')): ?>
-                <a href="<?= $base ?>/admin/pages/statements.php" class="hd-nav-item <?= is_active('statements.php') ?>">
-                    <i class="bi bi-file-earmark-spreadsheet"></i> <span class="hd-nav-text">Statements</span>
-                </a>
+            <?php if (has_permission('trial_balance.php')): ?>
                 <a href="<?= $base ?>/admin/pages/trial_balance.php" class="hd-nav-item <?= is_active('trial_balance.php') ?>">
-                    <i class="bi bi-calculator"></i> <span class="hd-nav-text">Trial Balance</span>
+                    <i class="bi bi-balance-scale"></i> <span class="hd-nav-text">Trial Balance</span>
                 </a>
             <?php endif; ?>
 
+            <div class="hd-nav-header">Loans & Credit</div>
+            <?php if (has_permission('loans_reviews.php')): ?>
+                <a href="<?= $base ?>/admin/pages/loans_reviews.php" class="hd-nav-item <?= is_active('loans_reviews.php') ?>">
+                    <i class="bi bi-bank"></i> <span class="hd-nav-text">Loan Reviews</span>
+                </a>
+            <?php endif; ?>
+            <?php if (has_permission('loans_payouts.php')): ?>
+                <a href="<?= $base ?>/admin/pages/loans_payouts.php" class="hd-nav-item <?= is_active('loans_payouts.php') ?>">
+                    <i class="bi bi-cash-coin"></i> <span class="hd-nav-text">Loan Payouts</span>
+                </a>
+            <?php endif; ?>
+
+            <div class="hd-nav-header">Welfare Module</div>
+            <?php if (has_permission('welfare_cases.php')): ?>
+                <a href="<?= $base ?>/admin/pages/welfare_cases.php" class="hd-nav-item <?= is_active('welfare_cases.php') ?>">
+                    <i class="bi bi-heart-pulse"></i> <span class="hd-nav-text">Case Management</span>
+                </a>
+            <?php endif; ?>
+            <?php if (has_permission('welfare_support.php')): ?>
+                <a href="<?= $base ?>/admin/pages/welfare_support.php" class="hd-nav-item <?= is_active('welfare_support.php') ?>">
+                    <i class="bi bi-hospital"></i> <span class="hd-nav-text">Fund Disbursements</span>
+                </a>
+            <?php endif; ?>
+
+            <div class="hd-nav-header">Investments & Assets</div>
+            <?php if (has_permission('investments.php')): ?>
+                <a href="<?= $base ?>/admin/pages/investments.php" class="hd-nav-item <?= is_active('investments.php') ?>">
+                    <i class="bi bi-buildings"></i> <span class="hd-nav-text">Asset Portfolio</span>
+                </a>
+            <?php endif; ?>
+            <?php if (has_permission('admin_shares.php')): ?>
+                <a href="<?= $base ?>/admin/pages/admin_shares.php" class="hd-nav-item <?= is_active('admin_shares.php') ?>">
+                    <i class="bi bi-pie-chart-fill"></i> <span class="hd-nav-text">Equity & Shares</span>
+                </a>
+            <?php endif; ?>
+
+            <div class="hd-nav-header">Reports & Exports</div>
             <?php if (has_permission('reports.php')): ?>
                 <a href="<?= $base ?>/admin/pages/reports.php" class="hd-nav-item <?= is_active('reports.php') ?>">
-                    <i class="bi bi-pie-chart"></i> <span class="hd-nav-text">Reports</span>
+                    <i class="bi bi-pie-chart"></i> <span class="hd-nav-text">Analytical Reports</span>
+                </a>
+            <?php endif; ?>
+            <?php if (has_permission('statements.php')): ?>
+                <a href="<?= $base ?>/admin/pages/statements.php" class="hd-nav-item <?= is_active('statements.php') ?>">
+                    <i class="bi bi-file-earmark-spreadsheet"></i> <span class="hd-nav-text">Account Statements</span>
                 </a>
             <?php endif; ?>
 
-            <div class="hd-nav-header">Maintenance</div>
+            <div class="hd-nav-header">System Maintenance</div>
+            <?php if ($role === 'superadmin' || has_permission('staff_mgmt.php')): ?>
+                <a href="<?= $base ?>/admin/pages/staff_mgmt.php" class="hd-nav-item <?= is_active('staff_mgmt.php') ?>">
+                    <i class="bi bi-shield-lock"></i> <span class="hd-nav-text">Staff & Access</span>
+                </a>
+                <a href="<?= $base ?>/admin/pages/roles.php" class="hd-nav-item <?= is_active('roles.php') ?>">
+                    <i class="bi bi-grid-3x3-gap"></i> <span class="hd-nav-text">Roles Matrix</span>
+                </a>
+            <?php endif; ?>
+            <?php if (has_permission('live_monitor.php')): ?>
+                <a href="<?= $base ?>/admin/pages/live_monitor.php" class="hd-nav-item <?= is_active('live_monitor.php') ?>">
+                    <i class="bi bi-display"></i> <span class="hd-nav-text">Live Monitor</span>
+                </a>
+            <?php endif; ?>
+            <?php if (has_permission('system_health.php')): ?>
+                <a href="<?= $base ?>/admin/pages/system_health.php" class="hd-nav-item <?= is_active('system_health.php') ?>">
+                    <i class="bi bi-heart-pulse"></i> <span class="hd-nav-text">System Health</span>
+                </a>
+            <?php endif; ?>
+            <?php if (has_permission('backups.php')): ?>
+                <a href="<?= $base ?>/admin/pages/backups.php" class="hd-nav-item <?= is_active('backups.php') ?>">
+                    <i class="bi bi-database-fill-check"></i> <span class="hd-nav-text">Database Backups</span>
+                </a>
+            <?php endif; ?>
             <?php if (has_permission('audit_logs.php')): ?>
-                <a href="<?= $base ?>/admin/pages/monitor.php" class="hd-nav-item <?= is_active('monitor.php') ?>">
-                    <i class="bi bi-broadcast-pin text-danger"></i> <span class="hd-nav-text">Live Monitor</span>
-                </a>
                 <a href="<?= $base ?>/admin/pages/audit_logs.php" class="hd-nav-item <?= is_active('audit_logs.php') ?>">
-                    <i class="bi bi-activity"></i> <span class="hd-nav-text">Audit Logs</span>
+                    <i class="bi bi-activity"></i> <span class="hd-nav-text">Activity Logs</span>
                 </a>
             <?php endif; ?>
-
+            <?php if (has_permission('support.php')): ?>
+                <a href="<?= $base ?>/admin/pages/support.php" class="hd-nav-item <?= is_active('support.php') ?>">
+                    <i class="bi bi-headset"></i> <span class="hd-nav-text">Tech Support</span>
+                </a>
+            <?php endif; ?>
             <?php if (has_permission('settings.php')): ?>
                 <a href="<?= $base ?>/admin/pages/settings.php" class="hd-nav-item <?= is_active('settings.php') ?>">
                     <i class="bi bi-sliders"></i> <span class="hd-nav-text">Global Settings</span>
-                </a>
-            <?php endif; ?>
-
-            <?php if (has_permission('backups.php')): ?>
-                <a href="<?= $base ?>/admin/pages/backups.php" class="hd-nav-item <?= is_active('backups.php') ?>">
-                    <i class="bi bi-database-down"></i> <span class="hd-nav-text">Backups</span>
-                </a>
-            <?php endif; ?>
-
-            <?php if (has_permission('support.php')): ?>
-                <a href="<?= $base ?>/admin/pages/support.php" class="hd-nav-item <?= is_active('support.php') ?>">
-                    <i class="bi bi-life-preserver"></i> <span class="hd-nav-text">Tech Support</span>
                 </a>
             <?php endif; ?>
 
@@ -428,7 +420,7 @@ if (!function_exists('is_active')) {
             <div class="hd-support-widget">
                 <h6 class="fw-bold mb-1">Need Help?</h6>
                 <p class="small opacity-75 mb-0">Contact Support</p>
-                <a href="<?= $base ?>/public/support.php" class="hd-support-btn">Open Ticket</a>
+                <a href="<?= $base ?>/member/pages/support.php" class="hd-support-btn">Open Ticket</a>
             </div>
         <?php endif; ?>
 

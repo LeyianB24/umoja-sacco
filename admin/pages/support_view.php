@@ -239,8 +239,9 @@ $pageTitle = "Ticket View";
                     </div>
                 </div>
             </div>
+            <?php $layout->footer(); ?>
         </div>
-    <?php $layout->footer(); ?>
+    
     </div>
 </div>
 

@@ -417,10 +417,11 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
                         </tbody>
                     </table>
                 </div>
+                <?php $layout->footer(); ?>
             </div>
         </div>
         
-        <?php $layout->footer(); ?>
+        
     </div>
 </div>
 

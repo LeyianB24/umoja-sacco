@@ -364,10 +364,13 @@ $pageTitle = "Payments Ledger";
                         <label class="form-label small text-muted fw-bold">Transaction Type</label>
                         <select name="type" class="form-select">
                             <option value="">All Types</option>
-                            <option value="deposit" <?= ($_GET['type'] ?? '') == 'deposit' ? 'selected' : '' ?>>Deposit</option>
+                            <option value="savings_deposit" <?= ($_GET['type'] ?? '') == 'savings_deposit' ? 'selected' : '' ?>>Deposit (Savings)</option>
                             <option value="withdrawal" <?= ($_GET['type'] ?? '') == 'withdrawal' ? 'selected' : '' ?>>Withdrawal</option>
                             <option value="loan_repayment" <?= ($_GET['type'] ?? '') == 'loan_repayment' ? 'selected' : '' ?>>Loan Repayment</option>
-                            <option value="expense" <?= ($_GET['type'] ?? '') == 'expense' ? 'selected' : '' ?>>Expense</option>
+                            <option value="loan_disbursement" <?= ($_GET['type'] ?? '') == 'loan_disbursement' ? 'selected' : '' ?>>Loan Disbursement</option>
+                            <option value="share_purchase" <?= ($_GET['type'] ?? '') == 'share_purchase' ? 'selected' : '' ?>>Share Capital</option>
+                            <option value="revenue_inflow" <?= ($_GET['type'] ?? '') == 'revenue_inflow' ? 'selected' : '' ?>>Revenue Inflow</option>
+                            <option value="expense_outflow" <?= ($_GET['type'] ?? '') == 'expense_outflow' ? 'selected' : '' ?>>Expense</option>
                         </select>
                     </div>
                     <div class="col-md-2">
@@ -397,7 +400,8 @@ $pageTitle = "Payments Ledger";
                         <tbody>
                             <?php if ($transactions->num_rows > 0): ?>
                                 <?php while($row = $transactions->fetch_assoc()): 
-                                    $is_in = in_array($row['transaction_type'], ['deposit', 'repayment', 'income', 'loan_repayment', 'share_capital']);
+                                    $in_types = ['deposit', 'repayment', 'income', 'loan_repayment', 'share_capital', 'savings_deposit', 'revenue_inflow', 'share_purchase', 'welfare_contribution', 'registration_fee', 'loan_penalty'];
+                                    $is_in = in_array($row['transaction_type'], $in_types);
                                     $badge_class = $is_in ? 'badge-in' : 'badge-out';
                                     $amount_color = $is_in ? 'text-success' : 'text-danger';
                                     $sign = $is_in ? '+' : '-';
@@ -468,10 +472,11 @@ $pageTitle = "Payments Ledger";
                         </tbody>
                     </table>
                 </div>
+                <?php $layout->footer(); ?>
             </div>
 
         </div>
-        <?php $layout->footer(); ?>
+        
     </div>
 </div>
 
@@ -495,7 +500,7 @@ $pageTitle = "Payments Ledger";
                             <option value="loan_repayment">Loan Repayment</option>
                             <option value="share_capital">Share Capital</option>
                             <option value="expense">Office Expense</option>
-                            <option value="income">Other Income</option>
+                            <option value="income">Revenue Inflow</option>
                         </select>
                     </div>
 

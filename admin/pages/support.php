@@ -370,10 +370,11 @@ $pageTitle = "Helpdesk Support";
                         </tbody>
                     </table>
                 </div>
+                 <?php $layout->footer(); ?>
             </div>
 
         </div>
-        <?php $layout->footer(); ?>
+       
     </div>
 </div>
 

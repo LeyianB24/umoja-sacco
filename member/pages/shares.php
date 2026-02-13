@@ -25,10 +25,28 @@ $layout = LayoutManager::create('member');
 $member_id = $_SESSION['member_id'];
 
 // ---------------------------------------------------------
-// 2. Settings & Business Logic
+// 2. Settings & Business Logic (Dynamic Equity Engine)
 // ---------------------------------------------------------
-$current_share_price = 100.00;
+require_once __DIR__ . '/../../inc/ShareValuationEngine.php';
+$svEngine = new ShareValuationEngine($conn);
+$valuation = $svEngine->getValuation();
+
+$current_share_price = $valuation['price'];
+$ownership_pct = $svEngine->getOwnershipPercentage($member_id);
+
+// Fetch member specific equity details
+$stmt = $conn->prepare("SELECT units_owned, total_amount_paid, average_purchase_price FROM member_shareholdings WHERE member_id = ?");
+$stmt->bind_param("i", $member_id);
+$stmt->execute();
+$shareholding = $stmt->get_result()->fetch_assoc() ?? ['units_owned' => 0, 'total_amount_paid' => 0, 'average_purchase_price' => 0];
+
+$totalUnits = (float)$shareholding['units_owned'];
+$portfolioValue = $totalUnits * $current_share_price;
+$totalGain = $portfolioValue - (float)$shareholding['total_amount_paid'];
+$gainPct = ($shareholding['total_amount_paid'] > 0) ? ($totalGain / $shareholding['total_amount_paid']) * 100 : 0;
+
 $dividend_rate_projection = 12.5; // Example: 12.5% projected return
+$projectedDividend = $portfolioValue * ($dividend_rate_projection / 100);
 
 // ---------------------------------------------------------
 // 3. Fetch Balances via Financial Engine
@@ -42,11 +60,11 @@ $totalUnits = $totalCapital / $current_share_price;
 $projectedDividend = $totalCapital * ($dividend_rate_projection / 100);
 
 // ---------------------------------------------------------
-// 4. Fetch Share History & Prepare Chart Data
+// 4. Fetch Share History (Transactions)
 // ---------------------------------------------------------
-$sqlHistory = "SELECT *, amount as total_value, created_at, reference_no 
-               FROM contributions 
-               WHERE member_id = ? AND contribution_type = 'shares' 
+$sqlHistory = "SELECT created_at, reference_no, units as share_units, unit_price, total_value, transaction_type 
+               FROM share_transactions 
+               WHERE member_id = ? 
                ORDER BY created_at DESC";
 $stmt = $conn->prepare($sqlHistory);
 $stmt->bind_param("i", $member_id);
@@ -93,17 +111,18 @@ while ($row = $result->fetch_assoc()) {
 }
 $stmt->close();
 
-// Prepare Data for Chart (Cumulative Growth)
 $chartLabels = [];
 $chartData = [];
-$runningTotal = 0;
+$runningUnits = 0;
 
 $chronological_transactions = array_reverse($transactions);
 
 foreach ($chronological_transactions as $txn) {
-    $runningTotal += (float)$txn['total_value'];
+    if ($txn['transaction_type'] === 'purchase' || $txn['transaction_type'] === 'migration') {
+        $runningUnits += (float)$txn['share_units'];
+    }
     $chartLabels[] = date('M d', strtotime($txn['created_at'])); 
-    $chartData[] = $runningTotal;
+    $chartData[] = $runningUnits * $current_share_price;
 }
 
 // Convert to JSON for JS
@@ -260,7 +279,7 @@ $pageTitle = "My Share Portfolio";
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-5 gap-3">
             <div>
                 <h2 class="fw-bold mb-1" style="color: var(--brand-dark);">Share Portfolio</h2>
-                <p class="text-secondary mb-0">Overview of your equity and projected returns.</p>
+                <p class="text-secondary mb-0">Equity value based on Corporate Valuation.</p>
             </div>
             <div class="d-flex gap-2">
             <div class="dropdown">
@@ -295,17 +314,17 @@ $pageTitle = "My Share Portfolio";
                     </div>
                     
                     <div class="mt-4 z-1">
-                        <h1 class="display-amount mb-0">KES <?= number_format((float)$totalCapital, 2) ?></h1>
-                        <p class="opacity-75 mb-0 mt-2">Total Accumulated Value</p>
+                        <h1 class="display-amount mb-0">KES <?= number_format((float)$portfolioValue, 2) ?></h1>
+                        <p class="opacity-75 mb-0 mt-2">Current Portfolio Value</p>
                     </div>
 
                     <div class="mt-4 pt-3 border-top border-white border-opacity-10 d-flex justify-content-between align-items-end z-1">
                         <div>
-                            <small class="text-lime fw-bold">Est. Dividend (<?= $dividend_rate_projection ?>%)</small>
-                            <div class="fs-5 fw-bold text-white">KES <?= number_format((float)$projectedDividend, 2) ?></div>
+                            <small class="text-lime fw-bold">Est. Earnings Ratio</small>
+                            <div class="fs-5 fw-bold text-white"><?= number_format((float)$gainPct, 2) ?>% Capital Growth</div>
                         </div>
                         <div class="text-end">
-                            <div class="badge bg-lime-subtle text-dark border-0">Annual Projection</div>
+                            <div class="badge bg-lime-subtle text-dark border-0">Corporate Asset</div>
                         </div>
                     </div>
                 </div>
@@ -317,17 +336,17 @@ $pageTitle = "My Share Portfolio";
                         <div class="stat-card">
                             <div class="d-flex align-items-center justify-content-between mb-3">
                                 <div>
-                                    <p class="text-uppercase text-muted small fw-bold mb-1">Total Units</p>
-                                    <h3 class="fw-bold mb-0"><?= number_format((float)$totalUnits, 2) ?></h3>
+                                    <p class="text-uppercase text-muted small fw-bold mb-1">Ownership Units</p>
+                                    <h3 class="fw-bold mb-0"><?= number_format((float)$totalUnits, 4) ?></h3>
                                 </div>
                                 <div class="icon-box bg-lime-subtle text-dark">
-                                    <i class="bi bi-layers-fill"></i>
+                                    <i class="bi bi-pie-chart-fill"></i>
                                 </div>
                             </div>
                             <hr class="border-light my-3">
                             <div class="d-flex align-items-center justify-content-between">
-                                <span class="text-muted small">Current Price</span>
-                                <span class="fw-bold text-dark">KES <?= number_format((float)$current_share_price, 2) ?></span>
+                                <span class="text-muted small">Ownership Share</span>
+                                <span class="fw-bold text-dark"><?= number_format((float)$ownership_pct, 4) ?>% of Sacco</span>
                             </div>
                         </div>
                     </div>

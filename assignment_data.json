@@ -1,0 +1,138 @@
+{
+    "cases": [
+        {
+            "case_id": "1",
+            "title": "Financial Help For Leyian",
+            "related_member_id": null,
+            "status": "approved"
+        },
+        {
+            "case_id": "2",
+            "title": "Medical Support for Njoroge Matatu Driver",
+            "related_member_id": null,
+            "status": "approved"
+        },
+        {
+            "case_id": "3",
+            "title": "Help Fundraise for Wedding Ceremony",
+            "related_member_id": "2",
+            "status": "approved"
+        },
+        {
+            "case_id": "4",
+            "title": "Medical support",
+            "related_member_id": "2",
+            "status": "approved"
+        },
+        {
+            "case_id": "5",
+            "title": "Support Payout: Support Payout",
+            "related_member_id": "4",
+            "status": "closed"
+        },
+        {
+            "case_id": "6",
+            "title": "Support Payout: Support Payout",
+            "related_member_id": "2",
+            "status": "closed"
+        },
+        {
+            "case_id": "7",
+            "title": "Support Payout: Support Payout",
+            "related_member_id": "3",
+            "status": "closed"
+        },
+        {
+            "case_id": "8",
+            "title": "Support Payout: Support Payout",
+            "related_member_id": "2",
+            "status": "closed"
+        },
+        {
+            "case_id": "9",
+            "title": "Support Payout: Support Payout",
+            "related_member_id": "2",
+            "status": "closed"
+        },
+        {
+            "case_id": "10",
+            "title": "Support Payout: Support Payout",
+            "related_member_id": "2",
+            "status": "closed"
+        },
+        {
+            "case_id": "11",
+            "title": "Support Payout: Support Payout",
+            "related_member_id": "3",
+            "status": "closed"
+        },
+        {
+            "case_id": "12",
+            "title": "Support Payout: Support Payout",
+            "related_member_id": "2",
+            "status": "closed"
+        },
+        {
+            "case_id": "13",
+            "title": "Support Payout: Support Payout",
+            "related_member_id": "6",
+            "status": "closed"
+        }
+    ],
+    "members": [
+        {
+            "member_id": "2",
+            "full_name": "Bezalel Leyian"
+        },
+        {
+            "member_id": "3",
+            "full_name": "Tomaka Bezalel"
+        },
+        {
+            "member_id": "4",
+            "full_name": "Eunice Lasoi Tomaka"
+        },
+        {
+            "member_id": "5",
+            "full_name": "Daniel Soine Tomaka"
+        },
+        {
+            "member_id": "6",
+            "full_name": "Alice Meikoki"
+        },
+        {
+            "member_id": "7",
+            "full_name": "Titus Muthama"
+        },
+        {
+            "member_id": "8",
+            "full_name": "Bezalel Tomaka"
+        },
+        {
+            "member_id": "9",
+            "full_name": "Test Member"
+        },
+        {
+            "member_id": "10",
+            "full_name": "Test Member"
+        },
+        {
+            "member_id": "12",
+            "full_name": "Leyian Tomaka"
+        }
+    ],
+    "donations": [
+        {
+            "case_id": "1",
+            "total": "37500.00"
+        },
+        {
+            "case_id": "2",
+            "total": "38590.00"
+        },
+        {
+            "case_id": "3",
+            "total": "3600.00"
+        }
+    ]
+}
