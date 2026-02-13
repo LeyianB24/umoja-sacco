@@ -1,0 +1,13 @@
+{"case_id":"1","title":"Financial Help For Leyian","status":"","related_member_id":null,"target_amount":"120000.00","total_raised":"0.00"}
+{"case_id":"2","title":"Medical Support for Njoroge Matatu Driver","status":"","related_member_id":null,"target_amount":"250000.00","total_raised":"0.00"}
+{"case_id":"3","title":"Help Fundraise for Wedding Ceremony","status":"","related_member_id":"2","target_amount":"100000.00","total_raised":"0.00"}
+{"case_id":"4","title":"Medical support","status":"","related_member_id":"2","target_amount":"24000.00","total_raised":"0.00"}
+{"case_id":"5","title":"Support Payout: Support Payout","status":"closed","related_member_id":"4","target_amount":"300.00","total_raised":"300.00"}
+{"case_id":"6","title":"Support Payout: Support Payout","status":"closed","related_member_id":"2","target_amount":"456.00","total_raised":"456.00"}
+{"case_id":"7","title":"Support Payout: Support Payout","status":"closed","related_member_id":"3","target_amount":"1000.00","total_raised":"1000.00"}
+{"case_id":"8","title":"Support Payout: Support Payout","status":"closed","related_member_id":"2","target_amount":"1000.00","total_raised":"1000.00"}
+{"case_id":"9","title":"Support Payout: Support Payout","status":"closed","related_member_id":"2","target_amount":"300.00","total_raised":"300.00"}
+{"case_id":"10","title":"Support Payout: Support Payout","status":"closed","related_member_id":"2","target_amount":"600.00","total_raised":"600.00"}
+{"case_id":"11","title":"Support Payout: Support Payout","status":"closed","related_member_id":"3","target_amount":"1200.00","total_raised":"1200.00"}
+{"case_id":"12","title":"Support Payout: Support Payout","status":"closed","related_member_id":"2","target_amount":"4000.00","total_raised":"4000.00"}
+{"case_id":"13","title":"Support Payout: Support Payout","status":"closed","related_member_id":"6","target_amount":"300.00","total_raised":"300.00"}

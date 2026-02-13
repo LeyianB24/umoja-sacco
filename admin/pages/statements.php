@@ -168,7 +168,7 @@ $pageTitle = "Statement Portal";
                         <h4 class="fw-800 mb-0">Report Configuration</h4>
                     </div>
 
-                    <form action="generate_statement.php" method="POST" target="_blank">
+                    <form action="../api/generate_statement.php" method="POST" target="_blank">
                         <!-- Member Selection -->
                         <div class="mb-4">
                             <label class="form-label">Select Sacco Member</label>
@@ -236,9 +236,9 @@ $pageTitle = "Statement Portal";
                                 <label class="btn btn-outline-dark rounded-start-3 fw-bold py-2" for="fmtPdf">
                                     <i class="bi bi-file-earmark-pdf-fill me-2"></i>PDF
                                 </label>
-                                <input type="radio" class="btn-check" name="format" id="fmtCsv" value="csv">
-                                <label class="btn btn-outline-dark rounded-end-3 fw-bold py-2" for="fmtCsv">
-                                    <i class="bi bi-file-earmark-spreadsheet-fill me-2"></i>CSV
+                                <input type="radio" class="btn-check" name="format" id="fmtExcel" value="excel">
+                                <label class="btn btn-outline-dark rounded-end-3 fw-bold py-2" for="fmtExcel">
+                                    <i class="bi bi-file-earmark-excel-fill me-2"></i>Excel
                                 </label>
                             </div>
                         </div>

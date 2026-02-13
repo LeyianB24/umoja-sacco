@@ -43,20 +43,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($resp['success']) {
             $checkoutID = $resp['checkout_id'];
+            $is_sandbox = (defined('APP_ENV') && APP_ENV === 'sandbox');
+            $request_status = $is_sandbox ? 'completed' : 'pending';
+            $contrib_status = $is_sandbox ? 'active' : 'pending';
+            $mock_receipt = $is_sandbox ? 'SANDBOX-REG-' . strtoupper(bin2hex(random_bytes(3))) : null;
             
             $conn->begin_transaction();
-            // 1. Log M-Pesa Request
-            $stmt = $conn->prepare("INSERT INTO mpesa_requests (member_id, phone, amount, checkout_request_id, status, reference_no, created_at) VALUES (?, ?, ?, ?, 'pending', ?, NOW())");
-            $stmt->bind_param("isdss", $member_id, $phone_clean, $amount, $checkoutID, $ref);
-            $stmt->execute();
+            try {
+                // 1. Log M-Pesa Request
+                $stmt = $conn->prepare("INSERT INTO mpesa_requests (member_id, phone, amount, checkout_request_id, status, reference_no, mpesa_receipt, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())");
+                $stmt->bind_param("isdssss", $member_id, $phone_clean, $amount, $checkoutID, $request_status, $ref, $mock_receipt);
+                $stmt->execute();
 
-            // 2. Log Contribution
-            $stmt = $conn->prepare("INSERT INTO contributions (member_id, contribution_type, amount, payment_method, reference_no, status, created_at) VALUES (?, 'registration', ?, 'mpesa', ?, 'pending', NOW())");
-            $stmt->bind_param("ids", $member_id, $amount, $ref);
-            $stmt->execute();
-            
-            $conn->commit();
-            $success = "STK Push sent! Please enter your M-Pesa PIN on your phone.";
+                // 2. Log Contribution
+                $stmt = $conn->prepare("INSERT INTO contributions (member_id, contribution_type, amount, payment_method, reference_no, status, created_at) VALUES (?, 'registration', ?, 'mpesa', ?, ?, NOW())");
+                $stmt->bind_param("idsss", $member_id, $amount, $ref, $contrib_status);
+                $stmt->execute();
+
+                // 3. Auto-Activate Ledger if Sandbox
+                if ($is_sandbox) {
+                    require_once __DIR__ . '/../../inc/TransactionHelper.php';
+                    TransactionHelper::record([
+                        'member_id'     => $member_id,
+                        'amount'        => $amount,
+                        'type'          => 'registration_fee',
+                        'ref_no'        => $mock_receipt,
+                        'notes'         => "Registration Fee Paid via Sandbox M-Pesa (Auto-Activated)",
+                        'method'        => 'mpesa',
+                        'related_id'    => $member_id,
+                        'related_table' => 'registration_fee'
+                    ]);
+
+                    // Activate member
+                    $conn->query("UPDATE members SET reg_fee_paid = 1, registration_fee_status = 'paid', status = 'active' WHERE member_id = $member_id");
+                    $success = "Sandbox Payment Auto-Activated! Redirecting to dashboard...";
+                    echo "<script>setTimeout(() => window.location.href = '../member/pages/dashboard.php', 2000);</script>";
+                } else {
+                    $success = "STK Push sent! Please enter your M-Pesa PIN on your phone.";
+                }
+                
+                $conn->commit();
+            } catch (Exception $e) {
+                $conn->rollback();
+                throw $e;
+            }
         } else {
             throw new Exception($resp['message'] ?? "STK Push failed.");
         }

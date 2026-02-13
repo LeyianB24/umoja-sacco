@@ -7,21 +7,14 @@ require_once __DIR__ . '/../../config/db_connect.php';
 require_once __DIR__ . '/../../inc/Auth.php';
 require_once __DIR__ . '/../../inc/LayoutManager.php';
 
-$layout = LayoutManager::create('admin');
-// usms/admin/pages/welfare_cases.php
-
 // 1. Auth Check (System Model V22 - Open Operations)
-
 require_permission();
-
-// Initialize Layout Manager
-$layout = LayoutManager::create('admin');
 Auth::requireAdmin();
 
+$layout = LayoutManager::create('admin');
+
 $my_role_id = $_SESSION['role_id'] ?? 0;
-// All admins can view, but only certain roles can create/close (logic preservation)
-$can_edit = in_array($my_role_id, [1, 2, 5]); // Superadmin, Manager, Welfare Officer (based on prev list IDs)
-// Actually, let's keep it simple as per prompt "All staff trusted to operate".
+// All staff trusted to operate
 $can_edit = true; 
 
 
@@ -57,13 +50,13 @@ function sendWelfareNotification($conn, $member_id, $title, $description) {
 }
 
 // 2. KPI Data
-// Total Raised
-$res = $conn->query("SELECT SUM(amount) as val FROM welfare_donations");
-$total_raised = $res->fetch_assoc()['val'] ?? 0;
+// Total Raised (Across all cases)
+$res = $conn->query("SELECT SUM(total_raised) as val FROM welfare_cases");
+$total_raised = ($res && $row = $res->fetch_assoc()) ? $row['val'] : 0;
 
-// Active Cases
-$res = $conn->query("SELECT COUNT(*) as cnt FROM welfare_cases WHERE status='active'");
-$active_count = $res->fetch_assoc()['cnt'] ?? 0;
+// Active / Pending Cases
+$res = $conn->query("SELECT COUNT(*) as cnt FROM welfare_cases WHERE status IN ('active', 'pending', 'approved')");
+$active_count = ($res && $row = $res->fetch_assoc()) ? $row['cnt'] : 0;
 
 // 3. Handle Create (Only Manager/Superadmin)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_case'])) {
@@ -99,7 +92,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_case'])) {
     }
 }
 
-// 4. Handle Close
+// 4. Handle Actions (Approve/Close)
+if (isset($_POST['approve_case']) && $can_edit) {
+    $cid = intval($_POST['case_id']);
+    $approved_amt = floatval($_POST['approved_amount']);
+    
+    if ($cid > 0 && $approved_amt > 0) {
+        $stmt = $conn->prepare("UPDATE welfare_cases SET approved_amount = ?, status = 'approved' WHERE case_id = ?");
+        $stmt->bind_param("di", $approved_amt, $cid);
+        if ($stmt->execute()) {
+            $success = "Case approved for KES " . number_format($approved_amt, 2);
+        }
+    }
+}
+
 if (isset($_GET['close']) && $can_edit) {
     $id = intval($_GET['close']);
     $conn->query("UPDATE welfare_cases SET status='closed' WHERE case_id=$id");
@@ -108,12 +114,14 @@ if (isset($_GET['close']) && $can_edit) {
 }
 
 // 5. Fetch Cases (Joined with Members table to get names)
-$sql = "SELECT c.*, m.full_name as member_name, m.member_id as m_id,
-        (SELECT COALESCE(SUM(amount), 0) FROM welfare_donations WHERE case_id = c.case_id) as raised
+$sql = "SELECT c.*, m.full_name as member_name, m.member_id as m_id
         FROM welfare_cases c 
         LEFT JOIN members m ON c.related_member_id = m.member_id
-        ORDER BY c.status ASC, c.created_at DESC";
+        ORDER BY FIELD(c.status, 'pending', 'active', 'approved', 'funded', 'closed'), c.created_at DESC";
 $cases = $conn->query($sql);
+if (!$cases) {
+    die("Database Error: " . $conn->error . " <br>Query: " . $sql);
+}
 
 // 6. Fetch Active Members for Dropdown
 $members_res = $conn->query("SELECT member_id, full_name, national_id FROM members WHERE status='active' ORDER BY full_name ASC");
@@ -208,7 +216,10 @@ function ksh($val) { return number_format((float)($val ?? 0), 2); }
 
         /* Badges */
         .badge-status { padding: 6px 12px; border-radius: 30px; font-weight: 600; font-size: 0.75rem; text-transform: uppercase; }
+        .st-pending { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
         .st-active { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+        .st-approved { background: #e0f2fe; color: #075985; border: 1px solid #bae6fd; }
+        .st-funded { background: #fef9c3; color: #854d0e; border: 1px solid #fef08a; }
         .st-closed { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
 
         /* Progress Bars */
@@ -298,10 +309,10 @@ function ksh($val) { return number_format((float)($val ?? 0), 2); }
                             <?php if($cases->num_rows === 0): ?>
                                 <tr><td colspan="6" class="text-center py-5 text-muted">No welfare cases found.</td></tr>
                             <?php else: while ($row = $cases->fetch_assoc()): 
-                                $target = $row['target_amount'];
-                                $raised = $row['raised'];
+                                $target = (float)$row['target_amount'];
+                                $raised = (float)$row['total_raised'];
                                 $percent = ($target > 0) ? ($raised / $target) * 100 : 0;
-                                $statusClass = ($row['status'] == 'active') ? 'st-active' : 'st-closed';
+                                $status = strtolower($row['status']);
                                 $beneficiary = $row['member_name'] ? $row['member_name'] : 'General Case';
                             ?>
                             <tr>
@@ -327,10 +338,11 @@ function ksh($val) { return number_format((float)($val ?? 0), 2); }
                                         <i class="bi bi-calendar3 me-1"></i> <?= date('M d, Y', strtotime($row['created_at'])) ?>
                                     </small>
                                 </td>
-                                <td>
+                                 <td>
                                     <div class="d-flex flex-column">
-                                        <span class="small text-muted">Goal: <span class="fw-semibold text-dark">KES <?= ksh($target) ?></span></span>
-                                        <span class="small text-success fw-bold">Raised: KES <?= ksh($raised) ?></span>
+                                        <span class="small text-muted">Requested: <span class="fw-semibold text-dark">KES <?= ksh($row['requested_amount']) ?></span></span>
+                                        <span class="small text-muted">Approved: <span class="fw-semibold text-dark">KES <?= ksh($row['approved_amount']) ?></span></span>
+                                        <span class="small text-success fw-bold">Disbursed: KES <?= ksh($row['total_disbursed'] ) ?></span>
                                     </div>
                                 </td>
                                 <td>
@@ -342,18 +354,28 @@ function ksh($val) { return number_format((float)($val ?? 0), 2); }
                                     </div>
                                 </td>
                                 <td>
-                                    <span class="badge-status <?= $statusClass ?>"><?= ucfirst($row['status']) ?></span>
+                                    <span class="badge-status st-<?= $row['status'] ?>"><?= ucfirst($row['status']) ?></span>
                                 </td>
                                 <td class="text-end pe-4">
-                                    <?php if ($can_edit && $row['status'] == 'active'): ?>
-                                        <a href="?close=<?= $row['case_id'] ?>" class="btn btn-sm btn-outline-danger rounded-pill px-3" onclick="return confirm('Close this case? No further donations will be accepted.')">
-                                            Close
-                                        </a>
-                                    <?php else: ?>
-                                        <button class="btn btn-sm btn-light rounded-pill text-muted border px-3" disabled>
-                                            <i class="bi bi-lock-fill"></i>
-                                        </button>
-                                    <?php endif; ?>
+                                    <div class="d-flex gap-2 justify-content-end">
+                                        <?php if ($row['status'] == 'pending'): ?>
+                                            <button class="btn btn-sm btn-lime rounded-pill px-3" onclick="approveCase(<?= $row['case_id'] ?>, '<?= addslashes($row['title']) ?>', <?= $row['requested_amount'] ?>)">
+                                                Approve
+                                            </button>
+                                        <?php endif; ?>
+                                        
+                                        <?php if (in_array($row['status'], ['active', 'approved'])): ?>
+                                            <a href="?close=<?= $row['case_id'] ?>" class="btn btn-sm btn-outline-danger rounded-pill px-3" onclick="return confirm('Close this case?')">
+                                                Close
+                                            </a>
+                                        <?php endif; ?>
+
+                                        <?php if ($row['status'] == 'approved' || $row['status'] == 'funded'): ?>
+                                            <a href="welfare_support.php?case_id=<?= $row['case_id'] ?>" class="btn btn-sm btn-success rounded-pill px-3" style="background-color: var(--dark-green); border: none;">
+                                                Disburse
+                                            </a>
+                                        <?php endif; ?>
+                                    </div>
                                 </td>
                             </tr>
                             <?php endwhile; endif; ?>
@@ -419,7 +441,51 @@ function ksh($val) { return number_format((float)($val ?? 0), 2); }
 </div>
 <?php endif; ?>
 
+<!-- Approve Modal -->
+<div class="modal fade" id="approveModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <form method="POST" class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-0 bg-success bg-opacity-10">
+                <h5 class="modal-title fw-bold" style="color: var(--dark-green);">Approve Welfare Situation</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <input type="hidden" name="case_id" id="approve_case_id">
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-uppercase text-muted">Situation</label>
+                    <div id="approve_title_display" class="fw-bold text-dark"></div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-uppercase text-muted">Requested Amount</label>
+                    <div id="approve_requested_display" class="fs-5 text-muted"></div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-uppercase text-muted">Approved Amount</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light fw-bold text-success">KES</span>
+                        <input type="number" name="approved_amount" id="approve_amount_input" class="form-control fw-bold" step="0.01" required>
+                    </div>
+                    <div class="form-text small">This is the max amount that will be disbursed for this case.</div>
+                </div>
+            </div>
+            <div class="modal-footer border-0 bg-light p-3">
+                <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" name="approve_case" class="btn btn-lime rounded-pill px-4 shadow-sm">Confirm Approval</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+function approveCase(id, title, req) {
+    document.getElementById('approve_case_id').value = id;
+    document.getElementById('approve_title_display').textContent = title;
+    document.getElementById('approve_requested_display').textContent = 'KES ' + parseFloat(req).toLocaleString();
+    document.getElementById('approve_amount_input').value = req;
+    new bootstrap.Modal(document.getElementById('approveModal')).show();
+}
+</script>
 </body>
 </html>
 

@@ -73,7 +73,7 @@ try {
 // ---------- Fetch active welfare cases ----------
 $active_cases = [];
 try {
-    $res_cases = $conn->query("SELECT case_id, title FROM welfare_cases WHERE status='active' ORDER BY created_at DESC");
+    $res_cases = $conn->query("SELECT case_id, title FROM welfare_cases WHERE status IN ('active','approved','funded') ORDER BY created_at DESC");
     if ($res_cases) {
         while ($r = $res_cases->fetch_assoc()) {
             $active_cases[] = $r;
@@ -145,52 +145,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             $checkoutRequestID = $result['checkout_id'];
 
+            $is_sandbox = (defined('APP_ENV') && APP_ENV === 'sandbox');
+            $request_status = $is_sandbox ? 'completed' : 'pending';
+            $contrib_status = $is_sandbox ? 'active' : 'pending';
+            $repayment_status = $is_sandbox ? 'Completed' : 'Pending';
+            $mock_receipt = $is_sandbox ? 'SANDBOX-' . strtoupper(bin2hex(random_bytes(4))) : null;
+
             $conn->begin_transaction();
             $inTransaction = true;
 
             // 1) mpesa_requests
-            $stmt = $conn->prepare("INSERT INTO mpesa_requests (member_id, phone, amount, checkout_request_id, status, reference_no, created_at) VALUES (?, ?, ?, ?, 'pending', ?, NOW())");
-            $stmt->bind_param("isdss", $member_id, $phone, $amount, $checkoutRequestID, $ref);
+            $stmt = $conn->prepare("INSERT INTO mpesa_requests (member_id, phone, amount, checkout_request_id, status, reference_no, mpesa_receipt, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())");
+            $stmt->bind_param("isdssss", $member_id, $phone, $amount, $checkoutRequestID, $request_status, $ref, $mock_receipt);
             $stmt->execute();
             $stmt->close();
 
             // 2) contributions
             $contrib_type_db = ($type === 'welfare_case') ? 'welfare' : $type;
-            $stmt = $conn->prepare("INSERT INTO contributions (member_id, contribution_type, amount, payment_method, reference_no, status, created_at) VALUES (?, ?, ?, 'mpesa', ?, 'pending', NOW())");
-            $stmt->bind_param("isds", $member_id, $contrib_type_db, $amount, $ref);
+            $stmt = $conn->prepare("INSERT INTO contributions (member_id, contribution_type, amount, payment_method, reference_no, status, created_at) VALUES (?, ?, ?, 'mpesa', ?, ?, NOW())");
+            $stmt->bind_param("isdss", $member_id, $contrib_type_db, $amount, $ref, $contrib_status);
             $stmt->execute();
             $stmt->close();
 
             $related_id = null;
 
             // 3) Specific inserts
-            // 3) Specific inserts
             if ($type === 'savings') {
-                // Deposit -> Contributions (already done above with status='pending')
-                // Balance will be updated in mpesa_callback.php upon SUCCESS.
-                
-                // No insert into 'savings' table (reserved for withdrawals/interest in this schema)
-                $related_id = $conn->insert_id; // Use contribution_id
-
-            } elseif ($type === 'welfare_case') {
-                $stmt = $conn->prepare("INSERT INTO welfare_donations (case_id, member_id, amount, reference_no, created_at) VALUES (?, ?, ?, ?, NOW())");
-                // Note: Check if 'welfare_donations' table exists. Inspecting schema... 
-                // Schema provided doesn't show 'welfare_donations'. It shows 'contributions'.
-                // If 'welfare_donations' is missing, rely on 'contributions'.
-                // Assuming standard contribution is sufficient if specific table missing.
-                // For now, commenting out if table likely missing, or keep if I missed it.
-                // User said "upgraded" but I didn't see welfare_donations in first 800 lines.
-                // Let's assume it's covered by 'contributions' with type='welfare'.
-                
-                // If it was a specific case, we might need to log it in notes of contribution.
-                // Updating specific case logic not supported by current visible schema.
-                // We will stick to standard contributions.
-                $stmt->bind_param("iids", $case_id, $member_id, $amount, $ref);
-                // $stmt->execute(); // Commented out for safety as table not found in snippet
-                // $stmt->close();
-
+                $related_id = $conn->insert_id; 
             } elseif ($type === 'loan_repayment') {
-                // Logic to get loan balance
                 $stmt = $conn->prepare("SELECT total_payable, current_balance FROM loans WHERE loan_id = ?");
                 $stmt->bind_param("i", $loan_id);
                 $stmt->execute();
@@ -202,35 +184,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $curr_bal = (float)$loan_row['current_balance'];
                     $new_remaining = max(0.0, $curr_bal - $amount);
 
-                    $stmt = $conn->prepare("INSERT INTO loan_repayments (loan_id, amount_paid, payment_date, payment_method, reference_no, remaining_balance, status) VALUES (?, ?, NOW(), 'mpesa', ?, ?, 'Pending')");
-                    $stmt->bind_param("idsd", $loan_id, $amount, $ref, $new_remaining);
+                    $stmt = $conn->prepare("INSERT INTO loan_repayments (loan_id, amount_paid, payment_date, payment_method, reference_no, mpesa_receipt, remaining_balance, status) VALUES (?, ?, NOW(), 'mpesa', ?, ?, ?, ?)");
+                    $stmt->bind_param("idssds", $loan_id, $amount, $ref, $mock_receipt, $new_remaining, $repayment_status);
                     $stmt->execute();
                     $related_id = $conn->insert_id;
                     $stmt->close();
-
-                    // Loan status update handled by DB Trigger `auto_update_loan_balance`
                 }
-
             } elseif ($type === 'shares') {
-                $unit_price = 100.0;
-                $units = floor($amount / $unit_price);
-                // 'total_value' is GENERATED -> Do not insert.
-                // 'reference_no' missing in shares table -> Do not insert.
-                $stmt = $conn->prepare("INSERT INTO shares (member_id, share_units, unit_price, purchase_date) VALUES (?, ?, ?, NOW())");
-                $stmt->bind_param("iid", $member_id, $units, $unit_price);
+                require_once __DIR__ . '/../../inc/ShareValuationEngine.php';
+                $svEngine = new ShareValuationEngine($conn);
+                $svEngine->issueShares($member_id, $amount, $ref, 'mpesa');
+                $related_id = $conn->insert_id; // Legacy hook if needed
+            } elseif ($type === 'welfare_case') {
+                // 1) Record in welfare_donations
+                $stmt = $conn->prepare("INSERT INTO welfare_donations (case_id, member_id, amount, created_at, reference_no) VALUES (?, ?, ?, NOW(), ?)");
+                $stmt->bind_param("iids", $case_id, $member_id, $amount, $ref);
                 $stmt->execute();
                 $related_id = $conn->insert_id;
                 $stmt->close();
 
-            } elseif ($type === 'welfare') {
-                // Welfare contribution is handled by 'contributions' table.
-                // 'welfare_support' is for OUTGOING funds (payouts).
-                // Do not insert into welfare_support.
+                // 2) Increment total_raised in welfare_cases
+                $stmt = $conn->prepare("UPDATE welfare_cases SET total_raised = total_raised + ? WHERE case_id = ?");
+                $stmt->bind_param("di", $amount, $case_id);
+                $stmt->execute();
+                $stmt->close();
             }
 
-            // 4) Transactions Ledger - Removed. 
-            // Financial records are now 100% ledger-driven and populated via mpesa_callback.php 
-            // only AFTER successful payment confirmation.
+            // 4) RECORD IN LEDGER IMMEDIATELY IF SANDBOX
+            if ($is_sandbox) {
+                require_once __DIR__ . '/../../inc/TransactionHelper.php';
+                TransactionHelper::record([
+                    'member_id'     => $member_id,
+                    'amount'        => $amount,
+                    'type'          => 'credit',
+                    'category'      => $contrib_type_db,
+                    'ref_no'        => $mock_receipt,
+                    'notes'         => ucfirst($contrib_type_db) . " deposit via Sandbox M-Pesa (Auto-Activated)",
+                    'method'        => 'mpesa',
+                    'related_id'    => ($type === 'loan_repayment') ? $loan_id : $related_id,
+                    'related_table' => ($type === 'loan_repayment') ? 'loans' : null
+                ]);
+            }
 
             $conn->commit();
             $inTransaction = false;

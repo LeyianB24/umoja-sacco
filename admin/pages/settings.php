@@ -314,9 +314,10 @@ $php_v     = phpversion();
 
                     </div>
                 </div>
+                <?php $layout->footer(); ?>
             </div>
         </div>
-        <?php $layout->footer(); ?>
+        
     </div>
 </div>
 

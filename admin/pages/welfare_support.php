@@ -24,42 +24,61 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $case_id = !empty($_POST['case_id']) ? intval($_POST['case_id']) : null;
     
     if ($member_id > 0 && $amount > 0 && !empty($reason)) {
-        $conn->begin_transaction();
-        try {
-            // A. Insert into Welfare Support Table
-            $stmt = $conn->prepare("INSERT INTO welfare_support (member_id, amount, reason, case_id, granted_by, status, date_granted) VALUES (?, ?, ?, ?, ?, 'approved', NOW())");
-            $stmt->bind_param("idsis", $member_id, $amount, $reason, $case_id, $admin_id);
-            $stmt->execute();
-            $support_id = $conn->insert_id;
-            $stmt->close();
-            
-            // C. Record via Financial Engine
-            require_once __DIR__ . '/../../inc/FinancialEngine.php';
-            $engine = new FinancialEngine($conn);
-            $ref = "WS-" . str_pad((string)$support_id, 6, '0', STR_PAD_LEFT);
-            
-            $engine->transact([
-                'member_id'     => $member_id,
-                'amount'        => $amount,
-                'action_type'   => 'welfare_payout',
-                'reference'     => $ref,
-                'notes'         => "Welfare Grant: " . $reason,
-                'related_id'    => $support_id,
-                'related_table' => 'welfare_support'
-            ]);
-            
-            // D. Notify Member
-            $msg = "You have been granted Welfare Support of KES " . number_format((float)$amount) . ". Reason: $reason. Funds added to your wallet.";
-            $conn->query("INSERT INTO notifications (user_type, user_id, message, is_read, created_at) VALUES ('member', $member_id, '$msg', 0, NOW())");
-            
-            $conn->commit();
-            flash_set("Welfare support granted successfully.", "success");
-            header("Location: welfare_support.php");
-            exit;
-            
-        } catch (Exception $e) {
-            $conn->rollback();
-            flash_set("Error: " . $e->getMessage(), "error");
+        require_once __DIR__ . '/../../inc/FinancialEngine.php';
+        $engine = new FinancialEngine($conn);
+        $pool_balance = $engine->getWelfarePoolBalance();
+
+        if ($pool_balance < $amount) {
+            flash_set("Error: Insufficient funds in Welfare Pool (Current: KES " . number_format($pool_balance, 2) . ")", "error");
+        } else {
+            $conn->begin_transaction();
+            try {
+                // A. Insert into Welfare Support Table
+                $stmt = $conn->prepare("INSERT INTO welfare_support (member_id, amount, reason, case_id, granted_by, status, date_granted) VALUES (?, ?, ?, ?, ?, 'disbursed', NOW())");
+                $stmt->bind_param("idsis", $member_id, $amount, $reason, $case_id, $admin_id);
+                $stmt->execute();
+                $support_id = $conn->insert_id;
+                $stmt->close();
+                
+                // B. Update Case Totals
+                if ($case_id) {
+                    $conn->query("UPDATE welfare_cases SET total_disbursed = total_disbursed + $amount WHERE case_id = $case_id");
+                    
+                    // Check if fully funded
+                    $res = $conn->query("SELECT approved_amount, total_disbursed FROM welfare_cases WHERE case_id = $case_id");
+                    $c_data = $res->fetch_assoc();
+                    if ($c_data['total_disbursed'] >= $c_data['approved_amount']) {
+                        $conn->query("UPDATE welfare_cases SET status = 'funded' WHERE case_id = $case_id");
+                    }
+                }
+
+                // C. Record via Financial Engine
+                $ref = "WS-" . str_pad((string)$support_id, 6, '0', STR_PAD_LEFT);
+                $engine->transact([
+                    'member_id'     => $member_id,
+                    'amount'        => $amount,
+                    'action_type'   => 'welfare_payout',
+                    'reference'     => $ref,
+                    'notes'         => "Welfare Disbursement: " . $reason,
+                    'related_id'    => $support_id,
+                    'related_table' => 'welfare_support'
+                ]);
+                
+                // D. Notify Member
+                $msg = "Welfare Support Disbursed: KES " . number_format((float)$amount) . " has been credited to your wallet for: $reason.";
+                $st_not = $conn->prepare("INSERT INTO notifications (user_type, user_id, message, is_read, created_at) VALUES ('member', ?, ?, 0, NOW())");
+                $st_not->bind_param("is", $member_id, $msg);
+                $st_not->execute();
+                
+                $conn->commit();
+                flash_set("Welfare support disbursed successfully.", "success");
+                header("Location: welfare_support.php");
+                exit;
+                
+            } catch (Exception $e) {
+                $conn->rollback();
+                flash_set("Error: " . $e->getMessage(), "error");
+            }
         }
     } else {
         flash_set("Please fill all required fields.", "error");
@@ -67,10 +86,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // 3. Data Fetching
-// History
-$history = $conn->query("SELECT w.*, m.full_name, m.national_id 
+// History - Join with welfare_cases to show case title
+$history = $conn->query("SELECT w.*, m.full_name, m.national_id, c.title as case_title 
                          FROM welfare_support w 
                          JOIN members m ON w.member_id = m.member_id 
+                         LEFT JOIN welfare_cases c ON w.case_id = c.case_id
                          ORDER BY w.date_granted DESC LIMIT 20");
 
 // HANDLE EXPORT
@@ -114,7 +134,13 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
 $members = $conn->query("SELECT member_id, full_name, national_id FROM members WHERE status='active' ORDER BY full_name ASC");
 
 // Active Cases
-$cases = $conn->query("SELECT case_id, title FROM welfare_cases WHERE status='active' ORDER BY created_at DESC");
+$cases_sql = "SELECT case_id, title, related_member_id, (approved_amount - total_disbursed) as remaining 
+              FROM welfare_cases 
+              WHERE status IN ('active', 'approved') 
+              ORDER BY created_at DESC";
+$cases_res = $conn->query($cases_sql);
+$cases_array = [];
+while($c = $cases_res->fetch_assoc()) $cases_array[] = $c;
 
 // Statistics (This Month)
 $stats = $conn->query("SELECT 
@@ -291,7 +317,7 @@ $pageTitle = "Welfare Support";
                             
                             <div class="mb-3">
                                 <label class="form-label fw-bold">Select Beneficiary</label>
-                                <select name="member_id" class="form-select" required>
+                                <select name="member_id" id="beneficiary_select" class="form-select" required>
                                     <option value="">-- Search Member --</option>
                                     <?php while($m = $members->fetch_assoc()): ?>
                                         <option value="<?= $m['member_id'] ?>">
@@ -303,13 +329,13 @@ $pageTitle = "Welfare Support";
 
                             <div class="mb-3">
                                 <label class="form-label fw-bold">Case Reference (Optional)</label>
-                                <select name="case_id" class="form-select">
-                                    <option value="">-- General / No Case --</option>
-                                    <?php while($c = $cases->fetch_assoc()): ?>
-                                        <option value="<?= $c['case_id'] ?>">
-                                            <?= htmlspecialchars($c['title']) ?>
+                                <select name="case_id" id="case_select" class="form-select" onchange="updateMemberFromCase(this)">
+                                    <option value="" data-member="">-- General / No Case --</option>
+                                    <?php foreach($cases_array as $c): ?>
+                                        <option value="<?= $c['case_id'] ?>" data-member="<?= $c['related_member_id'] ?>" data-rem="<?= $c['remaining'] ?>" <?= (isset($_GET['case_id']) && $_GET['case_id'] == $c['case_id']) ? 'selected' : '' ?>>
+                                            <?= htmlspecialchars($c['title']) ?> (Bal: <?= number_format($c['remaining'], 0) ?>)
                                         </option>
-                                    <?php endwhile; ?>
+                                    <?php endforeach; ?>
                                 </select>
                             </div>
 
@@ -384,11 +410,17 @@ $pageTitle = "Welfare Support";
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td>
+                                             <td>
                                                 <div class="text-truncate" style="max-width: 250px;">
-                                                    <span class="badge bg-light text-dark border me-1">General</span>
-                                                    <?= htmlspecialchars($row['reason']) ?>
+                                                    <?php if($row['case_title']): ?>
+                                                        <span class="badge bg-success-subtle text-success border border-success-subtle me-1">CASE</span>
+                                                        <?= htmlspecialchars($row['case_title']) ?>
+                                                    <?php else: ?>
+                                                        <span class="badge bg-light text-dark border me-1">GENERAL</span>
+                                                        <?= htmlspecialchars($row['reason']) ?>
+                                                    <?php endif; ?>
                                                 </div>
+                                                <small class="text-muted d-block"><?= htmlspecialchars($row['reason']) ?></small>
                                             </td>
                                             <td class="text-end pe-4">
                                                 <div class="fw-bold text-success fs-6">
@@ -413,5 +445,23 @@ $pageTitle = "Welfare Support";
 
 <script src="<?= BASE_URL ?>/public/assets/js/main.js?v=<?= time() ?>"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+function updateMemberFromCase(sel) {
+    const opt = sel.options[sel.selectedIndex];
+    const mid = opt.getAttribute('data-member');
+    const rem = opt.getAttribute('data-rem');
+    if (mid) {
+        document.getElementById('beneficiary_select').value = mid;
+    }
+    if (rem && rem > 0) {
+        document.getElementsByName('amount')[0].value = rem;
+    }
+}
+// Initial trigger if case_id is set via GET
+window.onload = function() {
+    const cs = document.getElementById('case_select');
+    if (cs.value) updateMemberFromCase(cs);
+};
+</script>
 </body>
 </html>

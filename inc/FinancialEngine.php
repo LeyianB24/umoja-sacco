@@ -66,7 +66,19 @@ class FinancialEngine {
 
             // 2. Map Action to Double-Entry Accounts
             switch ($action_type) {
-                case 'savings_deposit':
+                case 'dividend_payment':
+                // Debit Equity (Retained Earnings), Credit Liability (Member Wallet)
+                $this->postEntry($txn_id, $this->getSystemAccount('SACCO Revenue'), $amount, 0); // Using Revenue as placeholder for Retained Earnings source
+                $this->postEntry($txn_id, $this->getMemberAccount($member_id, self::CAT_WALLET), 0, $amount);
+                break;
+
+            case 'share_purchase':
+                // Debit Asset (Method), Credit Equity (Shares)
+                $this->postEntry($txn_id, $this->getSystemAccount($method), $amount, 0);
+                $this->postEntry($txn_id, $this->getMemberAccount($member_id, self::CAT_SHARES), 0, $amount);
+                break;
+                
+            case 'savings_deposit':
                     // Debit Asset (Cash/Mpesa), Credit Liability (Member Savings)
                     $this->postEntry($txn_id, $this->getSystemAccount($method), $amount, 0);
                     $this->postEntry($txn_id, $this->getMemberAccount($member_id, self::CAT_SAVINGS), 0, $amount);
@@ -167,8 +179,15 @@ class FinancialEngine {
                     break;
 
                 case 'welfare_contribution':
+                    // Debit Asset (Cash/Mpesa), Credit Liability (Social Pool)
                     $this->postEntry($txn_id, $this->getSystemAccount($method), $amount, 0);
-                    $this->postEntry($txn_id, $this->getMemberAccount($member_id, self::CAT_WELFARE), 0, $amount);
+                    $this->postEntry($txn_id, $this->getSystemAccount('welfare'), 0, $amount);
+                    break;
+
+                case 'welfare_pool_consolidation':
+                    // Debit Liability (Member Welfare Account), Credit Liability (Social Pool)
+                    $this->postEntry($txn_id, $this->getMemberAccount($member_id, self::CAT_WELFARE), $amount, 0);
+                    $this->postEntry($txn_id, $this->getSystemAccount('welfare'), 0, $amount);
                     break;
 
                 case 'welfare_payout':
@@ -315,6 +334,32 @@ class FinancialEngine {
         $st = $this->db->prepare($sql);
         $st->bind_param("iisdsssisiss", $txn_id, $mid, $action, $amt, $flow, $cat, $ref, $rid, $rtable, $this->recorded_by, $date, $notes);
         $st->execute();
+    }
+
+    public function getWelfarePoolBalance() {
+        try {
+            $acc_id = $this->getSystemAccount('welfare');
+            $q = $this->db->query("SELECT current_balance FROM ledger_accounts WHERE account_id = $acc_id");
+            if (!$q) return 0;
+            return (float)($q->fetch_assoc()['current_balance'] ?? 0);
+        } catch (Exception $e) {
+            error_log("FinancialEngine Error: " . $e->getMessage());
+            return 0;
+        }
+    }
+
+    public function getMemberWelfareLifetime($mid) {
+        try {
+            $stmt = $this->db->prepare("SELECT SUM(amount) as total FROM transactions WHERE member_id = ? AND transaction_type = 'welfare_contribution'");
+            if (!$stmt) return 0;
+            $stmt->bind_param("i", $mid);
+            $stmt->execute();
+            $res = $stmt->get_result();
+            return (float)($res->fetch_assoc()['total'] ?? 0);
+        } catch (Exception $e) {
+            error_log("FinancialEngine Error: " . $e->getMessage());
+            return 0;
+        }
     }
 
     public function getBalances($mid) {

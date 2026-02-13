@@ -54,7 +54,7 @@ if ($duration !== 'all' && $duration !== 'custom') {
 // 3. AGGREGATION LOGIC via Golden Ledger
 // ---------------------------------------------------------
 
-$liquidity_names = "'Cash at Hand', 'M-Pesa Float', 'Bank Account'";
+$liquidity_names = "'Cash at Hand', 'M-Pesa Float', 'Bank Account', 'Paystack Clearing Account'";
 
 // A. Totals for Cards (Cash Flow Basis)
 $sql_totals = "SELECT 
@@ -114,7 +114,7 @@ $sql_dist = "SELECT la.category, SUM(le.credit) as val
              FROM ledger_entries le
              JOIN ledger_accounts la ON le.account_id = la.account_id
              WHERE DATE(le.created_at) BETWEEN ? AND ? 
-             AND la.account_type IN ('liability', 'equity')
+             AND la.account_type IN ('liability', 'equity', 'revenue')
              GROUP BY la.category";
 $stmt = $conn->prepare($sql_dist);
 $stmt->bind_param("ss", $start_date, $end_date);
@@ -551,10 +551,11 @@ function ksh($v, $d = 0) { return number_format((float)($v ?? 0), $d); }
                         </tbody>
                     </table>
                 </div>
+                <?php $layout->footer(); ?>
             </div>
 
         </div>
-        <?php $layout->footer(); ?>
+        
     </div>
 </div>
 

@@ -12,6 +12,62 @@ class ReportGenerator {
     /**
      * Generates a "Statement of Financial Position" dataset
      */
+    /**
+     * Calculates the dynamic Net Asset Value (NAV) per share
+     */
+    public function getShareValuation() {
+        // 1. Calculate Total Assets (using logic from getBalanceSheetData)
+        $endDate = date('Y-m-d');
+        
+        $getBal = function($category) use ($endDate) {
+            $sql = "SELECT SUM(le.debit - le.credit) as bal FROM ledger_entries le JOIN ledger_accounts la ON le.account_id = la.account_id WHERE la.category = ? AND DATE(le.created_at) <= ?";
+            $st = $this->db->prepare($sql);
+            $st->bind_param("ss", $category, $endDate);
+            $st->execute();
+            return (float)($st->get_result()->fetch_assoc()['bal'] ?? 0);
+        };
+
+        $getSysBal = function($name) use ($endDate) {
+            $sql = "SELECT SUM(le.debit - le.credit) as bal FROM ledger_entries le JOIN ledger_accounts la ON le.account_id = la.account_id WHERE la.account_name = ? AND DATE(le.created_at) <= ?";
+            $st = $this->db->prepare($sql);
+            $st->bind_param("ss", $name, $endDate);
+            $st->execute();
+            return (float)($st->get_result()->fetch_assoc()['bal'] ?? 0);
+        };
+
+        $loans = $getBal('loans');
+        $cash  = $getSysBal('Cash at Hand') + $getSysBal('M-Pesa Float') + $getSysBal('Bank Account') + $getSysBal('Paystack Clearing Account');
+        $investments = (float)($this->db->query("SELECT SUM(current_value) FROM investments WHERE status = 'active'")->fetch_row()[0] ?? 0);
+        
+        $totalAssets = $loans + $cash + $investments;
+
+        // 2. Calculate External Liabilities (Savings & Welfare)
+        $savings = -$getBal('savings'); 
+        $welfare = -$getBal('welfare');
+        $liabilities = $savings + $welfare;
+
+        // 3. Net Equity (Owner's Equity)
+        $netEquity = $totalAssets - $liabilities;
+
+        // 4. Total Units Issued
+        $res = $this->db->query("SELECT SUM(share_units) FROM shares");
+        $totalUnits = (float)($res->fetch_row()[0] ?? 0);
+
+        // 5. Valuation (NAV)
+        $price = ($totalUnits > 0) ? ($netEquity / $totalUnits) : 100.00;
+        
+        // Base floor to prevent negative or zero value if sacco is insolvent (highly unlikely but safe)
+        if ($price < 1.0) $price = 100.00; 
+
+        return [
+            'price' => round($price, 2),
+            'equity' => $netEquity,
+            'total_units' => $totalUnits,
+            'total_assets' => $totalAssets,
+            'liabilities' => $liabilities
+        ];
+    }
+
     public function getBalanceSheetData($startDate, $endDate) {
         $data = [
             'assets' => [],
@@ -49,8 +105,11 @@ class ReportGenerator {
         $loanPrincipal = $getBal('loans', true);
         $data['assets'][] = ['label' => 'Loans Receivable (Principal)', 'amount' => $loanPrincipal];
 
-        // 2. Assets: Liquidity (Cash, M-Pesa, Bank)
-        $cash = $getSysBal('Cash at Hand', true) + $getSysBal('M-Pesa Float', true) + $getSysBal('Bank Account', true);
+        // 2. Assets: Liquidity (Cash, M-Pesa, Bank, Paystack)
+        $cash = $getSysBal('Cash at Hand', true) + 
+                $getSysBal('M-Pesa Float', true) + 
+                $getSysBal('Bank Account', true) + 
+                $getSysBal('Paystack Clearing Account', true);
         $data['assets'][] = ['label' => 'Cash & Bank Balances', 'amount' => $cash];
 
         // 3. Assets: Sacco Investments

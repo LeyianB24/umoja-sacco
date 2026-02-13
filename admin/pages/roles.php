@@ -658,10 +658,3 @@ function deleteRole(id, name) {
 
 </body>
 </html>
-
-
-
-
-
-
-

@@ -80,7 +80,7 @@ if (isset($response['Body']['stkCallback'])) {
     // Look up original request
     // ---------------------------------------------------
     $stmt = $conn->prepare("
-        SELECT r.id, r.member_id, r.amount, r.reference_no,
+        SELECT r.id, r.member_id, r.amount, r.reference_no, r.status,
                m.email, m.full_name, m.phone, m.reg_no
         FROM mpesa_requests r
         JOIN members m ON r.member_id = m.member_id
@@ -105,6 +105,15 @@ if (isset($response['Body']['stkCallback'])) {
         }
         
         echo json_encode(['ResultCode' => 0, 'ResultDesc' => 'Request not found']);
+        exit;
+    }
+
+    if (($request['status'] ?? '') === 'completed') {
+        file_put_contents($logFile, "INFO: Request $checkoutID already completed (Auto-Activated in Sandbox). Skipping.\n", FILE_APPEND);
+        if ($callback_log_id) {
+            $conn->query("UPDATE callback_logs SET processed = TRUE, processed_at = NOW(), last_error = 'Already completed (Sandbox)' WHERE log_id = $callback_log_id");
+        }
+        echo json_encode(['ResultCode' => 0, 'ResultDesc' => 'Already Processed']);
         exit;
     }
 

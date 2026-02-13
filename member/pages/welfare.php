@@ -23,6 +23,48 @@ $layout = LayoutManager::create('member');
 $member_id = $_SESSION['member_id'];
 $theme = $_COOKIE['theme'] ?? 'light';
 
+// --- 0. HELPERS ---
+if (!function_exists('time_elapsed_string')) {
+    function time_elapsed_string($datetime, $full = false) {
+        if (!$datetime) return "unknown";
+        $now = new DateTime;
+        $ago = new DateTime($datetime);
+        $diff = $now->diff($ago);
+
+        $weeks = floor($diff->d / 7);
+        $days = $diff->d - ($weeks * 7);
+
+        $string = array('y' => 'year', 'm' => 'month', 'w' => 'week', 'd' => 'day', 'h' => 'hour', 'i' => 'minute');
+        foreach ($string as $k => &$v) {
+            $value = ($k === 'w') ? $weeks : (($k === 'd') ? $days : $diff->$k);
+            if ($value) $v = $value . ' ' . $v . ($value > 1 ? 's' : '');
+            else unset($string[$k]);
+        }
+        if (!$full) $string = array_slice($string, 0, 1);
+        return $string ? implode(', ', $string) . ' ago' : 'just now';
+    }
+}
+
+// --- 1. HANDLE CASE SUBMISSION ---
+$success = $error = "";
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_case'])) {
+    $title = trim($_POST['title']);
+    $desc = trim($_POST['description']);
+    $req_amt = floatval($_POST['requested_amount']);
+
+    if (!empty($title) && $req_amt > 0) {
+        $stmt = $conn->prepare("INSERT INTO welfare_cases (title, description, requested_amount, related_member_id, status, created_at) VALUES (?, ?, ?, ?, 'pending', NOW())");
+        $stmt->bind_param("ssdi", $title, $desc, $req_amt, $member_id);
+        if ($stmt->execute()) {
+            $success = "Your welfare request has been submitted for review.";
+        } else {
+            $error = "System Error: " . $conn->error;
+        }
+    } else {
+        $error = "Please fill all required fields.";
+    }
+}
+
 // --- 1. FETCH & PROCESS DATA FOR ANALYTICS ---
 
 // 2. Fetch Chart Data (History of Contributions)
@@ -54,20 +96,34 @@ $total_received = 0;
 $all_support = [];
 
 while($row = $supportResult->fetch_assoc()) {
-    if (in_array($row['status'], ['approved', 'disbursed'])) {
-        $total_received += $row['amount'];
+    if ($row['status'] === 'disbursed' || $row['status'] === 'approved') {
+        $total_received += (float)$row['amount'];
     }
     $all_support[] = $row;
 }
 
-// ---------------------------------------------------------
-// C. Ledger Balances via Financial Engine (Single Source of Truth)
+// B2. Fetch Related Cases for Member (Personal Entries)
+$sqlCases = "SELECT * FROM welfare_cases WHERE related_member_id = ? ORDER BY created_at DESC";
+$stmtC = $conn->prepare($sqlCases);
+$stmtC->bind_param("i", $member_id);
+$stmtC->execute();
+$member_cases = $stmtC->get_result()->fetch_all(MYSQLI_ASSOC);
+
+// B3. Fetch Community Cases (All Active/Approved Situations)
+$sqlComm = "SELECT c.*, 
+            (SELECT COUNT(*) FROM welfare_donations WHERE case_id = c.case_id) as donor_count 
+            FROM welfare_cases c 
+            WHERE c.status IN ('active', 'approved', 'funded') 
+            ORDER BY c.created_at DESC";
+$community_cases = $conn->query($sqlComm)->fetch_all(MYSQLI_ASSOC);
+
+// C. Ledger Balances via Financial Engine (Pooled Logic)
 // ---------------------------------------------------------
 require_once __DIR__ . '/../../inc/FinancialEngine.php';
 $engine = new FinancialEngine($conn);
-$balances = $engine->getBalances($member_id);
 
-$total_given = $engine->getLifetimeCredits($member_id, 'welfare');
+$welfare_pool = $engine->getWelfarePoolBalance();
+$total_given = $engine->getMemberWelfareLifetime($member_id);
 $net_standing = $total_given - $total_received;
 $standing_status = ($net_standing >= 0) ? 'contributor' : 'beneficiary';
 
@@ -99,7 +155,7 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
         if (!in_array($row['status'], ['approved', 'disbursed'])) continue;
         $data[] = [
             'Date' => date('d-M-Y', strtotime($row['date_granted'])),
-            'Reference' => 'Support: ' . $row['reason'],
+            'Reference' => 'Support: ' . ($row['reason'] ?? 'N/A'),
             'Type' => 'Support Received',
             'Amount' => '- ' . number_format((float)$row['amount'], 2),
             'Status' => ucfirst($row['status'])
@@ -119,7 +175,7 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
     exit;
 }
 
-$pageTitle = "Welfare Dashboard";
+$pageTitle = "Welfare Hub";
 ?>
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="<?= htmlspecialchars($theme) ?>">
@@ -240,8 +296,8 @@ $pageTitle = "Welfare Dashboard";
             
             <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-5">
                 <div>
-                    <h2 class="fw-bold mb-1">Welfare Fund</h2>
-                    <p class="text-secondary mb-0">Your benevolent history and support tracking.</p>
+                    <h2 class="fw-bold mb-1">Welfare Hub</h2>
+                    <p class="text-secondary mb-0">Unified management for your benevolences and community support.</p>
                 </div>
                 <div class="d-flex gap-2 mt-3 mt-md-0">
                     <div class="dropdown">
@@ -254,34 +310,56 @@ $pageTitle = "Welfare Dashboard";
                             <li><a class="dropdown-item" href="?<?= http_build_query(array_merge($_GET, ['action' => 'print_report'])) ?>" target="_blank"><i class="bi bi-printer text-primary me-2"></i>Print Statement</a></li>
                         </ul>
                     </div>
-                    <a href="<?= BASE_URL ?>/member/pages/withdraw.php?type=welfare&source=welfare" class="btn btn-outline-secondary d-flex align-items-center gap-2 rounded-pill px-3 fw-bold border-2">
-                        <i class="bi bi-cash-coin"></i> <span>Withdraw</span>
-                    </a>
+                    <button class="btn btn-outline-success d-flex align-items-center gap-2 rounded-pill px-3 fw-bold border-2" data-bs-toggle="modal" data-bs-target="#newCaseModal">
+                        <i class="bi bi-plus-circle"></i> <span>Report Case</span>
+                    </button>
                     <a href="<?= BASE_URL ?>/member/pages/mpesa_request.php?type=welfare" class="btn btn-success d-flex align-items-center gap-2 rounded-pill px-4 fw-bold text-dark border-0 shadow-sm" style="background-color: var(--hop-lime);">
                         <i class="bi bi-heart-fill"></i> <span>Contribute</span>
                     </a>
                 </div>
             </div>
 
-            
+            <?php if($success): ?>
+                <div class="alert alert-success border-0 shadow-sm rounded-4 mb-4">
+                    <i class="bi bi-check-circle-fill me-2"></i> <?= $success ?>
+                </div>
+            <?php endif; ?>
+
+            <?php if($error): ?>
+                <div class="alert alert-danger border-0 shadow-sm rounded-4 mb-4">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i> <?= $error ?>
+                </div>
+            <?php endif; ?>
+
             <div class="row g-4 mb-4">
-                <div class="col-md-4">
-                    <div class="hope-card p-4 h-100 position-relative">
-                        <div class="decoration-circle bg-success" style="width: 100px; height: 100px; top: -20px; right: -20px;"></div>
-                        <div class="d-flex align-items-center gap-3 mb-3 position-relative z-1">
-                            <div class="rounded-circle p-2 d-flex align-items-center justify-content-center" style="background: rgba(var(--hop-lime-rgb), 0.2); color: #4d7c0f;">
-                                <i class="bi bi-arrow-up-right fs-4"></i>
+                <div class="col-md-3">
+                    <div class="hope-card p-4 h-100 position-relative" style="background: linear-gradient(135deg, var(--hop-dark) 0%, #1a4d40 100%); color: white;">
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <div class="rounded-circle p-2 d-flex align-items-center justify-content-center bg-white bg-opacity-10">
+                                <i class="bi bi-shield-lock-fill fs-4 text-lime" style="color: var(--hop-lime) !important;"></i>
                             </div>
-                            <span class="text-secondary text-uppercase fw-bold small">Total Contributed</span>
+                            <span class="text-white-50 text-uppercase fw-bold small">Global Welfare Pool</span>
+                        </div>
+                        <h3 class="fw-bold mb-0 text-white">KES <?= number_format((float)$welfare_pool, 2) ?></h3>
+                        <p class="small text-white-50 mb-0 mt-2">Total Solidarity Funds</p>
+                    </div>
+                </div>
+
+                <div class="col-md-3">
+                    <div class="hope-card p-4 h-100 position-relative">
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <div class="rounded-circle p-2 d-flex align-items-center justify-content-center" style="background: rgba(var(--hop-lime-rgb), 0.2); color: #4d7c0f;">
+                                <i class="bi bi-heart-fill fs-4"></i>
+                            </div>
+                            <span class="text-secondary text-uppercase fw-bold small">My Lifetime Contributions</span>
                         </div>
                         <h3 class="fw-bold mb-0">KES <?= number_format((float)$total_given, 2) ?></h3>
                     </div>
                 </div>
 
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <div class="hope-card p-4 h-100 position-relative">
-                        <div class="decoration-circle bg-danger" style="width: 100px; height: 100px; top: -20px; right: -20px;"></div>
-                        <div class="d-flex align-items-center gap-3 mb-3 position-relative z-1">
+                        <div class="d-flex align-items-center gap-3 mb-3">
                             <div class="rounded-circle p-2 d-flex align-items-center justify-content-center" style="background: rgba(var(--accent-rose-rgb), 0.1); color: var(--accent-rose);">
                                 <i class="bi bi-arrow-down-left fs-4"></i>
                             </div>
@@ -291,19 +369,19 @@ $pageTitle = "Welfare Dashboard";
                     </div>
                 </div>
 
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <div class="hope-card p-4 h-100 position-relative" style="background: linear-gradient(145deg, var(--hop-card-bg) 0%, rgba(var(--hop-lime-rgb), 0.1) 100%);">
                         <div class="d-flex align-items-center gap-3 mb-3">
                             <div class="rounded-circle p-2 d-flex align-items-center justify-content-center bg-white text-dark shadow-sm">
                                 <i class="bi bi-scale fs-4"></i>
                             </div>
-                            <span class="text-secondary text-uppercase fw-bold small">Net Standing</span>
+                            <span class="text-secondary text-uppercase fw-bold small">Net Impact</span>
                         </div>
                         <h3 class="fw-bold mb-1 <?= $standing_status === 'contributor' ? 'text-success' : 'text-danger' ?>">
                             KES <?= ($net_standing > 0 ? '+' : '') . number_format((float)$net_standing, 2) ?>
                         </h3>
                         <p class="small text-secondary mb-0">
-                            You are a net <span class="fw-bold"><?= ucfirst($standing_status) ?></span>
+                            Community <span class="fw-bold"><?= ucfirst($standing_status) ?></span>
                         </p>
                     </div>
                 </div>
@@ -346,13 +424,23 @@ $pageTitle = "Welfare Dashboard";
                 <div class="p-4 border-bottom d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
                     <ul class="nav nav-pills nav-pills-modern" id="pills-tab" role="tablist">
                         <li class="nav-item">
-                            <button class="nav-link active" id="pills-given-tab" data-bs-toggle="pill" data-bs-target="#pills-given" type="button">
+                            <button class="nav-link <?= !isset($_GET['tab']) || $_GET['tab'] === 'contributions' ? 'active' : '' ?>" id="pills-given-tab" data-bs-toggle="pill" data-bs-target="#pills-given" type="button">
                                 Contributions
+                            </button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link <?= isset($_GET['tab']) && $_GET['tab'] === 'community' ? 'active' : '' ?>" id="pills-community-tab" data-bs-toggle="pill" data-bs-target="#pills-community" type="button">
+                                Community Situations
                             </button>
                         </li>
                         <li class="nav-item">
                             <button class="nav-link" id="pills-received-tab" data-bs-toggle="pill" data-bs-target="#pills-received" type="button">
                                 Support Received
+                            </button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" id="pills-cases-tab" data-bs-toggle="pill" data-bs-target="#pills-cases" type="button">
+                                My Cases
                             </button>
                         </li>
                     </ul>
@@ -364,7 +452,7 @@ $pageTitle = "Welfare Dashboard";
 
                 <div class="tab-content" id="pills-tabContent">
                     
-                    <div class="tab-pane fade show active" id="pills-given">
+                    <div class="tab-pane fade <?= !isset($_GET['tab']) || $_GET['tab'] === 'contributions' ? 'show active' : '' ?>" id="pills-given">
                         <div class="table-responsive">
                             <table class="table table-modern table-hover mb-0" id="tableGiven">
                                 <thead>
@@ -404,6 +492,58 @@ $pageTitle = "Welfare Dashboard";
                         </div>
                     </div>
 
+                    <div class="tab-pane fade <?= isset($_GET['tab']) && $_GET['tab'] === 'community' ? 'show active' : '' ?>" id="pills-community">
+                        <div class="p-4">
+                            <div class="row g-4">
+                                <?php if (empty($community_cases)): ?>
+                                    <div class="col-12">
+                                        <div class="text-center py-5 bg-light rounded-4 border border-dashed">
+                                            <i class="bi bi-emoji-smile text-muted fs-1 mb-2 d-block"></i>
+                                            <p class="text-muted">No active community situations. The Sacco is doing well!</p>
+                                        </div>
+                                    </div>
+                                <?php else: foreach ($community_cases as $crow): 
+                                    $target = (float)$crow['target_amount'];
+                                    $raised = (float)$crow['total_raised'];
+                                    $percent = ($target > 0) ? ($raised / $target) * 100 : 0;
+                                    $daysAgo = time_elapsed_string($crow['created_at']);
+                                ?>
+                                <div class="col-md-6 col-xxl-4">
+                                    <div class="hope-card shadow-none border" style="height: auto;">
+                                        <div class="p-3" style="background: linear-gradient(135deg, var(--hop-dark) 0%, #1a4d40 100%); color: white; border-radius: 20px 20px 0 0;">
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <span class="small fw-bold opacity-75 text-uppercase">Case #<?= $crow['case_id'] ?></span>
+                                                <span class="badge bg-white text-dark rounded-pill"><?= ucfirst($crow['status']) ?></span>
+                                            </div>
+                                            <h6 class="fw-bold mb-0"><?= htmlspecialchars($crow['title']) ?></h6>
+                                        </div>
+                                        <div class="p-3">
+                                            <p class="small text-muted mb-3 line-clamp-2"><?= htmlspecialchars($crow['description']) ?></p>
+                                            
+                                            <div class="mb-3">
+                                                <div class="d-flex justify-content-between small mb-1">
+                                                    <span class="fw-bold">KES <?= number_format($raised) ?></span>
+                                                    <span class="text-muted">Target: <?= number_format($target) ?></span>
+                                                </div>
+                                                <div class="progress" style="height: 6px;">
+                                                    <div class="progress-bar" style="width: <?= min(100, $percent) ?>%; background: var(--hop-lime);"></div>
+                                                </div>
+                                            </div>
+
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <small class="text-muted"><i class="bi bi-people me-1"></i> <?= $crow['donor_count'] ?> Donors</small>
+                                                <a href="mpesa_request.php?type=welfare_case&case_id=<?= $crow['case_id'] ?>" class="btn btn-sm btn-success text-dark fw-bold rounded-pill px-3" style="background: var(--hop-lime); border:0;">
+                                                    Support
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <?php endforeach; endif; ?>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="tab-pane fade" id="pills-received">
                          <div class="table-responsive">
                             <table class="table table-modern table-hover mb-0" id="tableReceived">
@@ -431,12 +571,55 @@ $pageTitle = "Welfare Dashboard";
                                         <td class="ps-4 fw-medium"><?= date('M d, Y', strtotime($row['date_granted'])) ?></td>
                                         <td>
                                             <div class="d-flex flex-column">
-                                                <span class="fw-bold text-dark"><?= htmlspecialchars($row['reason']) ?></span>
-                                                <span class="small text-muted">Approved by #<?= $row['granted_by'] ?? 'sys' ?></span>
+                                                <span class="fw-bold text-dark"><?= htmlspecialchars($row['reason'] ?? 'Welfare Support') ?></span>
+                                                <span class="small text-muted">Approved by SACCO Admin</span>
                                             </div>
                                         </td>
                                         <td><span class="badge bg-<?= $color ?>-subtle text-<?= $color ?> border border-<?= $color ?>-subtle rounded-pill px-3"><?= ucfirst($status) ?></span></td>
                                         <td class="text-end pe-4 fw-bold text-danger">- KES <?= number_format((float)$row['amount'], 2) ?></td>
+                                    </tr>
+                                    <?php endforeach; endif; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="tab-pane fade" id="pills-cases">
+                         <div class="table-responsive">
+                            <table class="table table-modern table-hover mb-0" id="tableCases">
+                                <thead>
+                                    <tr>
+                                        <th class="ps-4">Created Date</th>
+                                        <th>Title / Description</th>
+                                        <th>Status</th>
+                                        <th class="text-end pe-4">Approved Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php if(empty($member_cases)): ?>
+                                        <tr><td colspan="4" class="text-center py-5 text-muted">No welfare cases associated with your account.</td></tr>
+                                    <?php else: foreach($member_cases as $row): 
+                                         $status = strtolower($row['status']);
+                                         $color = match($status) { 
+                                             'active'=>'primary',
+                                             'approved'=>'success', 
+                                             'disbursed'=>'success', 
+                                             'funded'=>'success',
+                                             'closed'=>'secondary',
+                                             'pending'=>'warning',
+                                             default=>'secondary' 
+                                         };
+                                    ?>
+                                    <tr>
+                                        <td class="ps-4 fw-medium"><?= date('M d, Y', strtotime($row['created_at'])) ?></td>
+                                        <td>
+                                            <div class="d-flex flex-column">
+                                                <span class="fw-bold text-dark"><?= htmlspecialchars($row['title']) ?></span>
+                                                <span class="small text-muted text-truncate" style="max-width: 300px;"><?= htmlspecialchars($row['description']) ?></span>
+                                            </div>
+                                        </td>
+                                        <td><span class="badge bg-<?= $color ?>-subtle text-<?= $color ?> border border-<?= $color ?>-subtle rounded-pill px-3"><?= ucfirst($status) ?></span></td>
+                                        <td class="text-end pe-4 fw-bold text-dark">KES <?= number_format((float)$row['approved_amount'], 2) ?></td>
                                     </tr>
                                     <?php endforeach; endif; ?>
                                 </tbody>
@@ -448,6 +631,41 @@ $pageTitle = "Welfare Dashboard";
 
         </div>
         <?php $layout->footer(); ?>
+    </div>
+</div>
+
+<!-- Report Case Modal -->
+<div class="modal fade" id="newCaseModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <form method="POST" class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold">Report Welfare Situation</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-uppercase text-muted">Situation Title</label>
+                    <input type="text" name="title" class="form-control rounded-3" placeholder="e.g. Hospitalization, Bereavement..." required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-uppercase text-muted">Requested Amount</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0 fw-bold text-success rounded-start-3">KES</span>
+                        <input type="number" name="requested_amount" class="form-control border-start-0 ps-1 rounded-end-3" placeholder="0.00" required>
+                    </div>
+                </div>
+                <div class="mb-0">
+                    <label class="form-label small fw-bold text-uppercase text-muted">Detailed Description</label>
+                    <textarea name="description" class="form-control rounded-3" rows="4" placeholder="Please provide details about the situation..." required></textarea>
+                </div>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" name="submit_case" class="btn btn-success rounded-pill px-4 fw-bold text-dark border-0" style="background-color: var(--hop-lime);">
+                    Submit Request
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 
