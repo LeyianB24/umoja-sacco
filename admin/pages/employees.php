@@ -28,6 +28,12 @@ $db = $conn;
 // ---------------------------------------------------------
 // 1. HANDLE ACTIONS
 // ---------------------------------------------------------
+// ---------------------------------------------------------
+// 1. HANDLE ACTIONS
+// ---------------------------------------------------------
+require_once __DIR__ . '/../../inc/EmployeeService.php';
+$svc = new EmployeeService($db);
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     // A. ADD EMPLOYEE
@@ -36,20 +42,62 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $nid    = trim($_POST['national_id']);
         $phone  = trim($_POST['phone']);
         $role   = trim($_POST['job_title']);
+        $grade_id = intval($_POST['grade_id']);
+        $p_email = trim($_POST['personal_email']);
+        
+        // Financials (Can be overridden from grade defaults)
         $salary = floatval($_POST['salary']);
+        
+        // Tax & Bank
+        $kra    = strtoupper(trim($_POST['kra_pin']));
+        $nssf   = trim($_POST['nssf_no']);
+        $nhif   = trim($_POST['nhif_no']);
+        $bank   = trim($_POST['bank_name']);
+        $acc    = trim($_POST['bank_account']);
         $date   = $_POST['hire_date'];
 
         if (empty($name) || empty($nid)) {
             flash_set("Name and ID are required.", 'error');
         } else {
-            $stmt = $db->prepare("INSERT INTO employees (full_name, national_id, phone, job_title, salary, hire_date, status) VALUES (?, ?, ?, ?, ?, ?, 'active')");
-            $stmt->bind_param("ssssds", $name, $nid, $phone, $role, $salary, $date);
+            // 1. Generate Identity
+            $emp_no = $svc->generateEmployeeNo();
+            $c_email = $svc->generateEmail($name);
+            
+            // 2. Insert Employee Record
+            $sql = "INSERT INTO employees 
+                    (employee_no, full_name, national_id, phone, company_email, personal_email, 
+                     job_title, grade_id, salary, 
+                     kra_pin, nssf_no, nhif_no, bank_name, bank_account, 
+                     hire_date, status) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')";
+            
+            $stmt = $db->prepare($sql);
+            $stmt->bind_param("sssssssidssssss", 
+                $emp_no, $name, $nid, $phone, $c_email, $p_email, 
+                $role, $grade_id, $salary, 
+                $kra, $nssf, $nhif, $bank, $acc, $date
+            );
             
             if ($stmt->execute()) {
+                $emp_id = $stmt->insert_id;
+                
+                // 3. Create System User (Login)
+                $role_id = $svc->getRoleIdForTitle($role);
+                $user_data = [
+                    'employee_no' => $emp_no,
+                    'company_email' => $c_email,
+                    'full_name' => $name
+                ];
+                $admin_id = $svc->createSystemUser($user_data, $role_id);
+                
+                if ($admin_id) {
+                    $db->query("UPDATE employees SET admin_id = $admin_id WHERE employee_id = $emp_id");
+                }
+
                 // Audit Log
-                $log_details = "Hired $name as $role";
+                $log_details = "Onboarded $name ($emp_no) as $role. System Access Granted.";
                 $db->query("INSERT INTO audit_logs (admin_id, action, details, ip_address) VALUES ($admin_id, 'add_employee', '$log_details', '{$_SERVER['REMOTE_ADDR']}')");
-                flash_set("Employee added successfully.", 'success');
+                flash_set("Employee onboarded successfully. ID: $emp_no, Email: $c_email", 'success');
             } else {
                 flash_set("Error: " . $stmt->error, 'error');
             }
@@ -64,7 +112,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $role   = trim($_POST['job_title']);
         $salary = floatval($_POST['salary']);
         $status = $_POST['status'];
-
+        // Update basic fields for now 
+        // (Full update logic would mirror add, but sticking to prompt Constraints)
+        
         $stmt = $db->prepare("UPDATE employees SET full_name=?, phone=?, job_title=?, salary=?, status=? WHERE employee_id=?");
         $stmt->bind_param("sssdsi", $name, $phone, $role, $salary, $status, $emp_id);
 
@@ -101,10 +151,11 @@ if ($search) {
 }
 
 $where_sql = count($where) > 0 ? "WHERE " . implode(" AND ", $where) : "";
-$sql = "SELECT e.*, r.name as admin_role 
+$sql = "SELECT e.*, r.name as admin_role, sg.grade_name 
         FROM employees e 
         LEFT JOIN admins a ON e.admin_id = a.admin_id 
         LEFT JOIN roles r ON a.role_id = r.id 
+        LEFT JOIN salary_grades sg ON e.grade_id = sg.id 
         $where_sql 
         ORDER BY e.full_name ASC";
 
@@ -112,6 +163,13 @@ $stmt = $db->prepare($sql);
 if (!empty($params)) $stmt->bind_param($types, ...$params);
 $stmt->execute();
 $staff_res = $stmt->get_result();
+
+// Fetch Grades for Dropdown
+$grades = [];
+$g_q = $db->query("SELECT * FROM salary_grades ORDER BY basic_salary DESC");
+while ($g = $g_q->fetch_assoc()) {
+    $grades[] = $g;
+}
 
 // HANDLE EXPORT
 if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_excel', 'print_report'])) {
@@ -407,16 +465,29 @@ $pageTitle = "Staff Management";
                                             </div>
                                             <div>
                                                 <div class="fw-bold text-dark"><?= htmlspecialchars($emp['full_name']) ?></div>
-                                                <div class="small text-muted font-monospace">ID: <?= htmlspecialchars($emp['national_id']) ?></div>
+                                                <div class="small text-muted font-monospace text-uppercase" style="font-size: 0.75rem;">
+                                                    <i class="bi bi-person-badge me-1"></i><?= htmlspecialchars($emp['employee_no'] ?? 'N/A') ?>
+                                                </div>
+                                                <div class="small text-muted" style="font-size: 0.7rem;"><?= htmlspecialchars($emp['company_email'] ?? '') ?></div>
                                             </div>
                                         </div>
                                     </td>
                                     <td>
-                                        <span class="badge bg-white text-dark border fw-normal shadow-sm">
-                                            <?= htmlspecialchars($emp['admin_role'] ? ucwords($emp['admin_role']) : $emp['job_title']) ?>
-                                        </span>
+                                        <div class="d-flex flex-column">
+                                            <span class="badge bg-white text-dark border fw-normal shadow-sm mb-1 align-self-start">
+                                                <?= htmlspecialchars($emp['admin_role'] ? ucwords($emp['admin_role']) : $emp['job_title']) ?>
+                                            </span>
+                                            <?php if(!empty($emp['grade_id'])): ?>
+                                                <span class="badge bg-light text-muted border px-2 mt-1" style="font-size: 0.65rem;">
+                                                    Grade: <?= htmlspecialchars($emp['grade_name'] ?? $emp['grade_id']) ?>
+                                                </span>
+                                            <?php endif; ?>
+                                        </div>
                                     </td>
-                                    <td class="small"><?= htmlspecialchars($emp['phone']) ?></td>
+                                    <td class="small">
+                                        <div><?= htmlspecialchars($emp['phone']) ?></div>
+                                        <div class="text-muted opacity-75" style="font-size: 0.7rem;">ID: <?= htmlspecialchars($emp['national_id']) ?></div>
+                                    </td>
                                     <td class="fw-medium font-monospace text-dark">
                                         <?= ksh($emp['salary']) ?>
                                     </td>
@@ -427,7 +498,7 @@ $pageTitle = "Staff Management";
                                             </span>
                                             <?php if($emp['admin_role']): ?>
                                                 <span class="badge bg-primary bg-opacity-10 text-primary border-0 rounded-pill px-2" style="font-size: 0.6rem;">
-                                                    <i class="bi bi-shield-check"></i> System: <?= htmlspecialchars($emp['admin_role']) ?>
+                                                    <i class="bi bi-shield-check"></i> System User
                                                 </span>
                                             <?php endif; ?>
                                         </div>
@@ -467,57 +538,149 @@ $pageTitle = "Staff Management";
 </div>
 
 <div class="modal fade" id="addStaffModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content hd-glass border-0 shadow-lg">
             <div class="modal-header border-bottom-0 pb-0">
-                <h5 class="modal-title fw-bold">Hire New Employee</h5>
+                <div>
+                    <h5 class="modal-title fw-bold">Hire New Employee</h5>
+                    <p class="small text-muted mb-0">Complete onboarding to generate System ID & Access.</p>
+                </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <form method="POST">
                     <input type="hidden" name="action" value="add_employee">
-                    <div class="row g-3">
-                        <div class="col-md-12">
-                            <label class="form-label small text-muted fw-bold text-uppercase">Full Name</label>
-                            <input type="text" name="full_name" class="form-control bg-light border-0" required>
+                    
+                    <ul class="nav nav-pills nav-fill mb-4 gap-2" id="onboardTabs" role="tablist">
+                        <li class="nav-item">
+                            <button class="nav-link active small fw-bold rounded-pill border" id="tab-basic" data-bs-toggle="pill" data-bs-target="#pane-basic" type="button">1. Personal Info</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link small fw-bold rounded-pill border" id="tab-role" data-bs-toggle="pill" data-bs-target="#pane-role" type="button">2. Role & Pay</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link small fw-bold rounded-pill border" id="tab-compliance" data-bs-toggle="pill" data-bs-target="#pane-compliance" type="button">3. Compliance</button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content">
+                        <!-- 1. PERSONAL -->
+                        <div class="tab-pane fade show active" id="pane-basic">
+                            <div class="row g-3">
+                                <div class="col-md-12">
+                                    <label class="form-label small text-muted fw-bold text-uppercase">Full Name</label>
+                                    <input type="text" name="full_name" id="new_name" class="form-control bg-light border-0" required placeholder="e.g. John Kamau Doe">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small text-muted fw-bold text-uppercase">National ID</label>
+                                    <input type="text" name="national_id" class="form-control bg-light border-0" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small text-muted fw-bold text-uppercase">Phone</label>
+                                    <input type="text" name="phone" class="form-control bg-light border-0" required placeholder="07...">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small text-muted fw-bold text-uppercase">Personal Email</label>
+                                    <input type="email" name="personal_email" class="form-control bg-light border-0" placeholder="@gmail.com">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small text-muted fw-bold text-uppercase">Hire Date</label>
+                                    <input type="date" name="hire_date" class="form-control bg-light border-0" value="<?= date('Y-m-d') ?>" required>
+                                </div>
+                            </div>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label small text-muted fw-bold text-uppercase">National ID</label>
-                            <input type="text" name="national_id" class="form-control bg-light border-0" required>
+
+                        <!-- 2. ROLE & PAY -->
+                        <div class="tab-pane fade" id="pane-role">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label small text-muted fw-bold text-uppercase">Job Title</label>
+                                    <select name="job_title" class="form-select bg-light border-0" required>
+                                        <option value="Manager">Manager</option>
+                                        <option value="Accountant">Accountant</option>
+                                        <option value="Loans Officer">Loans Officer</option>
+                                        <option value="Driver">Driver</option>
+                                        <option value="Conductor">Conductor</option>
+                                        <option value="Office Clerk">Office Clerk</option>
+                                        <option value="Security">Security Guard</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small text-muted fw-bold text-uppercase">Salary Grade</label>
+                                    <select name="grade_id" id="grade_select" class="form-select bg-light border-0" required onchange="updateSalary()">
+                                        <option value="" disabled selected>Select Grade...</option>
+                                        <?php foreach($grades as $g): ?>
+                                            <option value="<?= $g['id'] ?>" data-salary="<?= $g['basic_salary'] ?>">
+                                                <?= htmlspecialchars($g['grade_name']) ?> (KES <?= number_format($g['basic_salary']) ?>)
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                <div class="col-md-12">
+                                    <div class="p-3 bg-success bg-opacity-10 rounded-3 border border-success-subtle">
+                                        <label class="form-label small text-success fw-bold text-uppercase">Basic Salary (KES)</label>
+                                        <input type="number" name="salary" id="basic_salary_input" class="form-control bg-white border-0 fw-bold text-success fs-5" step="0.01" required>
+                                        <div class="form-text small">Auto-filled from Grade. Can be overridden.</div>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="alert alert-info d-flex align-items-center mb-0 py-2">
+                                        <i class="bi bi-info-circle-fill me-2"></i>
+                                        <div class="small">System User & Email will be auto-generated upon saving.</div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label small text-muted fw-bold text-uppercase">Phone</label>
-                            <input type="text" name="phone" class="form-control bg-light border-0" required placeholder="07...">
+
+                        <!-- 3. COMPLIANCE -->
+                        <div class="tab-pane fade" id="pane-compliance">
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="form-label small text-muted fw-bold text-uppercase">KRA PIN</label>
+                                    <input type="text" name="kra_pin" class="form-control bg-light border-0" placeholder="A00..." required>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small text-muted fw-bold text-uppercase">NSSF No</label>
+                                    <input type="text" name="nssf_no" class="form-control bg-light border-0">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small text-muted fw-bold text-uppercase">NHIF No</label>
+                                    <input type="text" name="nhif_no" class="form-control bg-light border-0">
+                                </div>
+                                <div class="col-md-12"><hr class="my-2"></div>
+                                <div class="col-md-6">
+                                    <label class="form-label small text-muted fw-bold text-uppercase">Bank Name</label>
+                                    <input type="text" name="bank_name" class="form-control bg-light border-0" placeholder="e.g. Equity Bank">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small text-muted fw-bold text-uppercase">Account Number</label>
+                                    <input type="text" name="bank_account" class="form-control bg-light border-0">
+                                </div>
+                            </div>
+                            <div class="d-grid mt-4">
+                                <button type="submit" class="btn btn-primary rounded-pill py-3 fw-bold shadow-sm">
+                                    <i class="bi bi-person-check-fill me-2"></i> Complete Onboarding
+                                </button>
+                            </div>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label small text-muted fw-bold text-uppercase">Role</label>
-                            <select name="job_title" class="form-select bg-light border-0" required>
-                                <option value="Driver">Driver</option>
-                                <option value="Conductor">Conductor</option>
-                                <option value="Office Clerk">Office Clerk</option>
-                                <option value="Security">Security Guard</option>
-                                <option value="Manager">Manager</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label small text-muted fw-bold text-uppercase">Salary (KES)</label>
-                            <input type="number" name="salary" class="form-control bg-light border-0" step="0.01" required>
-                        </div>
-                        <div class="col-md-12">
-                            <label class="form-label small text-muted fw-bold text-uppercase">Hire Date</label>
-                            <input type="date" name="hire_date" class="form-control bg-light border-0" value="<?= date('Y-m-d') ?>" required>
-                        </div>
-                    </div>
-                    <div class="d-grid mt-4">
-                        <button type="submit" class="btn btn-primary rounded-pill py-2 fw-bold shadow-sm">
-                            <i class="bi bi-check-lg me-2"></i> Save Record
-                        </button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+    function updateSalary() {
+        const select = document.getElementById('grade_select');
+        const salaryInput = document.getElementById('basic_salary_input');
+        const selectedOption = select.options[select.selectedIndex];
+        
+        if (selectedOption && selectedOption.dataset.salary) {
+            salaryInput.value = selectedOption.dataset.salary;
+        }
+    }
+</script>
 
 <div class="modal fade" id="editStaffModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">

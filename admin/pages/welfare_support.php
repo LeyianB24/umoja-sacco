@@ -150,6 +150,30 @@ $stats = $conn->query("SELECT
                        WHERE MONTH(date_granted) = MONTH(CURRENT_DATE()) 
                        AND YEAR(date_granted) = YEAR(CURRENT_DATE())")->fetch_assoc();
 
+// --- CHART DATA: Disbursement Trends (Last 6 Months) ---
+$trend_sql = "SELECT DATE_FORMAT(date_granted, '%Y-%m') as m, SUM(amount) as total 
+              FROM welfare_support 
+              WHERE date_granted >= DATE_SUB(NOW(), INTERVAL 6 MONTH) 
+              GROUP BY m 
+              ORDER BY m ASC";
+$trend_res = $conn->query($trend_sql);
+$trend_labels = [];
+$trend_data = [];
+while ($row = $trend_res->fetch_assoc()) {
+    $trend_labels[] = date('M Y', strtotime($row['m'] . '-01'));
+    $trend_data[] = (float)$row['total'];
+}
+
+// --- CHART DATA: Fund Utilization (Total Raised vs Disbursed across all cases) ---
+$util_sql = "SELECT SUM(total_raised) as raised, SUM(total_disbursed) as disbursed FROM welfare_cases";
+$util_res = $conn->query($util_sql);
+$util_row = $util_res->fetch_assoc();
+$total_raised = (float)($util_row['raised'] ?? 0);
+$total_disbursed = (float)($util_row['disbursed'] ?? 0);
+$pool_available = 0; 
+// Better metric: Use FinancialEngine for actual pool balance if needed, 
+// but for "Utilization" chart, Raised vs Disbursed is good context.
+
 $pageTitle = "Welfare Support";
 ?>
 <!DOCTYPE html>
@@ -164,6 +188,9 @@ $pageTitle = "Welfare Support";
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="<?= BASE_URL ?>/public/assets/css/style.css?v=<?= time() ?>">
     
+    <!-- ApexCharts -->
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+
     <style>
         /* =============================
            HOPE UI PREMIUM THEME
@@ -285,148 +312,189 @@ $pageTitle = "Welfare Support";
                     <h2 class="fw-bold mb-1" style="color: var(--forest-deep);">Welfare Support</h2>
                     <p class="text-muted small mb-0">Manage benevolent grants and member support payouts.</p>
                 </div>
-                <div class="d-flex gap-3">
-                     <!-- Stat: Total This Month -->
-                    <div class="d-flex align-items-center bg-white px-4 py-2 rounded-pill shadow-sm border">
-                        <i class="bi bi-calendar-check text-success me-2 fs-5"></i>
-                        <div>
-                            <div class="small text-muted fw-bold" style="font-size: 0.7rem; line-height: 1;">THIS MONTH</div>
-                            <div class="fw-bold text-dark">KES <?= number_format((float)$stats['total']) ?></div>
-                        </div>
+                <!-- Welfare Pool Balance Card (Small) -->
+                <div class="glass-card px-4 py-2 d-flex align-items-center gap-3">
+                    <div class="rounded-circle bg-success bg-opacity-10 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                        <i class="bi bi-safe2 fs-4 text-success"></i>
+                    </div>
+                    <div>
+                        <div class="small text-muted fw-bold text-uppercase ls-1">Pool Balance</div>
+                        <?php 
+                            require_once __DIR__ . '/../../inc/FinancialEngine.php';
+                            $fEngine = new FinancialEngine($conn);
+                            $poolBal = $fEngine->getWelfarePoolBalance(); 
+                        ?>
+                        <div class="fw-bold fs-4 text-dark">KES <?= number_format($poolBal, 2) ?></div>
                     </div>
                 </div>
             </div>
 
             <?php flash_render(); ?>
 
+            <div class="row g-4 mb-4">
+                <!-- Analytics: Utilization -->
+                <div class="col-md-5 animate-slide-up" style="animation-delay: 0.05s;">
+                    <div class="card-custom h-100 p-4 border-0 shadow-sm d-flex flex-column">
+                        <h6 class="fw-bold text-dark mb-3">Fund Utilization</h6>
+                        <div class="flex-grow-1 d-flex align-items-center justify-content-center">
+                             <div id="chart-utilization" class="w-100"></div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Analytics: Trends -->
+                <div class="col-md-7 animate-slide-up" style="animation-delay: 0.1s;">
+                    <div class="card-custom h-100 p-4 border-0 shadow-sm d-flex flex-column">
+                        <h6 class="fw-bold text-dark mb-3">Disbursement Trends (6 Months)</h6>
+                        <div class="flex-grow-1">
+                             <div id="chart-trends" class="w-100"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="row g-4">
                 
-                <!-- Left Column: Grant Form -->
-                <div class="col-lg-4 animate-slide-up" style="animation-delay: 0.1s;">
-                    <div class="card-custom h-100 position-relative overflow-hidden">
-                        <div class="position-absolute top-0 end-0 p-3 opacity-10">
-                            <i class="bi bi-heart-pulse-fill fs-1 text-success"></i>
+                <!-- Left Column: Grant Terminal -->
+                <div class="col-lg-4 animate-slide-up" style="animation-delay: 0.2s;">
+                    <div class="card-custom h-100 position-relative overflow-hidden border-0 shadow-lg">
+                        <div class="position-absolute top-0 start-0 w-100 h-100 bg-gradient-forest opacity-10" style="pointer-events: none;"></div>
+                        
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h5 class="fw-bold mb-0 d-flex align-items-center">
+                                <i class="bi bi-terminal-plus text-success me-2 fs-4"></i> New Grant
+                            </h5>
+                            <span class="badge bg-success bg-opacity-10 text-success border border-success-subtle rounded-pill px-3">DISBURSEMENT</span>
                         </div>
                         
-                        <h5 class="fw-bold mb-4 d-flex align-items-center">
-                            <i class="bi bi-plus-circle-fill text-success me-2"></i> New Grant
-                        </h5>
-                        
-                        <form method="POST">
+                        <form method="POST" class="d-flex flex-column gap-3">
                             <?= csrf_field() ?>
                             
-                            <div class="mb-3">
-                                <label class="form-label fw-bold">Select Beneficiary</label>
-                                <select name="member_id" id="beneficiary_select" class="form-select" required>
-                                    <option value="">-- Search Member --</option>
+                            <!-- Member Search -->
+                            <div class="form-floating">
+                                <select name="member_id" id="beneficiary_select" class="form-select border-0 bg-light fw-bold" required style="border-radius: 12px;">
+                                    <option value="">Select Beneficiary...</option>
                                     <?php while($m = $members->fetch_assoc()): ?>
                                         <option value="<?= $m['member_id'] ?>">
                                             <?= htmlspecialchars($m['full_name']) ?> (<?= $m['national_id'] ?>)
                                         </option>
                                     <?php endwhile; ?>
                                 </select>
+                                <label for="beneficiary_select" class="fw-bold text-uppercase text-muted small">Beneficiary</label>
                             </div>
 
-                            <div class="mb-3">
-                                <label class="form-label fw-bold">Case Reference (Optional)</label>
-                                <select name="case_id" id="case_select" class="form-select" onchange="updateMemberFromCase(this)">
-                                    <option value="" data-member="">-- General / No Case --</option>
+                            <!-- Case Link -->
+                            <div class="form-floating">
+                                <select name="case_id" id="case_select" class="form-select border-0 bg-light fw-bold" onchange="updateMemberFromCase(this)" style="border-radius: 12px;">
+                                    <option value="" data-member="">General / No Case</option>
                                     <?php foreach($cases_array as $c): ?>
                                         <option value="<?= $c['case_id'] ?>" data-member="<?= $c['related_member_id'] ?>" data-rem="<?= $c['remaining'] ?>" <?= (isset($_GET['case_id']) && $_GET['case_id'] == $c['case_id']) ? 'selected' : '' ?>>
                                             <?= htmlspecialchars($c['title']) ?> (Bal: <?= number_format($c['remaining'], 0) ?>)
                                         </option>
                                     <?php endforeach; ?>
                                 </select>
+                                <label for="case_select" class="fw-bold text-uppercase text-muted small">Related Case (Optional)</label>
                             </div>
 
-                            <div class="mb-3">
-                                <label class="form-label fw-bold">Amount to Grant</label>
-                                <div class="input-group">
-                                    <span class="input-group-text bg-white fw-bold text-muted border-end-0">KES</span>
-                                    <input type="number" name="amount" class="form-control border-start-0 ps-1 fw-bold text-dark fs-5" step="0.01" min="1" placeholder="0.00" required>
+                            <!-- Amount -->
+                            <div class="bg-light p-3 rounded-4 border border-light">
+                                <label class="small text-uppercase fw-bold text-muted mb-1 d-block">Amount</label>
+                                <div class="d-flex align-items-center">
+                                    <span class="fs-4 fw-bold text-muted me-2">KES</span>
+                                    <input type="number" name="amount" class="form-control border-0 bg-transparent fs-2 fw-bold text-dark p-0 shadow-none" step="0.01" min="1" placeholder="0.00" required>
                                 </div>
                             </div>
 
-                            <div class="mb-4">
-                                <label class="form-label fw-bold">Reason / Details</label>
-                                <textarea name="reason" class="form-control" rows="3" placeholder="e.g. Hospital Bill Support for Kin..." required></textarea>
+                            <!-- Reason -->
+                            <div class="form-floating">
+                                <input type="text" name="reason" class="form-control border-0 bg-light fw-medium" placeholder="Reason" required style="border-radius: 12px;">
+                                <label class="fw-bold text-uppercase text-muted small">Reason / Note</label>
                             </div>
 
-                            <button type="submit" class="btn btn-lime w-100 py-3 d-flex align-items-center justify-content-center shadow-sm">
-                                <i class="bi bi-check-lg me-2 fs-5"></i>
-                                <span>Approve & Disburse</span>
+                            <button type="submit" class="btn btn-lime w-100 py-3 mt-2 d-flex align-items-center justify-content-center shadow-lg rounded-4 transition-all">
+                                <i class="bi bi-wallet2 me-2 fs-5"></i>
+                                <span class="fw-bold">PROCESS PAYOUT</span>
                             </button>
                         </form>
                     </div>
                 </div>
 
                 <!-- Right Column: Recent Grants -->
-                <div class="col-lg-8 animate-slide-up" style="animation-delay: 0.2s;">
-                    <div class="card-custom p-0 overflow-hidden h-100">
-                        <div class="p-4 border-bottom bg-light d-flex justify-content-between align-items-center">
-                            <h6 class="fw-bold mb-0 text-dark">Recent Activity</h6>
+                <div class="col-lg-8 animate-slide-up" style="animation-delay: 0.3s;">
+                    <div class="card-custom p-0 overflow-hidden h-100 border-0 shadow-sm">
+                        <div class="p-4 border-bottom d-flex justify-content-between align-items-center bg-white">
+                            <div>
+                                <h6 class="fw-bold mb-1 text-dark">Recent Disbursements</h6>
+                                <p class="text-muted small mb-0">History of the last 20 welfare grants.</p>
+                            </div>
                             <div class="d-flex gap-2">
                                 <div class="dropdown">
-                                    <button class="btn btn-sm btn-white border shadow-sm text-muted dropdown-toggle" data-bs-toggle="dropdown">
+                                    <button class="btn btn-light btn-sm fw-bold border text-muted dropdown-toggle rounded-pill px-3" data-bs-toggle="dropdown">
                                         <i class="bi bi-download me-1"></i> Export
                                     </button>
-                                    <ul class="dropdown-menu">
-                                        <li><a class="dropdown-item" href="?<?= http_build_query(array_merge($_GET, ['action' => 'export_pdf'])) ?>">Export PDF</a></li>
-                                        <li><a class="dropdown-item" href="?<?= http_build_query(array_merge($_GET, ['action' => 'export_excel'])) ?>">Export Excel</a></li>
-                                        <li><a class="dropdown-item" href="?<?= http_build_query(array_merge($_GET, ['action' => 'print_report'])) ?>" target="_blank">Print Report</a></li>
+                                    <ul class="dropdown-menu shadow border-0 radius-12">
+                                        <li><a class="dropdown-item py-2" href="?<?= http_build_query(array_merge($_GET, ['action' => 'export_pdf'])) ?>"><i class="bi bi-file-pdf text-danger me-2"></i>PDF Report</a></li>
+                                        <li><a class="dropdown-item py-2" href="?<?= http_build_query(array_merge($_GET, ['action' => 'export_excel'])) ?>"><i class="bi bi-file-excel text-success me-2"></i>Excel Sheet</a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item py-2" href="?<?= http_build_query(array_merge($_GET, ['action' => 'print_report'])) ?>" target="_blank"><i class="bi bi-printer text-primary me-2"></i>Print View</a></li>
                                     </ul>
                                 </div>
-                                <a href="#" class="btn btn-sm btn-white border shadow-sm text-muted">View All</a>
                             </div>
                         </div>
                         
                         <div class="table-responsive">
                             <table class="table table-custom table-hover align-middle mb-0">
-                                <thead>
+                                <thead class="bg-light">
                                     <tr>
-                                        <th class="ps-4">Date</th>
-                                        <th>Beneficiary</th>
-                                        <th>Reason/Case</th>
-                                        <th class="text-end pe-4">Amount</th>
+                                        <th class="ps-4 text-uppercase text-muted small fw-bold">Date & Time</th>
+                                        <th class="text-uppercase text-muted small fw-bold">Beneficiary</th>
+                                        <th class="text-uppercase text-muted small fw-bold">Details</th>
+                                        <th class="text-end text-uppercase text-muted small fw-bold pe-4">Amount</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <?php if ($history->num_rows === 0): ?>
-                                        <tr><td colspan="4" class="text-center py-5 text-muted">No welfare grants recorded yet.</td></tr>
+                                        <tr><td colspan="4" class="text-center py-5 text-muted">
+                                            <div class="d-flex flex-column align-items-center">
+                                                <i class="bi bi-inbox fs-1 opacity-25 mb-2"></i>
+                                                <span>No welfare grants recorded recently.</span>
+                                            </div>
+                                        </td></tr>
                                     <?php else: while ($row = $history->fetch_assoc()): ?>
                                         <tr>
                                             <td class="ps-4">
-                                                <div class="fw-medium text-dark"><?= date('M d, Y', strtotime($row['date_granted'])) ?></div>
+                                                <div class="fw-bold text-dark"><?= date('M d, Y', strtotime($row['date_granted'])) ?></div>
                                                 <small class="text-muted"><?= date('h:i A', strtotime($row['date_granted'])) ?></small>
                                             </td>
                                             <td>
                                                 <div class="d-flex align-items-center">
-                                                    <div class="rounded-circle bg-light d-flex align-items-center justify-content-center me-3 text-success fw-bold border" style="width: 40px; height: 40px;">
+                                                    <div class="rounded-circle bg-success bg-opacity-10 d-flex align-items-center justify-content-center me-3 text-success fw-bold border border-success-subtle" style="width: 40px; height: 40px;">
                                                         <?= substr($row['full_name'], 0, 1) ?>
                                                     </div>
                                                     <div>
-                                                        <div class="fw-bold text-dark"><?= $row['full_name'] ?></div>
-                                                        <small class="text-muted text-uppercase" style="font-size: 0.75rem;"><?= $row['national_id'] ?></small>
+                                                        <div class="fw-bold text-dark"><?= htmlspecialchars($row['full_name']) ?></div>
+                                                        <span class="badge bg-light text-dark border rounded-pill px-2 py-0" style="font-size: 0.65rem;">ID: <?= $row['national_id'] ?></span>
                                                     </div>
                                                 </div>
                                             </td>
                                              <td>
-                                                <div class="text-truncate" style="max-width: 250px;">
+                                                <div class="text-truncate" style="max-width: 280px;">
                                                     <?php if($row['case_title']): ?>
-                                                        <span class="badge bg-success-subtle text-success border border-success-subtle me-1">CASE</span>
-                                                        <?= htmlspecialchars($row['case_title']) ?>
+                                                        <span class="badge bg-success-subtle text-success border border-success-subtle me-1 rounded-1">CASE</span>
+                                                        <span class="fw-medium"><?= htmlspecialchars($row['case_title']) ?></span>
                                                     <?php else: ?>
-                                                        <span class="badge bg-light text-dark border me-1">GENERAL</span>
-                                                        <?= htmlspecialchars($row['reason']) ?>
+                                                        <span class="badge bg-light text-muted border me-1 rounded-1">GENERAL</span>
+                                                        <span class="text-muted"><?= htmlspecialchars($row['reason']) ?></span>
                                                     <?php endif; ?>
                                                 </div>
-                                                <small class="text-muted d-block"><?= htmlspecialchars($row['reason']) ?></small>
+                                                <?php if($row['case_title']): ?>
+                                                    <small class="text-muted d-block ps-1 border-start ms-1 mt-1" style="font-size: 0.75rem;">Note: <?= htmlspecialchars($row['reason']) ?></small>
+                                                <?php endif; ?>
                                             </td>
                                             <td class="text-end pe-4">
-                                                <div class="fw-bold text-success fs-6">
-                                                    + KES <?= number_format((float)$row['amount']) ?>
+                                                <div class="fw-bold text-dark fs-6 font-monospace">
+                                                    KES <?= number_format((float)$row['amount'], 2) ?>
                                                 </div>
-                                                <small class="text-muted">Approved</small>
+                                                <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-2" style="font-size: 0.65rem;">DISBURSED</span>
                                             </td>
                                         </tr>
                                     <?php endwhile; endif; ?>
@@ -446,22 +514,135 @@ $pageTitle = "Welfare Support";
 <script src="<?= BASE_URL ?>/public/assets/js/main.js?v=<?= time() ?>"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+// --- 1. JS Map for Member -> Active Case ---
+const memberToCaseMap = {};
+<?php foreach($cases_array as $c): ?>
+    memberToCaseMap[<?= $c['related_member_id'] ?>] = <?= $c['case_id'] ?>;
+<?php endforeach; ?>
+
 function updateMemberFromCase(sel) {
     const opt = sel.options[sel.selectedIndex];
     const mid = opt.getAttribute('data-member');
     const rem = opt.getAttribute('data-rem');
+    
+    // Only update member if one is linked to the case
     if (mid) {
         document.getElementById('beneficiary_select').value = mid;
     }
+    
+    // Auto-fill remaining amount if available
     if (rem && rem > 0) {
         document.getElementsByName('amount')[0].value = rem;
     }
 }
+
+// Auto-Select Case when Member is selected
+document.getElementById('beneficiary_select').addEventListener('change', function() {
+    const memberId = this.value;
+    const caseSelect = document.getElementById('case_select');
+    
+    // Reset first
+    caseSelect.value = "";
+    
+    if (memberId && memberToCaseMap[memberId]) {
+        const targetCaseId = memberToCaseMap[memberId];
+        caseSelect.value = targetCaseId;
+        
+        // Trigger visual update for amount if needed
+        updateMemberFromCase(caseSelect);
+    }
+});
+
 // Initial trigger if case_id is set via GET
 window.onload = function() {
     const cs = document.getElementById('case_select');
     if (cs.value) updateMemberFromCase(cs);
+    
+    // --- 2. Chart Initialization ---
+    initCharts();
 };
+
+function initCharts() {
+    // A. TRENDS CHART
+    const trendOptions = {
+        series: [{
+            name: "Disbursed",
+            data: <?= json_encode($trend_data) ?>
+        }],
+        chart: {
+            type: 'area',
+            height: 250,
+            toolbar: { show: false },
+            fontFamily: 'Outfit, sans-serif'
+        },
+        dataLabels: { enabled: false },
+        stroke: { curve: 'smooth', width: 3, colors: ['#10b981'] },
+        fill: {
+            type: 'gradient',
+            gradient: {
+                shadeIntensity: 1,
+                opacityFrom: 0.7,
+                opacityTo: 0.1,
+                stops: [0, 90, 100],
+                colorStops: [
+                    { offset: 0, color: '#10b981', opacity: 0.5 },
+                    { offset: 100, color: '#10b981', opacity: 0 }
+                ]
+            }
+        },
+        xaxis: {
+            categories: <?= json_encode($trend_labels) ?>,
+            axisBorder: { show: false },
+            axisTicks: { show: false }
+        },
+        yaxis: {
+            labels: { formatter: (val) => { return (val/1000).toFixed(0) + 'K' } }
+        },
+        grid: {
+            borderColor: '#f1f5f9',
+            strokeDashArray: 4,
+            yaxis: { lines: { show: true } }
+        },
+        colors: ['#10b981'],
+        tooltip: {
+            y: { formatter: function (val) { return "KES " + val.toLocaleString() } }
+        }
+    };
+    new ApexCharts(document.querySelector("#chart-trends"), trendOptions).render();
+
+    // B. UTILIZATION CHART
+    const utilOptions = {
+        series: [<?= $total_disbursed ?>, <?= max(0, $total_raised - $total_disbursed) ?>],
+        labels: ['Disbursed', 'Remaining'],
+        chart: {
+            type: 'donut',
+            height: 250,
+            fontFamily: 'Outfit, sans-serif'
+        },
+        colors: ['#0f2e25', '#d0f35d'], 
+        plotOptions: {
+            pie: {
+                donut: {
+                    size: '70%',
+                    labels: {
+                        show: true,
+                        total: {
+                            show: true,
+                            label: 'Total Raised',
+                            formatter: function (w) {
+                                return '<?= number_format($total_raised/1000, 1) ?>K';
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        dataLabels: { enabled: false },
+        legend: { position: 'bottom' },
+        stroke: { show: false }
+    };
+    new ApexCharts(document.querySelector("#chart-utilization"), utilOptions).render();
+}
 </script>
 </body>
 </html>

@@ -255,7 +255,7 @@ if (!function_exists('is_active')) {
 
             <div class="hd-nav-header">Utilities</div>
             <a href="<?= $base ?>/member/pages/mpesa_request.php?type=savings" class="hd-nav-item <?= (isset($_GET['type']) && $_GET['type'] === 'savings') ? 'active' : '' ?>">
-                <i class="bi bi-mobile-fill"></i> <span class="hd-nav-text">Pay Via Mpesa</span>
+                <i class="bi bi-phone-vibrate"></i> <span class="hd-nav-text">Pay Via Mpesa</span>
             </a>
             <a href="<?= $base ?>/member/pages/withdraw.php" class="hd-nav-item <?= is_active('withdraw.php') ?>">
                 <i class="bi bi-wallet2"></i> <span class="hd-nav-text">Withdraw Funds</span>
@@ -305,6 +305,11 @@ if (!function_exists('is_active')) {
             <?php endif; ?>
 
             <div class="hd-nav-header">Financial Management</div>
+            <?php if (has_permission('payments.php')): ?>
+                <a href="<?= $base ?>/admin/pages/payments.php" class="hd-nav-item <?= is_active('payments.php') ?>">
+                    <i class="bi bi-cash-coin"></i> <span class="hd-nav-text">Cashier / Payments</span>
+                </a>
+            <?php endif; ?>
             <?php if (has_permission('revenue.php')): ?>
                 <a href="<?= $base ?>/admin/pages/revenue.php" class="hd-nav-item <?= is_active('revenue.php') ?>">
                     <i class="bi bi-graph-up"></i> <span class="hd-nav-text">Revenue Inflow</span>
@@ -318,6 +323,11 @@ if (!function_exists('is_active')) {
             <?php if (has_permission('transactions.php')): ?>
                 <a href="<?= $base ?>/admin/pages/transactions.php" class="hd-nav-item <?= is_active('transactions.php') ?>">
                     <i class="bi bi-journal-text"></i> <span class="hd-nav-text">Live Ledger View</span>
+                </a>
+            <?php endif; ?>
+            <?php if (has_permission('monitor.php')): ?>
+                <a href="<?= $base ?>/admin/pages/monitor.php" class="hd-nav-item <?= is_active('monitor.php') ?>">
+                    <i class="bi bi-phone-vibrate"></i> <span class="hd-nav-text">M-Pesa Logs</span>
                 </a>
             <?php endif; ?>
             <?php if (has_permission('trial_balance.php')): ?>
@@ -334,7 +344,7 @@ if (!function_exists('is_active')) {
             <?php endif; ?>
             <?php if (has_permission('loans_payouts.php')): ?>
                 <a href="<?= $base ?>/admin/pages/loans_payouts.php" class="hd-nav-item <?= is_active('loans_payouts.php') ?>">
-                    <i class="bi bi-cash-coin"></i> <span class="hd-nav-text">Loan Payouts</span>
+                    <i class="bi bi-cash-stack"></i> <span class="hd-nav-text">Loan Payouts</span>
                 </a>
             <?php endif; ?>
 
@@ -386,6 +396,11 @@ if (!function_exists('is_active')) {
             <?php if (has_permission('live_monitor.php')): ?>
                 <a href="<?= $base ?>/admin/pages/live_monitor.php" class="hd-nav-item <?= is_active('live_monitor.php') ?>">
                     <i class="bi bi-display"></i> <span class="hd-nav-text">Live Monitor</span>
+                </a>
+            <?php endif; ?>
+            <?php if (has_permission('transaction_monitor.php')): ?>
+                <a href="<?= $base ?>/admin/pages/transaction_monitor.php" class="hd-nav-item <?= is_active('transaction_monitor.php') ?>">
+                    <i class="bi bi-exclamation-triangle"></i> <span class="hd-nav-text">Transaction Recovery</span>
                 </a>
             <?php endif; ?>
             <?php if (has_permission('system_health.php')): ?>
