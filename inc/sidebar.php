@@ -293,14 +293,18 @@ if (!function_exists('is_active')) {
                     <i class="bi bi-people-fill"></i> <span class="hd-nav-text">Members List</span>
                 </a>
             <?php endif; ?>
+            <div class="hd-nav-header">People & Access</div>
             <?php if (has_permission('employees.php')): ?>
-                <a href="<?= $base ?>/admin/pages/employees.php" class="hd-nav-item <?= is_active('employees.php') ?>">
-                    <i class="bi bi-person-badge"></i> <span class="hd-nav-text">Employees List</span>
+                <a href="<?= $base ?>/admin/pages/employees.php?view=hr" class="hd-nav-item <?= is_active('employees.php') && (!isset($_GET['view']) || $_GET['view'] !== 'sys') ? 'active' : '' ?>">
+                    <i class="bi bi-people-fill"></i> <span class="hd-nav-text">HR Directory</span>
+                </a>
+                <a href="<?= $base ?>/admin/pages/employees.php?view=sys" class="hd-nav-item <?= is_active('employees.php') && (isset($_GET['view']) && $_GET['view'] === 'sys') ? 'active' : '' ?>">
+                    <i class="bi bi-shield-lock"></i> <span class="hd-nav-text">System Users</span>
                 </a>
             <?php endif; ?>
             <?php if (has_permission('payroll.php')): ?>
                 <a href="<?= $base ?>/admin/pages/payroll.php" class="hd-nav-item <?= is_active('payroll.php') ?>">
-                    <i class="bi bi-cash-stack"></i> <span class="hd-nav-text">Payroll Hub</span>
+                    <i class="bi bi-wallet2"></i> <span class="hd-nav-text">Payroll Hub</span>
                 </a>
             <?php endif; ?>
 
@@ -385,12 +389,9 @@ if (!function_exists('is_active')) {
             <?php endif; ?>
 
             <div class="hd-nav-header">System Maintenance</div>
-            <?php if ($role === 'superadmin' || has_permission('staff_mgmt.php')): ?>
-                <a href="<?= $base ?>/admin/pages/staff_mgmt.php" class="hd-nav-item <?= is_active('staff_mgmt.php') ?>">
-                    <i class="bi bi-shield-lock"></i> <span class="hd-nav-text">Staff & Access</span>
-                </a>
+            <?php if ($role === 'superadmin'): ?>
                 <a href="<?= $base ?>/admin/pages/roles.php" class="hd-nav-item <?= is_active('roles.php') ?>">
-                    <i class="bi bi-grid-3x3-gap"></i> <span class="hd-nav-text">Roles Matrix</span>
+                    <i class="bi bi-shield-lock"></i> <span class="hd-nav-text">Access Control (RBAC)</span>
                 </a>
             <?php endif; ?>
             <?php if (has_permission('live_monitor.php')): ?>

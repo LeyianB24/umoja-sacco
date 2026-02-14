@@ -10,16 +10,15 @@ require_once __DIR__ . '/../../inc/FinancialEngine.php';
 require_once __DIR__ . '/../../inc/PayrollCalculator.php';
 require_once __DIR__ . '/../../inc/PayslipGenerator.php';
 require_once __DIR__ . '/../../inc/Mailer.php';
+require_once __DIR__ . '/../../inc/PayrollEngine.php'; // Updated Engine
 require_once __DIR__ . '/../../core/exports/UniversalExportEngine.php';
 
 // Permissions
-require_permission('payroll.php'); // Ensure slug exists or use broader permission
+require_permission('payroll.php'); 
 $layout = LayoutManager::create('admin');
-$engine = new FinancialEngine($db);
-$calculator = new PayrollCalculator($db);
+$engine = new PayrollEngine($db);
 
 $pageTitle = "Payroll Management";
-$current_month = date('Y-m');
 
 // ---------------------------------------------------------
 // 1. HANDLE POST ACTIONS
@@ -28,185 +27,77 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     // START NEW RUN
     if (isset($_POST['action']) && $_POST['action'] === 'start_run') {
-        $month = $_POST['month_selector']; // YYYY-MM
-        
-        // Check if run exists
-        $check = $db->query("SELECT id FROM payroll_runs WHERE month = '$month'");
-        if ($check->num_rows > 0) {
-            flash_set("Payroll run for $month already exists.", "warning");
-        } else {
-            $stmt = $db->prepare("INSERT INTO payroll_runs (month, status, created_by) VALUES (?, 'draft', ?)");
-            $admin_id = $_SESSION['admin_id'] ?? 1;
-            $stmt->bind_param("si", $month, $admin_id);
-            if ($stmt->execute()) {
-                flash_set("Payroll period $month started.", "success");
-            } else {
-                flash_set("Error: " . $stmt->error, "danger");
-            }
+        try {
+            $month = $_POST['month_selector'];
+            $engine->startRun($month, $_SESSION['admin_id']);
+            flash_set("Payroll period $month started.", "success");
+        } catch (Exception $e) {
+            flash_set($e->getMessage(), "danger");
         }
         header("Location: payroll.php");
         exit;
     }
 
-    // CALCULATE / RE-CALCULATE BATCH
+    // CALCULATE BATCH
     if (isset($_POST['action']) && $_POST['action'] === 'calculate_batch') {
-        $run_id = intval($_POST['run_id']);
-        
-        // Verify Run is Draft
-        $run_q = $db->query("SELECT * FROM payroll_runs WHERE id = $run_id AND status = 'draft'");
-        if ($run_q->num_rows === 0) {
-            flash_set("Cannot calculate. Run not found or already approved.", "danger");
-        } else {
-            $run = $run_q->fetch_assoc();
-            $month = $run['month'];
-            list($year_num, $month_num) = explode('-', $month);
-
-            // Fetch Active Employees
-            $emps = $db->query("SELECT * FROM employees WHERE status = 'active'");
-            $count = 0;
-            $total_gross = 0;
-            $total_net = 0;
-
-            $db->begin_transaction();
-            try {
-                // Clear existing entries for this run to avoid dupes/stale data
-                $db->query("DELETE FROM payroll WHERE payroll_run_id = $run_id");
-
-                while ($emp = $emps->fetch_assoc()) {
-                    // Do Calculation
-                    $res = $calculator->calculate($emp);
-                    
-                    // Insert into Payroll Items
-                    $stmt = $db->prepare(
-                        "INSERT INTO payroll 
-                        (payroll_run_id, employee_id, month, year, 
-                        basic_salary, allowances, 
-                        gross_pay, 
-                        deductions, tax_paye, tax_nssf, tax_nhif, tax_housing, 
-                        net_pay, status) 
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')"
-                    );
-                    
-                    $deductions_sum = $res['total_deductions']; // Total deductions
-                    $stmt->bind_param("iissddddddddd", 
-                        $run_id, $emp['employee_id'], $month, $year_num,
-                        $res['basic_salary'], 
-                        // Allowances (Sum of house + transport for now stored in allowances col?) 
-                        // Actually logic: Allowances col usually stores custom. 
-                        // Calculator returns breakdown. Let's sum House+Transport for 'allowances' column
-                        $allowances_total, 
-                        $res['gross_pay'],
-                        $deductions_sum, $res['tax_paye'], $res['tax_nssf'], $res['tax_nhif'], $res['tax_housing'],
-                        $res['net_pay']
-                    );
-                    
-                    $allowances_total = $res['house_allowance'] + $res['transport_allowance'];
-                    $stmt->execute();
-                    
-                    $total_gross += $res['gross_pay'];
-                    $total_net += $res['net_pay'];
-                    $count++;
-                }
-
-                // Update Run Totals
-                $db->query("UPDATE payroll_runs SET total_gross = $total_gross, total_net = $total_net WHERE id = $run_id");
-                
-                $db->commit();
-                flash_set("Calculated payroll for $count employees.", "success");
-            } catch (Exception $e) {
-                $db->rollback();
-                flash_set("Calculation failed: " . $e->getMessage(), "danger");
-            }
+        try {
+            $count = $engine->calculateRun(intval($_POST['run_id']));
+            flash_set("Calculated payroll for $count employees.", "success");
+        } catch (Exception $e) {
+            flash_set("Calculation failed: " . $e->getMessage(), "danger");
         }
-        header("Location: payroll.php?run_id=$run_id");
+        header("Location: payroll.php?run_id=" . $_POST['run_id']);
         exit;
     }
 
-    // APPROVE & PAY
+    // APPROVE RUN
     if (isset($_POST['action']) && $_POST['action'] === 'approve_run') {
-        $run_id = intval($_POST['run_id']);
-        
-        $run_q = $db->query("SELECT * FROM payroll_runs WHERE id = $run_id AND status = 'draft'");
-        if ($run_q->num_rows === 0) {
-            flash_set("Invalid run state.", "danger");
-        } else {
-            $db->begin_transaction();
-            try {
-                // 1. Update Run Status
-                $db->query("UPDATE payroll_runs SET status = 'paid', processed_by = {$_SESSION['admin_id']} WHERE id = $run_id");
-                
-                // 2. Mark Items as Paid
-                $pay_date = date('Y-m-d');
-                $db->query("UPDATE payroll SET status = 'paid', payment_date = '$pay_date' WHERE payroll_run_id = $run_id");
-
-                // 3. Post to Ledger (Aggregated or Individual?)
-                // Individual is better for traceability
-                $items = $db->query("SELECT * FROM payroll WHERE payroll_run_id = $run_id");
-                while ($p = $items->fetch_assoc()) {
-                    // Expense: Net Pay (Wallet/Bank Out)
-                    // Liability: PAYE, NSSF, NHIF (To be paid to gov)
-                    // Currently FinancialEngine handles single entry. We need multiple.
-                    
-                    // For now, let's record the NET PAY as the main expense transaction
-                    // And potentially separate entries for taxes if desired, OR just one expense "Staff Costs".
-                    // Let's stick to simplest correct approach: 
-                    // Credit Bank/Cash, Debit Payroll Expense
-                    
-                    $engine->transact([
-                        'action_type' => 'expense_outflow', // Mapping required in Engine? Or use generic expense
-                        'amount' => $p['net_pay'],
-                        'notes' => "Salary {$p['month']} - Emp #{$p['employee_id']}",
-                        'related_table' => 'payroll',
-                        'related_id' => $p['id'],
-                        'method' => 'bank' // Default
-                    ]);
-                }
-
-                $db->commit();
-                flash_set("Payroll Approved & Posted to Ledger.", "success");
-            } catch (Exception $e) {
-                $db->rollback();
-                flash_set("Approval failed: " . $e->getMessage(), "danger");
-            }
+        try {
+            $engine->approveRun(intval($_POST['run_id']), $_SESSION['admin_id']);
+            flash_set("Payroll Run Approved.", "success");
+        } catch (Exception $e) {
+            flash_set("Approval failed: " . $e->getMessage(), "danger");
         }
-        header("Location: payroll.php?run_id=$run_id");
+        header("Location: payroll.php?run_id=" . $_POST['run_id']);
+        exit;
+    }
+
+    // DISBURSE RUN
+    if (isset($_POST['action']) && $_POST['action'] === 'disburse_run') {
+        try {
+            $count = $engine->disburseRun(intval($_POST['run_id']));
+            flash_set("Disbursed salaries to $count employees. Ledger updated.", "success");
+        } catch (Exception $e) {
+            flash_set("Disbursement failed: " . $e->getMessage(), "danger");
+        }
+        header("Location: payroll.php?run_id=" . $_POST['run_id']);
         exit;
     }
 
     // DOWNLOAD PAYSLIP
     if (isset($_POST['action']) && $_POST['action'] === 'download_payslip') {
         $pid = intval($_POST['payroll_id']);
-        
-        // Fetch Data
         $pq = $db->query("SELECT p.*, e.full_name, e.employee_no, e.organization_email, e.personal_email, 
                           e.job_title, e.kra_pin, e.nssf_no, e.nhif_no, e.bank_name, e.bank_account, sg.grade_name 
                           FROM payroll p 
                           JOIN employees e ON p.employee_id = e.employee_id 
                           LEFT JOIN salary_grades sg ON e.grade_id = sg.id
                           WHERE p.id = $pid");
-                          
         if ($pq->num_rows > 0) {
             $row = $pq->fetch_assoc();
             $data = ['employee' => $row, 'payroll' => $row];
-            
             UniversalExportEngine::handle('pdf', function($pdf) use ($data) {
                 PayslipGenerator::render($pdf, $data);
-            }, [
-                'title' => "Payslip - " . date('M Y', strtotime($row['month'])), 
-                'module' => 'Payroll', 
-                'output_mode' => 'D'
-            ]);
+            }, ['title' => "Payslip - " . $row['month'], 'module' => 'Payroll', 'output_mode' => 'D']);
             exit;
-        } else {
-            flash_set("Payroll record not found.", "danger");
         }
+        flash_set("Record not found.", "danger"); 
+        header("Location: payroll.php"); exit;
     }
 
     // EMAIL INDIVIDUAL PAYSLIP
     if (isset($_POST['action']) && $_POST['action'] === 'email_payslip') {
         $pid = intval($_POST['payroll_id']);
-        
-        // Fetch Data
         $pq = $db->query("SELECT p.*, e.full_name, e.employee_no, e.company_email, e.personal_email, 
                           e.job_title, e.kra_pin, e.nssf_no, e.nhif_no, e.bank_name, e.bank_account, sg.grade_name 
                           FROM payroll p 
@@ -216,48 +107,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($pq->num_rows > 0) {
             $row = $pq->fetch_assoc();
-            $data = ['employee' => $row, 'payroll' => $row];
-            
-            // Generate PDF String
-            $pdfContent = UniversalExportEngine::handle('pdf', function($pdf) use ($data) {
-                PayslipGenerator::render($pdf, $data);
-            }, [
-                'title' => "Payslip", 
-                'module' => 'Payroll', 
-                'output_mode' => 'S' // Return String
-            ]);
-            
-            // Send Email
             $email = !empty($row['company_email']) ? $row['company_email'] : $row['personal_email'];
+            
             if ($email) {
+                $data = ['employee' => $row, 'payroll' => $row];
+                $pdfContent = UniversalExportEngine::handle('pdf', function($pdf) use ($data) {
+                    PayslipGenerator::render($pdf, $data);
+                }, ['title' => "Payslip", 'module' => 'Payroll', 'output_mode' => 'S']);
+                
                 $monthName = date('F Y', strtotime($row['month']));
                 $subject = "Payslip for $monthName - " . SITE_NAME;
-                $body = "Dear {$row['full_name']},<br><br>Please find attached your payslip for <b>$monthName</b>.<br><br>Regards,<br>" . SITE_NAME . " HR Team";
+                $body = "Dear {$row['full_name']},<br><br>Please find attached your payslip for <b>$monthName</b>.";
                 
-                $sent = Mailer::send($email, $subject, $body, [
-                    ['content' => $pdfContent, 'name' => "Payslip_$monthName.pdf"]
-                ]);
-                
-                if ($sent) {
+                if (Mailer::send($email, $subject, $body, [['content' => $pdfContent, 'name' => "Payslip_$monthName.pdf"]])) {
                     flash_set("Payslip sent to $email", "success");
                 } else {
-                    flash_set("Failed to send email to $email", "danger");
+                    flash_set("Failed to send email.", "danger");
                 }
             } else {
                 flash_set("No email address found for employee.", "warning");
             }
         }
-        header("Location: payroll.php?run_id=" . $row['payroll_run_id']);
-        exit;
+        header("Location: payroll.php"); exit;
     }
 
-    // BATCH EMAIL
+    // EMAIL BATCH
     if (isset($_POST['action']) && $_POST['action'] === 'email_batch') {
         $run_id = intval($_POST['run_id']);
         $sent_count = 0;
-        
-        $pq = $db->query("SELECT p.*, e.full_name, e.employee_no, e.company_email, e.personal_email, 
-                          e.job_title, e.kra_pin, e.nssf_no, e.nhif_no, e.bank_name, e.bank_account, sg.grade_name 
+        $pq = $db->query("SELECT p.*, e.full_name, e.company_email, e.personal_email, e.job_title, e.kra_pin, e.nssf_no, e.nhif_no, e.bank_name, e.bank_account, sg.grade_name 
                           FROM payroll p 
                           JOIN employees e ON p.employee_id = e.employee_id 
                           LEFT JOIN salary_grades sg ON e.grade_id = sg.id
@@ -267,13 +145,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $email = !empty($row['company_email']) ? $row['company_email'] : $row['personal_email'];
             if (!$email) continue;
             
-            // Generate
             $data = ['employee' => $row, 'payroll' => $row];
             $pdfContent = UniversalExportEngine::handle('pdf', function($pdf) use ($data) {
                 PayslipGenerator::render($pdf, $data);
             }, ['title' => "Payslip", 'module' => 'Payroll', 'output_mode' => 'S']);
             
-            // Send
             $monthName = date('F Y', strtotime($row['month']));
             $subject = "Payslip for $monthName";
             $body = "Dear {$row['full_name']},<br><br>Please find attached your payslip for <b>$monthName</b>.";
@@ -282,7 +158,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $sent_count++;
             }
         }
-        
         flash_set("Batch Complete. Sent $sent_count payslips.", "success");
         header("Location: payroll.php?run_id=$run_id");
         exit;
@@ -292,20 +167,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // ---------------------------------------------------------
 // 2. FETCH DATA
 // ---------------------------------------------------------
-// Fetch active run or requested run
 $run_id = isset($_GET['run_id']) ? intval($_GET['run_id']) : null;
 $active_run = null;
 
 if ($run_id) {
     $active_run = $db->query("SELECT * FROM payroll_runs WHERE id = $run_id")->fetch_assoc();
 } else {
-    // Default to latest Draft, else latest Paid
     $active_run = $db->query("SELECT * FROM payroll_runs ORDER BY status='draft' DESC, month DESC LIMIT 1")->fetch_assoc();
 }
 
 $payroll_items = [];
 if ($active_run) {
-    if (!$run_id) $run_id = $active_run['id']; // sync if we auto-selected
+    if (!$run_id) $run_id = $active_run['id'];
     $pq = $db->query("SELECT p.*, e.full_name, e.employee_no, e.grade_id, sg.grade_name 
                       FROM payroll p 
                       JOIN employees e ON p.employee_id = e.employee_id 
@@ -315,12 +188,12 @@ if ($active_run) {
     while($row = $pq->fetch_assoc()) $payroll_items[] = $row;
 }
 
-// Fetch all runs for sidebar/history
 $history_runs = $db->query("SELECT * FROM payroll_runs ORDER BY month DESC LIMIT 12");
 
+function ksh($v, $d = 2) { return number_format((float)($v ?? 0), $d); }
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-bs-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -328,160 +201,269 @@ $history_runs = $db->query("SELECT * FROM payroll_runs ORDER BY month DESC LIMIT
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/custom.css">
+    
+    <style>
+        :root {
+            /* Emerald Theme */
+            --primary-hue: 158; 
+            --primary-sat: 64%; 
+            --primary-lig: 52%;
+            --color-primary: hsl(var(--primary-hue), var(--primary-sat), var(--primary-lig));
+            --color-primary-dark: hsl(var(--primary-hue), var(--primary-sat), 25%);
+            --color-primary-light: hsl(var(--primary-hue), var(--primary-sat), 94%);
+            
+            --bg-app: #f0f2f5;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            
+            --glass-bg: rgba(255, 255, 255, 0.85);
+            --glass-border: 1px solid rgba(255, 255, 255, 0.6);
+            --glass-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            
+            --card-radius: 16px;
+        }
+
+        [data-bs-theme="dark"] {
+            --bg-app: #0f172a;
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --glass-bg: rgba(30, 41, 59, 0.7);
+            --glass-border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        body {
+            background-color: var(--bg-app);
+            color: var(--text-main);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        /* Glass Components */
+        .hd-glass {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: var(--glass-border);
+            border-radius: var(--card-radius);
+            box-shadow: var(--glass-shadow);
+        }
+
+        /* Layout */
+        .main-content-wrapper { margin-left: 260px; transition: 0.3s; min-height: 100vh; }
+        @media (max-width: 991.98px) { .main-content-wrapper { margin-left: 0; } }
+
+        /* Custom Buttons */
+        .btn-primary {
+            background-color: var(--color-primary);
+            border-color: var(--color-primary);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+            border-radius: 50rem;
+        }
+        .btn-primary:hover {
+            background-color: var(--color-primary-dark);
+            border-color: var(--color-primary-dark);
+        }
+
+        /* Stats Cards */
+        .stat-icon {
+            width: 48px; height: 48px;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 12px; font-size: 1.5rem;
+        }
+        
+        /* Table */
+        .table-custom tr { transition: all 0.2s ease; }
+        .table-custom tr:hover td { background-color: rgba(var(--primary-hue), 185, 129, 0.05); }
+    </style>
 </head>
-<body class="bg-light">
+<body>
 
 <div class="d-flex">
     <?php $layout->sidebar(); ?>
 
-    <div class="flex-fill main-content p-4">
+    <div class="flex-fill main-content-wrapper" style="margin-left: 280px; transition: margin-left 0.3s ease;">
         <?php $layout->topbar($pageTitle); ?>
-        <?php flash_render(); ?>
+        
+        <div class="container-fluid">
+            <?php flash_render(); ?>
 
-        <!-- HEADER -->
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <div>
-                <h1 class="h3 fw-bold text-dark mb-1">Payroll Center</h1>
-                <p class="text-muted mb-0">Manage salaries, statutory deductions, and disbursements.</p>
+            <!-- HEADER -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h3 class="fw-bold mb-1 text-gradient">Payroll Management</h3>
+                    <p class="text-muted small mb-0">Disburse salaries, manage tax deductions, and generate payslips.</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-light border shadow-sm rounded-pill" data-bs-toggle="modal" data-bs-target="#historyModal">
+                        <i class="bi bi-clock-history me-2"></i> History
+                    </button>
+                    <button class="btn btn-primary fw-bold px-4" data-bs-toggle="modal" data-bs-target="#newRunModal">
+                        <i class="bi bi-plus-lg me-2"></i> New Pay Period
+                    </button>
+                </div>
             </div>
-            <div class="d-flex gap-2">
-                <button class="btn btn-white border shadow-sm" data-bs-toggle="modal" data-bs-target="#historyModal">
-                    <i class="bi bi-clock-history me-2"></i> History
-                </button>
-                <button class="btn btn-primary shadow-sm fw-bold" data-bs-toggle="modal" data-bs-target="#newRunModal">
-                    <i class="bi bi-plus-lg me-2"></i> New Pay Period
-                </button>
-            </div>
-        </div>
 
-        <?php if ($active_run): ?>
-            <!-- ACTIVE RUN DASHBOARD -->
-            <div class="card border-0 shadow-sm mb-4">
-                <div class="card-body p-4">
-                    <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
-                        <div>
-                            <div class="small fw-bold text-uppercase text-muted letter-spacing-1">Current Period</div>
-                            <div class="h2 fw-bold mb-0 text-primary">
-                                <?= date('F Y', strtotime($active_run['month'])) ?>
+            <?php if ($active_run): ?>
+                <!-- STATS & CONTROLS -->
+                <div class="row g-4 mb-4">
+                    <!-- Period Info -->
+                    <div class="col-md-5">
+                        <div class="hd-glass p-4 h-100 d-flex flex-column justify-content-center">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <span class="badge text-uppercase fw-bold rounded-pill border px-3 py-2 <?= $active_run['status'] === 'paid' ? 'bg-success text-white border-success' : ($active_run['status'] === 'approved' ? 'bg-info text-white border-info' : 'bg-warning bg-opacity-10 text-warning border-warning') ?>">
+                                    <?= strtoupper($active_run['status']) ?>
+                                </span>
+                                <div class="text-end">
+                                    <div class="small text-muted fw-bold">EMPLOYEES</div>
+                                    <div class="h5 mb-0"><?= count($payroll_items) ?></div>
+                                </div>
                             </div>
-                            <span class="badge rounded-pill px-3 py-2 mt-2 <?= $active_run['status'] === 'paid' ? 'bg-success' : 'bg-warning text-dark' ?>">
-                                <?= strtoupper($active_run['status']) ?>
-                            </span>
-                        </div>
-                        <div class="text-end">
-                            <div class="small fw-bold text-muted">Total Gross Cost</div>
-                            <div class="h3 mb-0 text-dark"><?= ksh((float)$active_run['total_gross']) ?></div>
-                            <div class="small text-success fw-bold">Net Payable: <?= ksh((float)$active_run['total_net']) ?></div>
+                            <div class="mt-2">
+                                <div class="small fw-bold text-muted text-uppercase letter-spacing-1">Current Period</div>
+                                <div class="h1 fw-bold mb-0 text-dark"><?= date('F Y', strtotime($active_run['month'])) ?></div>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Actions -->
-                    <?php if ($active_run['status'] === 'draft'): ?>
-                    <div class="d-flex gap-3 mb-4">
-                        <form method="POST">
-                            <input type="hidden" name="action" value="calculate_batch">
-                            <input type="hidden" name="run_id" value="<?= $active_run['id'] ?>">
-                            <button type="submit" class="btn btn-dark">
-                                <i class="bi bi-calculator me-2"></i> (Re)Calculate All
-                            </button>
-                        </form>
-                        
-                        <?php if (count($payroll_items) > 0): ?>
-                        <form method="POST" onsubmit="return confirm('Are you sure? This will post to Ledger and cannot be undone.');">
-                            <input type="hidden" name="action" value="approve_run">
-                            <input type="hidden" name="run_id" value="<?= $active_run['id'] ?>">
-                            <button type="submit" class="btn btn-success fw-bold">
-                                <i class="bi bi-check-circle-fill me-2"></i> Approve & Disburse
-                            </button>
-                        </form>
-                        <?php endif; ?>
-                        
-                        <?php if ($active_run['status'] === 'paid'): ?>
-                            <form method="POST" onsubmit="return confirm('Send payslips to ALL employees in this run?');">
-                                <input type="hidden" name="action" value="email_batch">
-                                <input type="hidden" name="run_id" value="<?= $active_run['id'] ?>">
-                                <button type="submit" class="btn btn-outline-primary fw-bold">
-                                    <i class="bi bi-envelope-at-fill me-2"></i> Email All Payslips
-                                </button>
-                            </form>
-                        <?php endif; ?>
+                    <!-- Financials -->
+                    <div class="col-md-7">
+                        <div class="hd-glass p-4 h-100">
+                            <div class="row g-0 h-100 align-items-center">
+                                <div class="col-6 border-end pe-4">
+                                    <div class="text-muted small fw-bold text-uppercase">Total Gross</div>
+                                    <div class="h2 fw-bold text-dark mb-0"><?= ksh((float)$active_run['total_gross']) ?></div>
+                                </div>
+                                <div class="col-6 ps-4">
+                                    <div class="text-muted small fw-bold text-uppercase">Net Payable</div>
+                                    <div class="h2 fw-bold text-success mb-0"><?= ksh((float)$active_run['total_net']) ?></div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <?php endif; ?>
+                </div>
 
-                    <!-- Data Table -->
+                <!-- ACTIONS TOOLBAR -->
+                <div class="hd-glass p-3 mb-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="text-muted small">
+                            Actions for <strong><?= date('F Y', strtotime($active_run['month'])) ?></strong>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <?php if ($active_run['status'] === 'draft'): ?>
+                                <form method="POST" class="d-inline">
+                                    <input type="hidden" name="action" value="calculate_batch">
+                                    <input type="hidden" name="run_id" value="<?= $active_run['id'] ?>">
+                                    <button type="submit" class="btn btn-dark rounded-pill">
+                                        <i class="bi bi-calculator me-2"></i> (Re)Calculate
+                                    </button>
+                                </form>
+                                <?php if (count($payroll_items) > 0): ?>
+                                    <form method="POST" class="d-inline" onsubmit="return confirm('Lock and Approve this run? No further calculations will be possible.');">
+                                        <input type="hidden" name="action" value="approve_run">
+                                        <input type="hidden" name="run_id" value="<?= $active_run['id'] ?>">
+                                        <button type="submit" class="btn btn-primary rounded-pill">
+                                            <i class="bi bi-check-circle me-2"></i> Approve
+                                        </button>
+                                    </form>
+                                <?php endif; ?>
+                            <?php elseif ($active_run['status'] === 'approved'): ?>
+                                <button class="btn btn-secondary rounded-pill" disabled><i class="bi bi-lock me-2"></i> Approved</button>
+                                <form method="POST" class="d-inline" onsubmit="return confirm('Disburse funds? This will post transactions to the General Ledger.');">
+                                    <input type="hidden" name="action" value="disburse_run">
+                                    <input type="hidden" name="run_id" value="<?= $active_run['id'] ?>">
+                                    <button type="submit" class="btn btn-success fw-bold rounded-pill">
+                                        <i class="bi bi-wallet2 me-2"></i> Disburse Payments
+                                    </button>
+                                </form>
+                            <?php elseif ($active_run['status'] === 'paid'): ?>
+                                <span class="badge bg-success bg-opacity-10 text-success border border-success px-3 rounded-pill me-2 d-flex align-items-center">
+                                    <i class="bi bi-check-all me-2"></i> Paid
+                                </span>
+                                <form method="POST" class="d-inline" onsubmit="return confirm('Send payslips to ALL employees?');">
+                                    <input type="hidden" name="action" value="email_batch">
+                                    <input type="hidden" name="run_id" value="<?= $active_run['id'] ?>">
+                                    <button type="submit" class="btn btn-outline-primary rounded-pill">
+                                        <i class="bi bi-envelope-at-fill me-2"></i> Email Payslips
+                                    </button>
+                                </form>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TABLE -->
+                <div class="hd-glass overflow-hidden">
                     <div class="table-responsive">
-                        <table class="table table-hover align-middle">
-                            <thead class="table-light small text-uppercase fw-bold text-muted">
+                        <table class="table table-custom align-middle mb-0" style="background: transparent;">
+                            <thead class="bg-light bg-opacity-50 small text-uppercase text-muted fw-bold">
                                 <tr>
-                                    <th>Employee</th>
-                                    <th class="text-end">Basic</th>
-                                    <th class="text-end">Benefits</th>
-                                    <th class="text-end">Gross</th>
-                                    <th class="text-end">PAYE</th>
-                                    <th class="text-end">Housing</th>
-                                    <th class="text-end">NSSF/NHIF</th>
-                                    <th class="text-end">Net Pay</th>
-                                    <th>Status</th>
+                                    <th class="ps-4 py-3">Employee</th>
+                                    <th class="text-end py-3">Basic</th>
+                                    <th class="text-end py-3">Allowances</th>
+                                    <th class="text-end py-3">Gross</th>
+                                    <th class="text-end py-3">Deductions</th>
+                                    <th class="text-end py-3">Net Pay</th>
+                                    <th class="text-end pe-4 py-3">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody class="border-top-0">
                                 <?php foreach ($payroll_items as $item): ?>
                                 <tr>
-                                    <td>
+                                    <td class="ps-4">
                                         <div class="fw-bold text-dark"><?= htmlspecialchars($item['full_name']) ?></div>
-                                        <div class="small text-muted"><?= htmlspecialchars($item['employee_no']) ?></div>
-                                        <?php if($item['grade_name']): ?>
-                                            <span class="badge bg-light text-muted border" style="font-size: 0.6rem;"><?= htmlspecialchars($item['grade_name']) ?></span>
-                                        <?php endif; ?>
+                                        <div class="small text-muted font-monospace"><?= htmlspecialchars($item['employee_no']) ?></div>
                                     </td>
-                                    <td class="text-end font-monospace"><?= number_format((float)$item['basic_salary']) ?></td>
-                                    <td class="text-end font-monospace"><?= number_format((float)$item['allowances']) ?></td>
-                                    <td class="text-end fw-bold font-monospace"><?= number_format((float)$item['gross_pay']) ?></td>
+                                    <td class="text-end font-monospace text-muted"><?= ksh((float)$item['basic_salary']) ?></td>
+                                    <td class="text-end font-monospace text-muted"><?= ksh((float)$item['allowances']) ?></td>
+                                    <td class="text-end font-monospace fw-medium"><?= ksh((float)$item['gross_pay']) ?></td>
                                     
-                                    <td class="text-end text-danger font-monospace" style="font-size: 0.85rem;"><?= number_format((float)$item['tax_paye']) ?></td>
-                                    <td class="text-end text-danger font-monospace" style="font-size: 0.85rem;"><?= number_format((float)$item['tax_housing']) ?></td>
-                                    <td class="text-end text-danger font-monospace" style="font-size: 0.85rem;">
-                                        <?= number_format((float)$item['tax_nssf'] + (float)$item['tax_nhif']) ?>
+                                    <td class="text-end font-monospace text-danger" style="font-size: 0.9em;">
+                                        <div data-bs-toggle="tooltip" title="PAYE: <?= ksh($item['tax_paye']) ?>, HSG: <?= ksh($item['tax_housing']) ?>, NSSF/NHIF: <?= ksh($item['tax_nssf'] + $item['tax_nhif']) ?>">
+                                            <?php 
+                                            $total_ded = $item['tax_paye'] + $item['tax_housing'] + $item['tax_nssf'] + $item['tax_nhif'];
+                                            echo ksh($total_ded); 
+                                            ?>
+                                        </div>
                                     </td>
                                     
-                                    <td class="text-end fw-bold text-success font-monospace bg-success bg-opacity-10">
-                                        <?= number_format((float)$item['net_pay']) ?>
+                                    <td class="text-end font-monospace fw-bold text-success">
+                                        <?= ksh((float)$item['net_pay']) ?>
                                     </td>
-                                    <td>
+                                    <td class="text-end pe-4">
                                         <?php if($item['status'] === 'paid'): ?>
                                             <div class="btn-group">
-                                                <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
-                                                    Action
+                                                <button type="button" class="btn btn-sm btn-light bg-transparent border-0 text-muted" data-bs-toggle="dropdown">
+                                                    <i class="bi bi-three-dots-vertical"></i>
                                                 </button>
-                                                <ul class="dropdown-menu">
+                                                <ul class="dropdown-menu dropdown-menu-end dropdown-menu-glass border-0 shadow-lg">
                                                     <li>
                                                         <form method="POST" target="_blank">
                                                             <input type="hidden" name="action" value="download_payslip">
                                                             <input type="hidden" name="payroll_id" value="<?= $item['id'] ?>">
-                                                            <button class="dropdown-item"><i class="bi bi-download me-2"></i> Download PDF</button>
+                                                            <button class="dropdown-item"><i class="bi bi-download me-2 text-primary"></i> Download PDF</button>
                                                         </form>
                                                     </li>
                                                     <li>
                                                         <form method="POST">
                                                             <input type="hidden" name="action" value="email_payslip">
                                                             <input type="hidden" name="payroll_id" value="<?= $item['id'] ?>">
-                                                            <button class="dropdown-item"><i class="bi bi-envelope me-2"></i> Email Payslip</button>
+                                                            <button class="dropdown-item"><i class="bi bi-envelope me-2 text-success"></i> Email Payslip</button>
                                                         </form>
                                                     </li>
                                                 </ul>
                                             </div>
                                         <?php else: ?>
-                                            <span class="badge bg-secondary">Pending</span>
+                                            <span class="badge bg-secondary opacity-50 fw-normal">Pending</span>
                                         <?php endif; ?>
                                     </td>
                                 </tr>
                                 <?php endforeach; ?>
                                 <?php if(empty($payroll_items)): ?>
                                     <tr>
-                                        <td colspan="9" class="text-center py-5 text-muted">
-                                            <i class="bi bi-inbox fs-3 d-block mb-2"></i>
-                                            No calculations yet. Click "Calculate All" to generate payroll.
+                                        <td colspan="7" class="text-center py-5 text-muted">
+                                            <i class="bi bi-calculator fs-1 d-block mb-3 opacity-25"></i>
+                                            <p class="mb-0">No data found.</p>
+                                            <p class="small">Click <strong>(Re)Calculate</strong> to generate payroll.</p>
                                         </td>
                                     </tr>
                                 <?php endif; ?>
@@ -489,36 +471,43 @@ $history_runs = $db->query("SELECT * FROM payroll_runs ORDER BY month DESC LIMIT
                         </table>
                     </div>
                 </div>
-            </div>
-        <?php else: ?>
-            <div class="text-center py-5">
-                <div class="display-1 text-muted opacity-25 mb-3"><i class="bi bi-receipt"></i></div>
-                <h3 class="text-muted">No Active Payroll Run</h3>
-                <p>Start a new pay period to begin.</p>
-                <button class="btn btn-primary mt-2" data-bs-toggle="modal" data-bs-target="#newRunModal">Start New Run</button>
-            </div>
-        <?php endif; ?>
-        
-        <?php $layout->footer(); ?>
+
+            <?php else: ?>
+                <!-- EMPTY STATE -->
+                <div class="text-center py-5 mt-5">
+                    <div class="display-1 text-muted opacity-25 mb-4"><i class="bi bi-calendar2-range"></i></div>
+                    <h3 class="text-muted">No Active Payroll Run</h3>
+                    <p class="text-muted mb-4">Start a new pay period to begin processing salaries.</p>
+                    <button class="btn btn-primary fw-bold px-4 rounded-pill py-3 shadow" data-bs-toggle="modal" data-bs-target="#newRunModal">
+                        Start New Pay Period
+                    </button>
+                </div>
+            <?php endif; ?>
+            
+            <?php $layout->footer(); ?>
+        </div>
     </div>
 </div>
 
 <!-- New Run Modal -->
 <div class="modal fade" id="newRunModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
+        <div class="modal-content hd-glass border-0 shadow-lg">
             <form method="POST">
                 <input type="hidden" name="action" value="start_run">
-                <div class="modal-header">
-                    <h5 class="modal-title">Start Pay Period</h5>
+                <div class="modal-header border-bottom-0 pb-0">
+                    <div>
+                        <h5 class="modal-title fw-bold">Start Pay Period</h5>
+                        <div class="small text-muted">Select the month to process.</div>
+                    </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <label class="form-label">Select Month</label>
-                    <input type="month" name="month_selector" value="<?= date('Y-m') ?>" class="form-control" required>
-                </div>
-                <div class="modal-footer">
-                    <button type="submit" class="btn btn-primary">Create Draft</button>
+                    <div class="mb-3">
+                        <label class="form-label small text-uppercase fw-bold text-muted">Billing Month</label>
+                        <input type="month" name="month_selector" value="<?= date('Y-m') ?>" class="form-control bg-light border-0 py-3" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 rounded-pill py-3 fw-bold">Create Draft Run</button>
                 </div>
             </form>
         </div>
@@ -528,20 +517,20 @@ $history_runs = $db->query("SELECT * FROM payroll_runs ORDER BY month DESC LIMIT
 <!-- History Modal -->
 <div class="modal fade" id="historyModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Payroll History</h5>
+        <div class="modal-content hd-glass border-0 shadow-lg">
+            <div class="modal-header border-bottom-0">
+                <h5 class="modal-title fw-bold">Payroll History</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body p-0">
                 <div class="list-group list-group-flush">
                     <?php while($h = $history_runs->fetch_assoc()): ?>
-                        <a href="payroll.php?run_id=<?= $h['id'] ?>" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                        <a href="payroll.php?run_id=<?= $h['id'] ?>" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center px-4 py-3 bg-transparent border-bottom">
                             <div>
-                                <div class="fw-bold"><?= date('F Y', strtotime($h['month'])) ?></div>
-                                <div class="small text-muted"><?= strtoupper($h['status']) ?></div>
+                                <div class="fw-bold text-dark"><?= date('F Y', strtotime($h['month'])) ?></div>
+                                <div class="small text-muted text-uppercase"><?= $h['status'] ?></div>
                             </div>
-                            <span class="badge bg-light text-dark border"><?= ksh((float)$h['total_net']) ?></span>
+                            <span class="badge bg-light text-dark border fw-normal font-monospace"><?= ksh((float)$h['total_net']) ?></span>
                         </a>
                     <?php endwhile; ?>
                 </div>
@@ -551,5 +540,11 @@ $history_runs = $db->query("SELECT * FROM payroll_runs ORDER BY month DESC LIMIT
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+      return new bootstrap.Tooltip(tooltipTriggerEl)
+    })
+</script>
 </body>
 </html>

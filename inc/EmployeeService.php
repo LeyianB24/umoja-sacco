@@ -57,26 +57,23 @@ class EmployeeService {
     /**
      * Map Job Title to Role ID
      */
+    /**
+     * Map Job Title to Role ID using job_titles table
+     */
     public function getRoleIdForTitle($title) {
-        $map = [
-            'Manager' => 'Manager',
-            'Accountant' => 'Accountant',
-            'Loans Officer' => 'Loan Officer', // Assuming role name
-            'Driver' => 'Staff', // Default
-            'Conductor' => 'Staff',
-            'Security' => 'Staff',
-            'Office Clerk' => 'Staff'
-        ];
-        
-        $roleName = $map[$title] ?? 'Staff';
-        
-        $stmt = $this->db->prepare("SELECT id FROM roles WHERE name LIKE ? LIMIT 1");
-        $param = "%$roleName%";
-        $stmt->bind_param("s", $param);
+        // Try strict match first
+        $stmt = $this->db->prepare("SELECT role_id FROM job_titles WHERE title = ?");
+        $stmt->bind_param("s", $title);
         $stmt->execute();
         $res = $stmt->get_result()->fetch_assoc();
         
-        return $res ? $res['id'] : 2; // Default to Role ID 2 (Staff/Member) if not found? Better verify valid IDs.
+        if ($res) {
+            return $res['role_id'];
+        }
+        
+        // Fallback: Default to Staff (Role ID 2 usually, need to be safe)
+        // Ideally we should enforce that job titles come from the DB.
+        return 2; 
     }
 
     /**
