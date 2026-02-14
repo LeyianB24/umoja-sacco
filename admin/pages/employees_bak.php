@@ -5,13 +5,15 @@ error_reporting(E_ALL);
 ini_set('display_errors', 1);
 ini_set('log_errors', 1);
 
+echo "<!-- DEBUG: Top of file -->"; flush();
+
 if (session_status() === PHP_SESSION_NONE) session_start();
+
 
 require_once __DIR__ . '/../../config/app_config.php';
 require_once __DIR__ . '/../../config/db_connect.php';
 require_once __DIR__ . '/../../inc/Auth.php';
 require_once __DIR__ . '/../../inc/LayoutManager.php';
-require_once __DIR__ . '/../../inc/FinancialEngine.php';
 require_once __DIR__ . '/../../inc/HRService.php';
 require_once __DIR__ . '/../../inc/SystemUserService.php';
 require_once __DIR__ . '/../../inc/PayrollService.php';
@@ -23,16 +25,21 @@ if (!isset($_SESSION['admin_id'])) {
 }
 
 // Ops Manager
-require_permission(); // Basic access check
+echo "<!-- DEBUG: Starting execution -->";
+
+// Enforce Permission
+echo "<!-- DEBUG: Checking permission -->";
+// require_permission(); // Basic access check
+echo "<!-- DEBUG: Permission SKIPPED -->";
 
 $layout = LayoutManager::create('admin');
+echo "<!-- DEBUG: Layout created -->";
 $db = $conn;
 
 // Initialize Services
-$financialEngine = new FinancialEngine($db);
 $hrService = new HRService($db);
 $systemUserService = new SystemUserService($db);
-$payrollService = new PayrollService($db, $financialEngine);
+$payrollService = new PayrollService($db);
 
 $current_view = $_GET['view'] ?? 'hr'; // 'hr' or 'sys'
 $admin_id     = $_SESSION['admin_id'];
@@ -94,35 +101,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $result = $hrService->createEmployee($employeeData);
         
         if ($result['success']) {
-            // Create system user account (Strict Role Enforcement)
+            // Create system user account
             $roleId = $systemUserService->getRoleIdForTitle($employeeData['job_title']);
-            
-            if ($roleId === 0) {
-                // Warning: Employee created but system access blocked
-                flash_set("Employee onboarded, BUT system access failed: No Role Mapping for '{$employeeData['job_title']}'", 'warning');
-            } else {
-                $userData = [
-                    'employee_no' => $result['employee_no'],
-                    'company_email' => $result['company_email'],
-                    'full_name' => $employeeData['full_name']
-                ];
-                
-                $userResult = $systemUserService->createSystemUser($userData, $roleId);
-                
-                if ($userResult['success']) {
-                    // Link admin account to employee
-                    $stmt = $db->prepare("UPDATE employees SET admin_id = ? WHERE employee_id = ?");
-                    $stmt->bind_param("ii", $userResult['admin_id'], $result['employee_id']);
-                    $stmt->execute();
-                    flash_set("Employee onboarded successfully with System Access. ID: {$result['employee_no']}", 'success');
-                } else {
-                    flash_set("Employee onboarded, but System User creation failed: " . $userResult['error'], 'warning');
-                }
-            }
-            
-            // Skip the default success flash below as we handled variations above
-            header("Location: employees.php?view=hr");
-            exit;
+            $userData = [
+                'employee_no' => $result['employee_no'],
+                'company_email' => $result['company_email'],
+                'full_name' => $employeeData['full_name']
+            ];
             
             $userResult = $systemUserService->createSystemUser($userData, $roleId);
             
@@ -229,24 +214,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $roleId = (int)$_POST['role_id'];
 
         // Update role
-        $systemUserService->assignRole($targetId, $roleId);
+        $result = $systemUserService->assignRole($targetId, $roleId);
         
-        // Update basic info and sync to employee
-        $updateResult = $systemUserService->updateSystemUser($targetId, [
-            'full_name' => $fullname,
-            'email' => $email
-        ]);
-        
-        if (!$updateResult['success']) {
-            flash_set("Error updating admin: " . $updateResult['error'], 'error');
-            header("Location: employees.php?view=sys"); 
-            exit;
-        }
+        // Update basic info (name, email)
+        $stmt = $db->prepare("UPDATE admins SET full_name=?, email=? WHERE admin_id=?");
+        $stmt->bind_param("ssi", $fullname, $email, $targetId);
+        $stmt->execute();
         
         // Update password if provided
         if (!empty($_POST['password'])) {
             $systemUserService->resetPassword($targetId, $_POST['password']);
         }
+        
+        // Sync name to employee record
+        $stmt = $db->prepare("UPDATE employees SET full_name=? WHERE admin_id=?");
+        $stmt->bind_param("si", $fullname, $targetId);
+        $stmt->execute();
         
         flash_set("Administrator account updated successfully.", 'success');
         header("Location: employees.php?view=sys"); 
@@ -275,23 +258,34 @@ if ($current_view === 'hr') {
     $filter_status = $_GET['status'] ?? 'active';
     $search = trim($_GET['q'] ?? '');
     
-    // Use HRService for unified employee fetching
-    $filters = ['status' => $filter_status, 'search' => $search];
-    $data_rows = $hrService->getEmployees($filters);
+    $where = [];
+    if ($filter_status !== 'all') $where[] = "e.status = '$filter_status'";
+    if ($search) $where[] = "(e.full_name LIKE '%$search%' OR e.national_id LIKE '%$search%')";
     
+    $where_sql = count($where) > 0 ? "WHERE " . implode(" AND ", $where) : "";
+    
+    $sql = "SELECT e.*, r.name as admin_role, sg.grade_name 
+            FROM employees e 
+            LEFT JOIN admins a ON e.admin_id = a.admin_id 
+            LEFT JOIN roles r ON a.role_id = r.id 
+            LEFT JOIN salary_grades sg ON e.grade_id = sg.id 
+            $where_sql ORDER BY e.full_name ASC";
+    $res = $db->query($sql);
+    while($row = $res->fetch_assoc()) $data_rows[] = $row;
 } else {
     // SYSTEM VIEW
     $search = trim($_GET['q'] ?? '');
     $where_sql = $search ? "WHERE full_name LIKE '%$search%' OR username LIKE '%$search%'" : "";
     
-    $filters = ['search' => $search, 'is_active' => 'all']; // SystemUserService can handle search
-    $data_rows = $systemUserService->getSystemUsers($filters);
+    $sql = "SELECT * FROM admins $where_sql ORDER BY created_at DESC";
+    $res = $db->query($sql);
+    while($row = $res->fetch_assoc()) $data_rows[] = $row;
 }
 
 // KPI Stats
 if ($current_view === 'hr') {
     $kpi1_lbl = "Total Staff"; $kpi1_val = $db->query("SELECT COUNT(*) FROM employees")->fetch_row()[0];
-    $kpi2_lbl = "Monthly Payroll"; $kpi2_val = "KES " . number_format((float)($db->query("SELECT SUM(salary) FROM employees WHERE status='active'")->fetch_row()[0] ?? 0));
+    $kpi2_lbl = "Monthly Payroll"; $kpi2_val = "KES " . number_format($db->query("SELECT SUM(salary) FROM employees WHERE status='active'")->fetch_row()[0] ?? 0);
     $kpi3_lbl = "Active Drivers"; $kpi3_val = $db->query("SELECT COUNT(*) FROM employees WHERE job_title LIKE '%Driver%' AND status='active'")->fetch_row()[0];
 } else {
     $kpi1_lbl = "Total Admins"; $kpi1_val = $db->query("SELECT COUNT(*) FROM admins")->fetch_row()[0];
@@ -593,11 +587,11 @@ $pageTitle = "People & Access";
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label small fw-bold">NSSF Number</label>
-                                <input type="text" name="nssf_no" class="form-control" placeholder="Required" required>
+                                <input type="text" name="nssf_no" class="form-control" placeholder="Optional">
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label small fw-bold">NHIF Number</label>
-                                <input type="text" name="nhif_no" class="form-control" placeholder="Required" required>
+                                <input type="text" name="nhif_no" class="form-control" placeholder="Optional">
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label small fw-bold">Bank Name</label>

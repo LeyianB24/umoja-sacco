@@ -20,6 +20,8 @@ $member_id = $_SESSION['member_id'];
 
 // 2. Handle POST
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verify_csrf_token();
+    
     $email = trim($_POST['email'] ?? '');
     $phone = trim($_POST['phone'] ?? '');
     $address = trim($_POST['address'] ?? '');
