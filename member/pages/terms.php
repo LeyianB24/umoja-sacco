@@ -155,10 +155,10 @@ $pageTitle = "Terms of Service";
 
 <?php $layout->sidebar(); ?>
 
-<div class="main-content">
+<div class="main-content d-flex flex-column">
     <?php $layout->topbar($pageTitle); ?>
     
-    <div class="legal-container">
+    <div class="legal-container flex-grow-1">
         <div class="legal-header">
             <div class="position-relative z-1">
                 <div class="d-flex align-items-center gap-3 mb-3">
@@ -361,6 +361,8 @@ $pageTitle = "Terms of Service";
             </div>
         </div>
     </div>
+    
+    <?php $layout->footer(); ?>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>

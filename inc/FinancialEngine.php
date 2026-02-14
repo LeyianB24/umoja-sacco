@@ -116,7 +116,6 @@ class FinancialEngine {
                     $this->postEntry($txn_id, $this->getMemberAccount($member_id, $dest_cat), 0, $amount);
                     
                     // Trigger Notifications with new balance
-                    $new_balances = $this->getBalances($member_id);
                     $bal_text = number_format($new_balances[$dest_cat] ?? 0, 2);
                     $this->triggerNotification($member_id, "Withdrawal of KES " . number_format($amount) . " failed. Funds returned. New " . ucfirst($dest_cat) . " Balance: KES $bal_text", $txn_id);
                     break;
