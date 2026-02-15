@@ -74,7 +74,7 @@ class PayrollEngine {
                     (payroll_run_id, employee_id, month, year, 
                     basic_salary, allowances, 
                     gross_pay, 
-                    deductions, tax_paye, tax_nssf, tax_nhif, tax_housing, 
+                    deductions, tax_paye, tax_nssf, tax_sha, tax_housing, 
                     net_pay, status) 
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')"
                 );
@@ -86,7 +86,7 @@ class PayrollEngine {
                     $calc['basic_salary'], 
                     $allowances_total, 
                     $calc['gross_pay'],
-                    $calc['total_deductions'], $calc['tax_paye'], $calc['tax_nssf'], $calc['tax_nhif'], $calc['tax_housing'],
+                    $calc['total_deductions'], $calc['tax_paye'], $calc['tax_nssf'], $calc['tax_sha'], $calc['tax_housing'],
                     $calc['net_pay']
                 );
                 
@@ -184,23 +184,22 @@ class PayrollEngine {
         
         // Apply Configured Rules
         $nssf = $this->applyRule('NSSF', $gross);
-        $nhif = $this->applyRule('NHIF', $gross);
+        $sha = $this->applyRule('SHA', $gross);
         $housing = $this->applyRule('Housing Levy', $gross);
         
         $taxable = $gross - $nssf; // Pension is tax deductible
         $paye = $this->applyRule('PAYE', $taxable);
         $paye = max(0, $paye - 2400); // Personal Relief Hardcoded for now (standard)
 
-        $total_deductions = $nssf + $nhif + $housing + $paye;
+        $total_deductions = $nssf + $sha + $housing + $paye;
         $net = $gross - $total_deductions;
 
         return [
             'basic_salary' => $basic,
             'house_allowance' => $house,
-            'transport_allowance' => $transport,
             'gross_pay' => $gross,
             'tax_nssf' => $nssf,
-            'tax_nhif' => $nhif,
+            'tax_sha' => $sha,
             'tax_housing' => $housing,
             'tax_paye' => $paye,
             'total_deductions' => $total_deductions,

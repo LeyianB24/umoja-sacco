@@ -30,18 +30,111 @@ if ($member_id <= 0) {
 }
 
 // 1.5 HANDLE KYC ACTIONS (POST)
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['kyc_action'])) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf_token();
-    $doc_id = intval($_POST['doc_id']);
-    $action = $_POST['kyc_action']; // 'verify' or 'reject'
-    $notes  = trim($_POST['verification_notes'] ?? '');
-    $status = ($action === 'verify') ? 'verified' : 'rejected';
-    
-    $stmt = $conn->prepare("UPDATE member_documents SET status = ?, verification_notes = ?, verified_by = ?, verified_at = NOW() WHERE document_id = ? AND member_id = ?");
-    $stmt->bind_param("ssiii", $status, $notes, $_SESSION['admin_id'], $doc_id, $member_id);
-    
-    if ($stmt->execute()) {
-        // Recalculate overall KYC status
+
+    // 1.5.1 HANDLE FILE UPLOAD
+    if (!empty($_FILES['kyc_upload']['name'])) {
+        $doc_type = $_POST['doc_type'] ?? '';
+        $allowed_types = ['image/jpeg', 'image/png', 'application/pdf'];
+        $max_size = 5 * 1024 * 1024; // 5MB
+        
+        $file_type = mime_content_type($_FILES['kyc_upload']['tmp_name']);
+        $file_size = $_FILES['kyc_upload']['size'];
+        
+        if (!in_array($file_type, $allowed_types)) {
+            flash_set("Invalid file type. Only JPG, PNG, and PDF are allowed.", "danger");
+        } elseif ($file_size > $max_size) {
+            flash_set("File is too large. Max size is 5MB.", "danger");
+        } else {
+            $upload_dir = __DIR__ . '/../../uploads/kyc/';
+            if (!is_dir($upload_dir)) mkdir($upload_dir, 0777, true);
+            
+            $file_name = $_FILES['kyc_upload']['name'];
+            $file_tmp = $_FILES['kyc_upload']['tmp_name'];
+            $ext = pathinfo($file_name, PATHINFO_EXTENSION);
+            $new_name = "{$doc_type}_{$member_id}_" . time() . ".$ext";
+            
+            if (move_uploaded_file($file_tmp, $upload_dir . $new_name)) {
+                // Insert or Update existing doc for this type
+                $stmt = $conn->prepare("INSERT INTO member_documents (member_id, document_type, file_path, status, uploaded_at, verified_by, verified_at, verification_notes) VALUES (?, ?, ?, 'verified', NOW(), ?, NOW(), 'Uploaded by Admin') ON DUPLICATE KEY UPDATE file_path = VALUES(file_path), status = 'verified', uploaded_at = NOW(), verified_by = VALUES(verified_by), verified_at = NOW(), verification_notes = VALUES(verification_notes)");
+                $admin_id = $_SESSION['admin_id'];
+                $stmt->bind_param("issi", $member_id, $doc_type, $new_name, $admin_id);
+                
+                if ($stmt->execute()) {
+                    flash_set("Document uploaded and auto-verified successfully.", "success");
+                    
+                    // Recalculate overall KYC status
+                    $q = $conn->query("SELECT status FROM member_documents WHERE member_id = $member_id AND document_type IN ('national_id_front', 'national_id_back', 'passport_photo')");
+                    $all_docs = $q->fetch_all(MYSQLI_ASSOC);
+                    $verified_count = 0;
+                    $rejected_count = 0;
+                    foreach($all_docs as $d) {
+                        if ($d['status'] === 'verified') $verified_count++;
+                        if ($d['status'] === 'rejected') $rejected_count++;
+                    }
+                    
+                    $new_kyc_status = 'pending';
+                    if ($verified_count >= 3) $new_kyc_status = 'approved'; 
+                    elseif ($rejected_count > 0) $new_kyc_status = 'rejected';
+                    
+                    $conn->query("UPDATE members SET kyc_status = '$new_kyc_status' WHERE member_id = $member_id");
+
+                } else {
+                    flash_set("Database error: " . $stmt->error, "danger");
+                }
+                $stmt->close();
+            } else {
+                flash_set("Failed to move uploaded file.", "danger");
+            }
+        }
+        // Redirect to avoid resubmission
+        header("Location: member_profile.php?id=$member_id#kyc");
+        exit;
+    }
+
+    // 1.5.2 HANDLE KYC ACTIONS (VERIFY/REJECT)
+    if (isset($_POST['kyc_action'])) {
+        $doc_id = intval($_POST['doc_id']);
+        $action = $_POST['kyc_action']; // 'verify' or 'reject'
+        $notes  = trim($_POST['verification_notes'] ?? '');
+        $status = ($action === 'verify') ? 'verified' : 'rejected';
+        
+        $stmt = $conn->prepare("UPDATE member_documents SET status = ?, verification_notes = ?, verified_by = ?, verified_at = NOW() WHERE document_id = ? AND member_id = ?");
+        $stmt->bind_param("ssiii", $status, $notes, $_SESSION['admin_id'], $doc_id, $member_id);
+        
+        if ($stmt->execute()) {
+            // Recalculate overall KYC status
+            $q = $conn->query("SELECT status FROM member_documents WHERE member_id = $member_id AND document_type IN ('national_id_front', 'national_id_back', 'passport_photo')");
+            $all_docs = $q->fetch_all(MYSQLI_ASSOC);
+            $verified_count = 0;
+            $rejected_count = 0;
+            foreach($all_docs as $d) {
+                if ($d['status'] === 'verified') $verified_count++;
+                if ($d['status'] === 'rejected') $rejected_count++;
+            }
+            
+            $new_kyc_status = 'pending';
+            if ($verified_count >= 3) $new_kyc_status = 'approved'; 
+            elseif ($rejected_count > 0) $new_kyc_status = 'rejected';
+            
+            $sql_update = "UPDATE members SET kyc_status = '$new_kyc_status'";
+            if ($action === 'reject') {
+                $sql_update .= ", kyc_notes = '" . $conn->real_escape_string($notes) . "'";
+            }
+            $sql_update .= " WHERE member_id = $member_id";
+            $conn->query($sql_update);
+            
+            flash_set("Document " . ($action === 'verify' ? 'approved' : 'rejected') . " successfully.", "success");
+        } else {
+            flash_set("Action failed: " . $conn->error, "danger");
+        }
+        header("Location: member_profile.php?id=$member_id#kyc");
+        exit;
+    }
+
+    // 1.5.3 HANDLE MANUAL RECALCULATION
+    if (isset($_POST['recalc_kyc'])) {
         $q = $conn->query("SELECT status FROM member_documents WHERE member_id = $member_id AND document_type IN ('national_id_front', 'national_id_back', 'passport_photo')");
         $all_docs = $q->fetch_all(MYSQLI_ASSOC);
         $verified_count = 0;
@@ -55,19 +148,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['kyc_action'])) {
         if ($verified_count >= 3) $new_kyc_status = 'approved'; 
         elseif ($rejected_count > 0) $new_kyc_status = 'rejected';
         
-        $sql_update = "UPDATE members SET kyc_status = '$new_kyc_status'";
-        if ($action === 'reject') {
-            $sql_update .= ", kyc_notes = '" . $conn->real_escape_string($notes) . "'";
-        }
-        $sql_update .= " WHERE member_id = $member_id";
-        $conn->query($sql_update);
-        
-        flash_set("Document " . ($action === 'verify' ? 'approved' : 'rejected') . " successfully.", "success");
-    } else {
-        flash_set("Action failed: " . $conn->error, "danger");
+        $conn->query("UPDATE members SET kyc_status = '$new_kyc_status' WHERE member_id = $member_id");
+        flash_set("KYC status recalculated: " . strtoupper($new_kyc_status), "success");
+        header("Location: member_profile.php?id=$member_id");
+        exit;
     }
-    header("Location: member_profile.php?id=$member_id#kyc");
-    exit;
 }
 
 // 2. FETCH MEMBER CORE DATA
@@ -286,7 +371,15 @@ $pageTitle = $member['full_name'] . " - Member Profile";
                         <i class="bi bi-shield-check"></i>
                     </div>
                     <div class="info-label">KYC Status</div>
-                    <div class="h3 fw-800 text-forest"><?= ucwords(str_replace('_', ' ', $member['kyc_status'] ?? 'pending')) ?></div>
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="h3 fw-800 text-forest mb-0"><?= ucwords(str_replace('_', ' ', $member['kyc_status'] ?? 'pending')) ?></div>
+                        <form method="POST" class="d-inline">
+                            <?= csrf_field() ?>
+                            <button type="submit" name="recalc_kyc" class="btn btn-sm btn-link text-muted p-0" title="Refresh/Recalculate Status" onclick="return confirm('Recalculate KYC status based on current documents?');">
+                                <i class="bi bi-arrow-repeat fs-5"></i>
+                            </button>
+                        </form>
+                    </div>
                     <div class="small text-muted mt-2">
                         <?php 
                         $reg_paid = ($member['registration_fee_status'] === 'paid' || $member['reg_fee_paid'] == 1);
@@ -455,6 +548,29 @@ $pageTitle = $member['full_name'] . " - Member Profile";
 
         <!-- KYC TAB -->
         <div class="tab-pane fade" id="kyc" role="tabpanel">
+            
+            <div class="glass-card mb-4">
+                <h6 class="fw-bold mb-3"><i class="bi bi-cloud-upload me-2"></i>Upload Document for Member</h6>
+                <form method="POST" enctype="multipart/form-data" class="row g-3 align-items-end">
+                    <?= csrf_field() ?>
+                    <div class="col-md-4">
+                        <label class="form-label small fw-bold text-muted">Document Type</label>
+                        <select name="doc_type" class="form-select" required>
+                            <option value="national_id_front">National ID (Front)</option>
+                            <option value="national_id_back">National ID (Back)</option>
+                            <option value="passport_photo">Passport Photo</option>
+                        </select>
+                    </div>
+                    <div class="col-md-5">
+                        <label class="form-label small fw-bold text-muted">Select File (PDF, JPG, PNG)</label>
+                        <input type="file" name="kyc_upload" class="form-control" required accept="image/jpeg,image/png,application/pdf">
+                    </div>
+                    <div class="col-md-3">
+                        <button type="submit" class="btn btn-forest w-100 fw-bold"><i class="bi bi-upload me-2"></i>Upload & Verify</button>
+                    </div>
+                </form>
+            </div>
+
             <div class="row g-4">
                 <?php foreach($member_docs as $doc): ?>
                 <div class="col-md-6">

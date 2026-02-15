@@ -147,8 +147,19 @@ class ReportGenerator {
         $outputMode = $returnString ? 'S' : 'D';
         
         return FinancialExportEngine::export('pdf', function($pdf) use ($data) {
-            // Content starts below the branded header
+            // Header
+            $pdf->SetFont('Arial', 'B', 16);
+            $pdf->SetTextColor(20, 61, 48); // Forest Green
+            $pdf->Cell(0, 10, 'STATEMENT OF FINANCIAL POSITION', 0, 1, 'C');
+            $pdf->SetFont('Arial', '', 10);
+            $pdf->SetTextColor(100);
+            $pdf->Cell(0, 5, 'Generated on ' . date('d M Y H:i:s'), 0, 1, 'C');
             $pdf->Ln(5);
+            
+            // Draw Line
+            $pdf->SetDrawColor(20, 61, 48);
+            $pdf->Line(10, $pdf->GetY(), 200, $pdf->GetY());
+            $pdf->Ln(10);
 
             // Assets Table
             $pdf->SetFillColor(20, 61, 48);
@@ -161,11 +172,12 @@ class ReportGenerator {
             $pdf->SetFont('Arial', '', 11);
             foreach ($data['assets'] as $asset) {
                 $pdf->Cell(140, 10, ' ' . $asset['label'], 1);
-                $pdf->Cell(50, 10, number_format((float)$asset['amount'], 2) . ' ', 1, 1, 'R');
+                $pdf->Cell(50, 10, number_format((float)($asset['amount'] ?? 0), 2) . ' ', 1, 1, 'R');
             }
             $pdf->SetFont('Arial', 'B', 11);
-            $pdf->Cell(140, 10, ' TOTAL ASSETS', 1);
-            $pdf->Cell(50, 10, number_format((float)$data['totals']['assets'], 2) . ' ', 1, 1, 'R');
+            $pdf->SetFillColor(240, 240, 240);
+            $pdf->Cell(140, 10, ' TOTAL ASSETS', 1, 0, 'L', true);
+            $pdf->Cell(50, 10, number_format((float)($data['totals']['assets'] ?? 0), 2) . ' ', 1, 1, 'R', true);
             $pdf->Ln(10);
 
             // Liabilities & Equity Table
@@ -179,11 +191,12 @@ class ReportGenerator {
             $pdf->SetFont('Arial', '', 11);
             foreach ($data['liabilities_equity'] as $item) {
                 $pdf->Cell(140, 10, ' ' . $item['label'], 1);
-                $pdf->Cell(50, 10, number_format((float)$item['amount'], 2) . ' ', 1, 1, 'R');
+                $pdf->Cell(50, 10, number_format((float)($item['amount'] ?? 0), 2) . ' ', 1, 1, 'R');
             }
             $pdf->SetFont('Arial', 'B', 11);
-            $pdf->Cell(140, 10, ' TOTAL EQUITIES & LIABILITIES', 1);
-            $pdf->Cell(50, 10, number_format((float)$data['totals']['liability'], 2) . ' ', 1, 1, 'R');
+            $pdf->SetFillColor(240, 240, 240);
+            $pdf->Cell(140, 10, ' TOTAL EQUITIES & LIABILITIES', 1, 0, 'L', true);
+            $pdf->Cell(50, 10, number_format((float)($data['totals']['liability'] ?? 0), 2) . ' ', 1, 1, 'R', true);
 
             // Verification stamp text
             $pdf->Ln(20);

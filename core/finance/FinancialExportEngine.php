@@ -51,6 +51,6 @@ class FinancialExportEngine {
         }
         
         // Delegate to Universal Engine
-        UniversalExportEngine::handle($format, $data, $options);
+        return UniversalExportEngine::handle($format, $data, $options);
     }
 }

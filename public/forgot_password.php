@@ -45,60 +45,55 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if ($user) {
-            // Generate Secure Token
-            $token = bin2hex(random_bytes(32)); 
-            $expiry = date('Y-m-d H:i:s', strtotime('+1 hour')); // Token valid for 1 hour
-            
-            // Determine ID column
+            // 1. Generate Temporary Password
+            $temp_password = substr(str_shuffle('abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789!@#$%'), 0, 8);
+            $hashed_password = password_hash($temp_password, PASSWORD_DEFAULT);
+
+            // 2. Identify User Type & ID
             $id_col = ($user_type === 'member') ? 'member_id' : 'admin_id';
             $user_id = ($user_type === 'member') ? $user['member_id'] : $user['admin_id'];
+            $table = ($user_type === 'member') ? 'members' : 'admins';
 
-            // Store Token in DB
-            // NOTE: Ensure your 'password_resets' table exists. 
-            // SQL: CREATE TABLE password_resets (id INT AUTO_INCREMENT PRIMARY KEY, email VARCHAR(150), token VARCHAR(255), expires_at DATETIME);
-            // OR update your members/admins table to have `reset_token` and `reset_expires_at` columns.
-            // Assuming we use a dedicated table for cleanliness:
+            // 3. Update Password in DB directly
+            $update = $conn->prepare("UPDATE $table SET password = ? WHERE $id_col = ?");
+            $update->bind_param("si", $hashed_password, $user_id);
             
-            $del = $conn->prepare("DELETE FROM password_reset_tokens WHERE user_type = ? AND user_id = ?");
-            $del->bind_param("si", $user_type, $user_id);
-            $del->execute();
-
-            $ins = $conn->prepare("INSERT INTO password_reset_tokens (user_type, user_id, token, expires_at) VALUES (?, ?, ?, ?)");
-            $ins->bind_param("siss", $user_type, $user_id, $token, $expiry);
-            
-            if ($ins->execute()) {
-                // Prepare Email
-                $reset_link = SITE_URL . "/public/reset_password.php?token=" . $token . "&type=" . $user_type . "&uid=" . $user_id;
-                
-                $subject = "Password Reset Request";
+            if ($update->execute()) {
+                // 4. Prepare Email with Temp Password
+                $subject = "Your New Temporary Password";
                 $body = "
                     <div style='font-family: Arial, sans-serif; color: #333;'>
                         <h3>Hello {$user['full_name']},</h3>
                         <p>We received a request to reset your password for your <strong>" . SITE_NAME . "</strong> account.</p>
-                        <p>Click the button below to set a new password:</p>
+                        <p>Your new temporary password is:</p>
+                        <h2 style='background: #ecfdf5; color: #065f46; padding: 15px; text-align: center; border-radius: 8px; letter-spacing: 2px; border: 1px dashed #059669;'>{$temp_password}</h2>
+                        <p>Please log in using this password and <strong>change it immediately</strong> from your profile settings.</p>
                         <p>
-                            <a href='{$reset_link}' style='background-color: #0A6B3A; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;'>Reset Password</a>
+                            <a href='" . SITE_URL . "/public/login.php' style='background-color: #0A6B3A; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;'>Login Now</a>
                         </p>
-                        <p style='color: #666; font-size: 0.9em;'>This link will expire in 1 hour.</p>
-                        <p style='color: #666; font-size: 0.9em;'>If you did not request this, you can safely ignore this email.</p>
+                        <p style='color: #666; font-size: 0.9em;'>If you did not request this, please contact support immediately.</p>
                     </div>
                 ";
 
-                // Send
+                // 5. Send Email
                 $mid = ($user_type === 'member') ? $user_id : null;
                 $aid = ($user_type === 'admin') ? $user_id : null;
 
                 if (sendEmailWithNotification($email, $subject, $body, $mid, $aid)) {
-                    $message = "We have emailed a password reset link to <strong>" . htmlspecialchars($email) . "</strong>.";
+                    $message = "A temporary password has been sent to <strong>" . htmlspecialchars($email) . "</strong>. Please check your inbox (and spam folder).";
                     $msg_type = "success";
                 } else {
                     $message = "System could not send email. Please try again later.";
                     $msg_type = "warning";
                 }
+            } else {
+                $message = "Database update failed. Please try again.";
+                $msg_type = "danger";
             }
+            if(isset($update)) $update->close();
         } else {
-            // Security: Always show the same message even if email not found
-            $message = "If an account exists with that email, we have sent a reset link.";
+            // Security: Always show the same success-like message to prevent email enumeration
+            $message = "If an account exists with that email, we have sent a reset email.";
             $msg_type = "success";
         }
         
