@@ -647,6 +647,7 @@ $pageTitle = "My Profile";
                                                         </div>
                                                     <?php else: ?>
                                                         <form method="POST" enctype="multipart/form-data" class="mt-auto">
+                                                            <?= csrf_field() ?>
                                                             <input type="hidden" name="doc_type" value="<?= $type ?>">
                                                             <div class="mb-2">
                                                                 <input type="file" name="kyc_doc" class="form-control form-control-sm" required accept="image/*,application/pdf">

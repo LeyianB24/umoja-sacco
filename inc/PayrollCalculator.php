@@ -41,7 +41,7 @@ class PayrollCalculator {
         
         // Deductions
         $nssf = $this->calcNSSF($gross);
-        $nhif = $this->calcNHIF($gross);
+        $sha = $this->calcSHA($gross);
         $housing = $this->calcHousingLevy($gross);
         
         $taxable_income = $gross - $nssf; // Defined Contributions are deductible
@@ -49,7 +49,7 @@ class PayrollCalculator {
         // Apply Personal Relief (Standard 2400 KES usually)
         $paye = max(0, $paye - 2400);
 
-        $total_deductions = $nssf + $nhif + $housing + $paye;
+        $total_deductions = $nssf + $sha + $housing + $paye;
         $net = $gross - $total_deductions;
 
         return [
@@ -58,7 +58,7 @@ class PayrollCalculator {
             'transport_allowance' => $transport,
             'gross_pay' => $gross,
             'tax_nssf' => $nssf,
-            'tax_nhif' => $nhif,
+            'tax_sha' => $sha,
             'tax_housing' => $housing,
             'tax_paye' => $paye,
             'total_deductions' => $total_deductions,
@@ -89,9 +89,9 @@ class PayrollCalculator {
         return $tier1 + $tier2;
     }
 
-    private function calcNHIF($gross) {
-        $rule = $this->deductions_config['NHIF'] ?? null;
-        if (!$rule || $rule['type'] !== 'bracket') return 1700; // Max default
+    private function calcSHA($gross) {
+        $rule = $this->deductions_config['SHA'] ?? null;
+        if (!$rule || $rule['type'] !== 'bracket') return 0;
 
         $brackets = json_decode($rule['value'], true);
         // Sort keys logic

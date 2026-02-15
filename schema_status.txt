@@ -1,0 +1,13 @@
+Checking Employee Architecture Schema...
+
+Table Status:
+=================================
+✓ employees - EXISTS (Rows: 22)
+✓ job_titles - EXISTS (Rows: 12)
+✓ salary_grades - EXISTS (Rows: 6)
+✓ job_role_mapping - EXISTS (Rows: 7)
+✓ payroll_runs - EXISTS (Rows: 1)
+✗ payroll_items - MISSING
+✓ statutory_rules - EXISTS (Rows: 24)
+✗ payslips - MISSING
+=================================

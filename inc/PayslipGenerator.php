@@ -42,7 +42,7 @@ class PayslipGenerator {
         $pdf->SetXY(110, $pdf->GetY());
         $pdf->Cell(30, 5, "KRA PIN:", 0, 0); $pdf->Cell(50, 5, $emp['kra_pin'] ?? 'N/A', 0, 1);
         $pdf->SetXY(110, $pdf->GetY());
-        $pdf->Cell(30, 5, "NSSF / NHIF:", 0, 0); $pdf->Cell(50, 5, ($emp['nssf_no'] ?? '-') . ' / ' . ($emp['nhif_no'] ?? '-'), 0, 1);
+        $pdf->Cell(30, 5, "NSSF / SHA:", 0, 0); $pdf->Cell(50, 5, ($emp['nssf_no'] ?? '-') . ' / ' . ($emp['sha_no'] ?? '-'), 0, 1);
 
         $pdf->Ln(10);
         
@@ -74,7 +74,7 @@ class PayslipGenerator {
         
         self::row($pdf, "PAYE Tax", $pay['tax_paye'], 110);
         self::row($pdf, "NSSF", $pay['tax_nssf'], 110);
-        self::row($pdf, "NHIF/SHIF", $pay['tax_nhif'], 110);
+        self::row($pdf, "SHA", $pay['tax_nhif'], 110);
         self::row($pdf, "Housing Levy", $pay['tax_housing'], 110);
         // Add other deductions if present in future
         
