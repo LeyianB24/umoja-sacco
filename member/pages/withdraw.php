@@ -148,6 +148,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['withdraw'])) {
                 // SACCO Exit Requests do NOT go through the automated gateway
                 $conn->query("UPDATE withdrawal_requests SET status = 'pending' WHERE withdrawal_id = $withdrawal_id");
                 $conn->commit();
+
+                // Trigger Withdrawal (SACCO Exit) Notification
+                require_once __DIR__ . '/../../inc/notification_helpers.php';
+                send_notification($conn, (int)$member_id, 'withdrawal_request', ['amount' => $amount, 'ref' => $ref]);
                 
                 $success = "Exit Request Received: Your share capital refund of KES " . number_format($amount) . " has been logged. Admin will review and process your SACCO exit within 48 hours.";
                 
@@ -166,6 +170,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['withdraw'])) {
                     
                     $conn->commit(); // COMMIT THE HOLD
                     
+                    // Trigger Withdrawal Notification
+                    require_once __DIR__ . '/../../inc/notification_helpers.php';
+                    send_notification($conn, (int)$member_id, 'withdrawal_request', ['amount' => $amount, 'ref' => $ref]);
+
                     $success = "Processing: KES " . number_format($amount) . " has been reserved. Waiting for bank/mobile money confirmation via " . ucfirst($gateway->getProviderName() ?? 'Gateway');
                     
                     // Redirect back to source context

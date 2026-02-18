@@ -14,21 +14,21 @@ $layout = LayoutManager::create('admin');
 
 require_once __DIR__ . '/../../inc/FinancialEngine.php';
 require_once __DIR__ . '/../../inc/TransactionHelper.php';
-// 1. Auth Check
-if (!isset($_SESSION['admin_id']) || !in_array($_SESSION['role'], ['accountant', 'superadmin'])) {
-    header("Location: " . BASE_URL . "/admin/login.php");
-    exit;
-}
+
+// 1. Auth Check - Using the more secure standard
+require_admin();
+require_permission();
 
 // 2. Handle Form Submission (Record New Transaction)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'record_txn') {
+    verify_csrf_token();
     
     $member_id = !empty($_POST['member_id']) ? intval($_POST['member_id']) : null;
-    $type      = $_POST['transaction_type'];
-    $amount    = floatval($_POST['amount']);
-    $notes     = trim($_POST['notes']);
-    $ref_no    = trim($_POST['reference_no']);
-    $date      = $_POST['txn_date']; // Format: YYYY-MM-DD
+    $type      = $_POST['transaction_type'] ?? '';
+    $amount    = floatval($_POST['amount'] ?? 0);
+    $notes     = trim($_POST['notes'] ?? '');
+    $ref_no    = trim($_POST['reference_no'] ?? '');
+    $date      = $_POST['txn_date'] ?? date('Y-m-d');
 
     // Basic Validation
     if ($amount <= 0) {
@@ -40,36 +40,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         try {
             $method = $_POST['payment_method'] ?? 'cash';
             
-            // Map types to FinancialEngine actions
-            $action = 'savings_deposit';
-            $category = 'savings';
-            
-            if ($type === 'deposit') {
-                $action = 'savings_deposit';
-                $category = 'savings';
-            } elseif ($type === 'withdrawal') {
-                $action = 'withdrawal';
-                $category = 'wallet';
-            } elseif ($type === 'share_capital') {
-                $action = 'share_purchase';
-                $category = 'shares';
-            } elseif ($type === 'loan_repayment') {
-                $action = 'loan_repayment';
-                $category = 'loans';
-            } elseif ($type === 'expense') {
-                $action = 'expense_outflow';
-                $category = 'expense';
-            } elseif ($type === 'income') {
-                $action = 'revenue_inflow';
-                $category = 'income';
-            }
+            // Map types to categories
+            $category = match($type) {
+                'deposit'        => 'savings',
+                'withdrawal'     => 'wallet',
+                'share_capital'  => 'shares',
+                'loan_repayment' => 'loans',
+                'expense'        => 'expense',
+                'income'         => 'income',
+                default          => 'general'
+            };
 
             $related_id = null;
             $related_table = null;
 
             if ($type === 'loan_repayment' && $member_id) {
                 $l_res = $conn->query("SELECT loan_id FROM loans WHERE member_id = $member_id AND status = 'disbursed' LIMIT 1");
-                if ($l_res->num_rows > 0) {
+                if ($l_res && $l_res->num_rows > 0) {
                     $related_id = $l_res->fetch_assoc()['loan_id'];
                     $related_table = 'loans';
                 }
@@ -97,6 +84,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             if (!$ok) throw new Exception("Failed to record transaction in ledger.");
 
             $conn->commit();
+
+            // Trigger Deposit Notification if attributed to a member
+            if ($member_id && in_array($type, ['deposit', 'share_capital'])) {
+                require_once __DIR__ . '/../../inc/notification_helpers.php';
+                send_notification($conn, (int)$member_id, 'deposit_success', ['amount' => $amount, 'ref' => $ref_no]);
+            }
+
             $_SESSION['success'] = "Transaction recorded successfully!";
             header("Location: payments.php");
             exit;
@@ -114,8 +108,9 @@ while ($row = $res->fetch_assoc()) $members[] = $row;
 
 // B. Active Investments (For attribution)
 $investments = $conn->query("SELECT investment_id, title FROM investments WHERE status = 'active' ORDER BY title ASC");
+$investments_all = $investments->fetch_all(MYSQLI_ASSOC);
 
-// B. Transactions List
+// C. Transactions List
 $where = "1";
 $params = [];
 $types = "";
@@ -357,20 +352,19 @@ $pageTitle = "Payments Ledger";
                         <label class="form-label small text-muted fw-bold">Search</label>
                         <div class="input-group">
                             <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
-                            <input type="text" name="search" class="form-control border-start-0 ps-0" placeholder="Reference, Member Name..." value="<?= esc($_GET['search'] ?? '') ?>">
+                            <input type="text" name="search" class="form-control border-start-0 ps-0" placeholder="Reference, Member Name..." value="<?= $_GET['search'] ?? '' ?>">
                         </div>
                     </div>
                     <div class="col-md-3">
                         <label class="form-label small text-muted fw-bold">Transaction Type</label>
                         <select name="type" class="form-select">
                             <option value="">All Types</option>
-                            <option value="savings_deposit" <?= ($_GET['type'] ?? '') == 'savings_deposit' ? 'selected' : '' ?>>Deposit (Savings)</option>
+                            <option value="deposit" <?= ($_GET['type'] ?? '') == 'deposit' ? 'selected' : '' ?>>Deposit (Savings)</option>
                             <option value="withdrawal" <?= ($_GET['type'] ?? '') == 'withdrawal' ? 'selected' : '' ?>>Withdrawal</option>
                             <option value="loan_repayment" <?= ($_GET['type'] ?? '') == 'loan_repayment' ? 'selected' : '' ?>>Loan Repayment</option>
-                            <option value="loan_disbursement" <?= ($_GET['type'] ?? '') == 'loan_disbursement' ? 'selected' : '' ?>>Loan Disbursement</option>
-                            <option value="share_purchase" <?= ($_GET['type'] ?? '') == 'share_purchase' ? 'selected' : '' ?>>Share Capital</option>
+                            <option value="share_capital" <?= ($_GET['type'] ?? '') == 'share_capital' ? 'selected' : '' ?>>Share Capital</option>
                             <option value="revenue_inflow" <?= ($_GET['type'] ?? '') == 'revenue_inflow' ? 'selected' : '' ?>>Revenue Inflow</option>
-                            <option value="expense_outflow" <?= ($_GET['type'] ?? '') == 'expense_outflow' ? 'selected' : '' ?>>Expense</option>
+                            <option value="expense" <?= ($_GET['type'] ?? '') == 'expense' ? 'selected' : '' ?>>Expense</option>
                         </select>
                     </div>
                     <div class="col-md-2">
@@ -400,7 +394,7 @@ $pageTitle = "Payments Ledger";
                         <tbody>
                             <?php if ($transactions->num_rows > 0): ?>
                                 <?php while($row = $transactions->fetch_assoc()): 
-                                    $in_types = ['deposit', 'repayment', 'income', 'loan_repayment', 'share_capital', 'savings_deposit', 'revenue_inflow', 'share_purchase', 'welfare_contribution', 'registration_fee', 'loan_penalty'];
+                                    $in_types = ['deposit', 'savings_deposit', 'loan_repayment', 'share_purchase', 'revenue_inflow'];
                                     $is_in = in_array($row['transaction_type'], $in_types);
                                     $badge_class = $is_in ? 'badge-in' : 'badge-out';
                                     $amount_color = $is_in ? 'text-success' : 'text-danger';
@@ -488,6 +482,7 @@ $pageTitle = "Payments Ledger";
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form method="POST" action="">
+                <?= csrf_field() ?>
                 <input type="hidden" name="action" value="record_txn">
                 <div class="modal-body p-4">
                     
@@ -520,12 +515,12 @@ $pageTitle = "Payments Ledger";
                         <label class="form-label small fw-bold text-uppercase text-muted">Attribute to Asset (Optional)</label>
                         <select name="unified_asset_id" class="form-select">
                             <option value="other_0">General / Unassigned</option>
-                            <?php while($inv = $investments->fetch_assoc()): ?>
+                            <?php foreach($investments_all as $inv): ?>
                                 <option value="inv_<?= $inv['investment_id'] ?>"><?= esc($inv['title']) ?></option>
-                            <?php endwhile; ?>
+                            <?php endforeach; ?>
                         </select>
                     </div>
-                    </div>
+
                     <div class="row g-3 mb-3">
                         <div class="col-6">
                             <label class="form-label small fw-bold text-uppercase text-muted">Amount (KES)</label>
@@ -557,8 +552,8 @@ $pageTitle = "Payments Ledger";
                     </div>
 
                 </div>
-                <div class="modal-footer border-0 pt-0 pb-4 px-4">
-                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                <div class="modal-footer border-0 pt-0 pb-4 px-4 text-center justify-content-center">
+                    <button type="button" class="btn btn-light rounded-pill px-4 me-2" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-lime rounded-pill px-4">Save Record</button>
                 </div>
             </form>
@@ -584,9 +579,3 @@ $pageTitle = "Payments Ledger";
 </script>
 </body>
 </html>
-
-
-
-
-
-

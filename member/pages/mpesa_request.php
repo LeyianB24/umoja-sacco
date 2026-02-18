@@ -230,16 +230,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $inTransaction = false;
 
             // Notifications
-            $formatted_amount = number_format($amount, 2);
-            if (!empty($member_email)) {
-                $subject = "Payment Initiated: " . ucfirst($type);
-                $email_body = "<p>Dear <strong>" . esc($member_name) . "</strong>,</p><p>We've initiated a payment request for <strong>KES {$formatted_amount}</strong> to <strong>{$phone}</strong>.</p><p>Please authorize on your phone.</p><p>Ref: <strong>{$ref}</strong></p>";
-            try { sendEmail($member_email, $subject, $email_body, $member_id); } catch (Throwable $_) {}
-            }
-            try {
-                $sms_msg = "Dear {$member_name}, payment request of KES {$formatted_amount} ({$txn_desc}) has been sent to {$phone}. Ref: {$ref}";
-                send_sms($phone, $sms_msg);
-            } catch (Throwable $_) {}
+            require_once __DIR__ . '/../../inc/notification_helpers.php';
+            send_notification($conn, (int)$member_id, 'payment_request', ['amount' => $amount, 'ref' => $ref]);
 
             // Store referrer URL in session for redirect after success
             if (!empty($_SERVER['HTTP_REFERER'])) {

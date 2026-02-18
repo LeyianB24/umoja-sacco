@@ -117,15 +117,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     $db->query("UPDATE loan_guarantors SET status = 'rejected' WHERE loan_id = $loan_id");
                 }
 
-                // B. Fetch Member for Notification
-                $m_res = $db->query("SELECT member_id FROM loans WHERE loan_id = $loan_id");
-                if ($m_res && $m_res->num_rows > 0) {
-                    $member_id = $m_res->fetch_assoc()['member_id'];
+                // B. Fetch Member and Loan details for Notification
+                $res_data = $db->query("SELECT member_id, amount, reference_no FROM loans WHERE loan_id = $loan_id");
+                if ($res_data && $res_data->num_rows > 0) {
+                    $l_data = $res_data->fetch_assoc();
+                    $member_id = (int)$l_data['member_id'];
+                    $amount = (float)$l_data['amount'];
+                    $ref = $l_data['reference_no'];
                     
-                    // C. Notification
-                    $stmt_n = $db->prepare("INSERT INTO notifications (user_type, user_id, message, status, created_at) VALUES ('member', ?, ?, 'unread', NOW())");
-                    $stmt_n->bind_param("is", $member_id, $notify_msg);
-                    $stmt_n->execute();
+                    // Unified Notification
+                    require_once __DIR__ . '/../../inc/notification_helpers.php';
+                    if ($action === 'approve') {
+                        send_notification($db, $member_id, 'loan_approved', ['amount' => $amount, 'ref' => $ref]);
+                    } else {
+                        send_notification($db, $member_id, 'loan_rejected', ['amount' => $amount, 'rejection_reason' => $notes, 'ref' => $ref]);
+                    }
                 }
 
                 // D. Audit Log

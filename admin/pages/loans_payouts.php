@@ -53,6 +53,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt = $conn->prepare("UPDATE loans SET status='approved', approved_by=?, approval_date=NOW() WHERE loan_id=?");
                 $stmt->bind_param("ii", $admin_id, $loan_id);
                 $stmt->execute();
+
+                // Trigger Loan Approved Notification
+                require_once __DIR__ . '/../../inc/notification_helpers.php';
+                $res_l = $conn->query("SELECT member_id, amount, reference_no FROM loans WHERE loan_id = $loan_id");
+                if ($l_row = $res_l->fetch_assoc()) {
+                    send_notification($conn, (int)$l_row['member_id'], 'loan_approved', ['amount' => $l_row['amount'], 'ref' => $l_row['reference_no']]);
+                }
+
                 flash_set("Loan #$loan_id Approved successfully.", "success");
             } 
             elseif ($action === 'reject' && $can_reject) {
@@ -64,6 +72,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt = $conn->prepare("UPDATE loan_guarantors SET status='rejected' WHERE loan_id=?");
                 $stmt->bind_param("i", $loan_id);
                 $stmt->execute();
+
+                // Trigger Loan Rejected Notification
+                require_once __DIR__ . '/../../inc/notification_helpers.php';
+                $res_l = $conn->query("SELECT member_id, amount, reference_no FROM loans WHERE loan_id = $loan_id");
+                if ($l_row = $res_l->fetch_assoc()) {
+                    send_notification($conn, (int)$l_row['member_id'], 'loan_rejected', ['amount' => $l_row['amount'], 'rejection_reason' => $reason, 'ref' => $l_row['reference_no']]);
+                }
+
                 flash_set("Loan #$loan_id Rejected.", "warning");
             }
             elseif ($action === 'disburse' && $can_disburse) {
@@ -93,9 +109,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'notes'         => "Loan Disbursement via $method. Ref: $ref"
                 ]);
 
-                $stmt = $conn->prepare("UPDATE loan_guarantors SET status='active' WHERE loan_id=?");
                 $stmt->bind_param("i", $loan_id);
                 $stmt->execute();
+
+                // Trigger Loan Disbursed Notification
+                require_once __DIR__ . '/../../inc/notification_helpers.php';
+                send_notification($conn, (int)$l_chk['member_id'], 'loan_disbursed', ['amount' => (float)$l_chk['amount'], 'ref' => $ref]);
 
                 flash_set("Funds Disbursed successfully. Reference: $ref", "success");
             }

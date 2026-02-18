@@ -118,6 +118,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['status'] = $status;
                 $_SESSION['gender'] = $gender; // Store gender in session
 
+                // Trigger Registration Success Notification
+                require_once __DIR__ . '/../inc/notification_helpers.php';
+                send_notification($conn, (int)$newMemberId, 'registration_success', ['member_no' => $reg_no]);
+
                 header("Location: ../member/pages/pay_registration.php");
                 exit;
             } else {

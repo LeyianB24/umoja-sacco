@@ -116,6 +116,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     
     if ($stmt->execute()) {
+        // Trigger Profile Updated Notification
+        require_once __DIR__ . '/../../inc/notification_helpers.php';
+        send_notification($conn, (int)$member_id, 'profile_updated');
+
         $_SESSION['success'] = "Profile updated successfully!";
         header("Location: profile.php");
         exit;
