@@ -19,6 +19,10 @@ $layout = LayoutManager::create('member');
 // Validate Login
 require_member();
 
+if (isset($_GET['msg']) && $_GET['msg'] === 'exit_requested') {
+    $success_msg = "Your SACCO Exit & Share Withdrawal request has been submitted successfully and is awaiting administrative approval.";
+}
+
 // Initialize Layout Manager
 $layout = LayoutManager::create('member');
 
@@ -276,6 +280,19 @@ $pageTitle = "My Share Portfolio";
         
         <div class="container-fluid px-4 py-4">
         
+        <?php if (isset($success_msg)): ?>
+            <div class="alert alert-success alert-dismissible fade show rounded-4 border-0 shadow-sm mb-4" role="alert">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-check-circle-fill fs-4 me-3"></i>
+                    <div>
+                        <h6 class="fw-bold mb-0">Request Submitted</h6>
+                        <p class="mb-0 small opacity-75"><?= $success_msg ?></p>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        <?php endif; ?>
+        
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-5 gap-3">
             <div>
                 <h2 class="fw-bold mb-1" style="color: var(--brand-dark);">Share Portfolio</h2>
@@ -292,8 +309,8 @@ $pageTitle = "My Share Portfolio";
                     <li><a class="dropdown-item" href="?<?= http_build_query(array_merge($_GET, ['action' => 'print_report'])) ?>" target="_blank"><i class="bi bi-printer text-primary me-2"></i>Print Report</a></li>
                 </ul>
             </div>
-                <a href="<?= BASE_URL ?>/member/pages/withdraw.php?type=shares&source=shares" class="btn btn-white border shadow-sm rounded-pill px-4 fw-medium">
-                    <i class="bi bi-cash-coin me-2"></i> Withdraw
+                <a href="<?= BASE_URL ?>/member/pages/withdraw.php?type=shares&source=shares" class="btn btn-white border shadow-sm rounded-pill px-4 fw-medium text-danger">
+                    <i class="bi bi-door-open me-2"></i> Quit SACCO
                 </a>
                 <a href="<?= BASE_URL ?>/member/pages/mpesa_request.php?type=shares" class="btn btn-lime d-flex align-items-center gap-2">
                     <i class="bi bi-plus-lg"></i>

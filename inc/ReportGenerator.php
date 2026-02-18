@@ -165,38 +165,56 @@ class ReportGenerator {
             $pdf->SetFillColor(20, 61, 48);
             $pdf->SetTextColor(255);
             $pdf->SetFont('Arial', 'B', 11);
-            $pdf->Cell(140, 10, ' ASSETS', 1, 0, 'L', true);
-            $pdf->Cell(50, 10, 'AMOUNT (KES) ', 1, 1, 'R', true);
+            
+            // Widths: Label = 140, Amount = 50
+            $w = [140, 50];
+            $a = ['L', 'R'];
+            
+            $pdf->Cell($w[0], 10, ' ASSETS', 1, 0, 'L', true);
+            $pdf->Cell($w[1], 10, 'AMOUNT (KES) ', 1, 1, 'R', true);
 
             $pdf->SetTextColor(0);
             $pdf->SetFont('Arial', '', 11);
+            
             foreach ($data['assets'] as $asset) {
-                $pdf->Cell(140, 10, ' ' . $asset['label'], 1);
-                $pdf->Cell(50, 10, number_format((float)($asset['amount'] ?? 0), 2) . ' ', 1, 1, 'R');
+                // Use new Row function for multi-line support
+                $pdf->Row(
+                    [' ' . $asset['label'], number_format((float)($asset['amount'] ?? 0), 2) . ' '],
+                    $w,
+                    $a,
+                    6 // Line height
+                );
             }
+            
             $pdf->SetFont('Arial', 'B', 11);
             $pdf->SetFillColor(240, 240, 240);
-            $pdf->Cell(140, 10, ' TOTAL ASSETS', 1, 0, 'L', true);
-            $pdf->Cell(50, 10, number_format((float)($data['totals']['assets'] ?? 0), 2) . ' ', 1, 1, 'R', true);
+            $pdf->Cell($w[0], 10, ' TOTAL ASSETS', 1, 0, 'L', true);
+            $pdf->Cell($w[1], 10, number_format((float)($data['totals']['assets'] ?? 0), 2) . ' ', 1, 1, 'R', true);
             $pdf->Ln(10);
 
             // Liabilities & Equity Table
             $pdf->SetFillColor(20, 61, 48);
             $pdf->SetTextColor(255);
             $pdf->SetFont('Arial', 'B', 11);
-            $pdf->Cell(140, 10, ' LIABILITIES & EQUITY', 1, 0, 'L', true);
-            $pdf->Cell(50, 10, 'AMOUNT (KES) ', 1, 1, 'R', true);
+            $pdf->Cell($w[0], 10, ' LIABILITIES & EQUITY', 1, 0, 'L', true);
+            $pdf->Cell($w[1], 10, 'AMOUNT (KES) ', 1, 1, 'R', true);
 
             $pdf->SetTextColor(0);
             $pdf->SetFont('Arial', '', 11);
+            
             foreach ($data['liabilities_equity'] as $item) {
-                $pdf->Cell(140, 10, ' ' . $item['label'], 1);
-                $pdf->Cell(50, 10, number_format((float)($item['amount'] ?? 0), 2) . ' ', 1, 1, 'R');
+                $pdf->Row(
+                    [' ' . $item['label'], number_format((float)($item['amount'] ?? 0), 2) . ' '],
+                    $w,
+                    $a,
+                    6
+                );
             }
+            
             $pdf->SetFont('Arial', 'B', 11);
             $pdf->SetFillColor(240, 240, 240);
-            $pdf->Cell(140, 10, ' TOTAL EQUITIES & LIABILITIES', 1, 0, 'L', true);
-            $pdf->Cell(50, 10, number_format((float)($data['totals']['liability'] ?? 0), 2) . ' ', 1, 1, 'R', true);
+            $pdf->Cell($w[0], 10, ' TOTAL EQUITIES & LIABILITIES', 1, 0, 'L', true);
+            $pdf->Cell($w[1], 10, number_format((float)($data['totals']['liability'] ?? 0), 2) . ' ', 1, 1, 'R', true);
 
             // Verification stamp text
             $pdf->Ln(20);
@@ -280,18 +298,29 @@ class ReportGenerator {
             $pdf->SetFillColor(20, 61, 48);
             $pdf->SetTextColor(255);
             $pdf->SetFont('Arial', 'B', 10);
-            $pdf->Cell(35, 8, ' DATE', 1, 0, 'C', true);
-            $pdf->Cell(45, 8, ' TYPE', 1, 0, 'C', true);
-            $pdf->Cell(60, 8, ' REFERENCE', 1, 0, 'C', true);
-            $pdf->Cell(50, 8, ' AMOUNT (KES)', 1, 1, 'C', true);
+            $w = [35, 45, 60, 50];
+            $a = ['L', 'L', 'L', 'R'];
+
+            $pdf->Cell($w[0], 8, ' DATE', 1, 0, 'C', true);
+            $pdf->Cell($w[1], 8, ' TYPE', 1, 0, 'C', true);
+            $pdf->Cell($w[2], 8, ' REFERENCE', 1, 0, 'C', true);
+            $pdf->Cell($w[3], 8, ' AMOUNT (KES)', 1, 1, 'C', true);
 
             $pdf->SetTextColor(0);
             $pdf->SetFont('Arial', '', 9);
+            
             foreach ($transactions as $t) {
-                $pdf->Cell(35, 8, ' ' . date('d/m/Y', strtotime($t['transaction_date'])), 1);
-                $pdf->Cell(45, 8, ' ' . strtoupper($t['transaction_type']), 1);
-                $pdf->Cell(60, 8, ' ' . $t['reference_no'], 1);
-                $pdf->Cell(50, 8, number_format((float)$t['amount'], 2) . ' ', 1, 1, 'R');
+                $pdf->Row(
+                    [
+                        ' ' . date('d/m/Y', strtotime($t['transaction_date'])),
+                        ' ' . strtoupper($t['transaction_type']),
+                        ' ' . $t['reference_no'],
+                        number_format((float)$t['amount'], 2) . ' '
+                    ],
+                    $w,
+                    $a,
+                    6
+                );
             }
 
             // Footer & Stamp

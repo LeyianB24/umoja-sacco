@@ -125,7 +125,7 @@ class PdfTemplate extends FPDF {
         $this->Cell(0, 5, 'Page ' . $this->PageNo() . ' of {nb}', 0, 1, 'R');
     }
 
-    // Helper for Tables
+    // Helper for Tables with Text Wrapping and Pagination
     public function UniversalTable($headers, $data) {
         if (empty($headers)) return;
 
@@ -137,12 +137,15 @@ class PdfTemplate extends FPDF {
         $this->SetFont('Arial', 'B', 9);
 
         // Calculate widths
-        $pageWidth = $this->GetPageWidth() - 30;
+        $pageWidth = $this->GetPageWidth() - 30; // Margins 15+15
         $colCount = count($headers);
         $w = $pageWidth / $colCount;
+        $widths = array_fill(0, $colCount, $w);
+        $aligns = array_fill(0, $colCount, 'L');
 
-        foreach ($headers as $header) {
-            $this->Cell($w, 8, strtoupper($header), 1, 0, 'C', true);
+        // Header Row
+        foreach ($headers as $i => $header) {
+            $this->Cell($widths[$i], 8, strtoupper($header), 1, 0, 'C', true);
         }
         $this->Ln();
 
@@ -156,25 +159,115 @@ class PdfTemplate extends FPDF {
             // Ensure row is indexed array matching headers
             $rowValues = array_values($row);
             
+            // Calculate alignments based on content type
             for ($i = 0; $i < $colCount; $i++) {
                 $colValue = isset($rowValues[$i]) ? $rowValues[$i] : '';
-                
-                // Determine alignment (Numbers right, text left)
-                $align = 'L';
                 if (is_numeric(str_replace([',', ' '], '', $colValue))) {
-                    $align = 'R';
+                    $aligns[$i] = 'R';
+                } else {
+                    $aligns[$i] = 'L';
                 }
-                
-                // Truncate if too long (simple handling)
-                if (strlen($colValue) > 35) {
-                    $colValue = substr($colValue, 0, 32) . '...';
-                }
-                
-                $this->Cell($w, 7, $colValue, 1, 0, $align, $fill);
             }
-            $this->Ln();
+
+            // Use the Row helper which handles MultiCell and Page Breaks
+            $this->Row($rowValues, $widths, $aligns, 5, $fill);
+            
             $fill = !$fill;
         }
+    }
+
+    /**
+     * Draw a row with MultiCell support
+     */
+    public function Row($data, $widths, $aligns, $lineHeight=5, $fill=false) {
+        // Calculate the height of the row
+        $nb = 0;
+        for($i=0;$i<count($data);$i++) {
+            $nb = max($nb, $this->NbLines($widths[$i], $data[$i]));
+        }
+        $h = $lineHeight * $nb;
+
+        // Issue a page break first if needed
+        $this->CheckPageBreak($h, $widths, $aligns);
+
+        // Draw the cells of the row
+        for($i=0;$i<count($data);$i++) {
+            $w = $widths[$i];
+            $a = isset($aligns[$i]) ? $aligns[$i] : 'L';
+            
+            // Save the current position
+            $x = $this->GetX();
+            $y = $this->GetY();
+            
+            // Draw the border
+            $this->Rect($x, $y, $w, $h, $fill ? 'DF' : 'D');
+            
+            // Print the text
+            $this->MultiCell($w, $lineHeight, $data[$i], 0, $a);
+            
+            // Put the position to the right of the cell
+            $this->SetXY($x + $w, $y);
+        }
+        // Go to the next line
+        $this->Ln($h);
+    }
+
+    /**
+     * Check if page break is needed
+     */
+    public function CheckPageBreak($h, $widths = null, $aligns = null) {
+        // If the height h would cause an overflow, add a new page immediately
+        if($this->GetY() + $h > $this->PageBreakTrigger) {
+            $this->AddPage($this->CurOrientation);
+            
+            // Optional: Reprint headers if we had them passed (simplified here)
+        }
+    }
+
+    /**
+     * Compute the number of lines a MultiCell of width w will take
+     */
+    public function NbLines($w, $txt) {
+        $cw = &$this->CurrentFont['cw'];
+        if($w == 0)
+            $w = $this->w - $this->rMargin - $this->x;
+        $wmax = ($w - 2 * $this->cMargin) * 1000 / $this->FontSize;
+        $s = str_replace("\r", '', $txt);
+        $nb = strlen($s);
+        if($nb > 0 && $s[$nb - 1] == "\n")
+            $nb--;
+        $sep = -1;
+        $i = 0;
+        $j = 0;
+        $l = 0;
+        $nl = 1;
+        while($i < $nb) {
+            $c = $s[$i];
+            if($c == "\n") {
+                $i++;
+                $sep = -1;
+                $j = $i;
+                $l = 0;
+                $nl++;
+                continue;
+            }
+            if($c == ' ')
+                $sep = $i;
+            $l += $cw[$c];
+            if($l > $wmax) {
+                if($sep == -1) {
+                    if($i == $j)
+                        $i++;
+                } else
+                    $i = $sep + 1;
+                $sep = -1;
+                $j = $i;
+                $l = 0;
+                $nl++;
+            } else
+                $i++;
+        }
+        return $nl;
     }
 
     // Alias for backward compatibility

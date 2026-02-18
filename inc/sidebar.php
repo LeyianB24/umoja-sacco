@@ -299,6 +299,11 @@ if (!function_exists('is_active')) {
                     <i class="bi bi-people-fill"></i> <span class="hd-nav-text">Employees</span>
                 </a>
             <?php endif; ?>
+            <?php if (has_permission('users.php') || $role === 'superadmin'): ?>
+                <a href="<?= $base ?>/admin/pages/users.php" class="hd-nav-item <?= is_active('users.php') ?>">
+                    <i class="bi bi-person-badge"></i> <span class="hd-nav-text">System Users (Admins)</span>
+                </a>
+            <?php endif; ?>
             <?php if (has_permission('roles.php') || $role === 'superadmin'): ?>
                 <a href="<?= $base ?>/admin/pages/roles.php" class="hd-nav-item <?= is_active('roles.php') ?>">
                     <i class="bi bi-shield-lock"></i> <span class="hd-nav-text">Access Control (RBAC)</span>
@@ -320,6 +325,11 @@ if (!function_exists('is_active')) {
             <?php if (has_permission('expenses.php')): ?>
                 <a href="<?= $base ?>/admin/pages/expenses.php" class="hd-nav-item <?= is_active('expenses.php') ?>">
                     <i class="bi bi-receipt"></i> <span class="hd-nav-text">Expense Tracker</span>
+                </a>
+            <?php endif; ?>
+            <?php if (has_permission('payroll.php') || $role === 'superadmin'): ?>
+                <a href="<?= $base ?>/admin/pages/payroll.php" class="hd-nav-item <?= is_active('payroll.php') ?>">
+                    <i class="bi bi-wallet2"></i> <span class="hd-nav-text">Payroll Processing</span>
                 </a>
             <?php endif; ?>
             <?php if (has_permission('transactions.php')): ?>
@@ -351,14 +361,9 @@ if (!function_exists('is_active')) {
             <?php endif; ?>
 
             <div class="hd-nav-header">Welfare Module</div>
-            <?php if (has_permission('welfare_cases.php')): ?>
-                <a href="<?= $base ?>/admin/pages/welfare_cases.php" class="hd-nav-item <?= is_active('welfare_cases.php') ?>">
-                    <i class="bi bi-heart-pulse"></i> <span class="hd-nav-text">Case Management</span>
-                </a>
-            <?php endif; ?>
-            <?php if (has_permission('welfare_support.php')): ?>
-                <a href="<?= $base ?>/admin/pages/welfare_support.php" class="hd-nav-item <?= is_active('welfare_support.php') ?>">
-                    <i class="bi bi-hospital"></i> <span class="hd-nav-text">Fund Disbursements</span>
+            <?php if (has_permission('welfare.php') || $role === 'superadmin'): ?>
+                <a href="<?= $base ?>/admin/pages/welfare.php" class="hd-nav-item <?= is_active('welfare.php', ['welfare_cases.php', 'welfare_support.php']) ?>">
+                    <i class="bi bi-heart-pulse"></i> <span class="hd-nav-text">Welfare Management</span>
                 </a>
             <?php endif; ?>
 
@@ -413,7 +418,7 @@ if (!function_exists('is_active')) {
                 </a>
             <?php endif; ?>
             <?php if (has_permission('support.php')): ?>
-                <a href="<?= $base ?>/admin/pages/support.php" class="hd-nav-item <?= is_active('support.php') ?>">
+                <a href="<?= $base ?>/admin/pages/support.php" class="hd-nav-item <?= is_active('support.php', ['support_view.php']) ?>">
                     <i class="bi bi-headset"></i> <span class="hd-nav-text">Tech Support</span>
                 </a>
             <?php endif; ?>
