@@ -22,7 +22,6 @@ $viability_engine = new InvestmentViabilityEngine($conn);
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['record_revenue'])) {
     verify_csrf_token();
     
-    $source = $_POST['source_type'];
     $amount = floatval($_POST['amount']);
     $method = $_POST['payment_method'] ?? 'cash';
     $desc   = trim($_POST['description']);
@@ -31,36 +30,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['record_revenue'])) {
     validate_not_future($date, "revenue.php");
 
     $unified_id = $_POST['unified_asset_id'] ?? 'other_0';
-    list($source, $related_id) = explode('_', $unified_id);
+    list($source_prefix, $related_id) = explode('_', $unified_id);
     $related_id = (int)$related_id;
-    $related_table = 'investments';
     
-    if ($related_id <= 0 && $source !== 'other') {
+    if ($related_id <= 0 && $source_prefix !== 'other') {
         flash_set("Please select a valid revenue source.", "error");
     } else {
-        // Check if investment is active
-        if ($source !== 'other') {
-            $check_sql = "SELECT status FROM investments WHERE investment_id = ?";
-            $stmt_check = $conn->prepare($check_sql);
-            $stmt_check->bind_param("i", $related_id);
-            $stmt_check->execute();
-            $status_result = $stmt_check->get_result()->fetch_assoc();
-            
-            if (!$status_result || $status_result['status'] !== 'active') {
-                flash_set("Cannot record revenue for inactive or sold assets.", "error");
-                header("Location: revenue.php");
-                exit;
-            }
-        }
-
         $config = [
             'type'           => 'income',
-            'category'       => ($source === 'other' ? 'general_income' : 'investment_income'),
+            'category'       => ($source_prefix === 'other' ? 'general_income' : 'investment_income'),
             'amount'         => $amount,
             'method'         => $method,
             'notes'          => $desc,
-            'related_table'  => ($source === 'other' ? NULL : 'investments'),
-            'related_id'     => ($source === 'other' ? 0 : $related_id),
+            'related_table'  => ($source_prefix === 'other' ? NULL : 'investments'),
+            'related_id'     => ($source_prefix === 'other' ? 0 : $related_id),
             'transaction_date' => $date
         ];
 
@@ -69,7 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['record_revenue'])) {
             header("Location: revenue.php");
             exit;
         } else {
-            flash_set("Failed to record revenue. Ensure Financial Engine is active.", "error");
+            flash_set("Failed to record revenue.", "error");
         }
     }
 }
@@ -78,6 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['record_revenue'])) {
 $duration = $_GET['duration'] ?? 'monthly';
 $start_date = $_GET['start_date'] ?? date('Y-m-01');
 $end_date = $_GET['end_date'] ?? date('Y-m-t');
+$filter_asset_id = !empty($_GET['asset_id']) ? (int)$_GET['asset_id'] : 0;
 
 $date_filter = "";
 if ($duration !== 'all') {
@@ -85,35 +69,42 @@ if ($duration !== 'all') {
         case 'today': $start_date = $end_date = date('Y-m-d'); break;
         case 'weekly': $start_date = date('Y-m-d', strtotime('-7 days')); $end_date = date('Y-m-d'); break;
         case 'monthly': $start_date = date('Y-m-01'); $end_date = date('Y-m-t'); break;
+        case 'custom': $start_date = $_GET['start_date'] ?? $start_date; $end_date = $_GET['end_date'] ?? $end_date; break;
     }
     $date_filter = " AND t.transaction_date BETWEEN '$start_date' AND '$end_date'";
 }
 
+$rev_types = "'income', 'revenue_inflow'";
+$where_clause = "t.transaction_type IN ($rev_types) $date_filter";
+if ($filter_asset_id > 0) {
+    $where_clause .= " AND t.related_table = 'investments' AND t.related_id = $filter_asset_id";
+}
+
+// Ledger Data
 $revenue_qry = "SELECT t.*, 
                 CASE 
                     WHEN t.related_table = 'investments' THEN (SELECT title FROM investments WHERE investment_id = t.related_id)
                     ELSE 'General Fund' 
                 END as source_name 
                 FROM transactions t 
-                WHERE t.transaction_type = 'income' $date_filter
-                ORDER BY t.transaction_date DESC, t.created_at DESC";
+                WHERE $where_clause
+                ORDER BY t.transaction_date DESC, t.created_at DESC LIMIT 100";
 
-$revenue_res = $conn->query($revenue_qry . " LIMIT 100");
+$revenue_res = $conn->query($revenue_qry);
 $revenue_data = $revenue_res->fetch_all(MYSQLI_ASSOC);
 
+// Total period revenue (All sources meeting filters)
 $total_period_rev = 0;
-$source_breakdown = [];
 foreach ($revenue_data as $r) {
-    if (strtotime($r['transaction_date']) >= strtotime($start_date) && strtotime($r['transaction_date']) <= strtotime($end_date)) {
-        $total_period_rev += $r['amount'];
-        $src = $r['source_name'] ?: 'Other';
-        $source_breakdown[$src] = ($source_breakdown[$src] ?? 0) + $r['amount'];
-    }
+    $total_period_rev += (float)$r['amount'];
 }
 
-$total_all_time = $conn->query("SELECT SUM(amount) FROM transactions WHERE transaction_type IN ('income', 'revenue_inflow')")->fetch_row()[0] ?? 0;
+// Global Performance Target Calculation (Across all active investments)
+$target_summary = $conn->query("SELECT SUM(target_amount) as total_target FROM investments WHERE status = 'active'")->fetch_assoc();
+$total_targets = (float)($target_summary['total_target'] ?? 0);
+$global_target_pct = $total_targets > 0 ? min(100, ($total_period_rev / $total_targets) * 100) : 0;
 
-// Unified Asset Revenue Analytics
+// Investment Breakdown (For Cards and performance tracking)
 $asset_revenue_sql = "
     SELECT 
         i.investment_id as id, i.title, i.category, i.target_amount, i.target_period, i.viability_status, 'investments' as asset_table,
@@ -121,7 +112,7 @@ $asset_revenue_sql = "
         COALESCE(SUM(t.amount), 0) as total_revenue,
         COUNT(t.transaction_id) as transaction_count
     FROM investments i
-    LEFT JOIN transactions t ON t.related_table = 'investments' AND t.related_id = i.investment_id AND t.transaction_type IN ('income', 'revenue_inflow')
+    LEFT JOIN transactions t ON t.related_table = 'investments' AND t.related_id = i.investment_id AND t.transaction_type IN ($rev_types)
     WHERE i.status = 'active'
     GROUP BY i.investment_id
     ORDER BY period_revenue DESC, total_revenue DESC";
@@ -132,7 +123,8 @@ $stmt_assets->execute();
 $all_assets_raw = $stmt_assets->get_result()->fetch_all(MYSQLI_ASSOC);
 $stmt_assets->close();
 
-$top_investments = []; // Reusing variable to minimize UI changes
+$top_investments = []; 
+$cat_revenue = [];
 foreach ($all_assets_raw as $asset) {
     $perf = $viability_engine->calculatePerformance((int)$asset['id'], $asset['asset_table']);
     if ($perf) {
@@ -146,36 +138,24 @@ foreach ($all_assets_raw as $asset) {
         $asset['net_profit'] = 0;
     }
     $top_investments[] = $asset;
-}
-
-// Category-wise revenue
-$cat_revenue = [];
-foreach ($top_investments as $asset) {
+    
     $cat = ucfirst(str_replace('_', ' ', $asset['category']));
     $cat_revenue[$cat] = ($cat_revenue[$cat] ?? 0) + $asset['period_revenue'];
 }
 
-// Calculate Global Target Achievement for the period
-$target_summary = $conn->query("SELECT SUM(target_amount) as total_target FROM investments WHERE status = 'active'")->fetch_assoc();
-$total_targets = (float)($target_summary['total_target'] ?? 0);
-$total_achieved = $total_period_rev; 
-$global_target_pct = $total_targets > 0 ? min(100, ($total_achieved / $total_targets) * 100) : 0;
-
-// Fetch all active investments for JS target info
+// Fetch investments for dropdown and search mapping
 $inv_data_res = $conn->query("SELECT investment_id, title, target_amount, target_period FROM investments WHERE status = 'active'");
 $inv_js_data = [];
+$investments_select_list = [];
 while ($row = $inv_data_res->fetch_assoc()) {
     $inv_js_data[$row['investment_id']] = $row;
+    $investments_select_list[] = $row;
 }
 
-// 3. Handle Exports
+// Handle Export
 if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_excel', 'print_report'])) {
     require_once __DIR__ . '/../../core/exports/UniversalExportEngine.php';
-    
-    $format = 'pdf';
-    if ($_GET['action'] === 'export_excel') $format = 'excel';
-    if ($_GET['action'] === 'print_report') $format = 'print';
-
+    $format = match($_GET['action']) { 'export_excel' => 'excel', 'print_report' => 'print', default => 'pdf' };
     $export_data = [];
     foreach ($revenue_data as $row) {
         $export_data[] = [
@@ -187,7 +167,6 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
             'Details' => $row['notes']
         ];
     }
-
     UniversalExportEngine::handle($format, $export_data, [
         'title' => 'Revenue Ledger',
         'module' => 'Revenue Analysis',
@@ -196,8 +175,6 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
     ]);
     exit;
 }
-
-$investments = $conn->query("SELECT investment_id, title FROM investments WHERE status='active'");
 
 $pageTitle = "Revenue Portal";
 ?>
@@ -221,91 +198,42 @@ $pageTitle = "Revenue Portal";
             --glass-bg: rgba(255, 255, 255, 0.95);
             --glass-border: rgba(15, 46, 37, 0.05);
             --glass-shadow: 0 10px 40px rgba(15, 46, 37, 0.06);
+            --success-soft: rgba(34, 197, 94, 0.1);
+            --warning-soft: rgba(234, 179, 8, 0.1);
+            --danger-soft: rgba(239, 68, 68, 0.1);
         }
 
-        body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background: #f4f7f6;
-            color: var(--forest);
-        }
-
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f4f7f6; color: var(--forest); }
         .main-content { margin-left: 280px; padding: 30px; transition: 0.3s; }
-        
-        /* Banner Styles */
-        .portal-header {
-            background: linear-gradient(135deg, var(--forest) 0%, #1a4d3e 100%);
-            border-radius: 30px; padding: 40px; color: white; margin-bottom: 30px;
-            box-shadow: 0 20px 40px rgba(15, 46, 37, 0.15);
-            position: relative; overflow: hidden;
-        }
-
-        /* Stat Cards */
-        .stat-card {
-            background: white; border-radius: 24px; padding: 25px;
-            box-shadow: var(--glass-shadow); border: 1px solid var(--glass-border);
-            height: 100%; transition: 0.3s;
-        }
+        .portal-header { background: linear-gradient(135deg, var(--forest) 0%, #1a4d3e 100%); border-radius: 30px; padding: 40px; color: white; margin-bottom: 30px; box-shadow: 0 20px 40px rgba(15, 46, 37, 0.15); position: relative; overflow: hidden; }
+        .stat-card { background: white; border-radius: 24px; padding: 25px; box-shadow: var(--glass-shadow); border: 1px solid var(--glass-border); height: 100%; transition: 0.3s; }
         .stat-card:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(15, 46, 37, 0.08); }
-
-        .icon-circle {
-            width: 54px; height: 54px; border-radius: 18px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1.5rem; margin-bottom: 20px;
-        }
+        .icon-circle { width: 54px; height: 54px; border-radius: 18px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; margin-bottom: 20px; }
         .bg-lime-soft { background: rgba(208, 243, 93, 0.2); color: var(--forest); }
         .bg-forest-soft { background: rgba(15, 46, 37, 0.05); color: var(--forest); }
-
-        /* Ledger Table */
-        .ledger-container {
-            background: white; border-radius: 28px; 
-            box-shadow: var(--glass-shadow); border: 1px solid var(--glass-border);
-            overflow: hidden;
-        }
+        .ledger-container { background: white; border-radius: 28px; box-shadow: var(--glass-shadow); border: 1px solid var(--glass-border); overflow: hidden; }
         .ledger-header { padding: 30px; border-bottom: 1px solid #f1f5f9; background: #fff; }
-        
         .table-custom { width: 100%; border-collapse: separate; border-spacing: 0; }
-        .table-custom thead th {
-            background: #f8fafc; color: #64748b; font-weight: 700;
-            text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.05em;
-            padding: 18px 25px; border-bottom: 2px solid #edf2f7;
-        }
-        .table-custom tbody td {
-            padding: 20px 25px; border-bottom: 1px solid #f1f5f9;
-            vertical-align: middle; font-size: 0.95rem;
-        }
+        .table-custom thead th { background: #f8fafc; color: #64748b; font-weight: 700; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.05em; padding: 18px 25px; border-bottom: 2px solid #edf2f7; }
+        .table-custom tbody td { padding: 20px 25px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; font-size: 0.95rem; }
         .table-custom tbody tr:hover td { background-color: #fcfdfe; }
-
-        /* Action Buttons */
-        .btn-lime {
-            background: var(--lime); color: var(--forest);
-            border-radius: 14px; font-weight: 800; border: none; padding: 12px 25px;
-            transition: 0.3s;
-        }
+        .btn-lime { background: var(--lime); color: var(--forest); border-radius: 14px; font-weight: 800; border: none; padding: 12px 25px; transition: 0.3s; }
         .btn-lime:hover { background: var(--lime-dark); transform: translateY(-2px); box-shadow: 0 10px 20px rgba(208, 243, 93, 0.3); }
-
-        .btn-outline-forest {
-            background: transparent; border: 2px solid var(--forest); color: var(--forest);
-            border-radius: 14px; font-weight: 700; padding: 10px 22px; transition: 0.3s;
-        }
+        .btn-outline-forest { background: transparent; border: 2px solid var(--forest); color: var(--forest); border-radius: 14px; font-weight: 700; padding: 10px 22px; transition: 0.3s; }
         .btn-outline-forest:hover { background: var(--forest); color: white; }
-
-        .search-box {
-            background: #f8fafc; border: none; border-radius: 15px;
-            padding: 12px 20px 12px 45px; width: 100%; transition: 0.3s;
-        }
-
-        /* Modal Customization */
+        .search-box { background: #f8fafc; border: none; border-radius: 15px; padding: 12px 20px 12px 45px; width: 100%; transition: 0.3s; }
         .modal-content { border-radius: 30px; border: none; overflow: hidden; }
         .modal-header { background: var(--forest); color: white; border: none; padding: 25px 35px; }
         .modal-body { padding: 35px; background: #fcfdfe; }
         .form-control, .form-select { border-radius: 15px; padding: 12px 20px; border: 1.5px solid #e2e8f0; }
 
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        .fade-in { animation: fadeIn 0.6s ease-out; }
         .slide-up { animation: slideUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; opacity: 0; }
         @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-
         @media (max-width: 991.98px) { .main-content { margin-left: 0; } }
+        
+        .bg-success-soft { background: var(--success-soft); color: #15803d; }
+        .bg-warning-soft { background: var(--warning-soft); color: #854d0e; }
+        .bg-danger-soft { background: var(--danger-soft); color: #991b1b; }
     </style>
 </head>
 <body>
@@ -317,7 +245,7 @@ $pageTitle = "Revenue Portal";
         <?php $layout->topbar($pageTitle ?? ''); ?>
         
         <!-- Header Banner -->
-        <div class="portal-header fade-in">
+        <div class="portal-header slide-up">
             <div class="row align-items-center">
                 <div class="col-lg-7">
                     <span class="badge bg-white bg-opacity-10 text-white rounded-pill px-3 py-2 mb-3">Treasury V4</span>
@@ -328,14 +256,6 @@ $pageTitle = "Revenue Portal";
                     <button class="btn btn-lime shadow-lg px-4" data-bs-toggle="modal" data-bs-target="#recordRevenueModal">
                         <i class="bi bi-plus-lg me-2"></i>Record New Inflow
                     </button>
-                    <div class="mt-2">
-                        <a href="investments.php" class="text-white opacity-75 small text-decoration-none me-3">
-                            <i class="bi bi-briefcase me-1"></i> View Assets
-                        </a>
-                        <a href="expenses.php" class="text-white opacity-75 small text-decoration-none">
-                            <i class="bi bi-receipt me-1"></i> Track Expenses
-                        </a>
-                    </div>
                 </div>
             </div>
         </div>
@@ -346,7 +266,7 @@ $pageTitle = "Revenue Portal";
         <?php if (!empty($top_investments)): ?>
         <div class="row g-4 mb-4">
             <div class="col-12">
-                <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-1">
                     <h5 class="fw-800 mb-0"><i class="bi bi-trophy-fill text-warning me-2"></i>Portfolio Revenue Performance</h5>
                     <a href="investments.php" class="btn btn-outline-forest btn-sm rounded-pill px-3">View All Assets</a>
                 </div>
@@ -360,14 +280,14 @@ $pageTitle = "Revenue Portal";
                     default => 'bi-box-seam'
                 };
                 $v_badge = match($inv['viability_status']) {
-                    'viable' => '<span class="badge bg-success-soft text-success px-2 py-1" style="font-size: 0.6rem;">VIABLE</span>',
-                    'underperforming' => '<span class="badge bg-warning-soft text-warning px-2 py-1" style="font-size: 0.6rem;">MARGINAL</span>',
-                    'loss_making' => '<span class="badge bg-danger-soft text-danger px-2 py-1" style="font-size: 0.6rem;">AT RISK</span>',
+                    'viable' => '<span class="badge bg-success-soft px-2 py-1" style="font-size: 0.6rem;">VIABLE</span>',
+                    'underperforming' => '<span class="badge bg-warning-soft px-2 py-1" style="font-size: 0.6rem;">MARGINAL</span>',
+                    'loss_making' => '<span class="badge bg-danger-soft px-2 py-1" style="font-size: 0.6rem;">AT RISK</span>',
                     default => '<span class="badge bg-light text-muted px-2 py-1" style="font-size: 0.6rem;">NEW</span>'
                 };
             ?>
             <div class="col-md-4">
-                <div class="stat-card slide-up h-100" style="border-left: 4px solid <?= $inv['target_achievement'] >= 100 ? 'var(--success)' : ($inv['target_achievement'] >= 70 ? 'var(--warning)' : 'var(--danger)') ?>;">
+                <div class="stat-card slide-up h-100" style="border-left: 4px solid <?= $inv['target_achievement'] >= 100 ? '#22c55e' : ($inv['target_achievement'] >= 70 ? '#eab308' : '#ef4444') ?>;">
                     <div class="d-flex justify-content-between align-items-start mb-3">
                         <div class="icon-circle bg-lime-soft">
                             <i class="<?= $icon ?>"></i>
@@ -412,7 +332,7 @@ $pageTitle = "Revenue Portal";
                     </div>
                     <div class="text-muted small fw-bold text-uppercase">Period Total</div>
                     <div class="h2 fw-800 text-dark mt-2 mb-1">KES <?= number_format((float)$total_period_rev) ?></div>
-                    <div class="small text-muted"><i class="bi bi-calendar-range me-1"></i> Based on active filters</div>
+                    <div class="small text-muted"><i class="bi bi-calendar-range me-1"></i> <?= ucwords($duration) ?> aggregation</div>
                 </div>
             </div>
             
@@ -426,7 +346,7 @@ $pageTitle = "Revenue Portal";
                     <div class="progress" style="height: 4px; background: #f1f5f9; margin-bottom: 8px;">
                         <div class="progress-bar bg-forest" style="width: <?= $global_target_pct ?>%"></div>
                     </div>
-                    <div class="small text-muted"><i class="bi bi-info-circle me-1"></i> Actual vs. Projected Targets</div>
+                    <div class="small text-muted"><i class="bi bi-info-circle me-1"></i> Actual vs. Investment Targets</div>
                 </div>
             </div>
 
@@ -434,21 +354,35 @@ $pageTitle = "Revenue Portal";
                 <div class="stat-card slide-up" style="animation-delay: 0.2s">
                     <form method="GET" id="filterForm" class="h-100 d-flex flex-column justify-content-between">
                         <div>
-                            <label class="small text-muted fw-bold text-uppercase mb-2 d-block">Time Analysis</label>
-                            <select name="duration" class="form-select form-select-sm border-0 bg-light" onchange="toggleDateInputs(this.value)">
-                                <option value="all" <?= $duration === 'all' ? 'selected' : '' ?>>Historical Records</option>
-                                <option value="today" <?= $duration === 'today' ? 'selected' : '' ?>>Today's activity</option>
-                                <option value="weekly" <?= $duration === 'weekly' ? 'selected' : '' ?>>Past 7 Days</option>
-                                <option value="monthly" <?= $duration === 'monthly' ? 'selected' : '' ?>>Current Month</option>
-                                <option value="custom" <?= $duration === 'custom' ? 'selected' : '' ?>>Custom Range</option>
-                            </select>
+                            <label class="small text-muted fw-bold text-uppercase mb-2 d-block">Analysis Filters</label>
+                            <div class="row g-2">
+                                <div class="col-12">
+                                    <select name="duration" class="form-select form-select-sm border-0 bg-light" onchange="toggleDateInputs(this.value)">
+                                        <option value="all" <?= $duration === 'all' ? 'selected' : '' ?>>Historical Records</option>
+                                        <option value="today" <?= $duration === 'today' ? 'selected' : '' ?>>Today's activity</option>
+                                        <option value="weekly" <?= $duration === 'weekly' ? 'selected' : '' ?>>Past 7 Days</option>
+                                        <option value="monthly" <?= $duration === 'monthly' ? 'selected' : '' ?>>Current Month</option>
+                                        <option value="custom" <?= $duration === 'custom' ? 'selected' : '' ?>>Custom Range</option>
+                                    </select>
+                                </div>
+                                <div class="col-12">
+                                    <select name="asset_id" class="form-select form-select-sm border-0 bg-light" onchange="this.form.submit()">
+                                        <option value="0">All Investment Sources</option>
+                                        <?php foreach($investments_select_list as $inv): ?>
+                                            <option value="<?= $inv['investment_id'] ?>" <?= $filter_asset_id == $inv['investment_id'] ? 'selected' : '' ?>>
+                                                <?= esc($inv['title']) ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                            </div>
                         </div>
                         <div id="customDateRange" class="mt-2 <?= $duration !== 'custom' ? 'd-none' : '' ?>">
                             <div class="d-flex gap-2">
                                 <input type="date" name="start_date" class="form-control form-control-sm" value="<?= $start_date ?>">
                                 <input type="date" name="end_date" class="form-control form-control-sm" value="<?= $end_date ?>">
                             </div>
-                            <button type="submit" class="btn btn-forest btn-sm w-100 mt-2">Apply Date Filter</button>
+                            <button type="submit" class="btn btn-forest btn-sm w-100 mt-2">Apply Filters</button>
                         </div>
                     </form>
                 </div>
@@ -492,7 +426,7 @@ $pageTitle = "Revenue Portal";
                                         <td colspan="4" class="text-center py-5">
                                             <div class="opacity-25 mb-4"><i class="bi bi-receipt-cutoff display-2"></i></div>
                                             <h5 class="fw-bold text-muted">No Revenue Recorded</h5>
-                                            <p class="text-muted">Inflows within the selected period will appear here.</p>
+                                            <p class="text-muted">No inflows found matching current filters.</p>
                                         </td>
                                     </tr>
                                 <?php else: 
@@ -503,19 +437,17 @@ $pageTitle = "Revenue Portal";
                                             <div class="small text-muted font-monospace mt-1"><?= esc($row['reference_no']) ?></div>
                                         </td>
                                         <td>
-                                            <a href="transactions.php?filter=<?= $row['related_id'] ?>" class="text-decoration-none" title="Audit Source Transactions">
-                                                <div class="fw-600 text-forest"><?= esc($row['source_name'] ?: 'General Fund') ?></div>
-                                            </a>
+                                            <div class="fw-600 text-forest"><?= esc($row['source_name'] ?: 'General Fund') ?></div>
                                             <div class="small text-muted mt-1 opacity-75"><?= esc($row['notes'] ?: 'Revenue Entry') ?></div>
                                         </td>
                                         <td>
                                             <span class="badge bg-light text-dark border px-3 py-2 rounded-pill small fw-bold">
-                                                <i class="bi bi-credit-card-2-back me-1 text-muted"></i><?= strtoupper($row['payment_method']) ?>
+                                                <?= strtoupper($row['payment_method']) ?>
                                             </span>
                                         </td>
                                         <td class="text-end">
                                             <div class="fw-800 fs-6 text-success">
-                                                + <?= number_format((float)$row['amount']) ?>
+                                                + <?= number_format((float)$row['amount'], 2) ?>
                                             </div>
                                         </td>
                                     </tr>
@@ -530,7 +462,13 @@ $pageTitle = "Revenue Portal";
             <div class="col-lg-4">
                 <div class="stat-card slide-up" style="animation-delay: 0.4s">
                     <h5 class="fw-bold mb-4">Source Distribution</h5>
-                    <?php if(empty($source_breakdown)): ?>
+                    <?php 
+                    $source_breakdown = [];
+                    foreach ($revenue_data as $r) {
+                        $src = $r['source_name'] ?: 'Other';
+                        $source_breakdown[$src] = ($source_breakdown[$src] ?? 0) + $r['amount'];
+                    }
+                    if(empty($source_breakdown)): ?>
                         <div class="text-center py-5">
                             <i class="bi bi-pie-chart text-muted display-4 opacity-25"></i>
                             <p class="text-muted small mt-3">Insufficient data for breakdown</p>
@@ -542,33 +480,7 @@ $pageTitle = "Revenue Portal";
                                 data-values='<?= json_encode(array_values($source_breakdown)) ?>'>
                             </canvas>
                         </div>
-                        <?php if (!empty($cat_revenue)): ?>
                         <div class="mt-4 pt-3 border-top">
-                            <h6 class="fw-800 text-dark mb-3">Portfolio Performance Breakdown</h6>
-                            <?php 
-                            arsort($cat_revenue);
-                            $total_cat_rev = array_sum($cat_revenue);
-                            foreach ($cat_revenue as $name => $val): 
-                                $cat_pct = ($val / ($total_cat_rev ?: 1)) * 100;
-                            ?>
-                                <div class="mb-3">
-                                    <div class="d-flex justify-content-between align-items-center mb-1">
-                                        <span class="small fw-800 text-forest"><?= $name ?></span>
-                                        <span class="small fw-bold text-dark"><?= number_format($cat_pct, 1) ?>%</span>
-                                    </div>
-                                    <div class="progress" style="height: 10px; border-radius: 20px; background: #eef2f6;">
-                                        <div class="progress-bar" style="width: <?= $cat_pct ?>%; background: var(--forest); border-radius: 20px;"></div>
-                                    </div>
-                                    <div class="text-end small mt-1 text-muted fw-bold" style="font-size: 0.65rem;">
-                                        KES <?= number_format((float)$val) ?>
-                                    </div>
-                                </div>
-                            <?php endforeach; ?>
-                        </div>
-                        <?php endif; ?>
-                    
-                    <?php if (!empty($source_breakdown)): ?>
-                        <div class="mt-4">
                             <h6 class="fw-bold mb-3 mt-4">Top Revenue Sources</h6>
                             <?php 
                             arsort($source_breakdown);
@@ -586,14 +498,12 @@ $pageTitle = "Revenue Portal";
                             <?php endforeach; ?>
                         </div>
                     <?php endif; ?>
-                <?php endif; ?>
                 </div>
             </div>
         </div>
     </div>
     
     <?php $layout->footer(); ?>
-    </div>
 </div>
 
 <!-- Modal -->
@@ -611,27 +521,27 @@ $pageTitle = "Revenue Portal";
                     <div class="row g-4">
                         <div class="col-12">
                             <label class="form-label">Select Asset / Revenue Source</label>
-                                    <select name="unified_asset_id" id="unified_asset_id" class="form-select search-pill" required onchange="updateTargetInfo()">
-                                        <option value="other_0">General Fund / Unassigned</option>
-                                        <optgroup label="Active Portfolio">
-                                            <?php mysqli_data_seek($investments, 0); while($inv = $investments->fetch_assoc()): ?>
-                                                <option value="inv_<?= $inv['investment_id'] ?>"><?= esc($inv['title']) ?></option>
-                                            <?php endwhile; ?>
-                                        </optgroup>
-                                    </select>
+                            <select name="unified_asset_id" id="unified_asset_id" class="form-select" required onchange="updateTargetInfo()">
+                                <option value="other_0">General Fund / Unassigned</option>
+                                <optgroup label="Active Portfolio">
+                                    <?php foreach($investments_select_list as $inv): ?>
+                                        <option value="inv_<?= $inv['investment_id'] ?>"><?= esc($inv['title']) ?></option>
+                                    <?php endforeach; ?>
+                                </optgroup>
+                            </select>
                         </div>
                         <div class="col-12 mt-3 d-none" id="target_info_box">
                             <div class="alert alert-info border-0 rounded-4 bg-forest-soft d-flex align-items-center mb-0">
                                 <i class="bi bi-info-circle-fill fs-4 me-3 text-forest"></i>
                                 <div>
                                     <div class="small fw-800 text-forest text-uppercase mb-1">Asset Performance Target</div>
-                                    <div class="fw-bold text-dark" id="targetText">Target: KES 0.00 / undefined</div>
+                                    <div class="fw-bold text-dark" id="targetText">Target: KES 0.00</div>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">Amount Received (KES)</label>
-                            <input type="number" name="amount" class="form-control fw-bold" min="1" step="1" required>
+                            <input type="number" name="amount" class="form-control fw-bold" min="0.01" step="0.01" required>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">Collection Date</label>
@@ -641,13 +551,13 @@ $pageTitle = "Revenue Portal";
                             <label class="form-label">Receiving Method</label>
                             <select name="payment_method" class="form-select" required>
                                 <option value="cash">Cash Collection</option>
-                                <option value="mpesa">M-Pesa Till/Paybill</option>
+                                <option value="mpesa">M-Pesa Business</option>
                                 <option value="bank">Bank Deposit</option>
                             </select>
                         </div>
                         <div class="col-12">
                             <label class="form-label">Narration / Internal Reference</label>
-                            <textarea name="description" class="form-control" rows="2" placeholder="e.g. Daily collection for KCB 123X, Dividend check..."></textarea>
+                            <textarea name="description" class="form-control" rows="2" placeholder="e.g. Daily collection, Dividend check..."></textarea>
                         </div>
                     </div>
                 </div>
@@ -662,7 +572,6 @@ $pageTitle = "Revenue Portal";
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="<?= BASE_URL ?>/public/assets/js/main.js?v=<?= time() ?>"></script>
 <script>
     const invData = <?= json_encode($inv_js_data) ?>;
     
@@ -670,20 +579,17 @@ $pageTitle = "Revenue Portal";
         const select = document.getElementById('unified_asset_id');
         const val = select.value;
         const targetDiv = document.getElementById('target_info_box');
+        const targetText = document.getElementById('targetText');
         
         if (val.startsWith('inv_')) {
             const id = val.replace('inv_', '');
             const data = invData[id];
             if (data && data.target_amount > 0) {
-                targetDiv.innerHTML = `<div class="alert alert-info py-2 small mb-0">
-                    <i class="bi bi-info-circle me-1"></i> 
-                    Target: <strong>KES ${new Intl.NumberFormat().format(data.target_amount)}</strong> (${data.target_period})
-                </div>`;
+                targetText.innerHTML = `Target: <strong>KES ${new Intl.NumberFormat().format(data.target_amount)}</strong> (${data.target_period})`;
                 targetDiv.classList.remove('d-none');
                 return;
             }
         }
-        
         targetDiv.classList.add('d-none');
     }
 

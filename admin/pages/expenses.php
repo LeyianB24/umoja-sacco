@@ -6,16 +6,11 @@ require_once __DIR__ . '/../../config/app_config.php';
 require_once __DIR__ . '/../../config/db_connect.php';
 require_once __DIR__ . '/../../inc/Auth.php';
 require_once __DIR__ . '/../../inc/LayoutManager.php';
-
-$layout = LayoutManager::create('admin');
-// accountant/expenses.php
-
 require_once __DIR__ . '/../../inc/TransactionHelper.php';
-// 1. Auth Check
-require_admin();
 
-// Initialize Layout Manager
 $layout = LayoutManager::create('admin');
+
+require_admin();
 require_permission();
 
 // 2. Handle Form Submission (Add Expense)
@@ -33,9 +28,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     validate_not_future($date, "expenses.php");
 
     if ($amount <= 0) {
-        flash_set("Expense amount must be valid.", "warning");
+        $_SESSION['error'] = "Expense amount must be valid.";
     } else {
-        // Construct Notes
         $notes = "[$category] $payee"; 
         if (!empty($desc)) $notes .= " - $desc";
         if ($is_pending) $notes .= " [PENDING]";
@@ -43,7 +37,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $conn->begin_transaction();
         try {
             $unified_id = $_POST['unified_asset_id'] ?? '';
-            $inv_id = null;
             $related_id = 0;
             $related_table = null;
 
@@ -51,27 +44,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 list($source, $related_id) = explode('_', $unified_id);
                 $related_id = (int)$related_id;
                 $related_table = 'investments';
-                $inv_id = $related_id;
             }
 
             $method = $_POST['payment_method'] ?? 'cash';
             
-            // Validate asset is active if specified
-            if ($related_table && $related_id) {
-                $check_sql = "SELECT status FROM investments WHERE investment_id = ?";
-                $stmt_check = $conn->prepare($check_sql);
-                $stmt_check->bind_param("i", $related_id);
-                $stmt_check->execute();
-                $status_result = $stmt_check->get_result()->fetch_assoc();
-                
-                if (!$status_result || $status_result['status'] !== 'active') {
-                    throw new Exception("Cannot record expenses for inactive or disposed assets.");
-                }
-            }
-            
-            // Record in Central Ledger via TransactionHelper/FinancialEngine
             $ok = TransactionHelper::record([
-                'member_id'     => null, // System Expense
+                'member_id'     => null,
                 'amount'        => $amount,
                 'type'          => 'expense',
                 'category'      => $category,
@@ -85,41 +63,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             if (!$ok) throw new Exception("Ledger recording failed.");
 
             $conn->commit();
-            flash_set("Expense recorded successfully!", "success");
+            $_SESSION['success'] = "Expense recorded successfully!";
             header("Location: expenses.php");
             exit;
         } catch (Exception $e) {
             $conn->rollback();
-            flash_set("Error: " . $e->getMessage(), "error");
+            $_SESSION['error'] = "Error: " . $e->getMessage();
         }
     }
 }
 
-// 3. Handle Duration Filtering
-$duration = $_GET['duration'] ?? '3months'; // Default to last 3 months
+// 3. Data Fetching
+$duration = $_GET['duration'] ?? '3months';
 $start_date = $_GET['start_date'] ?? date('Y-m-d', strtotime('-3 months'));
 $end_date = $_GET['end_date'] ?? date('Y-m-d');
 
 $date_filter = "";
-
 if ($duration !== 'all') {
     switch ($duration) {
-        case 'today':
-            $start_date = date('Y-m-d');
-            $end_date = date('Y-m-d');
-            break;
-        case 'weekly':
-            $start_date = date('Y-m-d', strtotime('-7 days'));
-            $end_date = date('Y-m-d');
-            break;
-        case 'monthly':
-            $start_date = date('Y-m-01');
-            $end_date = date('Y-m-t');
-            break;
-        case '3months':
-            $start_date = date('Y-m-d', strtotime('-3 months'));
-            $end_date = date('Y-m-d');
-            break;
+        case 'today': $start_date = $end_date = date('Y-m-d'); break;
+        case 'weekly': $start_date = date('Y-m-d', strtotime('-7 days')); break;
+        case 'monthly': $start_date = date('Y-m-01'); $end_date = date('Y-m-t'); break;
+        case '3months': $start_date = date('Y-m-d', strtotime('-3 months')); break;
     }
     $date_filter = " AND created_at BETWEEN '$start_date 00:00:00' AND '$end_date 23:59:59'";
 }
@@ -137,60 +102,42 @@ if ($result) {
     while($row = $result->fetch_assoc()) {
         $expenses[] = $row;
         $total_period_expense += $row['amount'];
-        
-        // Parse Category
         preg_match('/\[(.*?)\]/', $row['notes'], $matches);
         $cat = $matches[1] ?? 'Uncategorized';
-        
-        // Check Pending
-        if (stripos($row['notes'], 'pending') !== false) {
-            $pending_bills_count++;
-        }
-
-        // Chart Data
+        if (stripos($row['notes'], 'pending') !== false) $pending_bills_count++;
         if (!isset($cat_breakdown[$cat])) $cat_breakdown[$cat] = 0;
         $cat_breakdown[$cat] += $row['amount'];
     }
 }
 
-// 4. Handle Export Actions
+// Handle Export
 if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_excel', 'print_report'])) {
     require_once __DIR__ . '/../../core/exports/UniversalExportEngine.php';
-    
-    $format = 'pdf';
-    if ($_GET['action'] === 'export_excel') $format = 'excel';
-    if ($_GET['action'] === 'print_report') $format = 'print';
-
+    $format = match($_GET['action']) { 'export_excel' => 'excel', 'print_report' => 'print', default => 'pdf' };
     $export_data = [];
     foreach ($expenses as $ex) {
         preg_match('/\[(.*?)\]/', $ex['notes'], $cat_match);
         $display_cat = $cat_match[1] ?? 'General';
-        $clean_notes = trim(str_replace(['[PENDING]', $cat_match[0] ?? ''], '', $ex['notes']));
-        $status = (stripos($ex['notes'], 'pending') !== false) ? 'Pending' : 'Paid';
-        
         $export_data[] = [
             'Date' => date('d-m-Y', strtotime($ex['created_at'])),
             'Reference' => $ex['reference_no'],
-            'Payee/Details' => $clean_notes,
+            'Payee/Details' => trim(str_replace(['[PENDING]', $cat_match[0] ?? ''], '', $ex['notes'])),
             'Category' => $display_cat,
             'Amount' => number_format((float)$ex['amount'], 2),
-            'Status' => $status
+            'Status' => (stripos($ex['notes'], 'pending') !== false) ? 'Pending' : 'Paid'
         ];
     }
-    
     UniversalExportEngine::handle($format, $export_data, [
         'title' => 'Expense Ledger',
         'module' => 'Expense Management',
         'headers' => ['Date', 'Reference', 'Payee/Details', 'Category', 'Amount', 'Status'],
-        'record_count' => count($expenses),
         'total_value' => $total_period_expense
     ]);
     exit;
 }
 
-// 5. Fetch Assets for Attribution
-$investments_list = $conn->query("SELECT investment_id, title, category FROM investments WHERE status = 'active' ORDER BY title ASC");
-
+$investments_list = $conn->query("SELECT investment_id, title FROM investments WHERE status = 'active' ORDER BY title ASC");
+$investments_all = $investments_list->fetch_all(MYSQLI_ASSOC);
 $pageTitle = "Expenses Portal";
 ?>
 <!DOCTYPE html>
@@ -198,133 +145,44 @@ $pageTitle = "Expenses Portal";
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= $pageTitle ?> | USMS Admin</title>
+    <title><?= $pageTitle ?> | <?= SITE_NAME ?></title>
     
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
     <style>
         :root {
-            --forest: #0f2e25;
-            --forest-light: #1a4d3d;
-            --lime: #d0f35d;
-            --lime-dark: #a8cf12;
-            --glass-bg: rgba(255, 255, 255, 0.95);
-            --glass-border: rgba(15, 46, 37, 0.05);
-            --glass-shadow: 0 10px 40px rgba(15, 46, 37, 0.06);
+            --forest-dark: #0d3935;
+            --forest-mid: #1a4d48;
+            --lime-accent: #bef264;
+            --lime-dim: #d9f99d;
+            --bg-body: #f8fafc;
+            --bg-card: #ffffff;
+            --card-radius: 20px;
         }
 
-        body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background: #f4f7f6;
-            color: var(--forest);
-            min-height: 100vh;
-        }
+        body { font-family: 'Outfit', sans-serif; background-color: var(--bg-body); color: #1e293b; }
+        .main-content { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding-bottom: 2rem; }
+        @media (max-width: 991px) { .main-content { margin-left: 0; } }
 
-        .main-content { margin-left: 280px; padding: 30px; transition: 0.3s; }
+        .card-custom { background: var(--bg-card); border: none; border-radius: var(--card-radius); box-shadow: 0 4px 20px rgba(0,0,0,0.03); }
+        .btn-lime { background-color: var(--lime-accent); color: var(--forest-dark); font-weight: 600; border: none; border-radius: 50px; padding: 0.5rem 1.5rem; transition: all 0.2s; }
+        .btn-lime:hover { background-color: #a3e635; color: var(--forest-dark); transform: translateY(-1px); }
+        .btn-forest { background-color: var(--forest-dark); color: white; border-radius: 50px; padding: 0.5rem 1.5rem; }
+        .btn-forest:hover { background-color: var(--forest-mid); color: white; }
+
+        .form-control, .form-select { border-radius: 12px; border: 1px solid #e2e8f0; padding: 0.6rem 1rem; }
+        .table-custom th { font-weight: 600; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; color: #64748b; border-bottom: 2px solid #f1f5f9; padding: 1rem; }
+        .table-custom td { padding: 1rem; vertical-align: middle; border-bottom: 1px solid #f1f5f9; font-size: 0.95rem; }
+
+        .modal-header { background-color: var(--forest-dark); color: white; border-top-left-radius: 20px; border-top-right-radius: 20px; }
+        .modal-content { border-radius: 20px; border: none; }
+        .btn-close { filter: invert(1) grayscale(100%) brightness(200%); }
         
-        /* Banner Styles */
-        .portal-header {
-            background: linear-gradient(135deg, var(--forest) 0%, #1a4d3e 100%);
-            border-radius: 30px; padding: 40px; color: white; margin-bottom: 30px;
-            box-shadow: 0 20px 40px rgba(15, 46, 37, 0.15);
-            position: relative; overflow: hidden;
-        }
-        .portal-header::after {
-            content: ''; position: absolute; bottom: -20%; right: -5%; width: 350px; height: 350px;
-            background: radial-gradient(circle, rgba(208, 243, 93, 0.1) 0%, transparent 70%);
-            border-radius: 50%;
-        }
-
-        /* Stat Cards */
-        .stat-card {
-            background: white; border-radius: 24px; padding: 25px;
-            box-shadow: var(--glass-shadow); border: 1px solid var(--glass-border);
-            height: 100%; transition: 0.3s;
-        }
-        .stat-card:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(15, 46, 37, 0.08); }
-
-        .icon-circle {
-            width: 54px; height: 54px; border-radius: 18px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1.5rem; margin-bottom: 20px;
-        }
-        .bg-lime-soft { background: rgba(208, 243, 93, 0.2); color: var(--forest); }
-        .bg-red-soft { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
-        .bg-forest-soft { background: rgba(15, 46, 37, 0.05); color: var(--forest); }
-
-        /* Filter Controls */
-        .filter-card {
-            background: white; border-radius: 20px; padding: 20px 30px;
-            box-shadow: var(--glass-shadow); border: 1px solid var(--glass-border);
-            margin-bottom: 30px;
-        }
-
-        /* Ledger Table */
-        .ledger-container {
-            background: white; border-radius: 28px; 
-            box-shadow: var(--glass-shadow); border: 1px solid var(--glass-border);
-            overflow: hidden;
-        }
-        .ledger-header { padding: 30px; border-bottom: 1px solid #f1f5f9; background: #fff; }
-        
-        .table-custom { width: 100%; border-collapse: separate; border-spacing: 0; }
-        .table-custom thead th {
-            background: #f8fafc; color: #64748b; font-weight: 700;
-            text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.05em;
-            padding: 18px 25px; border-bottom: 2px solid #edf2f7;
-        }
-        .table-custom tbody td {
-            padding: 20px 25px; border-bottom: 1px solid #f1f5f9;
-            vertical-align: middle; font-size: 0.95rem;
-        }
-        .table-custom tbody tr:hover td { background-color: #fcfdfe; }
-
-        /* Badges */
-        .status-badge {
-            padding: 6px 14px; border-radius: 10px; font-size: 0.75rem; font-weight: 700;
-            text-transform: uppercase; letter-spacing: 0.05em;
-        }
-        .badge-pending { background: #fff7ed; color: #ea580c; border: 1px solid #fed7aa; }
-        .badge-paid { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
-
-        /* Action Buttons */
-        .btn-lime {
-            background: var(--lime); color: var(--forest);
-            border-radius: 14px; font-weight: 800; border: none; padding: 12px 25px;
-            transition: 0.3s;
-        }
-        .btn-lime:hover { background: var(--lime-dark); transform: translateY(-2px); box-shadow: 0 10px 20px rgba(208, 243, 93, 0.3); }
-
-        .btn-outline-forest {
-            background: transparent; border: 2px solid var(--forest); color: var(--forest);
-            border-radius: 14px; font-weight: 700; padding: 10px 22px; transition: 0.3s;
-        }
-        .btn-outline-forest:hover { background: var(--forest); color: white; }
-
-        .search-box {
-            background: #f8fafc; border: none; border-radius: 15px;
-            padding: 12px 20px 12px 45px; width: 100%; transition: 0.3s;
-        }
-        .search-box:focus { background: #fff; box-shadow: 0 0 0 4px rgba(15, 46, 37, 0.05); outline: none; }
-
-        /* Chart Section */
-        .chart-card {
-            background: white; border-radius: 28px; padding: 35px;
-            box-shadow: var(--glass-shadow); border: 1px solid var(--glass-border);
-            height: 100%;
-        }
-
-        /* Modal Customization */
-        .modal-content { border-radius: 30px; border: none; overflow: hidden; }
-        .modal-header { background: var(--forest); color: white; border: none; padding: 25px 35px; }
-        .modal-body { padding: 35px; background: #fcfdfe; }
-        .form-label { font-weight: 700; color: var(--forest); margin-bottom: 10px; font-size: 0.9rem; }
-        .form-control, .form-select { border-radius: 15px; padding: 12px 20px; border: 1.5px solid #e2e8f0; }
-        .form-control:focus { border-color: var(--forest); box-shadow: 0 0 0 4px rgba(15, 46, 37, 0.05); }
-
-        @media (max-width: 991.98px) { .main-content { margin-left: 0; } }
+        .stat-icon { width: 48px; height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; }
+        .bg-lime-subtle { background-color: var(--lime-bg-subtle); color: var(--forest-dark); }
+        .bg-red-subtle { background-color: #fee2e2; color: #991b1b; }
     </style>
 </head>
 <body>
@@ -333,240 +191,173 @@ $pageTitle = "Expenses Portal";
     <?php $layout->sidebar(); ?>
 
     <div class="flex-fill main-content">
-        <?php $layout->topbar($pageTitle ?? ''); ?>
-        
-        <!-- Header Banner -->
-        <div class="portal-header fade-in">
-            <div class="row align-items-center">
-                <div class="col-lg-7">
-                    <span class="badge bg-white bg-opacity-10 text-white rounded-pill px-3 py-2 mb-3">Finance Control V18</span>
-                    <h1 class="display-5 fw-800 mb-2">Expenses Portal</h1>
-                    <p class="opacity-75 fs-5 mb-0">Operational expenditure tracking and financial audit engine.</p>
+        <?php $layout->topbar($pageTitle); ?>
+
+        <div class="container-fluid">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-5 gap-3">
+                <div>
+                    <h2 class="fw-bold mb-1" style="color: var(--forest-dark);">Expenditure Portal</h2>
+                    <p class="text-muted mb-0">Record and track office operational spending.</p>
                 </div>
-                <div class="col-lg-5 text-lg-end mt-4 mt-lg-0">
-                    <button class="btn btn-lime shadow-lg px-4" data-bs-toggle="modal" data-bs-target="#addExpenseModal">
-                        <i class="bi bi-plus-circle-fill me-2"></i>Record Expenditure
+                <div class="d-flex gap-2">
+                    <div class="dropdown">
+                        <button class="btn btn-outline-dark dropdown-toggle shadow-sm" data-bs-toggle="dropdown" style="border-radius: 50px;">
+                            <i class="bi bi-download me-2"></i>Export
+                        </button>
+                        <ul class="dropdown-menu shadow-lg">
+                            <li><a class="dropdown-item" href="?<?= http_build_query(array_merge($_GET, ['action' => 'export_pdf'])) ?>">Export PDF</a></li>
+                            <li><a class="dropdown-item" href="?<?= http_build_query(array_merge($_GET, ['action' => 'export_excel'])) ?>">Export Excel</a></li>
+                            <li><a class="dropdown-item" href="?<?= http_build_query(array_merge($_GET, ['action' => 'print_report'])) ?>" target="_blank">Print View</a></li>
+                        </ul>
+                    </div>
+                    <button class="btn btn-lime shadow-sm" data-bs-toggle="modal" data-bs-target="#addExpenseModal">
+                        <i class="bi bi-plus-lg me-2"></i>Record Expenditure
                     </button>
                 </div>
             </div>
-        </div>
 
-        <!-- Filter Bar -->
-        <div class="filter-card slide-up">
-            <form method="GET" class="row g-3 align-items-end" id="filterForm">
-                <div class="col-md-3">
-                    <label class="form-label">Duration</label>
-                    <select name="duration" class="form-select" onchange="toggleDateInputs(this.value)">
-                        <option value="all" <?= $duration === 'all' ? 'selected' : '' ?>>Historical Archive</option>
-                        <option value="today" <?= $duration === 'today' ? 'selected' : '' ?>>Today's activity</option>
-                        <option value="weekly" <?= $duration === 'weekly' ? 'selected' : '' ?>>Past 7 Days</option>
-                        <option value="monthly" <?= $duration === 'monthly' ? 'selected' : '' ?>>This Month</option>
-                        <option value="3months" <?= $duration === '3months' ? 'selected' : '' ?>>Last Quarter (90D)</option>
-                        <option value="custom" <?= $duration === 'custom' ? 'selected' : '' ?>>Custom Fiscal Range</option>
-                    </select>
+            <?php if (isset($_SESSION['success'])): ?>
+                <div class="alert alert-success border-0 bg-success bg-opacity-10 text-success rounded-3 mb-4">
+                    <i class="bi bi-check-circle-fill me-2"></i> <?= $_SESSION['success']; unset($_SESSION['success']); ?>
                 </div>
-                <div id="customDateRange" class="col-md-6 <?= $duration !== 'custom' ? 'd-none' : '' ?>">
-                    <div class="row g-3">
-                        <div class="col-6">
-                            <label class="form-label">Start Date</label>
-                            <input type="date" name="start_date" class="form-control" value="<?= htmlspecialchars($start_date) ?>">
+            <?php endif; ?>
+            <?php if (isset($_SESSION['error'])): ?>
+                <div class="alert alert-danger border-0 bg-danger bg-opacity-10 text-danger rounded-3 mb-4">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i> <?= $_SESSION['error']; unset($_SESSION['error']); ?>
+                </div>
+            <?php endif; ?>
+
+            <!-- Filter Controls -->
+            <div class="card-custom p-4 mb-4">
+                <form method="GET" class="row g-3 align-items-end" id="filterForm">
+                    <div class="col-md-3">
+                        <label class="form-label small fw-bold text-muted text-uppercase">Duration</label>
+                        <select name="duration" class="form-select" onchange="toggleDateInputs(this.value)">
+                            <option value="all" <?= $duration === 'all' ? 'selected' : '' ?>>Historical Archive</option>
+                            <option value="today" <?= $duration === 'today' ? 'selected' : '' ?>>Today</option>
+                            <option value="weekly" <?= $duration === 'weekly' ? 'selected' : '' ?>>Past 7 Days</option>
+                            <option value="monthly" <?= $duration === 'monthly' ? 'selected' : '' ?>>This Month</option>
+                            <option value="3months" <?= $duration === '3months' ? 'selected' : '' ?>>Last Quarter</option>
+                            <option value="custom" <?= $duration === 'custom' ? 'selected' : '' ?>>Custom Range</option>
+                        </select>
+                    </div>
+                    <div id="customDateRange" class="col-md-6 <?= $duration !== 'custom' ? 'd-none' : '' ?>">
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label class="form-label small fw-bold text-muted">Start Date</label>
+                                <input type="date" name="start_date" class="form-control" value="<?= htmlspecialchars($start_date) ?>">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small fw-bold text-muted">End Date</label>
+                                <input type="date" name="end_date" class="form-control" value="<?= htmlspecialchars($end_date) ?>">
+                            </div>
                         </div>
-                        <div class="col-6">
-                            <label class="form-label">End Date</label>
-                            <input type="date" name="end_date" class="form-control" value="<?= htmlspecialchars($end_date) ?>">
-                        </div>
                     </div>
-                </div>
-                <div class="col-md-3 d-flex gap-2">
-                    <button type="submit" class="btn btn-outline-forest w-100">Update View</button>
-                    <a href="expenses.php" class="btn btn-light rounded-3 px-3 border" title="Reset"><i class="bi bi-arrow-counterclockwise"></i></a>
-                </div>
-            </form>
-        </div>
-
-        <?php include __DIR__ . '/../../inc/finance_nav.php'; ?>
-
-        <!-- KPIs -->
-        <div class="row g-4 mb-4">
-            <div class="col-md-4">
-                <div class="stat-card slide-up" style="animation-delay: 0.1s">
-                    <div class="icon-circle bg-lime-soft">
-                        <i class="bi bi-wallet2"></i>
+                    <div class="col-md-3 d-flex gap-2">
+                        <button type="submit" class="btn btn-forest w-100">Filter View</button>
+                        <a href="expenses.php" class="btn btn-light rounded-3 px-3 border"><i class="bi bi-arrow-counterclockwise"></i></a>
                     </div>
-                    <div class="text-muted small fw-bold text-uppercase">Period Spending</div>
-                    <div class="h2 fw-800 text-dark mt-2 mb-1">KES <?= number_format((float)$total_period_expense) ?></div>
-                    <div class="small text-muted"><i class="bi bi-graph-down-arrow me-1 text-danger"></i> Gross outflows in range</div>
-                </div>
-            </div>
-            
-            <div class="col-md-4">
-                <div class="stat-card slide-up" style="animation-delay: 0.2s">
-                    <div class="icon-circle bg-red-soft">
-                        <i class="bi bi-receipt-cutoff"></i>
-                    </div>
-                    <div class="text-muted small fw-bold text-uppercase">Unsettled Bills</div>
-                    <div class="h2 fw-800 text-dark mt-2 mb-1"><?= $pending_bills_count ?> <span class="fs-6 fw-normal text-muted">Records</span></div>
-                    <div class="small text-muted"><i class="bi bi-clock-history me-1"></i> Awaiting cash flow authorization</div>
-                </div>
+                </form>
             </div>
 
-            <div class="col-md-4">
-                <div class="stat-card slide-up" style="animation-delay: 0.3s">
-                    <div class="icon-circle bg-forest-soft">
-                        <i class="bi bi-clipboard-data"></i>
+            <?php include __DIR__ . '/../../inc/finance_nav.php'; ?>
+
+            <!-- KPIs -->
+            <div class="row g-4 mb-5">
+                <div class="col-md-4">
+                    <div class="card-custom p-4 d-flex align-items-center gap-3">
+                        <div class="stat-icon" style="background: rgba(190, 242, 100, 0.2); color: var(--forest-dark);"><i class="bi bi-wallet2"></i></div>
+                        <div>
+                            <div class="small text-muted fw-bold">TOTAL SPENDING</div>
+                            <div class="h4 fw-bold mb-0">KES <?= number_format((float)$total_period_expense) ?></div>
+                        </div>
                     </div>
-                    <div class="text-muted small fw-bold text-uppercase">Record Count</div>
-                    <div class="h2 fw-800 text-dark mt-2 mb-1"><?= count($expenses) ?> <span class="fs-6 fw-normal text-muted">Total</span></div>
-                    <div class="small text-muted"><i class="bi bi-shield-check me-1 text-success"></i> Audit-ready entries</div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card-custom p-4 d-flex align-items-center gap-3">
+                        <div class="stat-icon" style="background: #fee2e2; color: #991b1b;"><i class="bi bi-clock-history"></i></div>
+                        <div>
+                            <div class="small text-muted fw-bold">PENDING BILLS</div>
+                            <div class="h4 fw-bold mb-0"><?= $pending_bills_count ?> <small class="text-muted fw-normal" style="font-size: 0.8rem;">Records</small></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card-custom p-4 d-flex align-items-center gap-3">
+                        <div class="stat-icon" style="background: #f1f5f9; color: #64748b;"><i class="bi bi-journal-text"></i></div>
+                        <div>
+                            <div class="small text-muted fw-bold">ENTRY COUNT</div>
+                            <div class="h4 fw-bold mb-0"><?= count($expenses) ?> <small class="text-muted fw-normal" style="font-size: 0.8rem;">Total</small></div>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <div class="row g-4">
-            <!-- Table Section -->
-            <div class="col-lg-8">
-                <div class="ledger-container slide-up" style="animation-delay: 0.4s">
-                    <div class="ledger-header d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
-                        <div class="position-relative flex-grow-1" style="max-width: 400px;">
-                            <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
-                            <input type="text" id="expenseSearch" class="search-box" placeholder="Quick search ledger...">
-                        </div>
-                        <div class="dropdown">
-                            <button class="btn btn-outline-dark rounded-pill px-4 dropdown-toggle" data-bs-toggle="dropdown">
-                                <i class="bi bi-download me-2"></i>Export Analysis
-                            </button>
-                            <ul class="dropdown-menu shadow-lg border-0 mt-2">
-                                <li><a class="dropdown-item py-2" href="?<?= http_build_query(array_merge($_GET, ['action' => 'export_pdf'])) ?>"><i class="bi bi-file-pdf text-danger me-2"></i>Export Ledger (PDF)</a></li>
-                                <li><a class="dropdown-item py-2" href="?<?= http_build_query(array_merge($_GET, ['action' => 'export_excel'])) ?>"><i class="bi bi-file-excel text-success me-2"></i>Export Spreadsheet</a></li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item py-2" href="?<?= http_build_query(array_merge($_GET, ['action' => 'print_report'])) ?>" target="_blank"><i class="bi bi-printer me-2"></i>Print Friendly View</a></li>
-                            </ul>
-                        </div>
-                    </div>
-                    <div class="table-responsive">
-                        <table class="table-custom" id="expenseTable">
-                            <thead>
+            <!-- Ledger Table -->
+            <div class="card-custom p-0 overflow-hidden">
+                <div class="table-responsive">
+                    <table class="table table-custom mb-0">
+                        <thead>
+                            <tr>
+                                <th class="ps-4">Ref & Date</th>
+                                <th>Payee / Details</th>
+                                <th>Classification</th>
+                                <th class="text-end">Amount (KES)</th>
+                                <th class="text-end pe-4">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if(empty($expenses)): ?>
+                                <tr><td colspan="5" class="text-center py-5 text-muted">No records found.</td></tr>
+                            <?php else: foreach($expenses as $ex): 
+                                preg_match('/\[(.*?)\]/', $ex['notes'], $cat_match);
+                                $display_cat = $cat_match[1] ?? 'General';
+                                $is_pending = stripos($ex['notes'], 'pending') !== false;
+                            ?>
                                 <tr>
-                                    <th>Ref / Tracking</th>
-                                    <th>Payee / Description</th>
-                                    <th>Classification</th>
-                                    <th class="text-end">Amount (KES)</th>
-                                    <th class="text-end">Status</th>
+                                    <td class="ps-4">
+                                        <div class="fw-bold text-dark"><?= esc($ex['reference_no'] ?: 'REF-'.$ex['ledger_transaction_id']) ?></div>
+                                        <div class="small text-muted"><?= date('d M, Y', strtotime($ex['created_at'])) ?></div>
+                                    </td>
+                                    <td>
+                                        <div class="fw-500 text-dark"><?= esc(trim(str_replace(['[PENDING]', $cat_match[0] ?? ''], '', $ex['notes']))) ?></div>
+                                        <div class="small text-muted" style="font-size: 0.75rem;"><?= $ex['related_id'] ? 'Linked to Asset' : 'Office Operation' ?></div>
+                                    </td>
+                                    <td><span class="badge bg-light text-dark border rounded-pill fw-normal px-3 py-2"><?= $display_cat ?></span></td>
+                                    <td class="text-end fw-bold text-danger">
+                                        KES <?= number_format((float)$ex['amount'], 2) ?>
+                                    </td>
+                                    <td class="text-end pe-4">
+                                        <span class="badge rounded-pill <?= $is_pending ? 'bg-warning-subtle text-warning' : 'bg-success-subtle text-success' ?> px-3 py-2 fw-bold" style="font-size: 0.7rem;">
+                                            <?= $is_pending ? 'PENDING' : 'SETTLED' ?>
+                                        </span>
+                                    </td>
                                 </tr>
-                            </thead>
-                            <tbody>
-                                <?php if(empty($expenses)): ?>
-                                    <tr>
-                                        <td colspan="5" class="text-center py-5">
-                                            <div class="opacity-25 mb-4"><i class="bi bi-folder-x display-1"></i></div>
-                                            <h5 class="fw-bold text-muted">No Ledger Data Found</h5>
-                                            <p class="text-muted">Change your filters or add a new expense entry.</p>
-                                        </td>
-                                    </tr>
-                                <?php else: 
-                                foreach($expenses as $ex): 
-                                    preg_match('/\[(.*?)\]/', $ex['notes'], $cat_match);
-                                    $display_cat = $cat_match[1] ?? 'General';
-                                    $clean_notes = trim(str_replace(['[PENDING]', $cat_match[0] ?? ''], '', $ex['notes']));
-                                    $is_pending = stripos($ex['notes'], 'pending') !== false;
-                                ?>
-                                    <tr class="expense-row">
-                                        <td>
-                                            <div class="fw-bold text-dark"><?= esc($ex['reference_no'] ?: 'GEN-REF') ?></div>
-                                            <div class="small text-muted mt-1"><?= date('d M, Y', strtotime($ex['created_at'])) ?></div>
-                                        </td>
-                                        <td>
-                                            <?php if($ex['related_id']): ?>
-                                                <a href="transactions.php?filter=<?= $ex['related_id'] ?>" class="text-decoration-none" title="Audit Asset Expenses">
-                                                    <div class="fw-600 text-forest"><?= esc($clean_notes ?: 'Operational Expense') ?></div>
-                                                </a>
-                                            <?php else: ?>
-                                                <div class="fw-600 text-dark"><?= esc($clean_notes ?: 'Operational Expense') ?></div>
-                                            <?php endif; ?>
-                                            <div class="small text-muted mt-1 opacity-75"><?= esc($ex['transaction_type']) ?> Entry</div>
-                                        </td>
-                                        <td>
-                                            <span class="badge bg-light text-dark border px-3 py-2 rounded-pill small">
-                                                <i class="bi bi-bookmark-fill me-1 text-muted"></i><?= $display_cat ?>
-                                            </span>
-                                        </td>
-                                        <td class="text-end">
-                                            <div class="fw-800 fs-6 <?= $is_pending ? 'text-muted' : 'text-danger' ?>">
-                                                KES <?= number_format((float)$ex['amount']) ?>
-                                            </div>
-                                        </td>
-                                        <td class="text-end">
-                                            <?php if($is_pending): ?>
-                                                <span class="status-badge badge-pending">PENDING</span>
-                                            <?php else: ?>
-                                                <span class="status-badge badge-paid">SETTLED</span>
-                                            <?php endif; ?>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; endif; ?>
-                            </tbody>
-                        </table>
-                    </div>
+                            <?php endforeach; endif; ?>
+                        </tbody>
+                    </table>
                 </div>
+                <?php $layout->footer(); ?>
             </div>
-
-            <!-- Chart Section -->
-            <div class="col-lg-4">
-                <div class="chart-card slide-up" style="animation-delay: 0.5s">
-                    <h5 class="fw-bold mb-4">Expense Categories</h5>
-                    <?php if(empty($cat_breakdown)): ?>
-                        <div class="text-center py-5">
-                            <i class="bi bi-pie-chart text-muted display-4 opacity-25"></i>
-                            <p class="text-muted small mt-3">No data to display breakdown</p>
-                        </div>
-                    <?php else: ?>
-                        <div style="height: 280px; position: relative;">
-                            <canvas id="expenseChart" 
-                                data-labels='<?= json_encode(array_keys($cat_breakdown)) ?>' 
-                                data-values='<?= json_encode(array_values($cat_breakdown)) ?>'>
-                            </canvas>
-                        </div>
-                        <div class="mt-5">
-                            <h6 class="small fw-bold text-uppercase text-muted mb-3">Top Categories</h6>
-                            <?php 
-                            arsort($cat_breakdown);
-                            foreach(array_slice($cat_breakdown, 0, 5) as $name => $val): ?>
-                                <div class="d-flex justify-content-between align-items-center mb-3">
-                                    <div class="d-flex align-items-center gap-2">
-                                        <div style="width: 8px; height: 8px; border-radius: 50%; background: var(--forest);"></div>
-                                        <span class="small fw-600"><?= $name ?></span>
-                                    </div>
-                                    <span class="small fw-bold">KES <?= number_format((float)$val) ?></span>
-                                </div>
-                            <?php endforeach; ?>
-                        </div>
-                    <?php endif; ?>
-                </div>
-            </div>
-       <?php $layout->footer(); ?>
         </div>
-         
-    </div>
-    
-   
     </div>
 </div>
 
-<!-- Modal -->
+<!-- Classic Record Expenditure Modal -->
 <div class="modal fade" id="addExpenseModal" tabindex="-1">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content shadow-2xl">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow-lg">
             <div class="modal-header">
-                <h5 class="modal-title fw-800"><i class="bi bi-receipt me-2"></i>Record New Expenditure</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                <h5 class="modal-title fw-bold">Record Expenditure</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form method="POST">
+            <form method="POST" action="">
                 <?= csrf_field() ?>
                 <input type="hidden" name="action" value="add_expense">
-                <div class="modal-body">
-                    <div class="row g-4">
+                <div class="modal-body p-4">
+                    <div class="row g-3">
                         <div class="col-md-6">
-                            <label class="form-label">Expense Category</label>
+                            <label class="form-label small fw-bold text-uppercase text-muted">Expense Category</label>
                             <select name="category" class="form-select" required>
                                 <option value="Maintenance">Vehicle Maintenance</option>
                                 <option value="Fuel">Fuel & Petroleum</option>
@@ -579,34 +370,32 @@ $pageTitle = "Expenses Portal";
                             </select>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Link to Asset (Optional)</label>
+                            <label class="form-label small fw-bold text-uppercase text-muted">Link to Asset (Optional)</label>
                             <select name="unified_asset_id" class="form-select">
-                                <option value="other_0">-- General Operational (Unlinked) --</option>
-                                <optgroup label="Active Portfolio">
-                                    <?php 
-                                    mysqli_data_seek($investments_list, 0);
-                                    while($inv = $investments_list->fetch_assoc()): ?>
-                                        <option value="inv_<?= $inv['investment_id'] ?>">
-                                            [<?= strtoupper(str_replace('_',' ',$inv['category'])) ?>] <?= esc($inv['title']) ?>
-                                        </option>
-                                    <?php endwhile; ?>
-                                </optgroup>
+                                <option value="other_0">-- General Operational --</option>
+                                <?php foreach($investments_all as $inv): ?>
+                                    <option value="inv_<?= $inv['investment_id'] ?>"><?= esc($inv['title']) ?></option>
+                                <?php endforeach; ?>
                             </select>
                         </div>
                         <div class="col-12">
-                            <label class="form-label">Payee / Vendor Name</label>
-                            <input type="text" name="payee" class="form-control" placeholder="e.g. Apex Mechanics, Skyway Landlord" required>
+                            <label class="form-label small fw-bold text-uppercase text-muted">Payee / Vendor Name</label>
+                            <input type="text" name="payee" class="form-control" placeholder="e.g. Apex Mechanics" required>
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Amount (KES)</label>
-                            <input type="number" name="amount" class="form-control fw-bold" min="1" step="1" required>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-uppercase text-muted">Amount (KES)</label>
+                            <input type="number" name="amount" class="form-control fw-bold" step="0.01" min="0.01" required>
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Expense Date</label>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-uppercase text-muted">Expense Date</label>
                             <input type="date" name="expense_date" class="form-control" value="<?= date('Y-m-d') ?>" required>
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Payment Source</label>
+                        <div class="col-12">
+                            <label class="form-label small fw-bold text-uppercase text-muted">Reference / Receipt No.</label>
+                            <input type="text" name="ref_no" class="form-control" placeholder="TXN-XXXX" required>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small fw-bold text-uppercase text-muted">Payment Source</label>
                             <select name="payment_method" class="form-select" required>
                                 <option value="cash">Cash Float</option>
                                 <option value="mpesa">M-Pesa Business</option>
@@ -614,35 +403,27 @@ $pageTitle = "Expenses Portal";
                             </select>
                         </div>
                         <div class="col-12">
-                            <label class="form-label">Reference No. (Receipt/Invoice)</label>
-                            <input type="text" name="ref_no" class="form-control">
+                            <label class="form-label small fw-bold text-uppercase text-muted">Internal Notes</label>
+                            <textarea name="description" class="form-control" rows="2" placeholder="Audit notes..."></textarea>
                         </div>
                         <div class="col-12">
-                            <label class="form-label">Narration / Internal Notes</label>
-                            <textarea name="description" class="form-control" rows="2" placeholder="Brief context for audit trail..."></textarea>
-                        </div>
-                        <div class="col-12">
-                            <div class="form-check p-3 border rounded-4 bg-white d-flex align-items-center">
-                                <input class="form-check-input ms-0 me-3" type="checkbox" name="is_pending" id="pendingCheck">
-                                <label class="form-check-label fw-700 text-forest mb-0" for="pendingCheck">
-                                    Mark as Outstanding Liability (Unpaid Bill)
-                                </label>
+                            <div class="form-check p-3 border rounded-3 bg-light d-flex align-items-center gap-3">
+                                <input class="form-check-input ms-0" type="checkbox" name="is_pending" id="pendingCheck">
+                                <label class="form-check-label fw-bold mb-0" for="pendingCheck">Mark as Outstanding Liability (Unpaid)</label>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer border-0 p-4 pt-0">
-                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-lime rounded-pill px-5 shadow-lg">Authorize & Save</button>
+                <div class="modal-footer border-0 p-4 pt-0 justify-content-center text-center">
+                    <button type="button" class="btn btn-light rounded-pill px-4 me-2" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-lime rounded-pill px-5 shadow-sm">Authorize & Save</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="<?= BASE_URL ?>/public/assets/js/main.js?v=<?= time() ?>"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     function toggleDateInputs(val) {
         if(val === 'custom') document.getElementById('customDateRange').classList.remove('d-none');
@@ -651,52 +432,6 @@ $pageTitle = "Expenses Portal";
             document.getElementById('filterForm').submit();
         }
     }
-
-    // Interactive Search
-    document.getElementById('expenseSearch')?.addEventListener('keyup', function() {
-        const query = this.value.toLowerCase();
-        document.querySelectorAll('.expense-row').forEach(row => {
-            row.style.display = row.innerText.toLowerCase().includes(query) ? '' : 'none';
-        });
-    });
-
-    // Charting Engine
-    document.addEventListener('DOMContentLoaded', () => {
-        const ctx = document.getElementById('expenseChart');
-        if(ctx) {
-            const labels = JSON.parse(ctx.getAttribute('data-labels') || '[]');
-            const values = JSON.parse(ctx.getAttribute('data-values') || '[]');
-            if(labels.length > 0) {
-                new Chart(ctx, {
-                    type: 'doughnut',
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            data: values,
-                            backgroundColor: ['#0f2e25', '#d0f35d', '#1a4d3d', '#a8cf12', '#22c55e', '#ef4444', '#3b82f6', '#f59e0b'],
-                            borderWidth: 0,
-                            hoverOffset: 15
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: { 
-                            legend: { display: false },
-                            tooltip: {
-                                callbacks: {
-                                    label: function(item) {
-                                        return ` KES ${item.raw.toLocaleString()}`;
-                                    }
-                                }
-                            }
-                        },
-                        cutout: '75%'
-                    }
-                });
-            }
-        }
-    });
 </script>
 </body>
 </html>
