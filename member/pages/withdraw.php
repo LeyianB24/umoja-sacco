@@ -69,19 +69,18 @@ $withdrawal_sources = [
     ],
     'shares' => [
         'title' => 'Share Capital',
-        'description' => 'Non-withdrawable',
+        'description' => 'SACCO Exit Request (Admin Approval Required)',
         'icon' => 'pie-chart',
         'balance' => $balances['shares'],
         'ledger_cat' => FinancialEngine::CAT_SHARES,
-        'error' => "Share Capital cannot be withdrawn directly."
+        // 'error' => "Share Capital cannot be withdrawn directly." // Removed restriction
     ],
     'welfare' => [
-        'title' => 'Welfare Fund',
-        'description' => 'Restricted Withdrawal',
+        'title' => 'Welfare Benefit',
+        'description' => 'Withdraw disbursed welfare funds',
         'icon' => 'heart-pulse',
         'balance' => $balances['welfare'],
-        'ledger_cat' => FinancialEngine::CAT_WELFARE,
-        'error' => "Welfare contributions are only accessible via support cases."
+        'ledger_cat' => FinancialEngine::CAT_WELFARE
     ]
 ];
 
@@ -126,42 +125,55 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['withdraw'])) {
             $ref = 'WD-' . strtoupper(substr(md5(uniqid((string)rand(), true)), 0, 10));
             
             // 2. INITIATE WITHDRAWAL (Pending Hold)
+            $notes = ($type === 'shares') ? "SACCO Exit Request ($ref) - Shares" : "Withdrawal Initiated ($ref) to $phone via Paystack";
+            
             $txn_id = $engine->transact([
                 'member_id'   => $member_id,
                 'amount'      => $amount,
                 'action_type' => 'withdrawal_initiate',
-                'method'      => 'paystack', // Now using Paystack as the primary gateway
+                'method'      => ($type === 'shares') ? 'manual' : 'paystack',
                 'source_cat'  => $current_source['ledger_cat'], // debit this
                 'reference'   => $ref,
-                'notes'       => "Withdrawal Initiated ($ref) to $phone via Paystack"
+                'notes'       => $notes
             ]);
 
             // 3. LOG REQUEST
-            $stmt = $conn->prepare("INSERT INTO withdrawal_requests (member_id, ref_no, amount, source_ledger, phone_number, status) VALUES (?, ?, ?, ?, ?, 'initiated')");
-            $stmt->bind_param("isdss", $member_id, $ref, $amount, $type, $phone);
+            $stmt = $conn->prepare("INSERT INTO withdrawal_requests (member_id, ref_no, amount, source_ledger, phone_number, status, notes) VALUES (?, ?, ?, ?, ?, 'initiated', ?)");
+            $stmt->bind_param("isdsss", $member_id, $ref, $amount, $type, $phone, $notes);
             if (!$stmt->execute()) throw new Exception("Failed to log request.");
             $withdrawal_id = $conn->insert_id;
             $stmt->close();
 
-            // 4. INITIATE GATEWAY WITHDRAWAL
-            $gateway = GatewayFactory::get('paystack'); // Currently USMS uses Paystack for KES mobile transfers
-            $gw_response = $gateway->initiateWithdrawal($phone, (float)$amount, $ref, "Withdrawal $ref");
-
-            if ($gw_response['success']) {
-                $gw_ref = $gw_response['reference'] ?? null;
+            if ($type === 'shares') {
+                // SACCO Exit Requests do NOT go through the automated gateway
+                $conn->query("UPDATE withdrawal_requests SET status = 'pending' WHERE withdrawal_id = $withdrawal_id");
+                $conn->commit();
                 
-                // Update request with Gateway reference
-                $conn->query("UPDATE withdrawal_requests SET status = 'pending', mpesa_conversation_id = '$gw_ref' WHERE withdrawal_id = $withdrawal_id");
+                $success = "Exit Request Received: Your share capital refund of KES " . number_format($amount) . " has been logged. Admin will review and process your SACCO exit within 48 hours.";
                 
-                $conn->commit(); // COMMIT THE HOLD
-                
-                $success = "Processing: KES " . number_format($amount) . " has been reserved. Waiting for bank/mobile money confirmation via " . ucfirst($gateway->getProviderName() ?? 'Gateway');
-                
-                // Redirect back to source context
-                $return_url = BASE_URL . "/member/pages/" . $source_page . ".php?msg=withdrawal_initiated";
-                header("Refresh:2; URL=" . $return_url);
+                $return_url = BASE_URL . "/member/pages/shares.php?msg=exit_requested";
+                header("Refresh:3; URL=" . $return_url);
             } else {
-                throw new Exception("Gateway API Failed: " . $gw_response['message']);
+                // 4. INITIATE GATEWAY WITHDRAWAL
+                $gateway = GatewayFactory::get('paystack'); 
+                $gw_response = $gateway->initiateWithdrawal($phone, (float)$amount, $ref, "Withdrawal $ref");
+
+                if ($gw_response['success']) {
+                    $gw_ref = $gw_response['reference'] ?? null;
+                    
+                    // Update request with Gateway reference
+                    $conn->query("UPDATE withdrawal_requests SET status = 'pending', mpesa_conversation_id = '$gw_ref' WHERE withdrawal_id = $withdrawal_id");
+                    
+                    $conn->commit(); // COMMIT THE HOLD
+                    
+                    $success = "Processing: KES " . number_format($amount) . " has been reserved. Waiting for bank/mobile money confirmation via " . ucfirst($gateway->getProviderName() ?? 'Gateway');
+                    
+                    // Redirect back to source context
+                    $return_url = BASE_URL . "/member/pages/" . $source_page . ".php?msg=withdrawal_initiated";
+                    header("Refresh:2; URL=" . $return_url);
+                } else {
+                    throw new Exception("Gateway API Failed: " . $gw_response['message']);
+                }
             }
 
         } catch (Exception $e) {
@@ -206,8 +218,8 @@ $pageTitle = "Withdraw Funds";
                     <a href="<?= BASE_URL ?>/member/pages/<?= htmlspecialchars($source_page) ?>.php" class="text-decoration-none text-muted d-inline-flex align-items-center mb-2">
                         <i class="bi bi-arrow-left me-2"></i> Back to <?= ucfirst(htmlspecialchars($source_page)) ?>
                     </a>
-                    <h2 class="fw-bold mb-1">Withdraw Funds</h2>
-                    <p class="text-muted mb-0">Withdraw from <?= htmlspecialchars($current_source['title']) ?></p>
+                    <h2 class="fw-bold mb-1"><?= $type === 'shares' ? 'Request SACCO Exit' : 'Withdraw Funds' ?></h2>
+                    <p class="text-muted mb-0"><?= $type === 'shares' ? 'Apply to withdraw your Share Capital and close account' : 'Withdraw from ' . htmlspecialchars($current_source['title']) ?></p>
                 </div>
 
                 <?php if ($success): ?>
@@ -241,7 +253,7 @@ $pageTitle = "Withdraw Funds";
 
                 <!-- Balance Card -->
                 <div class="balance-display mb-4">
-                    <div class="small text-white-50 mb-2">AVAILABLE FOR WITHDRAWAL</div>
+                    <div class="small text-white-50 mb-2"><?= $type === 'shares' ? 'TOTAL SHARE EQUITY' : 'AVAILABLE FOR WITHDRAWAL' ?></div>
                     <h1 class="display-4 fw-bold mb-0">KES <?= number_format((float)$max_withdrawal, 2) ?></h1>
                     <?php if (isset($current_source['error'])): ?>
                         <div class="mt-2 small text-warning"><i class="bi bi-exclamation-triangle-fill"></i> <?= esc($current_source['error']) ?></div>
@@ -277,14 +289,24 @@ $pageTitle = "Withdraw Funds";
                             <small class="text-muted">Format: 254XXXXXXXXX or 07XXXXXXXX</small>
                         </div>
 
-                        <div class="alert alert-info border-0 mb-4">
-                            <i class="bi bi-info-circle me-2"></i>
-                            <strong>Processing:</strong> Funds will be sent to your M-Pesa immediately.
-                        </div>
+                        <?php if ($type === 'shares'): ?>
+                            <div class="alert alert-warning border-0 mb-4">
+                                <i class="bi bi-exclamation-triangle me-2"></i>
+                                <strong>Important:</strong> Withdrawing shares implies your intention to exit the SACCO. This request requires manual approval and legal clearance from the administration.
+                            </div>
+                            <button type="submit" name="withdraw" class="btn btn-danger w-100 py-3">
+                                <i class="bi bi-door-open me-2"></i> Confirm Exit & Request Refund
+                            </button>
+                        <?php else: ?>
+                            <div class="alert alert-info border-0 mb-4">
+                                <i class="bi bi-info-circle me-2"></i>
+                                <strong>Processing:</strong> Funds will be sent to your M-Pesa immediately.
+                            </div>
 
-                        <button type="submit" name="withdraw" class="btn btn-lime w-100 py-3">
-                            <i class="bi bi-cash-coin me-2"></i> Withdraw to M-Pesa
-                        </button>
+                            <button type="submit" name="withdraw" class="btn btn-lime w-100 py-3">
+                                <i class="bi bi-cash-coin me-2"></i> Withdraw to M-Pesa
+                            </button>
+                        <?php endif; ?>
                     </form>
                 </div>
                 <?php else: ?>

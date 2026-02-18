@@ -12,14 +12,15 @@ require_once __DIR__ . '/vendor/autoload.php';
 $data = [
     'assets' => [
         ['label' => 'Test Asset 1', 'amount' => 50000.00],
-        ['label' => 'Test Asset 2', 'amount' => 12500.50]
+        ['label' => 'Test Asset 2 With A Very Long Name That Should Definitely Overflow The Cell Fixed Width If text wrapping is not implemented correctly in the pdf generation logic', 'amount' => 12500.50],
+        ['label' => 'Another Long Asset Name to test the boundaries of the system and ensure that it handles text wrapping correctly otherwise it will look very ugly and unprofessional', 'amount' => 12500.50]
     ],
     'liabilities_equity' => [
         ['label' => 'Test Liability', 'amount' => 10000.00],
         ['label' => 'Test Equity', 'amount' => 52500.50]
     ],
     'totals' => [
-        'assets' => 62500.50,
+        'assets' => 62500.50 + 12500.50,
         'liability' => 62500.50
     ]
 ];

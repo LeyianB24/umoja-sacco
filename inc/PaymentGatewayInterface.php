@@ -30,4 +30,10 @@ interface PaymentGatewayInterface {
      * Get the environment (sandbox or production)
      */
     public function getEnvironment();
+
+    /**
+     * Get the descriptive name of the provider
+     * @return string
+     */
+    public function getProviderName();
 }

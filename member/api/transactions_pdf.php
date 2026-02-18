@@ -133,11 +133,18 @@ FinancialExportEngine::export('pdf', function($pdf) use ($transactions, $net_sav
         $is_withdrawal = ($type == 'withdrawal');
         $sign = $is_withdrawal ? '-' : '+';
         
-        $pdf->Cell(30, 7, date('d M Y', strtotime($row['transaction_date'])), 1);
-        $pdf->Cell(50, 7, $display_type, 1);
-        $pdf->Cell(35, 7, $row['reference_no'], 1);
-        $pdf->Cell(30, 7, strtoupper($row['payment_channel'] ?? 'SYS'), 1);
-        $pdf->Cell(35, 7, $sign . ' ' . number_format($amount, 2), 1, 1, 'R');
+        $pdf->Row(
+            [
+                date('d M Y', strtotime($row['transaction_date'])),
+                $display_type,
+                $row['reference_no'],
+                strtoupper($row['payment_channel'] ?? 'SYS'),
+                $sign . ' ' . number_format($amount, 2)
+            ],
+            [30, 50, 35, 30, 35], // Widths
+            ['L', 'L', 'L', 'L', 'R'], // Aligns
+            6 // Line Height
+        );
     }
 
 }, [

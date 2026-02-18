@@ -142,12 +142,19 @@ FinancialExportEngine::export('pdf', function($pdf) use ($member, $total_in, $to
                 $sign = '- ';
             }
 
-            // Simple row rendering
-            $pdf->Cell($w[0], 7, date('d M Y', strtotime($row['t_date'])), 1);
-            $pdf->Cell($w[1], 7, ucfirst(str_replace('_', ' ', $type)), 1);
-            $pdf->Cell($w[2], 7, $row['reference_no'] ?? '-', 1);
-            $pdf->Cell($w[3], 7, substr($row['notes'] ?? $row['payment_channel'], 0, 40), 1);
-            $pdf->Cell($w[4], 7, $sign . number_format((float)$row['amount'], 2), 1, 1, 'R');
+            // Use Row for better text wrapping
+            $pdf->Row(
+                [
+                    date('d M Y', strtotime($row['t_date'])),
+                    ucfirst(str_replace('_', ' ', $type)),
+                    $row['reference_no'] ?? '-',
+                    $row['notes'] ?? $row['payment_channel'], // Removed manual truncation as Row handles wrapping
+                    $sign . number_format((float)$row['amount'], 2)
+                ],
+                $w, // [25, 30, 30, 75, 30]
+                ['L', 'L', 'L', 'L', 'R'],
+                6 // Line Height
+            );
         }
     } else {
         $pdf->Cell(190, 10, 'No transactions found.', 1, 1, 'C');

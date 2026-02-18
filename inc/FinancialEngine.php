@@ -121,15 +121,14 @@ class FinancialEngine {
                     break;
 
                 case 'loan_disbursement':
-                    // 1. Double-Entry: Member owes more (Asset), Sacco has less Cash (Asset)
+                    // 1. Double-Entry: Member owes more (Asset), SACCO owes member availability (Liability - Wallet)
                     $this->postEntry($txn_id, $this->getMemberAccount($member_id, self::CAT_LOANS), $amount, 0);
-                    $this->postEntry($txn_id, $this->getSystemAccount($method), 0, $amount);
-                    
-                    // 2. Audit Trail: Show money passing through Wallet (Debit/Credit cancel out)
                     $this->postEntry($txn_id, $this->getMemberAccount($member_id, self::CAT_WALLET), 0, $amount);
-                    $this->postEntry($txn_id, $this->getMemberAccount($member_id, self::CAT_WALLET), $amount, 0);
+                    
+                    // Note: System Cash (Asset) only decreases when the member actually withdraws from their wallet.
+                    // This allows for 'modern' flexible disbursement.
 
-                    // 3. Sync to Legacy Loans Table
+                    // 2. Sync to Legacy Loans Table
                     if ($related_table === 'loans' && $related_id) {
                         $this->db->query("UPDATE loans SET status = 'disbursed', disbursed_date = NOW(), disbursed_amount = $amount, current_balance = total_payable WHERE loan_id = $related_id");
                     }
@@ -190,9 +189,9 @@ class FinancialEngine {
                     break;
 
                 case 'welfare_payout':
-                    // Debit Liability (Social Pool), Credit Liability (Member Wallet)
+                    // Debit Liability (Social Pool), Credit Liability (Member Welfare Account)
                     $this->postEntry($txn_id, $this->getSystemAccount('welfare'), $amount, 0);
-                    $this->postEntry($txn_id, $this->getMemberAccount($member_id, self::CAT_WALLET), 0, $amount);
+                    $this->postEntry($txn_id, $this->getMemberAccount($member_id, self::CAT_WELFARE), 0, $amount);
                     break;
 
                 case 'transfer':

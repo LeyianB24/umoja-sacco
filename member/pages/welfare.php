@@ -127,7 +127,11 @@ $total_given = $engine->getMemberWelfareLifetime($member_id);
 $net_standing = $total_given - $total_received;
 $standing_status = ($net_standing >= 0) ? 'contributor' : 'beneficiary';
 
-// D. Prepare Chart Data (Sort by date)
+// D. Financial Balances
+$balances = $engine->getBalances($member_id);
+$withdrawable_benefit = $balances['welfare'] ?? 0;
+
+// E. Prepare Chart Data (Sort by date)
 ksort($chart_data);
 $json_labels = json_encode(array_keys($chart_data));
 $json_values = json_encode(array_values($chart_data));
@@ -313,6 +317,11 @@ $pageTitle = "Welfare Hub";
                     <button class="btn btn-outline-success d-flex align-items-center gap-2 rounded-pill px-3 fw-bold border-2" data-bs-toggle="modal" data-bs-target="#newCaseModal">
                         <i class="bi bi-plus-circle"></i> <span>Report Case</span>
                     </button>
+                    <?php if ($withdrawable_benefit > 0): ?>
+                        <a href="withdraw.php?type=welfare" class="btn btn-danger d-flex align-items-center gap-2 rounded-pill px-4 fw-bold shadow-sm">
+                            <i class="bi bi-wallet2"></i> <span>Withdraw Benefit</span>
+                        </a>
+                    <?php endif; ?>
                     <a href="<?= BASE_URL ?>/member/pages/mpesa_request.php?type=welfare" class="btn btn-success d-flex align-items-center gap-2 rounded-pill px-4 fw-bold text-dark border-0 shadow-sm" style="background-color: var(--hop-lime);">
                         <i class="bi bi-heart-fill"></i> <span>Contribute</span>
                     </a>
@@ -332,7 +341,7 @@ $pageTitle = "Welfare Hub";
             <?php endif; ?>
 
             <div class="row g-4 mb-4">
-                <div class="col-md-3">
+                <div class="col-md-6 col-xl-3">
                     <div class="hope-card p-4 h-100 position-relative" style="background: linear-gradient(135deg, var(--hop-dark) 0%, #1a4d40 100%); color: white;">
                         <div class="d-flex align-items-center gap-3 mb-3">
                             <div class="rounded-circle p-2 d-flex align-items-center justify-content-center bg-white bg-opacity-10">
@@ -341,35 +350,48 @@ $pageTitle = "Welfare Hub";
                             <span class="text-white-50 text-uppercase fw-bold small">Global Welfare Pool</span>
                         </div>
                         <h3 class="fw-bold mb-0 text-white">KES <?= number_format((float)$welfare_pool, 2) ?></h3>
-                        <p class="small text-white-50 mb-0 mt-2">Total Solidarity Funds</p>
+                        <p class="small text-white-50 mb-0 mt-2">Global Solidarity Pool</p>
                     </div>
                 </div>
 
-                <div class="col-md-3">
+                <div class="col-md-6 col-xl-3">
+                    <div class="hope-card p-4 h-100 position-relative border-2" style="border-color: var(--accent-rose) !important;">
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <div class="rounded-circle p-2 d-flex align-items-center justify-content-center bg-danger bg-opacity-10 text-danger">
+                                <i class="bi bi-wallet2 fs-4"></i>
+                            </div>
+                            <span class="text-danger text-uppercase fw-bold small">Withdrawable Benefit</span>
+                        </div>
+                        <h3 class="fw-bold mb-0">KES <?= number_format((float)$withdrawable_benefit, 2) ?></h3>
+                        <p class="small text-muted mb-0 mt-2">Available for withdrawal</p>
+                    </div>
+                </div>
+
+                <div class="col-md-4 col-xl-2">
                     <div class="hope-card p-4 h-100 position-relative">
                         <div class="d-flex align-items-center gap-3 mb-3">
                             <div class="rounded-circle p-2 d-flex align-items-center justify-content-center" style="background: rgba(var(--hop-lime-rgb), 0.2); color: #4d7c0f;">
                                 <i class="bi bi-heart-fill fs-4"></i>
                             </div>
-                            <span class="text-secondary text-uppercase fw-bold small">My Lifetime Contributions</span>
+                            <span class="text-secondary text-uppercase fw-bold small">Contributions</span>
                         </div>
                         <h3 class="fw-bold mb-0">KES <?= number_format((float)$total_given, 2) ?></h3>
                     </div>
                 </div>
 
-                <div class="col-md-3">
+                <div class="col-md-4 col-xl-2">
                     <div class="hope-card p-4 h-100 position-relative">
                         <div class="d-flex align-items-center gap-3 mb-3">
                             <div class="rounded-circle p-2 d-flex align-items-center justify-content-center" style="background: rgba(var(--accent-rose-rgb), 0.1); color: var(--accent-rose);">
                                 <i class="bi bi-arrow-down-left fs-4"></i>
                             </div>
-                            <span class="text-secondary text-uppercase fw-bold small">Support Received</span>
+                            <span class="text-secondary text-uppercase fw-bold small">Support</span>
                         </div>
                         <h3 class="fw-bold mb-0">KES <?= number_format((float)$total_received, 2) ?></h3>
                     </div>
                 </div>
 
-                <div class="col-md-3">
+                <div class="col-md-4 col-xl-2">
                     <div class="hope-card p-4 h-100 position-relative" style="background: linear-gradient(145deg, var(--hop-card-bg) 0%, rgba(var(--hop-lime-rgb), 0.1) 100%);">
                         <div class="d-flex align-items-center gap-3 mb-3">
                             <div class="rounded-circle p-2 d-flex align-items-center justify-content-center bg-white text-dark shadow-sm">
@@ -627,10 +649,11 @@ $pageTitle = "Welfare Hub";
                         </div>
                     </div>
                 </div>
+                <?php $layout->footer(); ?>
             </div>
 
         </div>
-        <?php $layout->footer(); ?>
+        
     </div>
 </div>
 

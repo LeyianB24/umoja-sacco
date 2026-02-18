@@ -165,11 +165,18 @@ if ($out_format === 'csv' || $out_format === 'excel') {
             $running += $impact;
             
             // Draw Row
-            $pdf->Cell($w[0], 7, date('d-m-Y', strtotime($t['transaction_date'])), 1);
-            $pdf->Cell($w[1], 7, $t['reference_no'], 1);
-            $pdf->Cell($w[2], 7, substr(ucfirst(str_replace('_', ' ', (string)$t['transaction_type'])), 0, 30), 1);
-            $pdf->Cell($w[3], 7, number_format(($t['debit'] > 0 ? $t['debit'] : $t['credit']), 2), 1, 0, 'R');
-            $pdf->Cell($w[4], 7, number_format($running, 2), 1, 1, 'R');
+            $pdf->Row(
+                [
+                    date('d-m-Y', strtotime($t['transaction_date'])),
+                    $t['reference_no'],
+                    ucfirst(str_replace('_', ' ', (string)$t['transaction_type'])) . "\n" . $t['notes'], // Combined type and notes for description
+                    number_format(($t['debit'] > 0 ? $t['debit'] : $t['credit']), 2),
+                    number_format($running, 2)
+                ],
+                $w, // [25, 35, 65, 30, 35]
+                ['L', 'L', 'L', 'R', 'R'],
+                6
+            );
         }
         
         $pdf->Ln(10);

@@ -1,9 +1,19 @@
 <?php
-require 'config/db_connect.php';
-function desc($conn, $table) {
-    echo "--- $table ---\n";
+require_once __DIR__ . '/config/db_connect.php';
+
+$tables = ['ledger_transactions', 'transactions'];
+foreach ($tables as $table) {
+    echo "--- DESCRIBE $table ---\n";
     $res = $conn->query("DESCRIBE $table");
-    while($row = $res->fetch_assoc()) echo "{$row['Field']} | {$row['Type']}\n";
+    if ($res) {
+        while($row = $res->fetch_assoc()) {
+            if (strpos($row['Field'], 'related') !== false) {
+                echo $row['Field'] . " " . $row['Type'] . "\n";
+            }
+        }
+    } else {
+        echo "Table $table not found or error: " . $conn->error . "\n";
+    }
+
+    echo "\n";
 }
-desc($conn, 'contributions');
-desc($conn, 'members');
