@@ -195,6 +195,8 @@ function ksh($v, $d = 2) { return number_format((float)($v ?? 0), $d); }
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="light">
 <head>
+    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
+    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= $pageTitle ?> | USMS</title>
@@ -275,6 +277,8 @@ function ksh($v, $d = 2) { return number_format((float)($v ?? 0), $d); }
         .table-custom tr { transition: all 0.2s ease; }
         .table-custom tr:hover td { background-color: rgba(var(--primary-hue), 185, 129, 0.05); }
     </style>
+
+    <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
 </head>
 <body>
 
@@ -320,7 +324,7 @@ function ksh($v, $d = 2) { return number_format((float)($v ?? 0), $d); }
                             </div>
                             <div class="mt-2">
                                 <div class="small fw-bold text-muted text-uppercase letter-spacing-1">Current Period</div>
-                                <div class="h1 fw-bold mb-0 text-dark"><?= date('F Y', strtotime($active_run['month'])) ?></div>
+                                <div class="h1 fw-bold mb-0 "><?= date('F Y', strtotime($active_run['month'])) ?></div>
                             </div>
                         </div>
                     </div>
@@ -331,7 +335,7 @@ function ksh($v, $d = 2) { return number_format((float)($v ?? 0), $d); }
                             <div class="row g-0 h-100 align-items-center">
                                 <div class="col-6 border-end pe-4">
                                     <div class="text-muted small fw-bold text-uppercase">Total Gross</div>
-                                    <div class="h2 fw-bold text-dark mb-0"><?= ksh((float)$active_run['total_gross']) ?></div>
+                                    <div class="h2 fw-bold  mb-0"><?= ksh((float)$active_run['total_gross']) ?></div>
                                 </div>
                                 <div class="col-6 ps-4">
                                     <div class="text-muted small fw-bold text-uppercase">Net Payable</div>
@@ -410,7 +414,7 @@ function ksh($v, $d = 2) { return number_format((float)($v ?? 0), $d); }
                                 <?php foreach ($payroll_items as $item): ?>
                                 <tr>
                                     <td class="ps-4">
-                                        <div class="fw-bold text-dark"><?= htmlspecialchars($item['full_name']) ?></div>
+                                        <div class="fw-bold "><?= htmlspecialchars($item['full_name']) ?></div>
                                         <div class="small text-muted font-monospace"><?= htmlspecialchars($item['employee_no']) ?></div>
                                     </td>
                                     <td class="text-end font-monospace text-muted"><?= ksh((float)$item['basic_salary']) ?></td>
@@ -527,10 +531,10 @@ function ksh($v, $d = 2) { return number_format((float)($v ?? 0), $d); }
                     <?php while($h = $history_runs->fetch_assoc()): ?>
                         <a href="payroll.php?run_id=<?= $h['id'] ?>" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center px-4 py-3 bg-transparent border-bottom">
                             <div>
-                                <div class="fw-bold text-dark"><?= date('F Y', strtotime($h['month'])) ?></div>
+                                <div class="fw-bold "><?= date('F Y', strtotime($h['month'])) ?></div>
                                 <div class="small text-muted text-uppercase"><?= $h['status'] ?></div>
                             </div>
-                            <span class="badge bg-light text-dark border fw-normal font-monospace"><?= ksh((float)$h['total_net']) ?></span>
+                            <span class="badge bg-light  border fw-normal font-monospace"><?= ksh((float)$h['total_net']) ?></span>
                         </a>
                     <?php endwhile; ?>
                 </div>

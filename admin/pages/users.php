@@ -96,6 +96,8 @@ $pageTitle = "Staff Management";
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="light">
 <head>
+    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
+    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
     <meta charset="utf-8">
     <title><?= $pageTitle ?> | Umoja Sacco</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -116,6 +118,8 @@ $pageTitle = "Staff Management";
         .avatar-box { width: 40px; height: 40px; border-radius: 50%; background: var(--forest-deep); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: bold; }
         .role-badge { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; padding: 4px 10px; border-radius: 50px; background: rgba(2, 44, 34, 0.05); color: var(--forest-deep); }
     </style>
+
+    <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
 </head>
 <body>
 
@@ -161,7 +165,7 @@ $pageTitle = "Staff Management";
                                             <?= strtoupper(substr($u['full_name'], 0, 1)) ?>
                                         </div>
                                         <div>
-                                            <div class="fw-bold text-dark"><?= htmlspecialchars($u['full_name']) ?> <?php if($isMe): ?><span class="badge bg-dark rounded-pill ms-1" style="font-size: 8px;">YOU</span><?php endif; ?></div>
+                                            <div class="fw-bold "><?= htmlspecialchars($u['full_name']) ?> <?php if($isMe): ?><span class="badge bg-dark rounded-pill ms-1" style="font-size: 8px;">YOU</span><?php endif; ?></div>
                                             <small class="text-muted">@<?= htmlspecialchars($u['username']) ?></small>
                                         </div>
                                     </div>

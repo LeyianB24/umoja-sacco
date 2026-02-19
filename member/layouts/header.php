@@ -14,6 +14,10 @@ $pageTitle = isset($pageTitle) ? $pageTitle : 'Member Portal';
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="light">
 <head>
+    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
+    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
+    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
+    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title><?= htmlspecialchars($pageTitle) ?> - <?= SITE_NAME ?></title>
@@ -31,6 +35,7 @@ $pageTitle = isset($pageTitle) ? $pageTitle : 'Member Portal';
     
     <!-- LAYOUT SPECIFIC CSS -->
     <link rel="stylesheet" href="<?= ASSET_BASE ?>/css/layout.css">
+    <link rel="stylesheet" href="<?= ASSET_BASE ?>/css/darkmode.css">
     
     <script>
         // Pre-apply theme to avoid flash

@@ -247,6 +247,8 @@ $pageTitle = "Unified Welfare Suite";
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="light">
 <head>
+    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
+    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
     <meta charset="UTF-8">
     <title><?= $pageTitle ?> | USMS</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -266,6 +268,8 @@ $pageTitle = "Unified Welfare Suite";
         .nav-tabs-custom .nav-link { border: none; color: #64748b; font-weight: 600; padding: 1rem; border-bottom: 2px solid transparent; }
         .nav-tabs-custom .nav-link.active { color: var(--forest); border-bottom-color: var(--lime); background: transparent; }
     </style>
+
+    <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
 </head>
 <body>
 
@@ -291,7 +295,7 @@ $pageTitle = "Unified Welfare Suite";
             <div class="col-xl-3 col-md-6">
                 <div class="glass-card p-3 h-100">
                     <div class="d-flex justify-content-between">
-                        <div><div class="text-muted text-uppercase small fw-bold">Active Cases</div><h3 class="fw-bold mb-0 text-dark"><?= $stats['active'] ?></h3></div>
+                        <div><div class="text-muted text-uppercase small fw-bold">Active Cases</div><h3 class="fw-bold mb-0 "><?= $stats['active'] ?></h3></div>
                         <div class="icon-box bg-warning bg-opacity-10 text-warning"><i class="bi bi-hourglass-split"></i></div>
                     </div>
                 </div>
@@ -299,7 +303,7 @@ $pageTitle = "Unified Welfare Suite";
             <div class="col-xl-3 col-md-6">
                 <div class="glass-card p-3 h-100">
                     <div class="d-flex justify-content-between">
-                        <div><div class="text-muted text-uppercase small fw-bold">Total Donated</div><h3 class="fw-bold mb-0 text-dark"><?= ksh($stats['total_raised']) ?></h3></div>
+                        <div><div class="text-muted text-uppercase small fw-bold">Total Donated</div><h3 class="fw-bold mb-0 "><?= ksh($stats['total_raised']) ?></h3></div>
                         <div class="icon-box bg-info bg-opacity-10 text-info"><i class="bi bi-heart-fill"></i></div>
                     </div>
                 </div>
@@ -307,7 +311,7 @@ $pageTitle = "Unified Welfare Suite";
             <div class="col-xl-3 col-md-6">
                 <div class="glass-card p-3 h-100">
                     <div class="d-flex justify-content-between">
-                        <div><div class="text-muted text-uppercase small fw-bold">Total Disbursed</div><h3 class="fw-bold mb-0 text-dark"><?= ksh($stats['total_disbursed']) ?></h3></div>
+                        <div><div class="text-muted text-uppercase small fw-bold">Total Disbursed</div><h3 class="fw-bold mb-0 "><?= ksh($stats['total_disbursed']) ?></h3></div>
                         <div class="icon-box bg-success bg-opacity-10 text-success"><i class="bi bi-check-circle-fill"></i></div>
                     </div>
                 </div>
@@ -355,10 +359,10 @@ $pageTitle = "Unified Welfare Suite";
                             <td class="ps-4">
                                 <div class="d-flex align-items-center">
                                     <img src="<?= $avatar ?>" class="rounded-circle me-3" width="35" height="35" style="object-fit:cover;">
-                                    <div><div class="fw-bold text-dark"><?= $row['full_name'] ?></div><div class="small text-muted"><?= $row['phone'] ?></div></div>
+                                    <div><div class="fw-bold "><?= $row['full_name'] ?></div><div class="small text-muted"><?= $row['phone'] ?></div></div>
                                 </div>
                             </td>
-                            <td><div class="fw-bold text-dark"><?= ucfirst($row['case_type']) ?></div><div class="small text-muted text-truncate" style="max-width:200px;"><?= $row['title'] ?></div></td>
+                            <td><div class="fw-bold "><?= ucfirst($row['case_type']) ?></div><div class="small text-muted text-truncate" style="max-width:200px;"><?= $row['title'] ?></div></td>
                             <td>
                                 <?php if($row['target_amount'] > 0): ?>
                                     <div class="fw-bold"><?= ksh($row['total_raised']) ?></div><small class="text-muted">Goal: <?= ksh($row['target_amount']) ?></small>

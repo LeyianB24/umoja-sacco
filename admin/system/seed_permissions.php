@@ -92,6 +92,10 @@ $pageTitle = "Seed Permissions";
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="light">
 <head>
+    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
+    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
+    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
+    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
     <meta charset="utf-8">
     <title><?= $pageTitle ?> | Umoja Drivers Sacco</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -122,7 +126,7 @@ $pageTitle = "Seed Permissions";
         <div class="col-lg-8">
             <div class="text-center mb-5">
                 <img src="<?= BASE_URL ?>/public/assets/images/people_logo.png" alt="Logo" height="60" class="mb-3">
-                <h2 class="fw-bold text-dark">RBAC Permissions Seeder</h2>
+                <h2 class="fw-bold ">RBAC Permissions Seeder</h2>
                 <p class="text-muted">Initialize or sync system permissions and role mappings.</p>
             </div>
 
@@ -169,7 +173,7 @@ $pageTitle = "Seed Permissions";
                         <?php foreach($permissions as $p): ?>
                             <div class="list-group-item permission-item d-flex justify-content-between align-items-center py-3">
                                 <div>
-                                    <div class="fw-bold text-dark"><?= $p[1] ?></div>
+                                    <div class="fw-bold "><?= $p[1] ?></div>
                                     <div class="small text-muted">Key: <code><?= $p[0] ?></code></div>
                                 </div>
                                 <span class="badge rounded-pill px-3 <?= strtolower($p[2]) == 'finance' ? 'badge-finance' : (strtolower($p[2]) == 'operations' ? 'badge-ops' : 'badge-maint') ?>">

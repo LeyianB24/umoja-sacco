@@ -225,6 +225,8 @@ $pageTitle = "Executive Reports";
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="light">
 <head>
+    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
+    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= $pageTitle ?> | Umoja Sacco</title>
@@ -352,6 +354,8 @@ $pageTitle = "Executive Reports";
             .stat-card { border: 1px solid #ddd; box-shadow: none; }
         }
     </style>
+
+    <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
 </head>
 <body>
 
@@ -367,8 +371,8 @@ $pageTitle = "Executive Reports";
                     <h2 class="fw-bold mb-1" style="color: var(--forest);">Financial Overview</h2>
                     <p class="text-muted mb-0">
                         Performance report for 
-                        <span class="fw-bold text-dark"><?= date('M d, Y', strtotime($start_date)) ?></span> to 
-                        <span class="fw-bold text-dark"><?= date('M d, Y', strtotime($end_date)) ?></span>
+                        <span class="fw-bold "><?= date('M d, Y', strtotime($start_date)) ?></span> to 
+                        <span class="fw-bold "><?= date('M d, Y', strtotime($end_date)) ?></span>
                     </p>
                 </div>
                 <div class="d-flex gap-2 no-print">
@@ -452,7 +456,7 @@ $pageTitle = "Executive Reports";
                             </span>
                         </div>
                         <div class="mt-2">
-                            <h2 class="fw-bold mb-0 text-dark">KES <?= number_format((float)($totals['total_outflow'] ?? 0)) ?></h2>
+                            <h2 class="fw-bold mb-0 ">KES <?= number_format((float)($totals['total_outflow'] ?? 0)) ?></h2>
                             <p class="text-muted small mb-0">Total Outflow</p>
                         </div>
                     </div>
@@ -464,7 +468,7 @@ $pageTitle = "Executive Reports";
                             <div class="icon-box">
                                 <i class="bi bi-wallet2"></i>
                             </div>
-                            <span class="badge bg-dark bg-opacity-25 text-dark rounded-pill">Net Position</span>
+                            <span class="badge bg-dark bg-opacity-25  rounded-pill">Net Position</span>
                         </div>
                         <div class="mt-2">
                             <h2 class="fw-bold mb-0">KES <?= number_format((float)($net_cash_flow ?? 0)) ?></h2>
@@ -484,7 +488,7 @@ $pageTitle = "Executive Reports";
                             </span>
                         </div>
                         <div class="mt-2">
-                            <h2 class="fw-bold mb-0 text-dark">KES <?= number_format((float)($totals['operational_expense'] ?? 0)) ?></h2>
+                            <h2 class="fw-bold mb-0 ">KES <?= number_format((float)($totals['operational_expense'] ?? 0)) ?></h2>
                             <p class="text-muted small mb-0">Op. Expenses</p>
                         </div>
                     </div>
@@ -547,7 +551,7 @@ $pageTitle = "Executive Reports";
                                 $status_lbl = $net >= 0 ? 'Positive' : 'Deficit';
                             ?>
                             <tr>
-                                <td class="ps-4 fw-bold text-dark"><?= $m['display_date'] ?></td>
+                                <td class="ps-4 fw-bold "><?= $m['display_date'] ?></td>
                                 <td class="text-end font-monospace text-success">+ <?= number_format((float)$m['inflow']) ?></td>
                                 <td class="text-end font-monospace text-danger">- <?= number_format((float)$m['outflow']) ?></td>
                                 <td class="text-end font-monospace fw-bold"><?= ksh($net) ?></td>

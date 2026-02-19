@@ -260,6 +260,8 @@ $theme = $_COOKIE['theme'] ?? 'light';
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="<?= esc($theme) ?>">
 <head>
+    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
+    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Secure M-PESA Checkout - <?= defined('SITE_NAME') ? esc(SITE_NAME) : 'SACCO' ?></title>
@@ -468,6 +470,8 @@ $theme = $_COOKIE['theme'] ?? 'light';
             to { transform: rotate(360deg); }
         }
     </style>
+
+    <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
 </head>
 <body>
     <div id="processingOverlay">
@@ -509,14 +513,14 @@ $theme = $_COOKIE['theme'] ?? 'light';
                         <?php if (!empty($error)): ?>
                             <div class="alert alert-danger border-0 d-flex align-items-center gap-3 rounded-3 shadow-sm mb-4">
                                 <i class="bi bi-exclamation-octagon-fill fs-4 text-danger"></i>
-                                <div class="small fw-medium text-dark"><?= esc($error) ?></div>
+                                <div class="small fw-medium "><?= esc($error) ?></div>
                             </div>
                         <?php endif; ?>
 
                         <?php if (!empty($success)): ?>
                             <div class="alert alert-success border-0 d-flex align-items-center gap-3 rounded-3 shadow-sm mb-4">
                                 <i class="bi bi-check-circle-fill fs-4 text-success"></i>
-                                <div class="small fw-medium text-dark"><?= esc($success) ?></div>
+                                <div class="small fw-medium "><?= esc($success) ?></div>
                             </div>
                         <?php endif; ?>
 

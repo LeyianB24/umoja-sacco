@@ -82,6 +82,8 @@ $pageTitle = "Helpdesk Support";
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
+    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><?= $pageTitle ?></title>
@@ -192,6 +194,8 @@ $pageTitle = "Helpdesk Support";
             font-size: 0.8rem;
         }
     </style>
+
+    <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
 </head>
 <body>
 
@@ -209,7 +213,7 @@ $pageTitle = "Helpdesk Support";
                     <nav aria-label="breadcrumb">
                         <ol class="breadcrumb mb-0">
                             <li class="breadcrumb-item small text-muted">Admin</li>
-                            <li class="breadcrumb-item small active fw-bold text-dark" aria-current="page">Support</li>
+                            <li class="breadcrumb-item small active fw-bold " aria-current="page">Support</li>
                         </ol>
                     </nav>
                 </div>
@@ -339,13 +343,13 @@ $pageTitle = "Helpdesk Support";
                                 };
                             ?>
                             <tr>
-                                <td class="fw-bold text-dark">#<?= $t['support_id'] ?></td>
+                                <td class="fw-bold ">#<?= $t['support_id'] ?></td>
                                 <td style="max-width:280px;">
-                                    <div class="fw-semibold text-dark text-truncate mb-0"><?= htmlspecialchars($t['subject'] ?? '') ?></div>
+                                    <div class="fw-semibold  text-truncate mb-0"><?= htmlspecialchars($t['subject'] ?? '') ?></div>
                                     <div class="small text-muted text-truncate"><?= htmlspecialchars(strip_tags($t['message'] ?? '')) ?></div>
                                 </td>
                                 <td>
-                                    <span class="badge bg-light text-dark border text-uppercase" style="font-size: 0.65rem;">
+                                    <span class="badge bg-light  border text-uppercase" style="font-size: 0.65rem;">
                                         <?= htmlspecialchars($t['category'] ?? 'General') ?>
                                     </span>
                                 </td>
@@ -353,7 +357,7 @@ $pageTitle = "Helpdesk Support";
                                     <div class="d-flex align-items-center gap-2">
                                         <div class="avatar-initial"><?= getInitials($t['sender_name']) ?></div>
                                         <div>
-                                            <div class="small fw-bold text-dark mb-0"><?= htmlspecialchars($t['sender_name'] ?? 'Guest') ?></div>
+                                            <div class="small fw-bold  mb-0"><?= htmlspecialchars($t['sender_name'] ?? 'Guest') ?></div>
                                             <div class="x-small text-muted" style="font-size: 0.7rem;"><?= $t['sender_role'] ?></div>
                                         </div>
                                     </div>

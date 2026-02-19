@@ -127,6 +127,8 @@ $pageTitle = "Member Directory";
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="light">
 <head>
+    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
+    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= $pageTitle ?> | USMS Administration</title>
@@ -243,6 +245,8 @@ $pageTitle = "Member Directory";
 
         @media (max-width: 991.98px) { .main-content { margin-left: 0; } }
     </style>
+
+    <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
 </head>
 <body>
 
@@ -286,7 +290,7 @@ $pageTitle = "Member Directory";
                         <i class="bi bi-people-fill"></i>
                     </div>
                     <div class="text-muted small fw-bold text-uppercase">Active Members</div>
-                    <div class="h2 fw-800 text-dark mt-2 mb-0"><?= number_format((float)$stats['active']) ?></div>
+                    <div class="h2 fw-800  mt-2 mb-0"><?= number_format((float)$stats['active']) ?></div>
                     <div class="small text-muted mt-1">Authorized & Online</div>
                 </div>
             </div>
@@ -297,7 +301,7 @@ $pageTitle = "Member Directory";
                         <i class="bi bi-person-x-fill"></i>
                     </div>
                     <div class="text-muted small fw-bold text-uppercase">Suspended</div>
-                    <div class="h2 fw-800 text-dark mt-2 mb-0"><?= number_format((float)$stats['suspended']) ?></div>
+                    <div class="h2 fw-800  mt-2 mb-0"><?= number_format((float)$stats['suspended']) ?></div>
                     <div class="small text-muted mt-1">Restricted access</div>
                 </div>
             </div>
@@ -308,7 +312,7 @@ $pageTitle = "Member Directory";
                         <i class="bi bi-clock-history"></i>
                     </div>
                     <div class="text-muted small fw-bold text-uppercase">Pending Review</div>
-                    <div class="h2 fw-800 text-dark mt-2 mb-0"><?= number_format((float)$stats['pending']) ?></div>
+                    <div class="h2 fw-800  mt-2 mb-0"><?= number_format((float)$stats['pending']) ?></div>
                     <div class="small text-muted mt-1">Awaiting approval</div>
                 </div>
             </div>
@@ -382,13 +386,13 @@ $pageTitle = "Member Directory";
                                             <div class="member-avatar"><?= strtoupper(substr($m['full_name'],0,1)) ?></div>
                                         <?php endif; ?>
                                         <div>
-                                            <div class="fw-800 text-dark"><?= esc($m['full_name']) ?></div>
+                                            <div class="fw-800 "><?= esc($m['full_name']) ?></div>
                                             <div class="small text-muted opacity-75 mt-1">ID: <?= esc($m['national_id']) ?></div>
                                         </div>
                                     </div>
                                 </td>
                                 <td>
-                                    <div class="fw-600 text-dark small"><?= esc($m['email']) ?></div>
+                                    <div class="fw-600  small"><?= esc($m['email']) ?></div>
                                     <div class="small text-muted mt-1"><?= esc($m['phone']) ?></div>
                                 </td>
                                 <td>
@@ -397,7 +401,7 @@ $pageTitle = "Member Directory";
                                     </span>
                                 </td>
                                 <td>
-                                    <div class="small fw-semibold text-dark"><?= date('d M, Y', strtotime($m['join_date'])) ?></div>
+                                    <div class="small fw-semibold "><?= date('d M, Y', strtotime($m['join_date'])) ?></div>
                                     <div class="small text-muted opacity-75 mt-1">System Registered</div>
                                 </td>
                                 <td class="text-end">

@@ -181,6 +181,8 @@ $pageTitle = "Revenue Portal";
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="light">
 <head>
+    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
+    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= $pageTitle ?> | USMS Finance</title>
@@ -235,6 +237,8 @@ $pageTitle = "Revenue Portal";
         .bg-warning-soft { background: var(--warning-soft); color: #854d0e; }
         .bg-danger-soft { background: var(--danger-soft); color: #991b1b; }
     </style>
+
+    <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
 </head>
 <body>
 
@@ -298,7 +302,7 @@ $pageTitle = "Revenue Portal";
                         <div class="text-muted small fw-bold text-uppercase mb-1"><?= ucfirst(str_replace('_', ' ', $inv['category'])) ?></div>
                         <h6 class="fw-800 mb-0"><?= esc($inv['title']) ?></h6>
                     </div>
-                    <div class="h4 fw-800 text-dark mb-1">KES <?= number_format((float)$inv['period_revenue']) ?></div>
+                    <div class="h4 fw-800  mb-1">KES <?= number_format((float)$inv['period_revenue']) ?></div>
                     <div class="small text-muted mb-3">
                         <i class="bi bi-bullseye me-1"></i>Target: KES <?= number_format((float)$inv['target_amount']) ?>
                     </div>
@@ -331,7 +335,7 @@ $pageTitle = "Revenue Portal";
                         <i class="bi bi-graph-up-arrow"></i>
                     </div>
                     <div class="text-muted small fw-bold text-uppercase">Period Total</div>
-                    <div class="h2 fw-800 text-dark mt-2 mb-1">KES <?= number_format((float)$total_period_rev) ?></div>
+                    <div class="h2 fw-800  mt-2 mb-1">KES <?= number_format((float)$total_period_rev) ?></div>
                     <div class="small text-muted"><i class="bi bi-calendar-range me-1"></i> <?= ucwords($duration) ?> aggregation</div>
                 </div>
             </div>
@@ -342,7 +346,7 @@ $pageTitle = "Revenue Portal";
                         <i class="bi bi-bullseye"></i>
                     </div>
                     <div class="text-muted small fw-bold text-uppercase">Portfolio Efficiency</div>
-                    <div class="h2 fw-800 text-dark mt-2 mb-1"><?= number_format($global_target_pct, 1) ?>%</div>
+                    <div class="h2 fw-800  mt-2 mb-1"><?= number_format($global_target_pct, 1) ?>%</div>
                     <div class="progress" style="height: 4px; background: #f1f5f9; margin-bottom: 8px;">
                         <div class="progress-bar bg-forest" style="width: <?= $global_target_pct ?>%"></div>
                     </div>
@@ -433,7 +437,7 @@ $pageTitle = "Revenue Portal";
                                 foreach($revenue_data as $row): ?>
                                     <tr class="revenue-row">
                                         <td>
-                                            <div class="fw-bold text-dark"><?= date('d M, Y', strtotime($row['transaction_date'])) ?></div>
+                                            <div class="fw-bold "><?= date('d M, Y', strtotime($row['transaction_date'])) ?></div>
                                             <div class="small text-muted font-monospace mt-1"><?= esc($row['reference_no']) ?></div>
                                         </td>
                                         <td>
@@ -441,7 +445,7 @@ $pageTitle = "Revenue Portal";
                                             <div class="small text-muted mt-1 opacity-75"><?= esc($row['notes'] ?: 'Revenue Entry') ?></div>
                                         </td>
                                         <td>
-                                            <span class="badge bg-light text-dark border px-3 py-2 rounded-pill small fw-bold">
+                                            <span class="badge bg-light  border px-3 py-2 rounded-pill small fw-bold">
                                                 <?= strtoupper($row['payment_method']) ?>
                                             </span>
                                         </td>
@@ -535,7 +539,7 @@ $pageTitle = "Revenue Portal";
                                 <i class="bi bi-info-circle-fill fs-4 me-3 text-forest"></i>
                                 <div>
                                     <div class="small fw-800 text-forest text-uppercase mb-1">Asset Performance Target</div>
-                                    <div class="fw-bold text-dark" id="targetText">Target: KES 0.00</div>
+                                    <div class="fw-bold " id="targetText">Target: KES 0.00</div>
                                 </div>
                             </div>
                         </div>

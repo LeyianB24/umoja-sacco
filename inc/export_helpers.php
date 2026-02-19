@@ -71,6 +71,10 @@ function generate_export_html($data, $headers, $title) {
     $html = '<!DOCTYPE html>
     <html>
     <head>
+    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
+    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
+    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
+    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
         <meta charset="utf-8">
         <title>' . htmlspecialchars($title) . '</title>
         <style>

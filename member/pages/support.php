@@ -113,6 +113,8 @@ $pageTitle = "Support Center";
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="light">
 <head>
+    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
+    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= $pageTitle ?> | <?= SITE_NAME ?></title>
@@ -232,6 +234,8 @@ $pageTitle = "Support Center";
             gap: 1.25rem;
         }
     </style>
+
+    <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
 </head>
 <body>
 <div class="d-flex">
@@ -279,7 +283,7 @@ $pageTitle = "Support Center";
                 <!-- Contact Info -->
                 <div class="col-lg-5">
                     <div class="card-premium">
-                        <h4 class="fw-bold mb-4" style="color: var(--forest-deep);">Direct Contact</h4>
+                        <h4 class="fw-bold mb-4" >Direct Contact</h4>
                         <p class="text-muted small mb-4">Connect with our specialized support desk for immediate assistance.</p>
                         
                         <div class="info-card">
@@ -318,7 +322,7 @@ $pageTitle = "Support Center";
                 <!-- Ticket Form -->
                 <div class="col-lg-7">
                     <div class="card-premium">
-                        <h4 class="fw-bold mb-4" style="color: var(--forest-deep);">Create Support Ticket</h4>
+                        <h4 class="fw-bold mb-4" >Create Support Ticket</h4>
                         <form method="POST" enctype="multipart/form-data">
                             <div class="row g-3">
                                 <div class="col-md-12">

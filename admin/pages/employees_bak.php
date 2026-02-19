@@ -298,6 +298,8 @@ $pageTitle = "People & Access";
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="light">
 <head>
+    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
+    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
     <meta charset="utf-8">
     <title><?= $pageTitle ?> | Umoja Sacco</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -327,6 +329,8 @@ $pageTitle = "People & Access";
         .nav-tabs-custom .nav-link.active { color: var(--color-primary-dark); border-bottom-color: var(--color-primary); background: transparent; }
         .nav-tabs-custom .nav-link:hover:not(.active) { color: var(--color-primary); }
     </style>
+
+    <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
 </head>
 <body>
 
@@ -448,13 +452,13 @@ $pageTitle = "People & Access";
                                     <div class="d-flex align-items-center gap-3">
                                         <div class="avatar-circle"><?= getInitials($row['full_name']) ?></div>
                                         <div>
-                                            <div class="fw-bold text-dark"><?= htmlspecialchars($row['full_name']) ?></div>
+                                            <div class="fw-bold "><?= htmlspecialchars($row['full_name']) ?></div>
                                             <div class="small text-muted font-monospace"><?= htmlspecialchars($row['employee_no']) ?></div>
                                         </div>
                                     </div>
                                 </td>
                                 <td>
-                                    <div class="badge bg-light text-dark border fw-normal"><?= htmlspecialchars($row['job_title']) ?></div>
+                                    <div class="badge bg-light  border fw-normal"><?= htmlspecialchars($row['job_title']) ?></div>
                                     <div class="small text-muted mt-1"><?= $row['grade_name'] ?? '-' ?></div>
                                 </td>
                                 <td class="small">
@@ -479,7 +483,7 @@ $pageTitle = "People & Access";
                                     <div class="d-flex align-items-center gap-3">
                                         <div class="avatar-circle bg-dark text-white"><?= getInitials($row['full_name']) ?></div>
                                         <div>
-                                            <div class="fw-bold text-dark"><?= htmlspecialchars($row['full_name']) ?></div>
+                                            <div class="fw-bold "><?= htmlspecialchars($row['full_name']) ?></div>
                                             <div class="small text-muted">@<?= htmlspecialchars($row['username']) ?></div>
                                         </div>
                                     </div>
@@ -571,7 +575,7 @@ $pageTitle = "People & Access";
                                 <label class="form-label small fw-bold text-success">Confirmed Basic Salary (KES)</label>
                                 <div class="input-group">
                                     <span class="input-group-text bg-success text-white border-0">KES</span>
-                                    <input type="number" name="salary" id="sal_inp" class="form-control fw-bold text-dark border-success" step="0.01" required>
+                                    <input type="number" name="salary" id="sal_inp" class="form-control fw-bold  border-success" step="0.01" required>
                                 </div>
                             </div>
                         </div>

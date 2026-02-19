@@ -99,6 +99,8 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="light">
 <head>
+    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
+    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= $pageTitle ?> | <?= SITE_NAME ?></title>
@@ -191,6 +193,8 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
         
         @media (max-width: 991.98px) { .main-content { margin-left: 0; } }
     </style>
+
+    <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
 </head>
 <body>
 
@@ -250,7 +254,7 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
                         
                         <div class="total-row d-flex justify-content-between align-items-center">
                             <span class="fw-bold text-muted text-uppercase small">Total Debit Entries</span>
-                            <span class="h4 fw-800 text-dark mb-0">KES <?= number_format($total_assets, 2) ?></span>
+                            <span class="h4 fw-800  mb-0">KES <?= number_format($total_assets, 2) ?></span>
                         </div>
                     </div>
                 </div>
@@ -259,7 +263,7 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
             <!-- Right: Liabilities & Equity -->
             <div class="col-lg-6">
                 <div class="proof-card slide-up" style="animation-delay: 0.2s">
-                    <div class="card-header-gradient" style="background: linear-gradient(to right, #164639, #0f2e25);">
+                    <div class="card-header-gradient" >
                         <h5 class="mb-0 fw-bold"><i class="bi bi-shield-lock me-2 text-info"></i> LIABILITIES & EQUITY (Credit)</h5>
                     </div>
                     <div class="card-body p-0">
@@ -302,7 +306,7 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
                         
                         <div class="total-row d-flex justify-content-between align-items-center">
                             <span class="fw-bold text-muted text-uppercase small">Total Credit Entries</span>
-                            <span class="h4 fw-800 text-dark mb-0">KES <?= number_format($total_liabilities + $total_equity, 2) ?></span>
+                            <span class="h4 fw-800  mb-0">KES <?= number_format($total_liabilities + $total_equity, 2) ?></span>
                         </div>
                     </div>
                 </div>

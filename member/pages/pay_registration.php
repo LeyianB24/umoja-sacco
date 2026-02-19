@@ -66,6 +66,8 @@ $pageTitle = "Registration Fee Payment";
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="light">
 <head>
+    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
+    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= $pageTitle ?> | <?= SITE_NAME ?></title>
@@ -215,6 +217,8 @@ $pageTitle = "Registration Fee Payment";
             to { opacity: 1; transform: translateX(0); }
         }
     </style>
+
+    <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
 </head>
 <body>
 
@@ -273,9 +277,9 @@ $pageTitle = "Registration Fee Payment";
                             </div>
 
                             <div class="mb-4 p-3 rounded-4 bg-light small text-secondary d-flex align-items-start">
-                                <i class="bi bi-shield-lock-fill me-3 fs-5 text-dark mt-1"></i>
+                                <i class="bi bi-shield-lock-fill me-3 fs-5  mt-1"></i>
                                 <div>
-                                    <strong class="text-dark">Secure Transaction</strong><br>
+                                    <strong class="">Secure Transaction</strong><br>
                                     Your payment is processed securely. For M-Pesa, check your phone for the STK push prompt.
                                 </div>
                             </div>

@@ -140,6 +140,8 @@ $pageTitle = "Register Member";
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
+    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
     <meta charset="UTF-8">
     <title><?= $pageTitle ?> | Clerk Portal</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -152,6 +154,8 @@ $pageTitle = "Register Member";
         .btn-green { background: #0F392B; color: white; border-radius: 12px; font-weight: bold; }
         .btn-green:hover { background: #1a5a45; color: white; }
     </style>
+
+    <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
 </head>
 <body>
 
@@ -166,7 +170,7 @@ $pageTitle = "Register Member";
             <div class="row justify-content-center">
                 <div class="col-lg-8">
                     <div class="mb-4">
-                        <h2 class="fw-bold text-dark">Member Onboarding</h2>
+                        <h2 class="fw-bold ">Member Onboarding</h2>
                         <p class="text-muted">Register a new member and collect the mandatory <strong>KES 1,000</strong> registration fee.</p>
                     </div>
 
@@ -237,7 +241,7 @@ $pageTitle = "Register Member";
                                 </div>
 
                                 <div class="col-12 mt-4">
-                                    <h5 class="fw-bold text-dark border-bottom pb-2">Registration Fee (KES 1,000)</h5>
+                                    <h5 class="fw-bold  border-bottom pb-2">Registration Fee (KES 1,000)</h5>
                                     <div class="form-check form-switch mb-3">
                                         <input class="form-check-input" type="checkbox" id="is_paid" name="is_paid" onchange="togglePayment(this.checked)" checked>
                                         <label class="form-check-label" for="is_paid">Enrollment Fee Paid</label>
@@ -253,7 +257,7 @@ $pageTitle = "Register Member";
                                 </div>
 
                                 <div class="col-12 mt-4">
-                                    <h5 class="fw-bold text-dark border-bottom pb-2">KYC Documents</h5>
+                                    <h5 class="fw-bold  border-bottom pb-2">KYC Documents</h5>
                                     <div class="row">
                                         <div class="col-md-4 mb-3">
                                             <label class="form-label">Passport Photo</label>

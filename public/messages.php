@@ -269,6 +269,10 @@ function renderImg($blob, $name, $size = '56px', $fontSize = '1.3rem') {
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
+    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
+    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
+    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Messages | <?= SITE_NAME ?></title>
@@ -568,6 +572,8 @@ function renderImg($blob, $name, $size = '56px', $fontSize = '1.3rem') {
             .msg-sidebar.show { left: 0; }
         }
     </style>
+
+    <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
 </head>
 <body>
 
@@ -786,7 +792,7 @@ function renderImg($blob, $name, $size = '56px', $fontSize = '1.3rem') {
                         <a href="?chat_with=<?= $a['admin_id'] ?>&role=admin" class="list-group-item list-group-item-action d-flex align-items-center gap-3 p-4 border-0 bg-transparent">
                             <?= renderImg(null, $a['full_name'], '48px', '1.1rem') ?>
                             <div class="flex-grow-1">
-                                <div class="fw-bold text-dark"><?= htmlspecialchars($a['full_name']) ?></div>
+                                <div class="fw-bold "><?= htmlspecialchars($a['full_name']) ?></div>
                                 <div class="badge bg-forest bg-opacity-10 text-forest rounded-pill py-1 px-2 border-0 mt-1" style="font-size:0.6rem"><?= $a['role'] ?></div>
                             </div>
                             <i class="bi bi-chevron-right opacity-25"></i>
@@ -799,7 +805,7 @@ function renderImg($blob, $name, $size = '56px', $fontSize = '1.3rem') {
                         <a href="?chat_with=<?= $m['member_id'] ?>&role=member" class="list-group-item list-group-item-action d-flex align-items-center gap-3 p-4 border-0 bg-transparent">
                             <?= renderImg($m['profile_pic'], $m['full_name'], '48px', '1.1rem') ?>
                             <div class="flex-grow-1">
-                                <div class="fw-bold text-dark"><?= htmlspecialchars($m['full_name']) ?></div>
+                                <div class="fw-bold "><?= htmlspecialchars($m['full_name']) ?></div>
                                 <div class="small opacity-50" style="font-size:0.75rem">Member #<?= $m['member_id'] ?> • ID <?= $m['national_id'] ?></div>
                             </div>
                             <i class="bi bi-chevron-right opacity-25"></i>

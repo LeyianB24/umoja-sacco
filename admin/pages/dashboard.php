@@ -54,6 +54,8 @@ $pageTitle = "System Dashboard";
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
+    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
     <meta charset="UTF-8">
     <title><?= $pageTitle ?> | USMS</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -95,6 +97,8 @@ $pageTitle = "System Dashboard";
         .nav-pill-custom:hover { background: var(--forest); color: white; transform: translateX(5px); }
         .nav-pill-custom i { font-size: 1.2rem; opacity: 0.7; }
     </style>
+
+    <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
 </head>
 <body>
 
@@ -193,7 +197,7 @@ $pageTitle = "System Dashboard";
     <div class="row g-4 mb-5">
         <div class="col-12">
             <a href="<?= BASE_URL ?>/admin/pages/live_monitor.php" class="text-decoration-none">
-                <div class="glass-stat border-0 shadow-sm" style="background: linear-gradient(to right, #ffffff, #f8fafc);">
+                <div class="glass-stat border-0 shadow-sm">
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <div>
                             <h5 class="fw-bold mb-1"><i class="bi bi-broadcast text-danger me-2"></i>Live Operations Monitor</h5>
@@ -206,7 +210,7 @@ $pageTitle = "System Dashboard";
                         <?php endif; ?>
                     </div>
                     
-                    <div class="row g-4 text-dark">
+                    <div class="row g-4">
                         <div class="col-md-3 border-end">
                             <div class="small text-muted mb-1">Callback Success Rate</div>
                             <div class="h4 fw-bold mb-0"><?= $health['callback_success_rate'] ?>%</div>

@@ -308,7 +308,7 @@ $profile_link = ($user_role === 'member') ? "{$base}/member/pages/profile.php" :
         </button>
 
         <div>
-            <h5 class="fw-bold mb-0 text-dark" style="color: var(--nav-text-dark) !important; letter-spacing: -0.5px;">
+            <h5 class="fw-bold mb-0 " style="color: var(--nav-text-dark) !important; letter-spacing: -0.5px;">
                 <?= $pageTitle ?? 'Dashboard' ?>
             </h5>
             <div class="d-none d-md-flex align-items-center gap-2">
@@ -398,7 +398,7 @@ $profile_link = ($user_role === 'member') ? "{$base}/member/pages/profile.php" :
                     <?= $avatar_html ?>
                     <div class="grow overflow-hidden">
                         <div class="d-flex justify-content-between align-items-center mb-1">
-                            <strong class="text-truncate text-dark" style="font-size:0.9rem; max-width: 160px;"><?= htmlspecialchars($msg['sender_name'] ?? 'User') ?></strong>
+                            <strong class="text-truncate " style="font-size:0.9rem; max-width: 160px;"><?= htmlspecialchars($msg['sender_name'] ?? 'User') ?></strong>
                             <span class="small text-muted" style="font-size: 0.7rem;"><?= time_elapsed_string_topbar($msg['sent_at']) ?></span>
                         </div>
                         <div class="text-truncate small text-secondary"><?= htmlspecialchars($msg['body'] ?: 'Sent an attachment') ?></div>
@@ -448,7 +448,7 @@ $profile_link = ($user_role === 'member') ? "{$base}/member/pages/profile.php" :
                         <i class="bi <?= $icon ?>"></i>
                     </div>
                     <div class="grow">
-                        <p class="mb-1 small fw-medium text-dark lh-sm"><?= htmlspecialchars($n['message']) ?></p>
+                        <p class="mb-1 small fw-medium  lh-sm"><?= htmlspecialchars($n['message']) ?></p>
                         <div class="small opacity-50 d-flex align-items-center gap-1">
                             <i class="bi bi-clock" style="font-size:0.6rem"></i> <?= time_elapsed_string_topbar($n['created_at']) ?>
                         </div>

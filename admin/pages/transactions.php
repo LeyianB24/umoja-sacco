@@ -155,6 +155,8 @@ $pageTitle = "Golden Ledger Vault";
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
+    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
     <meta charset="UTF-8">
     <title><?= $pageTitle ?> | USMS</title>
     
@@ -218,6 +220,8 @@ $pageTitle = "Golden Ledger Vault";
             border: 1px solid rgba(0,0,0,0.05);
         }
     </style>
+
+    <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
 </head>
 <body>
 
@@ -324,7 +328,7 @@ $pageTitle = "Golden Ledger Vault";
                     ?>
                     <tr>
                         <td>
-                            <div class="fw-bold text-dark"><?= esc($row['reference_no']) ?></div>
+                            <div class="fw-bold "><?= esc($row['reference_no']) ?></div>
                             <div class="small text-muted mt-1 opacity-75"><?= date('d M Y, H:i', strtotime($row['created_at'])) ?></div>
                         </td>
                         <td>
@@ -333,7 +337,7 @@ $pageTitle = "Golden Ledger Vault";
                                     <div class="avatar-sm bg-light rounded-circle text-center d-flex align-items-center justify-content-center" style="width:32px; height:32px; font-size: 0.7rem; font-weight: 800; color: var(--forest);">
                                         <?= strtoupper(substr($row['full_name'], 0, 1)) ?>
                                     </div>
-                                    <div class="fw-600 text-dark"><?= esc($row['full_name']) ?></div>
+                                    <div class="fw-600 "><?= esc($row['full_name']) ?></div>
                                 </a>
                             <?php else: ?>
                                 <div class="d-flex align-items-center gap-2">

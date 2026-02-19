@@ -6,6 +6,7 @@ require_once __DIR__ . '/../../config/app_config.php';
 require_once __DIR__ . '/../../config/db_connect.php';
 require_once __DIR__ . '/../../inc/Auth.php';
 require_once __DIR__ . '/../../inc/LayoutManager.php';
+require_once __DIR__ . '/../../inc/email.php';
 
 // Auth Check
 require_admin();
@@ -69,13 +70,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt_stat->bind_param("sii", $new_status, $is_res_flag, $support_id);
             $stmt_stat->execute();
 
-            // 3. Notify Member
+            // 3. Notify Member (In-App + Message + Email)
             if ($creator_is_member) {
+                // a) In-App Notification
                 $notif_title = "Update: Ticket #$support_id";
                 $notif_msg = "Admin has responded to your ticket. Status: $new_status";
                 $stmt_notif = $db->prepare("INSERT INTO notifications (member_id, title, message, status, user_type, user_id, created_at) VALUES (?, ?, ?, 'unread', 'member', ?, NOW())");
                 $stmt_notif->bind_param("issi", $member_id_target, $notif_title, $notif_msg, $member_id_target);
                 $stmt_notif->execute();
+
+                // b) Insert into Messages (Member Inbox)
+                $msg_subject = "Re: Ticket #$support_id - " . substr($ticket['subject'], 0, 100);
+                $msg_body = $reply_msg;
+                $stmt_msg = $db->prepare("INSERT INTO messages (from_admin_id, to_member_id, subject, body, sent_at, is_read) VALUES (?, ?, ?, ?, NOW(), 0)");
+                $stmt_msg->bind_param("iiss", $admin_id, $member_id_target, $msg_subject, $msg_body);
+                $stmt_msg->execute();
+
+                // c) Send Email Notification
+                if ($creator_email) {
+                    $email_body = "
+                        <h3 style='color:#0F392B;'>Support Ticket Update</h3>
+                        <p>Dear <strong>" . htmlspecialchars($creator_name) . "</strong>,</p>
+                        <p>Our team has responded to your support ticket:</p>
+                        <div style='background:#f1f5f9; padding:20px; border-radius:8px; border-left:4px solid #39B54A; margin:15px 0;'>
+                            <p style='margin:0 0 8px;'><strong>Ticket #$support_id</strong> — " . htmlspecialchars($ticket['subject']) . "</p>
+                            <p style='margin:0 0 8px; color:#475569;'>Status: <strong>$new_status</strong></p>
+                            <hr style='border:none; border-top:1px solid #e2e8f0; margin:12px 0;'>
+                            <p style='margin:0; color:#334155;'>" . nl2br(htmlspecialchars($reply_msg)) . "</p>
+                        </div>
+                        <p>You can view the full conversation in your <a href='" . SITE_URL . "/member/pages/support.php' style='color:#39B54A; font-weight:600;'>Support Center</a> or check your <a href='" . SITE_URL . "/member/pages/messages.php' style='color:#39B54A; font-weight:600;'>Messages</a>.</p>
+                    ";
+                    sendEmailWithNotification(
+                        $creator_email,
+                        "Ticket #$support_id Update — " . SITE_NAME,
+                        $email_body,
+                        $member_id_target
+                    );
+                }
             }
 
             $db->commit();
@@ -111,6 +142,8 @@ $pageTitle = "Ticket View";
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
+    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Ticket #<?= $support_id ?></title>
@@ -143,6 +176,8 @@ $pageTitle = "Ticket View";
         .btn-hope-lime { background: var(--hope-lime); color: var(--hope-green-dark); border-radius: 50px; font-weight: 700; padding: 12px 30px; border: none; }
         .main-content { margin-left: 280px; transition: margin-left 0.3s ease; }
     </style>
+
+    <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
 </head>
 <body>
 
@@ -158,7 +193,7 @@ $pageTitle = "Ticket View";
                     <h2 class="fw-bold mt-2">Ticket #<?= $support_id ?></h2>
                 </div>
                 <div class="text-end">
-                    <span class="badge rounded-pill px-3 py-2 bg-white text-dark border fw-bold"><?= strtoupper($ticket['status']) ?></span>
+                    <span class="badge rounded-pill px-3 py-2 bg-white  border fw-bold"><?= strtoupper($ticket['status']) ?></span>
                 </div>
             </div>
 
@@ -166,13 +201,13 @@ $pageTitle = "Ticket View";
                 <div class="col-lg-8">
                     <div class="hope-card p-4">
                         <div class="mb-4 pb-3 border-bottom">
-                            <h4 class="fw-bold text-dark"><?= htmlspecialchars($ticket['subject']) ?></h4>
+                            <h4 class="fw-bold "><?= htmlspecialchars($ticket['subject']) ?></h4>
                             <p class="text-muted small mb-0">Original request filed by <?= htmlspecialchars($creator_name) ?></p>
                         </div>
 
                         <div class="chat-area mb-4" id="chatBox">
                             <div class="d-flex gap-3 mb-4">
-                                <div class="avatar-circle bg-light border text-dark"><?= getInitials($creator_name) ?></div>
+                                <div class="avatar-circle bg-light border "><?= getInitials($creator_name) ?></div>
                                 <div class="msg-bubble msg-member shadow-sm">
                                     <?= nl2br(htmlspecialchars($ticket['message'])) ?>
                                     <?php if($ticket['attachment']): ?>
