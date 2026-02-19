@@ -53,6 +53,8 @@ $pageTitle = "Repay Loan #" . $loan_id;
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="light">
 <head>
+    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
+    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= $pageTitle ?> - <?= defined('SITE_NAME') ? SITE_NAME : 'SACCO' ?></title>
@@ -115,6 +117,8 @@ $pageTitle = "Repay Loan #" . $loan_id;
         .main-content-wrapper { margin-left: 260px; transition: margin-left 0.3s ease; }
         @media (max-width: 991.98px) { .main-content-wrapper { margin-left: 0; } }
     </style>
+
+    <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
 </head>
 <body>
 
@@ -137,7 +141,7 @@ $pageTitle = "Repay Loan #" . $loan_id;
                                 <i class="bi bi-file-earmark-text fs-2 text-muted"></i>
                             </div>
                             <h5 class="fw-bold mb-1" style="color: var(--text-main);">Loan Details</h5>
-                            <span class="badge bg-warning text-dark bg-opacity-25 border border-warning border-opacity-25 px-3">
+                            <span class="badge bg-warning  bg-opacity-25 border border-warning border-opacity-25 px-3">
                                 ID: #<?= $loan['loan_id'] ?>
                             </span>
                         </div>
@@ -168,7 +172,7 @@ $pageTitle = "Repay Loan #" . $loan_id;
                         
                         <div class="d-flex align-items-center gap-3 mb-4">
                             <img src="<?= ASSET_BASE ?>/images/mpesa_logo.png" alt="M-Pesa" class="mpesa-logo" height="40" 
-                                 style="background: white; padding: 4px; border-radius: 6px;">
+                                 >
                             <h4 class="fw-bold mb-0" style="color: var(--text-main);">Make Repayment</h4>
                         </div>
 

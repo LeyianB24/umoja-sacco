@@ -39,6 +39,10 @@ if (isset($_SESSION['admin_id'])) {
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="light">
 <head>
+    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
+    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
+    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
+    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
@@ -54,6 +58,7 @@ if (isset($_SESSION['admin_id'])) {
 
     <link rel="stylesheet" href="<?= BASE_URL ?>/public/assets/css/variables.css">
     <link rel="stylesheet" href="<?= ASSET_BASE ?>/css/style.css">
+    <link rel="stylesheet" href="<?= ASSET_BASE ?>/css/darkmode.css">
 
     <script>
         (() => {
@@ -206,6 +211,10 @@ if (isset($_SESSION['admin_id'])) {
 <body>
 
 <header class="site-header sticky-top">
+    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
+    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
+    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
+    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
     <nav class="navbar navbar-expand-lg">
         <div class="container">
 

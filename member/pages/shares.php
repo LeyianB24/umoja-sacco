@@ -138,6 +138,8 @@ $pageTitle = "My Share Portfolio";
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="light">
 <head>
+    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
+    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= $pageTitle ?> - <?= defined('SITE_NAME') ? SITE_NAME : 'SACCO' ?></title>
@@ -268,6 +270,8 @@ $pageTitle = "My Share Portfolio";
             border-radius: 50%;
         }
     </style>
+
+    <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
 </head>
 <body>
 
@@ -341,7 +345,7 @@ $pageTitle = "My Share Portfolio";
                             <div class="fs-5 fw-bold text-white"><?= number_format((float)$gainPct, 2) ?>% Capital Growth</div>
                         </div>
                         <div class="text-end">
-                            <div class="badge bg-lime-subtle text-dark border-0">Corporate Asset</div>
+                            <div class="badge bg-lime-subtle  border-0">Corporate Asset</div>
                         </div>
                     </div>
                 </div>
@@ -356,14 +360,14 @@ $pageTitle = "My Share Portfolio";
                                     <p class="text-uppercase text-muted small fw-bold mb-1">Ownership Units</p>
                                     <h3 class="fw-bold mb-0"><?= number_format((float)$totalUnits, 4) ?></h3>
                                 </div>
-                                <div class="icon-box bg-lime-subtle text-dark">
+                                <div class="icon-box bg-lime-subtle ">
                                     <i class="bi bi-pie-chart-fill"></i>
                                 </div>
                             </div>
                             <hr class="border-light my-3">
                             <div class="d-flex align-items-center justify-content-between">
                                 <span class="text-muted small">Ownership Share</span>
-                                <span class="fw-bold text-dark"><?= number_format((float)$ownership_pct, 4) ?>% of Sacco</span>
+                                <span class="fw-bold "><?= number_format((float)$ownership_pct, 4) ?>% of Sacco</span>
                             </div>
                         </div>
                     </div>
@@ -389,7 +393,7 @@ $pageTitle = "My Share Portfolio";
             <div class="col-12">
                 <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
                     <div class="card-header bg-white border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
-                        <h5 class="fw-bold mb-0 text-dark">Transaction History</h5>
+                        <h5 class="fw-bold mb-0 ">Transaction History</h5>
                         <button class="btn btn-sm btn-light border text-muted" onclick="location.reload()">
                             <i class="bi bi-arrow-clockwise"></i> Refresh
                         </button>
@@ -412,7 +416,7 @@ $pageTitle = "My Share Portfolio";
                                         <tr>
                                             <td class="ps-3">
                                                 <div class="d-flex flex-column">
-                                                    <span class="fw-bold text-dark"><?= date('M d, Y', strtotime($row['created_at'])) ?></span>
+                                                    <span class="fw-bold "><?= date('M d, Y', strtotime($row['created_at'])) ?></span>
                                                     <span class="small text-muted"><?= date('H:i A', strtotime($row['created_at'])) ?></span>
                                                 </div>
                                             </td>
@@ -431,7 +435,7 @@ $pageTitle = "My Share Portfolio";
                                             </td>
                                             <td class="text-muted">KES <?= number_format((float)$row['unit_price'], 0) ?></td>
                                             <td>
-                                                <span class="fw-bold text-dark">KES <?= number_format((float)$row['total_value'], 2) ?></span>
+                                                <span class="fw-bold ">KES <?= number_format((float)$row['total_value'], 2) ?></span>
                                             </td>
                                             <td class="text-center">
                                                 <span class="badge bg-success bg-opacity-10 text-success px-3 py-2 rounded-pill fw-medium">

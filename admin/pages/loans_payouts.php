@@ -203,6 +203,8 @@ $pageTitle = "Loan Management";
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="light">
 <head>
+    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
+    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= $pageTitle ?> | USMS Administration</title>
@@ -306,6 +308,8 @@ $pageTitle = "Loan Management";
 
         @media (max-width: 991.98px) { .main-content { margin-left: 0; } }
     </style>
+
+    <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
 </head>
 <body>
 
@@ -396,13 +400,13 @@ $pageTitle = "Loan Management";
                                                 <?= substr($row['full_name'], 0, 1) ?>
                                             </div>
                                             <div>
-                                                <div class="fw-bold text-dark"><?= htmlspecialchars($row['full_name']) ?></div>
+                                                <div class="fw-bold "><?= htmlspecialchars($row['full_name']) ?></div>
                                                 <div class="text-secondary small font-monospace">ID: <?= htmlspecialchars($row['national_id']) ?></div>
                                             </div>
                                         </div>
                                     </td>
                                     <td>
-                                        <div class="fw-bold text-dark"><?= ucfirst($row['loan_type']) ?></div>
+                                        <div class="fw-bold "><?= ucfirst($row['loan_type']) ?></div>
                                         <div class="text-secondary small"><?= $row['duration_months'] ?> Mo @ <?= $row['interest_rate'] ?>%</div>
                                     </td>
                                     <td>
@@ -469,7 +473,7 @@ $pageTitle = "Loan Management";
     <div class="offcanvas-body">
         <div class="text-center mb-4 mt-3">
             <div class="member-avatar-sm mx-auto mb-3" style="width: 70px; height: 70px; font-size: 2rem;" id="drawer_avatar"></div>
-            <h4 class="fw-bold mb-0 text-dark" id="drawer_name">Member Name</h4>
+            <h4 class="fw-bold mb-0 " id="drawer_name">Member Name</h4>
             <span class="badge bg-light text-muted border rounded-pill mt-2 px-3 py-2" id="drawer_id">ID: ---</span>
         </div>
 
@@ -477,7 +481,7 @@ $pageTitle = "Loan Management";
             <h6 class="text-uppercase small text-muted fw-bold mb-3 letter-spacing-1">Financial Snapshot</h6>
             <div class="d-flex justify-content-between mb-2">
                 <span class="text-secondary fw-medium">Request Amount</span>
-                <span class="fw-bold text-dark fs-5" id="drawer_amount">KES 0.00</span>
+                <span class="fw-bold  fs-5" id="drawer_amount">KES 0.00</span>
             </div>
             <div class="d-flex justify-content-between mb-2">
                 <span class="text-secondary fw-medium">Interest Rate</span>
@@ -485,15 +489,15 @@ $pageTitle = "Loan Management";
             </div>
             <hr class="border-secondary opacity-25">
             <div class="d-flex justify-content-between">
-                <span class="fw-bold text-dark">Total Repayable</span>
+                <span class="fw-bold ">Total Repayable</span>
                 <span class="fw-bold text-success fs-4" id="drawer_total">KES 0.00</span>
             </div>
         </div>
 
         <div class="card border-0 bg-light rounded-4 p-4">
             <h6 class="text-uppercase small text-muted fw-bold mb-3 letter-spacing-1">Contact Details</h6>
-            <p class="mb-2"><i class="bi bi-telephone-fill text-forest me-2"></i> <span id="drawer_phone" class="fw-bold text-dark">...</span></p>
-            <p class="mb-0"><i class="bi bi-person-vcard-fill text-forest me-2"></i> <span id="drawer_nid" class="fw-bold text-dark">...</span></p>
+            <p class="mb-2"><i class="bi bi-telephone-fill text-forest me-2"></i> <span id="drawer_phone" class="fw-bold ">...</span></p>
+            <p class="mb-0"><i class="bi bi-person-vcard-fill text-forest me-2"></i> <span id="drawer_nid" class="fw-bold ">...</span></p>
         </div>
         
         <div class="mt-4 px-2">
@@ -514,7 +518,7 @@ $pageTitle = "Loan Management";
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body p-4 bg-light">
-                    <label class="form-label fw-bold text-dark mb-2">Reason for Rejection (Visible to Member)</label>
+                    <label class="form-label fw-bold  mb-2">Reason for Rejection (Visible to Member)</label>
                     <textarea name="rejection_reason" class="form-control bg-white" rows="4" required placeholder="e.g. Insufficient Guarantor coverage..."></textarea>
                 </div>
                 <div class="modal-footer border-0 bg-light p-4 pt-0">
@@ -543,7 +547,7 @@ $pageTitle = "Loan Management";
                 <div class="modal-body p-4 bg-white">
                     <div class="mb-4">
                         <label class="form-label small text-uppercase fw-bold text-secondary mb-2">Disbursement Channel</label>
-                        <select name="payment_method" id="payment_method" class="form-select form-select-lg fw-medium text-dark" required onchange="handleRefGeneration()">
+                        <select name="payment_method" id="payment_method" class="form-select form-select-lg fw-medium " required onchange="handleRefGeneration()">
                             <option value="bank">Bank Transfer (Internal)</option>
                             <option value="cash">Petty Cash (Internal)</option>
                             <option value="mpesa">M-Pesa (External)</option>
@@ -555,7 +559,7 @@ $pageTitle = "Loan Management";
                             <span id="ref_badge" class="badge bg-success bg-opacity-10 text-success rounded-pill px-2">Auto-Generated</span>
                         </label>
                         <div class="auto-ref-box">
-                            <input type="text" name="ref_no" id="ref_no_input" class="form-control form-control-lg fw-bold font-monospace text-dark" required placeholder="Enter reference">
+                            <input type="text" name="ref_no" id="ref_no_input" class="form-control form-control-lg fw-bold font-monospace " required placeholder="Enter reference">
                             <button type="button" class="btn btn-dark auto-ref-btn" onclick="forceGenerateRef()" id="btn_generate">
                                 <i class="bi bi-arrow-clockwise"></i> Generate
                             </button>

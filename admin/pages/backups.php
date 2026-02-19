@@ -84,6 +84,8 @@ function getInitials($n) { return strtoupper(substr($n ?? 'U', 0, 2)); }
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
+    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
     <meta charset="utf-8">
     <title>Database Maintenance | Admin</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -166,6 +168,8 @@ function getInitials($n) { return strtoupper(substr($n ?? 'U', 0, 2)); }
             font-size: 1.25rem;
         }
     </style>
+
+    <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
 </head>
 <body>
 
@@ -261,7 +265,7 @@ function getInitials($n) { return strtoupper(substr($n ?? 'U', 0, 2)); }
                                                         <i class="bi bi-check-circle-fill me-1"></i> Success
                                                     </span>
                                                 </td>
-                                                <td class="fw-medium text-dark">
+                                                <td class="fw-medium ">
                                                     <?= date('M d, Y', strtotime($log['created_at'])) ?>
                                                     <div class="text-muted x-small"><?= date('H:i A', strtotime($log['created_at'])) ?></div>
                                                 </td>
@@ -274,7 +278,7 @@ function getInitials($n) { return strtoupper(substr($n ?? 'U', 0, 2)); }
                                                     </div>
                                                 </td>
                                                 <td class="text-end">
-                                                    <code class="bg-light px-2 py-1 rounded text-dark fw-bold">.SQL</code>
+                                                    <code class="bg-light px-2 py-1 rounded  fw-bold">.SQL</code>
                                                 </td>
                                             </tr>
                                         <?php endwhile; ?>
@@ -283,7 +287,7 @@ function getInitials($n) { return strtoupper(substr($n ?? 'U', 0, 2)); }
                             </table>
                         </div>
                         <div class="p-3 bg-light text-center">
-                            <a href="audit_logs.php" class="text-decoration-none small fw-bold text-dark">View Full Audit Trail <i class="bi bi-arrow-right ms-1"></i></a>
+                            <a href="audit_logs.php" class="text-decoration-none small fw-bold ">View Full Audit Trail <i class="bi bi-arrow-right ms-1"></i></a>
                         </div>
                     </div>
                 </div>

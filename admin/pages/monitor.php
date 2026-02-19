@@ -28,6 +28,8 @@ $requests = $conn->query("SELECT r.*, m.full_name, m.phone
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
+    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
     <meta charset="UTF-8">
     <title><?= $pageTitle ?> | USMS Admin</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -39,6 +41,8 @@ $requests = $conn->query("SELECT r.*, m.full_name, m.phone
         .callback-status-failed { color: #dc2626; background: #fef2f2; padding: 4px 12px; border-radius: 99px; font-size: 12px; font-weight: 600; }
         .raw-payload { max-width: 300px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: monospace; font-size: 11px; color: #64748b; }
     </style>
+
+    <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
 </head>
 <body class="bg-light">
     <div class="d-flex">

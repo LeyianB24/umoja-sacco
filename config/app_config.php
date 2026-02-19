@@ -95,15 +95,15 @@ define('EXCEL_DEFAULT_FORMAT', 'xlsx');
 // 8. SUPPORT SYSTEM CONFIGURATION
 // ============================================================
 define('SUPPORT_ROUTING_MAP', [
-    'loans'       => 'Loans Admin',
-    'savings'     => 'Savings Admin',
-    'shares'      => 'Superadmin', 
-    'welfare'     => 'Welfare Admin',
-    'investments' => 'Investments Admin',
-    'technical'   => 'Superadmin',
-    'profile'     => 'Superadmin',
-    'withdrawals' => 'Savings Admin',
-    'general'     => 'Superadmin'
+    'loans'       => 'manager',         // Loan applications & repayments
+    'savings'     => 'accountant',      // Savings & deposits
+    'shares'      => 'superadmin',      // Shares & equity
+    'welfare'     => 'welfare_officer', // Welfare & benefits
+    'investments' => 'manager',         // Investment inquiries
+    'technical'   => 'superadmin',      // Technical issues
+    'profile'     => 'clerk',           // Account / profile updates
+    'withdrawals' => 'accountant',      // Withdrawals & M-Pesa
+    'general'     => 'superadmin'       // General inquiries
 ]);
 
 // ============================================================

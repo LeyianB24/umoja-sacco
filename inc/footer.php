@@ -10,7 +10,7 @@ if (!defined('OFFICE_PHONE')) {
 }
 ?>
 
-<footer class="sacco-footer mt-auto pt-5 pb-4" id="contact">
+<footer class="sacco-footer mt-auto pt-5 pb-4" id="contact" style="background: var(--bg-surface); border-top: 1px solid var(--border-color);">
     <div class="container">
         <div class="row gy-5">
 
@@ -119,7 +119,7 @@ if (!defined('OFFICE_PHONE')) {
 
         </div>
 
-        <hr class="mt-5 mb-3 border-secondary opacity-25">
+        <hr class="mt-5 mb-3 border-secondary opacity-10">
 
         <div class="row align-items-center small opacity-50">
             <div class="col-md-6 text-center text-md-start">

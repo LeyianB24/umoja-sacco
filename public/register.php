@@ -135,6 +135,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
+    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
+    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
+    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
   <meta charset="utf-8">
   <title>Register — <?= htmlspecialchars(SITE_NAME) ?></title>
   <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -316,6 +320,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .step-item { text-align: left; }
     }
   </style>
+
+    <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
 </head>
 <body>
 

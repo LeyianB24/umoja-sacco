@@ -135,6 +135,8 @@ $pageTitle = "My Contributions";
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
+    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= $pageTitle ?> - <?= defined('SITE_NAME') ? SITE_NAME : 'SACCO' ?></title>
@@ -272,6 +274,8 @@ $pageTitle = "My Contributions";
             .hope-card { border: 1px solid #eee; box-shadow: none; }
         }
     </style>
+
+    <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
 </head>
 <body>
     <div class="d-flex">
@@ -286,7 +290,7 @@ $pageTitle = "My Contributions";
             
             <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end mb-5 gap-3">
                 <div>
-                    <h2 class="fw-bold mb-1" style="color: var(--theme-dark);">My Contributions</h2>
+                    <h2 class="fw-bold mb-1" >My Contributions</h2>
                     <p class="text-muted mb-0">Track your savings, shares, and welfare contributions.</p>
                 </div>
                 <div class="d-flex gap-2 no-print">
@@ -351,8 +355,8 @@ $pageTitle = "My Contributions";
                             </div>
                         </div>
                         <div class="mt-4 pt-2 border-top border-dark border-opacity-10 d-flex justify-content-between align-items-center">
-                            <span class="small fw-semibold" style="color: var(--theme-dark);">Status</span>
-                            <span class="badge bg-dark bg-opacity-25 text-dark rounded-pill px-3">Active Coverage</span>
+                            <span class="small fw-semibold" >Status</span>
+                            <span class="badge bg-dark bg-opacity-25  rounded-pill px-3">Active Coverage</span>
                         </div>
                     </div>
                 </div>
@@ -395,7 +399,7 @@ $pageTitle = "My Contributions";
 
             <div class="transaction-list">
                 <div class="table-header d-flex justify-content-between align-items-center">
-                    <h5 class="fw-bold mb-0" style="color: var(--theme-dark);">Transaction History</h5>
+                    <h5 class="fw-bold mb-0" >Transaction History</h5>
                     <div class="small text-muted">Page <?= $page ?> of <?= max(1, $total_pages) ?></div>
                 </div>
                 
@@ -438,13 +442,13 @@ $pageTitle = "My Contributions";
                                                 <i class="bi <?= $icon ?>"></i>
                                             </div>
                                             <div>
-                                                <div class="fw-bold text-dark text-capitalize"><?= str_replace('_', ' ', $type) ?></div>
+                                                <div class="fw-bold  text-capitalize"><?= str_replace('_', ' ', $type) ?></div>
                                                 <div class="small text-muted"><?= htmlspecialchars($row['payment_method'] ?? 'M-Pesa') ?></div>
                                             </div>
                                         </div>
                                     </td>
                                     <td>
-                                        <div class="text-dark fw-medium fs-6"><?= $dateTime->format('M d, Y') ?></div>
+                                        <div class=" fw-medium fs-6"><?= $dateTime->format('M d, Y') ?></div>
                                         <div class="small text-muted"><?= $dateTime->format('h:i A') ?></div>
                                     </td>
                                     <td class="font-monospace text-muted small">

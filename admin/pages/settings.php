@@ -96,6 +96,8 @@ $php_v     = phpversion();
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
+    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
     <meta charset="utf-8">
     <title>Settings | USMS Admin</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -146,6 +148,8 @@ $php_v     = phpversion();
         
         .avatar-circle { width: 80px; height: 80px; background-color: var(--accent-dark); color: var(--accent-lime); font-size: 1.8rem; display: flex; align-items: center; justify-content: center; border-radius: 50%; margin: 0 auto; }
     </style>
+
+    <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
 </head>
 <body>
 
@@ -174,7 +178,7 @@ $php_v     = phpversion();
                     
                     <div class="card-custom p-4 text-center mb-4" style="background: linear-gradient(180deg, var(--accent-dark) 0%, #0f1c03 100%); color: white;">
                         <div class="position-relative d-inline-block mb-3">
-                            <div class="avatar-circle border border-2 border-white text-dark bg-white">
+                            <div class="avatar-circle border border-2 border-white  bg-white">
                                  <?= getInitials($me['full_name']) ?>
                             </div>
                             <span class="position-absolute bottom-0 end-0 bg-success border border-2 border-dark rounded-circle p-2"></span>
@@ -218,7 +222,7 @@ $php_v     = phpversion();
                             <div class="card-custom p-4 p-md-5">
                                 <div class="d-flex justify-content-between align-items-center mb-4">
                                     <h5 class="fw-bold mb-0">Edit Profile</h5>
-                                    <span class="badge bg-light text-dark border rounded-pill px-3 py-2">Personal Details</span>
+                                    <span class="badge bg-light  border rounded-pill px-3 py-2">Personal Details</span>
                                 </div>
                                 <form method="post">
                                     <?= csrf_field() ?>
@@ -250,7 +254,7 @@ $php_v     = phpversion();
                             <div class="card-custom p-4 p-md-5">
                                 <div class="d-flex justify-content-between align-items-center mb-4">
                                     <h5 class="fw-bold mb-0">Security</h5>
-                                    <span class="badge bg-light text-dark border rounded-pill px-3 py-2">Password Manager</span>
+                                    <span class="badge bg-light  border rounded-pill px-3 py-2">Password Manager</span>
                                 </div>
                                 <form method="post">
                                     <?= csrf_field() ?>

@@ -56,6 +56,8 @@ $pageTitle = "Notifications";
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="light">
 <head>
+    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
+    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= $pageTitle ?> - <?= defined('SITE_NAME') ? SITE_NAME : 'SACCO' ?></title>
@@ -162,6 +164,8 @@ $pageTitle = "Notifications";
         .main-content-wrapper { margin-left: 260px; transition: margin-left 0.3s ease; }
         @media (max-width: 991.98px) { .main-content-wrapper { margin-left: 0; } }
     </style>
+
+    <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
 </head>
 <body>
 

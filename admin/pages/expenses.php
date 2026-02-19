@@ -143,6 +143,8 @@ $pageTitle = "Expenses Portal";
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="light">
 <head>
+    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
+    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= $pageTitle ?> | <?= SITE_NAME ?></title>
@@ -184,6 +186,8 @@ $pageTitle = "Expenses Portal";
         .bg-lime-subtle { background-color: var(--lime-bg-subtle); color: var(--forest-dark); }
         .bg-red-subtle { background-color: #fee2e2; color: #991b1b; }
     </style>
+
+    <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
 </head>
 <body>
 
@@ -316,14 +320,14 @@ $pageTitle = "Expenses Portal";
                             ?>
                                 <tr>
                                     <td class="ps-4">
-                                        <div class="fw-bold text-dark"><?= esc($ex['reference_no'] ?: 'REF-'.$ex['ledger_transaction_id']) ?></div>
+                                        <div class="fw-bold "><?= esc($ex['reference_no'] ?: 'REF-'.$ex['ledger_transaction_id']) ?></div>
                                         <div class="small text-muted"><?= date('d M, Y', strtotime($ex['created_at'])) ?></div>
                                     </td>
                                     <td>
-                                        <div class="fw-500 text-dark"><?= esc(trim(str_replace(['[PENDING]', $cat_match[0] ?? ''], '', $ex['notes']))) ?></div>
+                                        <div class="fw-500 "><?= esc(trim(str_replace(['[PENDING]', $cat_match[0] ?? ''], '', $ex['notes']))) ?></div>
                                         <div class="small text-muted" style="font-size: 0.75rem;"><?= $ex['related_id'] ? 'Linked to Asset' : 'Office Operation' ?></div>
                                     </td>
-                                    <td><span class="badge bg-light text-dark border rounded-pill fw-normal px-3 py-2"><?= $display_cat ?></span></td>
+                                    <td><span class="badge bg-light  border rounded-pill fw-normal px-3 py-2"><?= $display_cat ?></span></td>
                                     <td class="text-end fw-bold text-danger">
                                         KES <?= number_format((float)$ex['amount'], 2) ?>
                                     </td>

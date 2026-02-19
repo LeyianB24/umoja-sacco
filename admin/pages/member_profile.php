@@ -210,6 +210,8 @@ $pageTitle = $member['full_name'] . " - Member Profile";
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
+    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
     <meta charset="UTF-8">
     <title><?= $pageTitle ?> | USMS Admin</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -279,6 +281,8 @@ $pageTitle = $member['full_name'] . " - Member Profile";
         
         .badge-status { padding: 6px 16px; border-radius: 50px; font-weight: 700; font-size: 0.75rem; }
     </style>
+
+    <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
 </head>
 <div class="d-flex">
     <?php $layout->sidebar(); ?>

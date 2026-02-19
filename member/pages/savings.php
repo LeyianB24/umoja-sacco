@@ -101,6 +101,8 @@ $pageTitle = "My Savings";
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="light">
 <head>
+    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
+    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= $pageTitle ?> | <?= defined('SITE_NAME') ? SITE_NAME : 'SACCO' ?></title>
@@ -216,6 +218,8 @@ $pageTitle = "My Savings";
         }
         .grow { flex-grow: 1; }
     </style>
+
+    <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
 </head>
 <body>
 
@@ -249,7 +253,7 @@ $pageTitle = "My Savings";
                                 </div>
                                 <span class="small opacity-75 fw-bold text-uppercase ls-1">Net Balance</span>
                             </div>
-                            <span class="badge bg-white text-dark rounded-pill px-3 py-2 fw-bold">Active</span>
+                            <span class="badge bg-white  rounded-pill px-3 py-2 fw-bold">Active</span>
                         </div>
                         
                         <div class="mt-4">
@@ -267,7 +271,7 @@ $pageTitle = "My Savings";
                         <div class="d-flex justify-content-between mb-4">
                             <div>
                                 <h6 class="text-muted text-uppercase small fw-bold mb-1">Total Savings</h6>
-                                <h3 class="fw-bold text-dark mb-0">KES <?= number_format((float)$totalSavings, 2) ?></h3>
+                                <h3 class="fw-bold  mb-0">KES <?= number_format((float)$totalSavings, 2) ?></h3>
                             </div>
                             <div class="icon-box bg-success bg-opacity-10 text-success">
                                 <i class="bi bi-arrow-down-left"></i>
@@ -285,7 +289,7 @@ $pageTitle = "My Savings";
                          <div class="d-flex justify-content-between mb-4">
                             <div>
                                 <h6 class="text-muted text-uppercase small fw-bold mb-1">Total Withdrawals</h6>
-                                <h3 class="fw-bold text-dark mb-0">KES <?= number_format((float)$totalWithdrawals, 2) ?></h3>
+                                <h3 class="fw-bold  mb-0">KES <?= number_format((float)$totalWithdrawals, 2) ?></h3>
                             </div>
                             <div class="icon-box bg-danger bg-opacity-10 text-danger">
                                 <i class="bi bi-arrow-up-right"></i>
@@ -376,17 +380,17 @@ $pageTitle = "My Savings";
                                                 <i class="bi <?= $icon ?>"></i>
                                             </div>
                                             <div>
-                                                <div class="fw-bold text-dark text-capitalize"><?= $row['transaction_type'] ?></div>
+                                                <div class="fw-bold  text-capitalize"><?= $row['transaction_type'] ?></div>
                                                 <div class="small text-muted"><?= htmlspecialchars($row['notes'] ?? 'M-Pesa Transaction') ?></div>
                                             </div>
                                         </div>
                                     </td>
                                     <td>
-                                        <div class="fw-bold text-dark small"><?= date('M d, Y', strtotime($row['created_at'])) ?></div>
+                                        <div class="fw-bold  small"><?= date('M d, Y', strtotime($row['created_at'])) ?></div>
                                         <div class="text-muted small" style="font-size: 0.75rem;"><?= date('h:i A', strtotime($row['created_at'])) ?></div>
                                     </td>
                                     <td>
-                                        <span class="badge rounded-pill bg-light text-dark border fw-bold text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">
+                                        <span class="badge rounded-pill bg-light  border fw-bold text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">
                                             Completed
                                         </span>
                                     </td>

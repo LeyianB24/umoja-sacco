@@ -34,6 +34,8 @@ $pageTitle = "System Health & Integrity";
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
+    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
     <meta charset="UTF-8">
     <title><?= $pageTitle ?> | USMS Administration</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -73,6 +75,8 @@ $pageTitle = "System Health & Integrity";
         .bg-ok { background: #10b981; box-shadow: 0 0 10px rgba(16, 185, 129, 0.5); }
         .bg-err { background: #ef4444; box-shadow: 0 0 10px rgba(239, 68, 68, 0.5); }
     </style>
+
+    <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
 </head>
 <body>
 
@@ -155,7 +159,7 @@ $pageTitle = "System Health & Integrity";
                     <p class="small text-muted">Current size of the SACCO's central data repository.</p>
                     <div class="mt-auto pt-3 border-top d-flex justify-content-between align-items-center">
                         <div class="h5 fw-bold mb-0"><?= $health['db_size'] ?? 'N/A' ?> MB</div>
-                        <span class="badge rounded-pill bg-light text-dark border">Optimized</span>
+                        <span class="badge rounded-pill bg-light  border">Optimized</span>
                     </div>
                 </div>
             </div>

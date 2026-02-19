@@ -441,8 +441,7 @@ if (!function_exists('is_active')) {
     </div>
 
     <div class="hd-footer">
-        <a href="<?= $base ?>/public/logout.php" class="hd-nav-item justify-content-center" 
-           style="background: #FEF2F2; color: #DC2626; border: 1px solid #FECACA;">
+        <a href="<?= $base ?>/public/logout.php" class="hd-nav-item justify-content-center btn-logout-sidebar">
             <i class="bi bi-power" style="margin:0"></i> 
             <span class="hd-nav-text ms-2 fw-bold">Logout</span>
         </a>

@@ -2,7 +2,7 @@
 // member/layouts/footer.php
 if (session_status() === PHP_SESSION_NONE) session_start();
 ?>
-    <footer class="footer mt-auto pt-5 pb-3 border-top" style="background-color: #f8f9fa; border-top: 3px solid var(--forest, #0f2e25) !important;">
+    <footer class="footer mt-auto pt-5 pb-3 border-top" style="background-color: var(--nav-bg); border-top: 3px solid var(--forest, #0f2e25) !important;">
         <div class="container">
             <div class="row g-4 justify-content-between">
                 
@@ -37,7 +37,7 @@ if (session_status() === PHP_SESSION_NONE) session_start();
                 </div>
 
                 <div class="col-lg-2 col-md-3 col-6">
-                    <h6 class="fw-bold mb-3 text-dark">My Account</h6>
+                    <h6 class="fw-bold mb-3 ">My Account</h6>
                     <ul class="list-unstyled d-flex flex-column gap-2 small">
                         <li><a href="dashboard.php" class="text-decoration-none text-muted hover-success"><i class="bi bi-speedometer2 me-2"></i>Dashboard</a></li>
                         <li><a href="loans.php" class="text-decoration-none text-muted hover-success"><i class="bi bi-cash-stack me-2"></i>My Loans</a></li>
@@ -47,7 +47,7 @@ if (session_status() === PHP_SESSION_NONE) session_start();
                 </div>
 
                 <div class="col-lg-2 col-md-3 col-6">
-                    <h6 class="fw-bold mb-3 text-dark">Support</h6>
+                    <h6 class="fw-bold mb-3 ">Support</h6>
                     <ul class="list-unstyled d-flex flex-column gap-2 small">
                         <li><a href="tickets.php" class="text-decoration-none text-muted hover-success">Help Desk</a></li>
                         <li><a href="<?= BASE_URL ?>/member/pages/terms.php" class="text-decoration-none text-muted hover-success">Terms of Service</a></li>
@@ -57,20 +57,20 @@ if (session_status() === PHP_SESSION_NONE) session_start();
                 </div>
 
                 <div class="col-lg-3 col-md-12">
-                    <h6 class="fw-bold mb-3 text-dark">Contact Us</h6>
+                    <h6 class="fw-bold mb-3 ">Contact Us</h6>
                     <ul class="list-unstyled small text-muted mb-4">
                         <li class="mb-2 d-flex"><i class="bi bi-geo-alt-fill text-success me-2"></i> <?= defined('COMPANY_ADDRESS') ? COMPANY_ADDRESS : 'Nairobi, Kenya' ?></li>
                         <li class="mb-2 d-flex"><i class="bi bi-envelope-fill text-success me-2"></i> <a href="mailto:<?= defined('COMPANY_EMAIL') ? COMPANY_EMAIL : '#' ?>" class="text-decoration-none text-muted"><?= defined('COMPANY_EMAIL') ? COMPANY_EMAIL : 'support@example.com' ?></a></li>
                         <li class="mb-2 d-flex"><i class="bi bi-telephone-fill text-success me-2"></i> <a href="tel:<?= defined('COMPANY_PHONE') ? str_replace(' ', '', COMPANY_PHONE) : '#' ?>" class="text-decoration-none text-muted"><?= defined('COMPANY_PHONE') ? COMPANY_PHONE : '+254 700 000 000' ?></a></li>
                     </ul>
 
-                    <h6 class="fw-bold mb-2 text-dark small">Follow Us</h6>
+                    <h6 class="fw-bold mb-2  small">Follow Us</h6>
                     <div class="d-flex gap-2">
                         <?php if(defined('SOCIAL_FACEBOOK')): ?>
                             <a href="<?= SOCIAL_FACEBOOK ?>" target="_blank" class="btn btn-sm btn-light rounded-circle shadow-sm text-primary"><i class="bi bi-facebook"></i></a>
                         <?php endif; ?>
                         <?php if(defined('SOCIAL_TWITTER')): ?>
-                            <a href="<?= SOCIAL_TWITTER ?>" target="_blank" class="btn btn-sm btn-light rounded-circle shadow-sm text-dark"><i class="bi bi-twitter-x"></i></a>
+                            <a href="<?= SOCIAL_TWITTER ?>" target="_blank" class="btn btn-sm btn-light rounded-circle shadow-sm "><i class="bi bi-twitter-x"></i></a>
                         <?php endif; ?>
                         <?php if(defined('SOCIAL_INSTAGRAM')): ?>
                             <a href="<?= SOCIAL_INSTAGRAM ?>" target="_blank" class="btn btn-sm btn-light rounded-circle shadow-sm text-danger"><i class="bi bi-instagram"></i></a>

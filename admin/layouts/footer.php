@@ -16,7 +16,7 @@ $memory_usage = round(memory_get_usage() / 1024 / 1024, 2);
         <i class="bi bi-arrow-up"></i>
     </button>
 
-    <footer class="footer mt-auto py-3 border-top" style="background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(10px); border-top: 1px solid rgba(0,0,0,0.05);">
+    <footer class="footer mt-auto py-3 border-top" style="background: var(--nav-bg); backdrop-filter: blur(10px); border-top: 1px solid var(--border-color);">
         <div class="container-fluid px-4">
             <div class="row align-items-center gy-2">
                 
@@ -93,6 +93,9 @@ $memory_usage = round(memory_get_usage() / 1024 / 1024, 2);
     <script>
         // 1. Initialize Global Bootstrap Tooltips
         document.addEventListener('DOMContentLoaded', function () {
+            // Dark Mode Graph Sync
+            if (window.syncChartsTheme) window.syncChartsTheme();
+            
             var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
             var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
                 return new bootstrap.Tooltip(tooltipTriggerEl)

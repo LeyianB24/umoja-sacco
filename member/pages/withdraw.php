@@ -197,6 +197,8 @@ $pageTitle = "Withdraw Funds";
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
+    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= $pageTitle ?> - <?= SITE_NAME ?></title>
@@ -210,6 +212,8 @@ $pageTitle = "Withdraw Funds";
         .btn-lime:hover { background: #a3e635; transform: translateY(-2px); color: #0f172a; }
         .balance-display { background: linear-gradient(135deg, #0f392b 0%, #134e3b 100%); color: white; padding: 32px; border-radius: 20px; }
     </style>
+
+    <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
 </head>
 <body>
 

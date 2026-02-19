@@ -199,6 +199,8 @@ $pageTitle = "My Profile";
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="light">
 <head>
+    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
+    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= $pageTitle ?> - <?= defined('SITE_NAME') ? SITE_NAME : 'SACCO' ?></title>
@@ -376,6 +378,8 @@ $pageTitle = "My Profile";
             #wrapper.toggled #sidebar-wrapper { margin-left: 0; }
         }
     </style>
+
+    <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
 </head>
 <body>
 
@@ -392,7 +396,7 @@ $pageTitle = "My Profile";
             
             <div class="row mb-4 align-items-center animate__animated animate__fadeInDown">
                 <div class="col-md-6">
-                    <h3 class="fw-bold m-0 text-dark">User Profile</h3>
+                    <h3 class="fw-bold m-0">User Profile</h3>
                     <p class="text-muted mb-0 small mt-1">Manage your account parameters and settings.</p>
                 </div>
                 <div class="col-md-6 text-md-end mt-3 mt-md-0">
@@ -403,7 +407,7 @@ $pageTitle = "My Profile";
             </div>
 
             <?php if ($member['kyc_status'] === 'not_submitted'): ?>
-                <div class="alert alert-warning border-0 shadow-sm animate__animated animate__shakeX d-flex align-items-center mb-4" role="alert" style="background: #fff3cd; color: #856404;">
+                <div class="alert alert-warning border-0 shadow-sm animate__animated animate__shakeX d-flex align-items-center mb-4" role="alert">
                     <i class="bi bi-shield-exclamation me-3 fs-3"></i>
                     <div>
                         <h6 class="fw-bold mb-1">KYC documents are pending!</h6>
@@ -411,7 +415,7 @@ $pageTitle = "My Profile";
                     </div>
                 </div>
             <?php elseif ($member['kyc_status'] === 'rejected'): ?>
-                <div class="alert alert-danger border-0 shadow-sm animate__animated animate__shakeX d-flex align-items-center mb-4" role="alert" style="background: #f8d7da; color: #721c24;">
+                <div class="alert alert-danger border-0 shadow-sm animate__animated animate__shakeX d-flex align-items-center mb-4" role="alert">
                     <i class="bi bi-x-octagon-fill me-3 fs-3"></i>
                     <div>
                         <h6 class="fw-bold mb-1">KYC documents were rejected!</h6>
@@ -421,7 +425,7 @@ $pageTitle = "My Profile";
             <?php endif; ?>
 
             <?php if (!$reg_fee_paid): ?>
-                <div class="alert alert-info border-0 shadow-sm d-flex align-items-center mb-4" role="alert" style="background: #d1ecf1; color: #0c5460;">
+                <div class="alert alert-info border-0 shadow-sm d-flex align-items-center mb-4" role="alert">
                     <i class="bi bi-cash-coin me-3 fs-3"></i>
                     <div class="flex-grow-1">
                         <h6 class="fw-bold mb-1">Registration Fee Pending</h6>
@@ -432,12 +436,12 @@ $pageTitle = "My Profile";
             <?php endif; ?>
 
             <?php if (!empty($_SESSION['success'])): ?>
-                <div class="alert alert-success border-0 shadow-sm animate__animated animate__zoomIn d-flex align-items-center mb-4" role="alert" style="background: #d1e7dd; color: #0f5132;">
+                <div class="alert alert-success border-0 shadow-sm animate__animated animate__zoomIn d-flex align-items-center mb-4" role="alert">
                     <i class="bi bi-check-circle-fill me-2 fs-5"></i>
                     <div><?= $_SESSION['success']; unset($_SESSION['success']); ?></div>
                 </div>
             <?php elseif (!empty($_SESSION['error'])): ?>
-                <div class="alert alert-danger border-0 shadow-sm animate__animated animate__zoomIn d-flex align-items-center mb-4" role="alert" style="background: #f8d7da; color: #842029;">
+                <div class="alert alert-danger border-0 shadow-sm animate__animated animate__zoomIn d-flex align-items-center mb-4" role="alert">
                     <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
                     <div><?= $_SESSION['error']; unset($_SESSION['error']); ?></div>
                 </div>

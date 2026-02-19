@@ -28,6 +28,8 @@ $pageTitle = "Statement Portal";
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="light">
 <head>
+    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
+    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= $pageTitle ?> | USMS Administration</title>
@@ -124,6 +126,8 @@ $pageTitle = "Statement Portal";
             border-radius: 0.85rem; border: 1.5px solid #e2e8f0; height: auto; padding: 0.5rem 0.75rem;
         }
     </style>
+
+    <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
 </head>
 <body>
 
@@ -259,7 +263,7 @@ $pageTitle = "Statement Portal";
                                 <i class="bi bi-file-earmark-medical display-4 text-muted opacity-50"></i>
                             </div>
                         </div>
-                        <h5 class="fw-800 text-dark mb-2">Awaiting Generation</h5>
+                        <h5 class="fw-800  mb-2">Awaiting Generation</h5>
                         <p class="small text-center px-lg-5 text-muted">Please configure the report parameters and click the generate button. The official statement will open in a secure window.</p>
                         
                         <div class="w-100 mt-5 pt-4 border-top">
@@ -270,7 +274,7 @@ $pageTitle = "Statement Portal";
                                         <i class="bi bi-graph-up-arrow"></i>
                                     </div>
                                     <div class="flex-grow-1">
-                                        <div class="fw-bold small text-dark">Analytics Dashboard</div>
+                                        <div class="fw-bold small ">Analytics Dashboard</div>
                                         <div class="text-muted" style="font-size: 0.7rem;">Real-time performance metrics</div>
                                     </div>
                                     <i class="bi bi-chevron-right opacity-25"></i>
@@ -280,7 +284,7 @@ $pageTitle = "Statement Portal";
                                         <i class="bi bi-shield-lock"></i>
                                     </div>
                                     <div class="flex-grow-1">
-                                        <div class="fw-bold small text-dark">System Audit</div>
+                                        <div class="fw-bold small ">System Audit</div>
                                         <div class="text-muted" style="font-size: 0.7rem;">Verified transaction logs</div>
                                     </div>
                                     <i class="bi bi-chevron-right opacity-25"></i>

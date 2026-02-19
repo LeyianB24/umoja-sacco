@@ -79,6 +79,8 @@ function ksh($v) { return number_format((float)($v ?? 0), 2); }
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="light">
 <head>
+    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
+    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard | <?= $member_name ?></title>
@@ -216,6 +218,8 @@ function ksh($v) { return number_format((float)($v ?? 0), 2); }
             margin-top: 10px;
         }
     </style>
+
+    <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
 </head>
 <body>
 
@@ -232,7 +236,7 @@ function ksh($v) { return number_format((float)($v ?? 0), 2); }
             <div class="d-flex justify-content-between align-items-end mb-5">
                 <div>
                     <h1 class="fw-bold mb-1">Hi, <?= explode(' ', $member_name)[0] ?>! 👋</h1>
-                    <p class="text-secondary mb-0">Member No: <span class="fw-bold text-dark"><?= $reg_no ?></span> | Financial Overview</p>
+                    <p class="text-secondary mb-0">Member No: <span class="fw-bold "><?= $reg_no ?></span> | Financial Overview</p>
                 </div>
                 <div class="d-flex gap-2">
                     <?php if($cur_bal > 0): ?>

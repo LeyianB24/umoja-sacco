@@ -394,6 +394,8 @@ $pageTitle = "People & Access";
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="light">
 <head>
+    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
+    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
     <meta charset="utf-8">
     <title><?= $pageTitle ?> | Umoja Sacco</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -423,6 +425,8 @@ $pageTitle = "People & Access";
         .nav-tabs-custom .nav-link.active { color: var(--color-primary-dark); border-bottom-color: var(--color-primary); background: transparent; }
         .nav-tabs-custom .nav-link:hover:not(.active) { color: var(--color-primary); }
     </style>
+
+    <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
 </head>
 <body>
 
@@ -562,7 +566,7 @@ $pageTitle = "People & Access";
                                     <div class="d-flex align-items-center gap-3">
                                         <div class="avatar-circle"><?= getInitials($row['full_name']) ?></div>
                                         <div>
-                                            <div class="fw-bold text-dark"><?= htmlspecialchars($row['full_name']) ?></div>
+                                            <div class="fw-bold "><?= htmlspecialchars($row['full_name']) ?></div>
                                             <div class="small text-muted font-monospace"><?= htmlspecialchars($row['employee_no']) ?></div>
                                         </div>
                                     </div>
@@ -600,7 +604,7 @@ $pageTitle = "People & Access";
                                     <div class="d-flex align-items-center gap-3">
                                         <div class="avatar-circle bg-dark text-white"><?= getInitials($row['full_name']) ?></div>
                                         <div>
-                                            <div class="fw-bold text-dark"><?= htmlspecialchars($row['full_name']) ?></div>
+                                            <div class="fw-bold "><?= htmlspecialchars($row['full_name']) ?></div>
                                             <div class="small text-muted">@<?= htmlspecialchars($row['username']) ?></div>
                                         </div>
                                     </div>
@@ -635,10 +639,10 @@ $pageTitle = "People & Access";
                         <div class="p-4 border-bottom bg-light bg-opacity-10">
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
-                                    <span class="badge rounded-pill border px-3 py-2 <?= $active_run['status'] === 'paid' ? 'bg-success text-white' : 'bg-warning text-dark' ?>">
+                                    <span class="badge rounded-pill border px-3 py-2 <?= $active_run['status'] === 'paid' ? 'bg-success text-white' : 'bg-warning ' ?>">
                                         <?= strtoupper($active_run['status']) ?>
                                     </span>
-                                    <span class="ms-2 fw-800 text-dark"><?= date('F Y', strtotime($active_run['month'])) ?></span>
+                                    <span class="ms-2 fw-800 "><?= date('F Y', strtotime($active_run['month'])) ?></span>
                                 </div>
                                 <div class="d-flex gap-2">
                                     <?php if ($active_run['status'] === 'draft'): ?>
@@ -738,7 +742,7 @@ $pageTitle = "People & Access";
                                     <div class="d-flex align-items-center gap-3">
                                         <div class="avatar-circle"><?= getInitials($row['full_name']) ?></div>
                                         <div>
-                                            <div class="fw-bold text-dark"><?= htmlspecialchars($row['full_name']) ?></div>
+                                            <div class="fw-bold "><?= htmlspecialchars($row['full_name']) ?></div>
                                             <div class="small text-muted"><?= htmlspecialchars($row['employee_no']) ?></div>
                                         </div>
                                     </div>
@@ -833,7 +837,7 @@ $pageTitle = "People & Access";
                                 <label class="form-label small fw-bold text-success">Confirmed Basic Salary (KES)</label>
                                 <div class="input-group">
                                     <span class="input-group-text bg-success text-white border-0">KES</span>
-                                    <input type="number" name="salary" id="sal_inp" class="form-control fw-bold text-dark border-success" step="0.01" required>
+                                    <input type="number" name="salary" id="sal_inp" class="form-control fw-bold  border-success" step="0.01" required>
                                 </div>
                             </div>
                         </div>
@@ -941,10 +945,10 @@ $pageTitle = "People & Access";
                     <?php if(isset($history_runs)): while($h = $history_runs->fetch_assoc()): ?>
                         <a href="employees.php?view=payroll&run_id=<?= $h['id'] ?>" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center px-4 py-3 bg-transparent border-bottom">
                             <div>
-                                <div class="fw-bold text-dark"><?= date('F Y', strtotime($h['month'])) ?></div>
+                                <div class="fw-bold "><?= date('F Y', strtotime($h['month'])) ?></div>
                                 <div class="small text-muted text-uppercase"><?= $h['status'] ?></div>
                             </div>
-                            <span class="badge bg-light text-dark border fw-normal font-monospace">KES <?= number_format((float)$h['total_net'], 2) ?></span>
+                            <span class="badge bg-light  border fw-normal font-monospace">KES <?= number_format((float)$h['total_net'], 2) ?></span>
                         </a>
                     <?php endwhile; endif; ?>
                 </div>

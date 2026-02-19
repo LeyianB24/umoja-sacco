@@ -185,6 +185,8 @@ $pageTitle = "Payments Ledger";
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="light">
 <head>
+    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
+    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= $pageTitle ?></title>
@@ -299,6 +301,8 @@ $pageTitle = "Payments Ledger";
         .modal-content { border-radius: 20px; border: none; }
         .btn-close { filter: invert(1) grayscale(100%) brightness(200%); }
     </style>
+
+    <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
 </head>
 <body>
 
@@ -415,10 +419,10 @@ $pageTitle = "Payments Ledger";
                                             <div>
                                                 <?php if($row['member_id']): ?>
                                                     <a href="member_profile.php?id=<?= $row['member_id'] ?>" class="text-decoration-none">
-                                                        <div class="fw-bold text-dark"><?= esc($name) ?> <i class="bi bi-person-bounding-box ms-1 small opacity-50"></i></div>
+                                                        <div class="fw-bold "><?= esc($name) ?> <i class="bi bi-person-bounding-box ms-1 small opacity-50"></i></div>
                                                     </a>
                                                 <?php else: ?>
-                                                    <div class="fw-bold text-dark"><?= esc($name) ?></div>
+                                                    <div class="fw-bold "><?= esc($name) ?></div>
                                                 <?php endif; ?>
                                                 <?php if($row['national_id']): ?>
                                                     <div class="small text-muted" style="font-size: 0.75rem;">ID: <?= $row['national_id'] ?></div>
@@ -427,7 +431,7 @@ $pageTitle = "Payments Ledger";
                                         </div>
                                     </td>
                                     <td>
-                                        <div class="fw-medium text-dark"><?= esc($row['reference_no']) ?></div>
+                                        <div class="fw-medium "><?= esc($row['reference_no']) ?></div>
                                         <div class="small text-muted"><?= date('M d, Y', strtotime($row['created_at'])) ?></div>
                                     </td>
                                     <td>

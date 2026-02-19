@@ -248,6 +248,8 @@ function ksh($v, $d = 2) { return number_format((float)($v ?? 0), $d); }
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="light">
 <head>
+    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
+    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
     <meta charset="UTF-8">
     <title>Loan Management - Manager</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -298,6 +300,8 @@ function ksh($v, $d = 2) { return number_format((float)($v ?? 0), $d); }
         .btn-filter.active { background-color: var(--primary-green); color: white; border-color: var(--primary-green); }
         .btn-filter:hover:not(.active) { background-color: #d1fae5; }
     </style>
+
+    <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
 </head>
 <body>
 
@@ -336,13 +340,13 @@ function ksh($v, $d = 2) { return number_format((float)($v ?? 0), $d); }
                 <div class="d-flex flex-wrap gap-3 align-items-center justify-content-between">
                     <div class="btn-group shadow-sm rounded-pill overflow-hidden" role="group">
                         <a href="?status=pending" class="btn btn-sm btn-filter <?= $filter=='pending'?'active':'' ?>">
-                            Pending <span class="badge bg-white text-dark ms-1 rounded-pill"><?= $stats['pending'] ?></span>
+                            Pending <span class="badge bg-white  ms-1 rounded-pill"><?= $stats['pending'] ?></span>
                         </a>
                         <a href="?status=approved" class="btn btn-sm btn-filter <?= $filter=='approved'?'active':'' ?>">
-                            Approved <span class="badge bg-white text-dark ms-1 rounded-pill"><?= $stats['approved'] ?></span>
+                            Approved <span class="badge bg-white  ms-1 rounded-pill"><?= $stats['approved'] ?></span>
                         </a>
                         <a href="?status=disbursed" class="btn btn-sm btn-filter <?= $filter=='disbursed'?'active':'' ?>">
-                            Active <span class="badge bg-white text-dark ms-1 rounded-pill"><?= $stats['active'] ?></span>
+                            Active <span class="badge bg-white  ms-1 rounded-pill"><?= $stats['active'] ?></span>
                         </a>
                         <a href="?status=all" class="btn btn-sm btn-filter <?= $filter=='all'?'active':'' ?>">All History</a>
                     </div>
@@ -393,7 +397,7 @@ function ksh($v, $d = 2) { return number_format((float)($v ?? 0), $d); }
                                     <div class="d-flex align-items-center gap-3">
                                         <img src="<?= $img ?>" class="rounded-circle avatar-circle shadow-sm">
                                         <div>
-                                            <div class="fw-bold text-dark"><?= htmlspecialchars($l['full_name']) ?></div>
+                                            <div class="fw-bold "><?= htmlspecialchars($l['full_name']) ?></div>
                                             <div class="small text-muted font-monospace"><?= htmlspecialchars($l['national_id']) ?></div>
                                         </div>
                                     </div>
@@ -403,7 +407,7 @@ function ksh($v, $d = 2) { return number_format((float)($v ?? 0), $d); }
                                     <div class="small text-muted"><?= htmlspecialchars($l['loan_type']) ?></div>
                                 </td>
                                 <td>
-                                    <span class="small text-dark fw-bold"><?= $l['duration_months'] ?> Months</span>
+                                    <span class="small  fw-bold"><?= $l['duration_months'] ?> Months</span>
                                     <div class="small text-muted"><?= $l['interest_rate'] ?>% Interest</div>
                                 </td>
                                 <td><span class="badge-status <?= $statusClass ?>"><?= ucfirst($l['status']) ?></span></td>
@@ -459,13 +463,13 @@ if($loans->num_rows > 0):
                     <div class="col-6">
                         <div class="p-2 border rounded text-center bg-light">
                             <small class="text-muted d-block">Duration</small>
-                            <span class="fw-bold text-dark"><?= $l['duration_months'] ?> Months</span>
+                            <span class="fw-bold "><?= $l['duration_months'] ?> Months</span>
                         </div>
                     </div>
                     <div class="col-6">
                         <div class="p-2 border rounded text-center bg-light">
                             <small class="text-muted d-block">Type</small>
-                            <span class="fw-bold text-dark"><?= $l['loan_type'] ?></span>
+                            <span class="fw-bold "><?= $l['loan_type'] ?></span>
                         </div>
                     </div>
                 </div>
@@ -477,7 +481,7 @@ if($loans->num_rows > 0):
                         $resG = $db->query("SELECT lg.*, m.full_name FROM loan_guarantors lg JOIN members m ON lg.member_id = m.member_id WHERE lg.loan_id = " . (int)$l['loan_id']);
                         if($resG && $resG->num_rows > 0): while($g = $resG->fetch_assoc()): ?>
                             <div class="d-flex justify-content-between align-items-center mb-1">
-                                <span class="small fw-bold text-dark"><?= htmlspecialchars($g['full_name']) ?></span>
+                                <span class="small fw-bold "><?= htmlspecialchars($g['full_name']) ?></span>
                                 <span class="badge bg-white text-success border small ksh-font">KES <?= ksh($g['amount_locked']) ?></span>
                             </div>
                         <?php endwhile; else: ?>

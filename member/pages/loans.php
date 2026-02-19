@@ -184,6 +184,8 @@ $pageTitle = "My Loans";
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="light">
 <head>
+    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
+    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= $pageTitle ?> | <?= defined('SITE_NAME') ? SITE_NAME : 'SACCO' ?></title>
@@ -373,6 +375,8 @@ $pageTitle = "My Loans";
             box-shadow: none;
         }
     </style>
+
+    <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
 </head>
 <body>
 
@@ -389,7 +393,7 @@ $pageTitle = "My Loans";
             
             <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-5 gap-3">
                 <div>
-                    <h2 class="fw-bold mb-1 text-dark">Loan Portfolio</h2>
+                    <h2 class="fw-bold mb-1 ">Loan Portfolio</h2>
                     <p class="text-secondary mb-0">Manage your finances and track repayment progress.</p>
                 </div>
                 
@@ -495,14 +499,14 @@ $pageTitle = "My Loans";
                                 <div class="icon-box lime rounded-circle mb-3" style="width: 80px; height: 80px; font-size: 2rem;">
                                     <i class="bi bi-shield-check"></i>
                                 </div>
-                                <h3 class="fw-bold text-dark">You are Eligible!</h3>
+                                <h3 class="fw-bold ">You are Eligible!</h3>
                                 <p class="text-secondary mb-4 col-lg-8 mx-auto">You currently have no active debts. Based on your savings, you qualify for an instant loan up to the limit below.</p>
                                 <h2 class="text-success fw-bold">KES <?= number_format((float)$max_loan_limit) ?></h2>
                             <?php else: ?>
                                 <div class="icon-box bg-light text-muted rounded-circle mb-3" style="width: 80px; height: 80px; font-size: 2rem;">
                                     <i class="bi bi-clock-history"></i>
                                 </div>
-                                <h3 class="fw-bold text-dark">Build Your Savings</h3>
+                                <h3 class="fw-bold ">Build Your Savings</h3>
                                 <p class="text-secondary mb-4 col-lg-8 mx-auto">To qualify for a loan, you need to have active savings. Start saving today to unlock borrowing power up to 3x your balance.</p>
                                 <a href="mpesa_request.php?type=savings" class="btn btn-dark rounded-pill px-5 py-3">Start Saving Now</a>
                             <?php endif; ?>
@@ -511,7 +515,7 @@ $pageTitle = "My Loans";
 
                     <div class="card-clean">
                         <div class="p-4 border-bottom border-light d-flex justify-content-between align-items-center">
-                            <h6 class="fw-bold mb-0 text-dark">Recent History</h6>
+                            <h6 class="fw-bold mb-0 ">Recent History</h6>
                             <div class="dropdown">
                                 <button class="btn btn-sm btn-light border dropdown-toggle" data-bs-toggle="dropdown">
                                     <i class="bi bi-download me-1"></i> Export
@@ -637,7 +641,7 @@ $pageTitle = "My Loans";
       
       <div class="modal-header border-0 px-4 pt-4 pb-0">
         <div>
-             <h5 class="modal-title fw-bold text-dark">New Application</h5>
+             <h5 class="modal-title fw-bold ">New Application</h5>
              <p class="text-secondary small mb-0">Customize your loan details</p>
         </div>
         <button type="button" class="btn-close bg-light rounded-circle p-2" data-bs-dismiss="modal"></button>
@@ -648,7 +652,7 @@ $pageTitle = "My Loans";
           
           <!-- Step 1: Limits & Type -->
           <div class="mb-4">
-              <label class="form-label small fw-bold text-uppercase mb-3" style="color: var(--forest-deep);">
+              <label class="form-label small fw-bold text-uppercase mb-3" >
                   <span class="badge bg-dark text-white rounded-circle me-1" style="width:22px; height:22px; display:inline-flex; align-items:center; justify-content:center; font-size: 10px;">1</span>
                   Loan Details
               </label>
@@ -695,7 +699,7 @@ $pageTitle = "My Loans";
 
           <!-- Step 2: Guarantors -->
           <div class="mb-4 pt-3 border-top border-light">
-              <label class="form-label small fw-bold text-uppercase mb-3" style="color: var(--forest-deep);">
+              <label class="form-label small fw-bold text-uppercase mb-3" >
                   <span class="badge bg-dark text-white rounded-circle me-1" style="width:22px; height:22px; display:inline-flex; align-items:center; justify-content:center; font-size: 10px;">2</span>
                   Guarantors
               </label>
@@ -724,7 +728,7 @@ $pageTitle = "My Loans";
 
           <!-- Step 3: Purpose -->
           <div class="mb-4 pt-3 border-top border-light">
-            <label class="form-label small fw-bold text-uppercase mb-2" style="color: var(--forest-deep);">
+            <label class="form-label small fw-bold text-uppercase mb-2" >
                 <span class="badge bg-dark text-white rounded-circle me-1" style="width:22px; height:22px; display:inline-flex; align-items:center; justify-content:center; font-size: 10px;">3</span>
                 Purpose
             </label>
@@ -738,7 +742,7 @@ $pageTitle = "My Loans";
               </div>
               <hr class="my-2 opacity-25">
               <div class="d-flex justify-content-between align-items-center">
-                  <span class="fw-bold text-dark">Est. Total Payable</span>
+                  <span class="fw-bold ">Est. Total Payable</span>
                   <span class="fs-4 fw-bold text-success" id="estTotal">KES 0</span>
               </div>
           </div>
@@ -765,9 +769,9 @@ $pageTitle = "My Loans";
                 <?= csrf_field() ?>
                 <input type="hidden" name="action" value="repay_wallet">
                 <div class="modal-body p-4">
-                    <div class="p-4 rounded-4 mb-4 text-center" style="background: #f8fafc; border: 1px solid #e2e8f0;">
+                    <div class="p-4 rounded-4 mb-4 text-center" >
                         <small class="text-uppercase text-secondary ls-1 small fw-bold">Available in Wallet</small>
-                        <h2 class="fw-bold text-dark mt-1">KES <?= number_format((float)$account_balance, 2) ?></h2>
+                        <h2 class="fw-bold  mt-1">KES <?= number_format((float)$account_balance, 2) ?></h2>
                     </div>
 
                     <div class="mb-3">
@@ -812,7 +816,7 @@ $pageTitle = "My Loans";
                 <div class="row g-3">
                     <div class="col-6">
                         <small class="text-uppercase text-muted fw-bold ls-1 d-block mb-1" style="font-size: 0.65rem;">Total Amount</small>
-                        <h5 class="fw-bold mb-0 text-dark" id="disp_amount">KES 0</h5>
+                        <h5 class="fw-bold mb-0 " id="disp_amount">KES 0</h5>
                     </div>
                     <div class="col-6 text-end">
                         <small class="text-uppercase text-muted fw-bold ls-1 d-block mb-1" style="font-size: 0.65rem;">Remaining</small>
@@ -823,7 +827,7 @@ $pageTitle = "My Loans";
 
             <!-- List -->
             <div class="p-4">
-                <h6 class="fw-bold text-dark mb-4">Transaction Log</h6>
+                <h6 class="fw-bold  mb-4">Transaction Log</h6>
                 <div id="repaymentList" class="d-flex flex-column gap-3">
                     <!-- Iterated by JS -->
                 </div>
@@ -921,7 +925,7 @@ $pageTitle = "My Loans";
                         list.innerHTML += `
                             <div class="p-3 rounded-4 border bg-white shadow-sm d-flex justify-content-between align-items-center">
                                 <div>
-                                    <div class="small fw-bold text-dark">${p.date}</div>
+                                    <div class="small fw-bold ">${p.date}</div>
                                     <div class="text-muted" style="font-size: 0.7rem;">Ref: ${p.ref} | ${p.method}</div>
                                 </div>
                                 <div class="text-end">

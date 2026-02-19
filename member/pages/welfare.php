@@ -184,6 +184,8 @@ $pageTitle = "Welfare Hub";
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="<?= htmlspecialchars($theme) ?>">
 <head>
+    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
+    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= $pageTitle ?></title>
@@ -286,6 +288,8 @@ $pageTitle = "Welfare Hub";
         }
         .table-modern tbody tr:last-child td { border-bottom: none; }
     </style>
+
+    <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
 </head>
 <body class="member-body">
 
@@ -322,7 +326,7 @@ $pageTitle = "Welfare Hub";
                             <i class="bi bi-wallet2"></i> <span>Withdraw Benefit</span>
                         </a>
                     <?php endif; ?>
-                    <a href="<?= BASE_URL ?>/member/pages/mpesa_request.php?type=welfare" class="btn btn-success d-flex align-items-center gap-2 rounded-pill px-4 fw-bold text-dark border-0 shadow-sm" style="background-color: var(--hop-lime);">
+                    <a href="<?= BASE_URL ?>/member/pages/mpesa_request.php?type=welfare" class="btn btn-success d-flex align-items-center gap-2 rounded-pill px-4 fw-bold  border-0 shadow-sm" style="background-color: var(--hop-lime);">
                         <i class="bi bi-heart-fill"></i> <span>Contribute</span>
                     </a>
                 </div>
@@ -394,7 +398,7 @@ $pageTitle = "Welfare Hub";
                 <div class="col-md-4 col-xl-2">
                     <div class="hope-card p-4 h-100 position-relative" style="background: linear-gradient(145deg, var(--hop-card-bg) 0%, rgba(var(--hop-lime-rgb), 0.1) 100%);">
                         <div class="d-flex align-items-center gap-3 mb-3">
-                            <div class="rounded-circle p-2 d-flex align-items-center justify-content-center bg-white text-dark shadow-sm">
+                            <div class="rounded-circle p-2 d-flex align-items-center justify-content-center bg-white  shadow-sm">
                                 <i class="bi bi-scale fs-4"></i>
                             </div>
                             <span class="text-secondary text-uppercase fw-bold small">Net Impact</span>
@@ -501,7 +505,7 @@ $pageTitle = "Welfare Hub";
                                         <td class="ps-4 fw-medium"><?= date('M d, Y', strtotime($row['created_at'])) ?></td>
                                         <td>
                                             <div class="d-flex flex-column">
-                                                <span class="fw-bold text-dark">Welfare Contribution</span>
+                                                <span class="fw-bold ">Welfare Contribution</span>
                                                 <span class="small text-muted font-monospace"><?= esc($row['reference_no'] ?? 'N/A') ?></span>
                                             </div>
                                         </td>
@@ -535,7 +539,7 @@ $pageTitle = "Welfare Hub";
                                         <div class="p-3" style="background: linear-gradient(135deg, var(--hop-dark) 0%, #1a4d40 100%); color: white; border-radius: 20px 20px 0 0;">
                                             <div class="d-flex justify-content-between align-items-center mb-2">
                                                 <span class="small fw-bold opacity-75 text-uppercase">Case #<?= $crow['case_id'] ?></span>
-                                                <span class="badge bg-white text-dark rounded-pill"><?= ucfirst($crow['status']) ?></span>
+                                                <span class="badge bg-white  rounded-pill"><?= ucfirst($crow['status']) ?></span>
                                             </div>
                                             <h6 class="fw-bold mb-0"><?= htmlspecialchars($crow['title']) ?></h6>
                                         </div>
@@ -554,7 +558,7 @@ $pageTitle = "Welfare Hub";
 
                                             <div class="d-flex justify-content-between align-items-center">
                                                 <small class="text-muted"><i class="bi bi-people me-1"></i> <?= $crow['donor_count'] ?> Donors</small>
-                                                <a href="mpesa_request.php?type=welfare_case&case_id=<?= $crow['case_id'] ?>" class="btn btn-sm btn-success text-dark fw-bold rounded-pill px-3" style="background: var(--hop-lime); border:0;">
+                                                <a href="mpesa_request.php?type=welfare_case&case_id=<?= $crow['case_id'] ?>" class="btn btn-sm btn-success  fw-bold rounded-pill px-3" style="background: var(--hop-lime); border:0;">
                                                     Support
                                                 </a>
                                             </div>
@@ -593,7 +597,7 @@ $pageTitle = "Welfare Hub";
                                         <td class="ps-4 fw-medium"><?= date('M d, Y', strtotime($row['date_granted'])) ?></td>
                                         <td>
                                             <div class="d-flex flex-column">
-                                                <span class="fw-bold text-dark"><?= htmlspecialchars($row['reason'] ?? 'Welfare Support') ?></span>
+                                                <span class="fw-bold "><?= htmlspecialchars($row['reason'] ?? 'Welfare Support') ?></span>
                                                 <span class="small text-muted">Approved by SACCO Admin</span>
                                             </div>
                                         </td>
@@ -636,12 +640,12 @@ $pageTitle = "Welfare Hub";
                                         <td class="ps-4 fw-medium"><?= date('M d, Y', strtotime($row['created_at'])) ?></td>
                                         <td>
                                             <div class="d-flex flex-column">
-                                                <span class="fw-bold text-dark"><?= htmlspecialchars($row['title']) ?></span>
+                                                <span class="fw-bold "><?= htmlspecialchars($row['title']) ?></span>
                                                 <span class="small text-muted text-truncate" style="max-width: 300px;"><?= htmlspecialchars($row['description']) ?></span>
                                             </div>
                                         </td>
                                         <td><span class="badge bg-<?= $color ?>-subtle text-<?= $color ?> border border-<?= $color ?>-subtle rounded-pill px-3"><?= ucfirst($status) ?></span></td>
-                                        <td class="text-end pe-4 fw-bold text-dark">KES <?= number_format((float)$row['approved_amount'], 2) ?></td>
+                                        <td class="text-end pe-4 fw-bold ">KES <?= number_format((float)$row['approved_amount'], 2) ?></td>
                                     </tr>
                                     <?php endforeach; endif; ?>
                                 </tbody>
@@ -684,7 +688,7 @@ $pageTitle = "Welfare Hub";
             </div>
             <div class="modal-footer border-0 pt-0">
                 <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
-                <button type="submit" name="submit_case" class="btn btn-success rounded-pill px-4 fw-bold text-dark border-0" style="background-color: var(--hop-lime);">
+                <button type="submit" name="submit_case" class="btn btn-success rounded-pill px-4 fw-bold  border-0" style="background-color: var(--hop-lime);">
                     Submit Request
                 </button>
             </div>

@@ -140,7 +140,7 @@ function time_elapsed_string($datetime, $full = false) {
                             <i class="bi <?= $icon ?> fs-5"></i>
                         </div>
                         <div>
-                            <p class="mb-1 small text-dark" style="line-height: 1.4;"><?= htmlspecialchars($row['message']) ?></p>
+                            <p class="mb-1 small " style="line-height: 1.4;"><?= htmlspecialchars($row['message']) ?></p>
                             <small class="text-muted" style="font-size: 0.75rem;">
                                 <i class="bi bi-clock me-1"></i><?= time_elapsed_string($row['created_at']) ?>
                             </small>

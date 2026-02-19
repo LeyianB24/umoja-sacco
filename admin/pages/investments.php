@@ -299,6 +299,8 @@ $pageTitle = "Investment Portfolio";
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="light">
 <head>
+    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
+    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= $pageTitle ?> | USMS Administration</title>
@@ -410,6 +412,8 @@ $pageTitle = "Investment Portfolio";
 
         @media (max-width: 991.98px) { .main-content { margin-left: 0; } }
     </style>
+
+    <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
 </head>
 <body>
 
@@ -458,7 +462,7 @@ $pageTitle = "Investment Portfolio";
                                 <i class="bi bi-safe2"></i>
                             </div>
                             <div class="text-muted small fw-bold text-uppercase">Active Valuation</div>
-                            <div class="h2 fw-800 text-dark mt-2 mb-0">KES <?= number_format((float)($global['active_valuation'] ?? 0)) ?></div>
+                            <div class="h2 fw-800  mt-2 mb-0">KES <?= number_format((float)($global['active_valuation'] ?? 0)) ?></div>
                             <div class="small text-muted mt-1"><i class="bi bi-building-check text-success me-1"></i> Current live assets</div>
                         </div>
                     </div>
@@ -469,7 +473,7 @@ $pageTitle = "Investment Portfolio";
                                 <i class="bi bi-cash-coin"></i>
                             </div>
                             <div class="text-muted small fw-bold text-uppercase">Realized Exit Gains</div>
-                            <div class="h2 fw-800 text-dark mt-2 mb-0">KES <?= number_format((float)($global['realized_gains'] ?? 0)) ?></div>
+                            <div class="h2 fw-800  mt-2 mb-0">KES <?= number_format((float)($global['realized_gains'] ?? 0)) ?></div>
                             <div class="small text-muted mt-1"><i class="bi bi-check-all text-success me-1"></i> Profit from sold assets</div>
                         </div>
                     </div>
@@ -487,7 +491,7 @@ $pageTitle = "Investment Portfolio";
                                 $q_cost = (float)($q_cost_res['c'] ?? 0) ?: 1;
                                 $multiplier = $total_val / $q_cost;
                             ?>
-                            <div class="h2 fw-800 text-dark mt-2 mb-1"><?= number_format($multiplier, 2) ?>x</div>
+                            <div class="h2 fw-800  mt-2 mb-1"><?= number_format($multiplier, 2) ?>x</div>
                             <div class="small text-muted mt-1"><i class="bi bi-stars text-success me-1"></i> Overall portfolio growth</div>
                         </div>
                     </div>
@@ -562,7 +566,7 @@ $pageTitle = "Investment Portfolio";
                             // Viability Status Badge
                             $viability_badge = match($a['viability_status']) {
                                 'viable' => '<span class="badge bg-success text-white px-2 py-1 mb-1" style="font-size: 0.65rem;"><i class="bi bi-check-circle-fill me-1"></i>Viable</span>',
-                                'underperforming' => '<span class="badge bg-warning text-dark px-2 py-1 mb-1" style="font-size: 0.65rem;"><i class="bi bi-exclamation-triangle-fill me-1"></i>Underperforming</span>',
+                                'underperforming' => '<span class="badge bg-warning  px-2 py-1 mb-1" style="font-size: 0.65rem;"><i class="bi bi-exclamation-triangle-fill me-1"></i>Underperforming</span>',
                                 'loss_making' => '<span class="badge bg-danger text-white px-2 py-1 mb-1" style="font-size: 0.65rem;"><i class="bi bi-x-circle-fill me-1"></i>Loss Making</span>',
                                 default => '<span class="badge bg-secondary text-white px-2 py-1 mb-1" style="font-size: 0.65rem;"><i class="bi bi-clock-history me-1"></i>Pending</span>'
                             };
@@ -580,7 +584,7 @@ $pageTitle = "Investment Portfolio";
                         </div>
                     </div>
 
-                    <h5 class="fw-800 text-dark mb-1"><?= esc($a['title']) ?></h5>
+                    <h5 class="fw-800  mb-1"><?= esc($a['title']) ?></h5>
                     <div class="small text-muted fw-bold text-uppercase ls-1 mb-3"><?= str_replace('_',' ',$a['category']) ?></div>
 
                     <div class="row g-2 mb-4">
@@ -860,7 +864,7 @@ $pageTitle = "Investment Portfolio";
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body p-4">
-                    <p class="text-muted small mb-4">You are about to mark <strong id="dispose_title" class="text-dark"></strong> as sold. This will record the proceeds in the treasury and halt future revenue tracking.</p>
+                    <p class="text-muted small mb-4">You are about to mark <strong id="dispose_title" class=""></strong> as sold. This will record the proceeds in the treasury and halt future revenue tracking.</p>
                     
                     <div class="mb-3">
                         <label class="form-label small fw-bold text-muted">Sale Price (KES)</label>
