@@ -249,24 +249,24 @@ $pageTitle = "Unified Welfare Suite";
 <head>
     <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
     <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
+    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
     <meta charset="UTF-8">
     <title><?= $pageTitle ?> | USMS</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        :root { --forest: #0f3d32; --lime: #d1fa59; --body-bg: #f8fafc; }
-        body { background-color: var(--body-bg); font-family: 'Plus Jakarta Sans', sans-serif; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
         .main-content { margin-left: 280px; padding: 2rem; }
         @media (max-width: 991px) { .main-content { margin-left: 0; } }
-        .glass-card { background: white; border: none; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); transition: 0.2s; }
+        .glass-card { border: none; border-radius: 16px; transition: 0.2s; }
         .glass-card:hover { transform: translateY(-3px); }
-        .badge-pending { background: #fff7ed; color: #c2410c; border: 1px solid #ffedd5; }
-        .badge-active { background: #f0fdf4; color: #15803d; border: 1px solid #dcfce7; }
-        .badge-approved { background: #e0f2fe; color: #075985; border: 1px solid #bae6fd; }
+        .badge-pending { background: rgba(245, 158, 11, 0.1); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.2); }
+        .badge-active { background: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.2); }
+        .badge-approved { background: rgba(59, 130, 246, 0.1); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.2); }
         .icon-box { width: 45px; height: 45px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; }
-        .nav-tabs-custom .nav-link { border: none; color: #64748b; font-weight: 600; padding: 1rem; border-bottom: 2px solid transparent; }
-        .nav-tabs-custom .nav-link.active { color: var(--forest); border-bottom-color: var(--lime); background: transparent; }
+        .nav-tabs-custom .nav-link { border: none; font-weight: 600; padding: 1rem; border-bottom: 2px solid transparent; }
+        .nav-tabs-custom .nav-link.active { color: var(--lime); border-bottom-color: var(--lime); background: transparent; }
     </style>
 
     <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
@@ -285,7 +285,7 @@ $pageTitle = "Unified Welfare Suite";
                     <div class="position-absolute end-0 bottom-0 opacity-10 p-2"><i class="bi bi-safe2 display-1"></i></div>
                     <div class="d-flex justify-content-between align-items-start z-1 position-relative">
                         <div>
-                            <div class="text-white-50 text-uppercase small fw-bold mb-1">Welfare Pool</div>
+                            <div class="text-white-50 text-uppercase small fw-bold mb-0">Welfare Pool</div>
                             <h3 class="fw-bold mb-0"><?= ksh($pool_balance) ?></h3>
                         </div>
                         <div class="icon-box bg-white bg-opacity-25"><i class="bi bi-wallet2 text-white"></i></div>

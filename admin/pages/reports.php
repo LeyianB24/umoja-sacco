@@ -230,29 +230,17 @@ $pageTitle = "Executive Reports";
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= $pageTitle ?> | Umoja Sacco</title>
+    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?= $pageTitle ?> | Umoja Sacco</title>
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
     <style>
-        :root {
-            --forest: #0f3d32;
-            --forest-light: #165646;
-            --lime: #d1fa59;
-            --lime-dark: #b8e62f;
-            --body-bg: #f8fafc;
-            --card-bg: #ffffff;
-            --text-main: #1e293b;
-            --text-muted: #64748b;
-        }
-
-        body {
-            background-color: var(--body-bg);
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            color: var(--text-main);
-            overflow-x: hidden;
-        }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; overflow-x: hidden; }
 
         /* --- Sidebar & Layout Adjustment --- */
         .main-content { margin-left: 280px; padding: 2rem; transition: margin-left 0.3s ease; }
@@ -260,26 +248,22 @@ $pageTitle = "Executive Reports";
 
         /* --- Modern Cards --- */
         .stat-card {
-            background: var(--card-bg);
             border: none;
             border-radius: 20px;
             padding: 1.5rem;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.04);
             transition: transform 0.2s, box-shadow 0.2s;
             position: relative;
             overflow: hidden;
             height: 100%;
         }
-        .stat-card:hover { transform: translateY(-4px); box-shadow: 0 12px 24px rgba(0,0,0,0.06); }
+        .stat-card:hover { transform: translateY(-4px); }
         
         /* Card Variants */
-        .card-dark { background: linear-gradient(135deg, var(--forest), var(--forest-light)); color: white; }
-        .card-dark .text-muted { color: rgba(255,255,255,0.7) !important; }
-        .card-dark .icon-box { background: rgba(255,255,255,0.1); color: var(--lime); }
+        .card-dark { background: linear-gradient(135deg, #000000, #15181c); color: white; border: 1px solid var(--border-color); }
         
-        .card-accent { background: var(--lime); color: var(--forest); }
-        .card-accent .text-muted { color: var(--forest); opacity: 0.75; }
-        .card-accent .icon-box { background: rgba(15, 61, 50, 0.1); color: var(--forest); }
+        .card-accent { background: var(--lime); color: #000000; }
+        .card-accent .text-muted { color: #000000 !important; opacity: 0.75; }
+        .card-accent .icon-box { background: rgba(0, 0, 0, 0.1); color: #000000; }
 
         .icon-box {
             width: 48px; height: 48px;
@@ -301,39 +285,26 @@ $pageTitle = "Executive Reports";
         }
         .trend-up { background: rgba(25, 135, 84, 0.1); color: #198754; }
         .trend-down { background: rgba(220, 53, 69, 0.1); color: #dc3545; }
-        .card-dark .trend-up { background: rgba(255,255,255,0.2); color: #fff; }
-        .card-dark .trend-down { background: rgba(255,100,100,0.2); color: #ffcccc; }
 
         /* --- Controls & Inputs --- */
         .filter-bar {
-            background: white;
             padding: 1rem;
             border-radius: 16px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
             margin-bottom: 2rem;
-            border: 1px solid #f1f5f9;
+            border: 1px solid var(--border-color);
         }
-        .form-select, .form-control {
-            border-radius: 10px;
-            border-color: #e2e8f0;
-            font-size: 0.9rem;
-            padding: 0.6rem 1rem;
-        }
-        .form-select:focus, .form-control:focus {
-            border-color: var(--forest);
-            box-shadow: 0 0 0 3px rgba(15, 61, 50, 0.1);
-        }
+        .form-select, .form-control { border-radius: 10px; font-size: 0.9rem; padding: 0.6rem 1rem; }
         
         .btn-forest {
-            background-color: var(--forest);
-            color: white;
+            background-color: var(--lime);
+            color: #000000;
             border: none;
             padding: 0.6rem 1.5rem;
             border-radius: 10px;
             font-weight: 600;
             transition: all 0.2s;
         }
-        .btn-forest:hover { background-color: var(--forest-light); color: white; transform: translateY(-1px); }
+        .btn-forest:hover { opacity: 0.9; transform: translateY(-1px); }
 
         /* --- Charts & Tables --- */
         .chart-container { position: relative; height: 320px; width: 100%; }
@@ -341,16 +312,14 @@ $pageTitle = "Executive Reports";
             font-size: 0.75rem;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            color: var(--text-muted);
-            background: #f8fafc;
-            border-bottom: 1px solid #e2e8f0;
+            border-bottom: 1px solid var(--border-color);
         }
         .table-custom td { padding: 1rem 0.5rem; vertical-align: middle; }
 
         @media print {
             .sidebar, .no-print, .btn, .filter-bar { display: none !important; }
             .main-content { margin: 0; padding: 0; }
-            body { background: white; }
+            body { background: white; color: black; }
             .stat-card { border: 1px solid #ddd; box-shadow: none; }
         }
     </style>
@@ -592,12 +561,12 @@ $pageTitle = "Executive Reports";
     
     // Gradients
     let gradIn = ctxTrend.createLinearGradient(0, 0, 0, 400);
-    gradIn.addColorStop(0, '#0f3d32');
-    gradIn.addColorStop(1, '#165646');
+    gradIn.addColorStop(0, '#bef264');
+    gradIn.addColorStop(1, 'rgba(190, 242, 100, 0.1)');
 
     let gradOut = ctxTrend.createLinearGradient(0, 0, 0, 400);
-    gradOut.addColorStop(0, '#e2e8f0');
-    gradOut.addColorStop(1, '#f1f5f9');
+    gradOut.addColorStop(0, '#1e293b');
+    gradOut.addColorStop(1, '#0f172a');
 
     new Chart(ctxTrend, {
         type: 'bar',
@@ -608,10 +577,10 @@ $pageTitle = "Executive Reports";
                     type: 'line',
                     label: 'Net Cash Flow',
                     data: <?= json_encode($trend_net) ?>,
-                    borderColor: '#d1fa59',
+                    borderColor: '#bef264',
                     borderWidth: 3,
-                    pointBackgroundColor: '#0f3d32',
-                    pointBorderColor: '#fff',
+                    pointBackgroundColor: '#000000',
+                    pointBorderColor: '#bef264',
                     pointRadius: 5,
                     tension: 0.4,
                     order: 0
@@ -638,9 +607,11 @@ $pageTitle = "Executive Reports";
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: { position: 'top', align: 'end', labels: { usePointStyle: true, boxWidth: 8 } },
+                legend: { position: 'top', align: 'end', labels: { usePointStyle: true, boxWidth: 8, color: '#94a3b8' } },
                 tooltip: {
-                    backgroundColor: '#1e293b',
+                    backgroundColor: '#000000',
+                    borderColor: 'rgba(255,255,255,0.1)',
+                    borderWidth: 1,
                     padding: 12,
                     titleFont: { family: 'Plus Jakarta Sans', size: 13 },
                     bodyFont: { family: 'Plus Jakarta Sans', size: 12 },
@@ -653,8 +624,8 @@ $pageTitle = "Executive Reports";
                 }
             },
             scales: {
-                y: { beginAtZero: true, grid: { borderDash: [4, 4], color: '#f1f5f9' }, ticks: { font: { size: 11 } }, border: { display: false } },
-                x: { grid: { display: false }, ticks: { font: { size: 11 } }, border: { display: false } }
+                y: { beginAtZero: true, grid: { borderDash: [4, 4], color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b', font: { size: 11 } }, border: { display: false } },
+                x: { grid: { display: false }, ticks: { color: '#64748b', font: { size: 11 } }, border: { display: false } }
             }
         }
     });

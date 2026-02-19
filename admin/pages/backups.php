@@ -90,46 +90,18 @@ function getInitials($n) { return strtoupper(substr($n ?? 'U', 0, 2)); }
     <title>Database Maintenance | Admin</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <script>
-        (() => {
-            const saved = localStorage.getItem('theme') || 'light';
-            document.documentElement.setAttribute('data-bs-theme', saved);
-        })();
-    </script>
-
     <style>
-        :root {
-            --bg-body: #f8f9fa;
-            --bg-card: #ffffff;
-            --text-dark: #111827;
-            --text-gray: #6b7280;
-            --accent-lime: #bef264;
-            --accent-dark: #1a2e05;
-            --border-color: #e5e7eb;
-        }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .main-content { margin-left: 280px; padding: 30px; transition: 0.3s; }
+        @media (max-width: 991.98px) { .main-content { margin-left: 0; } }
 
-        body {
-            background-color: var(--bg-body);
-            color: var(--text-dark);
-            font-family: 'Plus Jakarta Sans', sans-serif;
-        }
-
-        .card-custom {
-            background: var(--bg-card);
-            border-radius: 24px;
-            border: 1px solid rgba(0,0,0,0.03);
-            box-shadow: 0 4px 20px rgba(0,0,0,0.02);
-        }
+        .card-custom { border-radius: 24px; border: 1px solid var(--border-color); }
 
         /* --- Table Styling --- */
         .table-custom thead th {
-            background-color: #f9fafb;
             text-transform: uppercase;
             font-size: 0.75rem;
             letter-spacing: 0.05em;
-            color: var(--text-gray);
             border-top: none;
             padding: 16px;
         }
@@ -141,31 +113,20 @@ function getInitials($n) { return strtoupper(substr($n ?? 'U', 0, 2)); }
 
         /* --- Buttons --- */
         .btn-lime {
-            background-color: var(--accent-lime);
-            color: var(--accent-dark);
+            background-color: var(--lime);
+            color: #000000;
             font-weight: 600;
             border-radius: 50px;
             padding: 12px 24px;
             border: none;
             transition: all 0.2s;
         }
-        .btn-lime:hover {
-            background-color: #a3e635;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(163, 230, 53, 0.3);
-        }
+        .btn-lime:hover { opacity: 0.9; transform: translateY(-1px); }
 
-        .main-content-wrapper { margin-left: 260px; }
-        @media(max-width: 991px){ .main-content-wrapper{ margin-left:0; } }
-
-        .stat-circle {
-            width: 48px;
-            height: 48px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.25rem;
+        .avatar-circle {
+            width: 44px; height: 44px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 0.85rem;
         }
     </style>
 
@@ -174,11 +135,12 @@ function getInitials($n) { return strtoupper(substr($n ?? 'U', 0, 2)); }
 <body>
 
 <div class="d-flex">
-        <?php $layout->sidebar(); ?>
+    <?php $layout->sidebar(); ?>
 
-        <div class="flex-fill main-content-wrapper" style="margin-left: 280px; transition: margin-left 0.3s ease;">
-            
-            <?php $layout->topbar($pageTitle ?? ''); ?>
+    <div class="flex-fill main-content">
+        <?php $layout->topbar($pageTitle); ?>
+
+        <div class="flex-fill main-content-wrapper" style="margin-left: 0; transition: margin-left 0.3s ease;">
             
             <div class="container-fluid">
             

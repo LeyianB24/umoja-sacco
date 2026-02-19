@@ -304,85 +304,55 @@ $pageTitle = "Investment Portfolio";
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= $pageTitle ?> | USMS Administration</title>
+    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?= $pageTitle ?> | USMS Administration</title>
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     
     <style>
-        :root {
-            --forest: #0f2e25;
-            --forest-light: #1a4d3d;
-            --lime: #d0f35d;
-            --lime-dark: #a8cf12;
-            --glass-bg: rgba(255, 255, 255, 0.95);
-            --glass-border: rgba(15, 46, 37, 0.05);
-            --glass-shadow: 0 10px 40px rgba(15, 46, 37, 0.06);
-        }
-
-        body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background: #f4f7f6;
-            color: var(--forest);
-        }
-
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
         .main-content { margin-left: 280px; padding: 30px; transition: 0.3s; }
         
-        /* Banner Styles */
         .portal-header {
-            background: linear-gradient(135deg, var(--forest) 0%, #1a4d3e 100%);
-            border-radius: 30px; padding: 40px; color: white; margin-bottom: 30px;
-            box-shadow: 0 20px 40px rgba(15, 46, 37, 0.15);
             position: relative; overflow: hidden;
+            border-radius: 30px; padding: 40px; margin-bottom: 30px;
         }
 
-        /* Stat Cards */
-        .stat-card {
-            background: white; border-radius: 24px; padding: 25px;
-            box-shadow: var(--glass-shadow); border: 1px solid var(--glass-border);
-            height: 100%; transition: 0.3s;
-        }
-        .stat-card:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(15, 46, 37, 0.08); }
+        .stat-card { border-radius: 24px; padding: 25px; height: 100%; transition: 0.3s; }
+        .stat-card:hover { transform: translateY(-5px); }
 
         .icon-circle {
             width: 50px; height: 50px; border-radius: 15px;
             display: flex; align-items: center; justify-content: center;
             font-size: 1.25rem; margin-bottom: 15px;
         }
-        .bg-lime-soft { background: rgba(208, 243, 93, 0.2); color: var(--forest); }
-        .bg-forest-soft { background: rgba(15, 46, 37, 0.05); color: var(--forest); }
+        .bg-lime-soft { background: rgba(190, 242, 100, 0.1); color: var(--lime); }
+        .bg-forest-soft { background: rgba(255, 255, 255, 0.05); color: var(--lime); }
 
-        /* Ledger Table */
-        .ledger-container {
-            background: white; border-radius: 28px; 
-            box-shadow: var(--glass-shadow); border: 1px solid var(--glass-border);
-            overflow: hidden;
-        }
-        .ledger-header { padding: 30px; border-bottom: 1px solid #f1f5f9; background: #fff; }
+        .ledger-container { border-radius: 28px; overflow: hidden; }
+        .ledger-header { padding: 30px; border-bottom: 1px solid var(--border-color); }
         
         .table-custom { width: 100%; border-collapse: separate; border-spacing: 0; }
         .table-custom thead th {
-            background: #f8fafc; color: #64748b; font-weight: 700;
-            text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.05em;
-            padding: 18px 25px; border-bottom: 2px solid #edf2f7;
+            font-weight: 700; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.05em;
+            padding: 18px 25px; border-bottom: 2px solid var(--border-color);
         }
         .table-custom tbody td {
-            padding: 18px 25px; border-bottom: 1px solid #f1f5f9;
+            padding: 18px 25px; border-bottom: 1px solid var(--border-color);
             vertical-align: middle; font-size: 0.95rem;
         }
-        .table-custom tbody tr:hover td { background-color: #fcfdfe; }
+        .table-custom tbody tr:hover td { background-color: rgba(255, 255, 255, 0.02); }
 
-        /* Asset Cards */
-        .asset-card {
-            background: white; border-radius: 24px; padding: 25px;
-            box-shadow: var(--glass-shadow); border: 1px solid var(--glass-border);
-            height: 100%; transition: 0.3s; position: relative;
-        }
-        .asset-card:hover { transform: translateY(-5px); box-shadow: 0 15px 35px rgba(15, 46, 37, 0.08); }
+        .asset-card { border-radius: 24px; padding: 25px; height: 100%; transition: 0.3s; position: relative; }
+        .asset-card:hover { transform: translateY(-5px); }
 
         .asset-icon-box {
             width: 50px; height: 50px; border-radius: 14px;
-            background: rgba(15, 46, 37, 0.05); color: var(--forest);
+            background: rgba(255, 255, 255, 0.05); color: var(--lime);
             display: flex; align-items: center; justify-content: center;
             font-size: 1.4rem;
         }
@@ -391,25 +361,24 @@ $pageTitle = "Investment Portfolio";
             padding: 6px 12px; border-radius: 8px; font-size: 0.7rem; font-weight: 800;
             text-transform: uppercase; letter-spacing: 0.05em;
         }
-        .st-active { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
-        .st-maintenance { background: #fffbeb; color: #d97706; border: 1px solid #fef3c7; }
-        .st-disposed { background: #f3f4f6; color: #6b7280; border: 1px solid #e5e7eb; }
+        .st-active { background: rgba(16, 163, 74, 0.1); color: #16a34a; border: 1px solid rgba(16, 163, 74, 0.2); }
+        .st-maintenance { background: rgba(217, 119, 6, 0.1); color: #d97706; border: 1px solid rgba(217, 119, 6, 0.2); }
+        .st-disposed { background: rgba(107, 114, 128, 0.1); color: #6b7280; border: 1px solid rgba(107, 114, 128, 0.2); }
 
         .btn-lime {
-            background: var(--lime); color: var(--forest);
+            background: var(--lime); color: #000000;
             border-radius: 12px; font-weight: 800; border: none; padding: 10px 20px;
             transition: 0.3s;
         }
-        .btn-lime:hover { background: var(--lime-dark); transform: translateY(-2px); box-shadow: 0 8px 15px rgba(208, 243, 93, 0.3); }
+        .btn-lime:hover { transform: translateY(-2px); opacity: 0.9; }
 
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         .fade-in { animation: fadeIn 0.6s ease-out; }
         .slide-up { animation: slideUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; opacity: 0; }
         @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
-        .form-control, .form-select { border-radius: 12px; padding: 10px 15px; border: 1.5px solid #e2e8f0; }
-        .form-control:focus { border-color: var(--forest); box-shadow: 0 0 0 4px rgba(15, 46, 37, 0.05); }
-
+        .form-control, .form-select { border-radius: 12px; padding: 10px 15px; }
+        
         @media (max-width: 991.98px) { .main-content { margin-left: 0; } }
     </style>
 
@@ -947,7 +916,7 @@ $pageTitle = "Investment Portfolio";
                     labels: labels,
                     datasets: [{
                         data: values,
-                        backgroundColor: ['#d0f35d', '#0f2e25', '#1a4d3d', '#a8cf12', '#22c55e'],
+                        backgroundColor: ['#bef264', '#15803d', '#1e293b', '#64748b', '#22c55e'],
                         borderWidth: 0
                     }]
                 },

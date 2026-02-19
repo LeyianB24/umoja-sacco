@@ -30,6 +30,12 @@ $patterns = [
     '/style="background: #FFFFFF;[^"]*"/i' => '',
     '/style="background-color: #FFFFFF;[^"]*"/i' => '',
     '/style="background: #fff;[^"]*"/i' => '',
+    '/style="background: #f8fafc;[^"]*"/i' => '',
+    '/style="background-color: #f8fafc;[^"]*"/i' => '',
+    '/style="background: #f1f5f9;[^"]*"/i' => '',
+    '/style="background-color: #f1f5f9;[^"]*"/i' => '',
+    '/style="background: #fdfdfd;[^"]*"/i' => '',
+    '/style="background-color: #fdfdfd;[^"]*"/i' => '',
 
     // 4. Shared Style Purging
     '/ class="([^"]*)text-dark([^"]*)"/i' => function($matches) {

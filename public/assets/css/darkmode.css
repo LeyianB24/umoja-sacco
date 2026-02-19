@@ -91,7 +91,13 @@
 [data-bs-theme="dark"] .card-forest,
 [data-bs-theme="dark"] .hope-card,
 [data-bs-theme="dark"] .filter-container,
-[data-bs-theme="dark"] .transaction-list {
+[data-bs-theme="dark"] .transaction-list,
+[data-bs-theme="dark"] .glass-card,
+[data-bs-theme="dark"] .glass-container,
+[data-bs-theme="dark"] .ledger-container,
+[data-bs-theme="dark"] .ledger-card,
+[data-bs-theme="dark"] .proof-card,
+[data-bs-theme="dark"] .type-card {
     background: #15181c !important;
     border: 1px solid #2f3336 !important;
     color: #eff3f4 !important;
@@ -217,8 +223,12 @@
 [data-bs-theme="dark"] .bg-white,
 [data-bs-theme="dark"] .bg-light,
 [data-bs-theme="dark"] .bg-light-subtle,
-[data-bs-theme="dark"] .hd-toggle-btn {
-    background: #15181c !important;
+[data-bs-theme="dark"] .hd-toggle-btn,
+[data-bs-theme="dark"] .filter-bar,
+[data-bs-theme="dark"] .ledger-glass,
+[data-bs-theme="dark"] .stat-bubble {
+    background: #000000 !important;
+    background-color: #000000 !important;
     border-color: #2f3336 !important;
 }
 
@@ -247,6 +257,28 @@
     border-color: #2f3336 !important;
     color: #eff3f4 !important;
 }
+
+/* ---------------------------------------------------------------------------
+   SEMANTIC BRAND CLASSES (THEME AWARE)
+   --------------------------------------------------------------------------- */
+.bg-forest { 
+    background-color: #0f2e25 !important; 
+    color: #ffffff !important; 
+}
+[data-bs-theme="dark"] .bg-forest { 
+    background-color: #000000 !important; 
+    border: 1px solid #2f3336 !important; 
+}
+
+.bg-lime { 
+    background-color: #bef264 !important; 
+    color: #000000 !important; 
+}
+[data-bs-theme="dark"] .bg-lime { 
+    background-color: #bef264 !important; 
+    color: #000000 !important;
+}
+
 
 /* ---------------------------------------------------------------------------
    SPECIFIC PORTAL COMPONENT FIXES (FOR STUBBORN ELEMENTS)
@@ -307,7 +339,9 @@
    ADMIN PORTAL SPECIFIC COMPONENTS
    --------------------------------------------------------------------------- */
 [data-bs-theme="dark"] .portal-header,
-[data-bs-theme="dark"] .hp-hero {
+[data-bs-theme="dark"] .hp-hero,
+[data-bs-theme="dark"] .hp-banner,
+[data-bs-theme="dark"] .profile-hero {
     background: linear-gradient(135deg, #000000 0%, #0b1210 100%) !important;
     border: 1px solid #2f3336 !important;
     box-shadow: none !important;
@@ -319,6 +353,8 @@
 
 [data-bs-theme="dark"] .stat-card,
 [data-bs-theme="dark"] .glass-stat,
+[data-bs-theme="dark"] .glass-card,
+[data-bs-theme="dark"] .glass-container,
 [data-bs-theme="dark"] .ledger-container,
 [data-bs-theme="dark"] .ledger-header,
 [data-bs-theme="dark"] .table-glass {
@@ -352,7 +388,26 @@
 }
 
 [data-bs-theme="dark"] .table-custom tbody tr:hover td {
-    background-color: #1a1d21 !important;
+    background: #1e2126 !important;
+}
+
+/* Generic Theme Variable Overrides */
+[data-bs-theme="dark"] {
+    --hope-bg: #000000 !important;
+    --hope-card-bg: #15181c !important;
+    --hope-text-main: #eff3f4 !important;
+    --hope-text-muted: #71767b !important;
+    --hope-border: #2f3336 !important;
+    
+    /* Support legacy glass components */
+    --glass-bg: rgba(21, 24, 28, 0.9) !important;
+    --glass-border: rgba(47, 51, 54, 0.5) !important;
+}
+
+[data-bs-theme="dark"] .hd-glass {
+    background: rgba(21, 24, 28, 0.9) !important;
+    border: 1px solid #2f3336 !important;
+    box-shadow: none !important;
 }
 
 [data-bs-theme="dark"] .search-box,

@@ -31,7 +31,6 @@ $baseUrl = defined('BASE_URL') ? BASE_URL : '';
                     Chart.defaults.plugins.tooltip.borderColor = isDark ? '#2f3336' : '#e5e7eb';
                 }
             }
-
             // Global ApexCharts Defaults
             if (window.Apex) {
                 Apex.theme = { mode: isDark ? 'dark' : 'light' };
@@ -49,6 +48,17 @@ $baseUrl = defined('BASE_URL') ? BASE_URL : '';
 
         const saved = localStorage.getItem('theme') || 'light';
         applyTheme(saved);
+
+        // AUTO-SYNC POLLING: Ensure defaults are applied even if libraries load late
+        let pollCount = 0;
+        const chartPoll = setInterval(() => {
+            pollCount++;
+            if (window.Chart || window.Apex) {
+                window.syncChartsTheme();
+                clearInterval(chartPoll);
+            }
+            if (pollCount > 50) clearInterval(chartPoll); // Stop after 5s
+        }, 100);
 
         // Listen for theme toggle events (if multiple pages open)
         window.addEventListener('storage', (e) => {

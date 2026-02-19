@@ -148,13 +148,12 @@ $pageTitle = "Register Member";
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f0f7f4; }
-        .glass-card { background: white; border-radius: 20px; border: none; box-shadow: 0 10px 40px rgba(0,0,0,0.05); }
-        .form-label { font-weight: 600; color: #475569; font-size: 0.85rem; text-transform: uppercase; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .glass-card { border-radius: 20px; border: none; box-shadow: 0 10px 40px rgba(0,0,0,0.05); }
+        .form-label { font-weight: 600; font-size: 0.85rem; text-transform: uppercase; }
         .btn-green { background: #0F392B; color: white; border-radius: 12px; font-weight: bold; }
         .btn-green:hover { background: #1a5a45; color: white; }
     </style>
-
     <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
 </head>
 <body>

@@ -179,7 +179,7 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
 $pageTitle = "Revenue Portal";
 ?>
 <!DOCTYPE html>
-<html lang="en" data-bs-theme="light">
+<html lang="en">
 <head>
     <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
     <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
@@ -192,50 +192,37 @@ $pageTitle = "Revenue Portal";
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     
     <style>
-        :root {
-            --forest: #0f2e25;
-            --forest-light: #1a4d3d;
-            --lime: #d0f35d;
-            --lime-dark: #a8cf12;
-            --glass-bg: rgba(255, 255, 255, 0.95);
-            --glass-border: rgba(15, 46, 37, 0.05);
-            --glass-shadow: 0 10px 40px rgba(15, 46, 37, 0.06);
-            --success-soft: rgba(34, 197, 94, 0.1);
-            --warning-soft: rgba(234, 179, 8, 0.1);
-            --danger-soft: rgba(239, 68, 68, 0.1);
-        }
-
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f4f7f6; color: var(--forest); }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
         .main-content { margin-left: 280px; padding: 30px; transition: 0.3s; }
-        .portal-header { background: linear-gradient(135deg, var(--forest) 0%, #1a4d3e 100%); border-radius: 30px; padding: 40px; color: white; margin-bottom: 30px; box-shadow: 0 20px 40px rgba(15, 46, 37, 0.15); position: relative; overflow: hidden; }
-        .stat-card { background: white; border-radius: 24px; padding: 25px; box-shadow: var(--glass-shadow); border: 1px solid var(--glass-border); height: 100%; transition: 0.3s; }
-        .stat-card:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(15, 46, 37, 0.08); }
+        .portal-header { border-radius: 30px; padding: 40px; margin-bottom: 30px; position: relative; overflow: hidden; }
+        .stat-card { border-radius: 24px; padding: 25px; border: 1px solid var(--border-color); height: 100%; transition: 0.3s; }
+        .stat-card:hover { transform: translateY(-5px); }
         .icon-circle { width: 54px; height: 54px; border-radius: 18px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; margin-bottom: 20px; }
-        .bg-lime-soft { background: rgba(208, 243, 93, 0.2); color: var(--forest); }
-        .bg-forest-soft { background: rgba(15, 46, 37, 0.05); color: var(--forest); }
-        .ledger-container { background: white; border-radius: 28px; box-shadow: var(--glass-shadow); border: 1px solid var(--glass-border); overflow: hidden; }
-        .ledger-header { padding: 30px; border-bottom: 1px solid #f1f5f9; background: #fff; }
+        .bg-lime-soft { background: rgba(190, 242, 100, 0.1); color: var(--lime); }
+        .bg-forest-soft { background: rgba(255, 255, 255, 0.05); color: white; }
+        .ledger-container { border-radius: 28px; border: 1px solid var(--border-color); overflow: hidden; }
+        .ledger-header { padding: 30px; border-bottom: 1px solid var(--border-color); }
         .table-custom { width: 100%; border-collapse: separate; border-spacing: 0; }
-        .table-custom thead th { background: #f8fafc; color: #64748b; font-weight: 700; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.05em; padding: 18px 25px; border-bottom: 2px solid #edf2f7; }
-        .table-custom tbody td { padding: 20px 25px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; font-size: 0.95rem; }
-        .table-custom tbody tr:hover td { background-color: #fcfdfe; }
-        .btn-lime { background: var(--lime); color: var(--forest); border-radius: 14px; font-weight: 800; border: none; padding: 12px 25px; transition: 0.3s; }
-        .btn-lime:hover { background: var(--lime-dark); transform: translateY(-2px); box-shadow: 0 10px 20px rgba(208, 243, 93, 0.3); }
-        .btn-outline-forest { background: transparent; border: 2px solid var(--forest); color: var(--forest); border-radius: 14px; font-weight: 700; padding: 10px 22px; transition: 0.3s; }
-        .btn-outline-forest:hover { background: var(--forest); color: white; }
-        .search-box { background: #f8fafc; border: none; border-radius: 15px; padding: 12px 20px 12px 45px; width: 100%; transition: 0.3s; }
+        .table-custom thead th { color: #64748b; font-weight: 700; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.05em; padding: 18px 25px; border-bottom: 2px solid var(--border-color); }
+        .table-custom tbody td { padding: 20px 25px; border-bottom: 1px solid var(--border-color); vertical-align: middle; font-size: 0.95rem; }
+        .table-custom tbody tr:hover td { background-color: rgba(255, 255, 255, 0.02); }
+        .btn-lime { background: var(--lime); color: #000000; border-radius: 14px; font-weight: 800; border: none; padding: 12px 25px; transition: 0.3s; }
+        .btn-lime:hover { opacity: 0.9; transform: translateY(-2px); }
+        .btn-outline-forest { background: transparent; border: 2px solid var(--lime); color: var(--lime); border-radius: 14px; font-weight: 700; padding: 10px 22px; transition: 0.3s; }
+        .btn-outline-forest:hover { background: var(--lime); color: #000000; }
+        .search-box { border: 1px solid var(--border-color); border-radius: 15px; padding: 12px 20px 12px 45px; width: 100%; transition: 0.3s; }
         .modal-content { border-radius: 30px; border: none; overflow: hidden; }
-        .modal-header { background: var(--forest); color: white; border: none; padding: 25px 35px; }
-        .modal-body { padding: 35px; background: #fcfdfe; }
-        .form-control, .form-select { border-radius: 15px; padding: 12px 20px; border: 1.5px solid #e2e8f0; }
+        .modal-header { background: #000000; color: white; border-bottom: 1px solid var(--border-color); padding: 25px 35px; }
+        .modal-body { padding: 35px; }
+        .form-control, .form-select { border-radius: 15px; padding: 12px 20px; }
 
         .slide-up { animation: slideUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; opacity: 0; }
         @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         @media (max-width: 991.98px) { .main-content { margin-left: 0; } }
         
-        .bg-success-soft { background: var(--success-soft); color: #15803d; }
-        .bg-warning-soft { background: var(--warning-soft); color: #854d0e; }
-        .bg-danger-soft { background: var(--danger-soft); color: #991b1b; }
+        .bg-success-soft { background: rgba(34, 197, 94, 0.1); color: #22c55e; }
+        .bg-warning-soft { background: rgba(234, 179, 8, 0.1); color: #eab308; }
+        .bg-danger-soft { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
     </style>
 
     <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
@@ -311,7 +298,7 @@ $pageTitle = "Revenue Portal";
                         <span class="text-muted fw-bold">Achievement</span>
                         <span class="fw-800"><?= number_format($inv['target_achievement'], 1) ?>%</span>
                     </div>
-                    <div class="progress" style="height: 6px; background: #f1f5f9;">
+                    <div class="progress" style="height: 6px; background: rgba(255,255,255,0.05);">
                         <div class="progress-bar <?= $inv['target_achievement'] >= 100 ? 'bg-success' : ($inv['target_achievement'] >= 70 ? 'bg-warning' : 'bg-danger') ?>" 
                              style="width: <?= min(100, $inv['target_achievement']) ?>%"></div>
                     </div>
@@ -347,8 +334,8 @@ $pageTitle = "Revenue Portal";
                     </div>
                     <div class="text-muted small fw-bold text-uppercase">Portfolio Efficiency</div>
                     <div class="h2 fw-800  mt-2 mb-1"><?= number_format($global_target_pct, 1) ?>%</div>
-                    <div class="progress" style="height: 4px; background: #f1f5f9; margin-bottom: 8px;">
-                        <div class="progress-bar bg-forest" style="width: <?= $global_target_pct ?>%"></div>
+                    <div class="progress" style="height: 4px; background: rgba(255,255,255,0.05); margin-bottom: 8px;">
+                        <div class="progress-bar bg-info" style="width: <?= $global_target_pct ?>%"></div>
                     </div>
                     <div class="small text-muted"><i class="bi bi-info-circle me-1"></i> Actual vs. Investment Targets</div>
                 </div>
@@ -361,7 +348,7 @@ $pageTitle = "Revenue Portal";
                             <label class="small text-muted fw-bold text-uppercase mb-2 d-block">Analysis Filters</label>
                             <div class="row g-2">
                                 <div class="col-12">
-                                    <select name="duration" class="form-select form-select-sm border-0 bg-light" onchange="toggleDateInputs(this.value)">
+                                    <select name="duration" class="form-select form-select-sm border-0 bg-transparent" onchange="toggleDateInputs(this.value)">
                                         <option value="all" <?= $duration === 'all' ? 'selected' : '' ?>>Historical Records</option>
                                         <option value="today" <?= $duration === 'today' ? 'selected' : '' ?>>Today's activity</option>
                                         <option value="weekly" <?= $duration === 'weekly' ? 'selected' : '' ?>>Past 7 Days</option>
@@ -370,7 +357,7 @@ $pageTitle = "Revenue Portal";
                                     </select>
                                 </div>
                                 <div class="col-12">
-                                    <select name="asset_id" class="form-select form-select-sm border-0 bg-light" onchange="this.form.submit()">
+                                    <select name="asset_id" class="form-select form-select-sm border-0 bg-transparent" onchange="this.form.submit()">
                                         <option value="0">All Investment Sources</option>
                                         <?php foreach($investments_select_list as $inv): ?>
                                             <option value="<?= $inv['investment_id'] ?>" <?= $filter_asset_id == $inv['investment_id'] ? 'selected' : '' ?>>
@@ -386,7 +373,7 @@ $pageTitle = "Revenue Portal";
                                 <input type="date" name="start_date" class="form-control form-control-sm" value="<?= $start_date ?>">
                                 <input type="date" name="end_date" class="form-control form-control-sm" value="<?= $end_date ?>">
                             </div>
-                            <button type="submit" class="btn btn-forest btn-sm w-100 mt-2">Apply Filters</button>
+                            <button type="submit" class="btn btn-lime btn-sm w-100 mt-2">Apply Filters</button>
                         </div>
                     </form>
                 </div>
@@ -403,7 +390,7 @@ $pageTitle = "Revenue Portal";
                             <input type="text" id="revenueSearch" class="search-box" placeholder="Filter inflows...">
                         </div>
                         <div class="dropdown">
-                            <button class="btn btn-outline-dark rounded-pill px-4 dropdown-toggle" data-bs-toggle="dropdown">
+                            <button class="btn btn-outline-dark rounded-pill px-4 dropdown-toggle border" data-bs-toggle="dropdown">
                                 <i class="bi bi-download me-2"></i>Export Analysis
                             </button>
                             <ul class="dropdown-menu shadow-lg border-0 mt-2">
@@ -441,11 +428,11 @@ $pageTitle = "Revenue Portal";
                                             <div class="small text-muted font-monospace mt-1"><?= esc($row['reference_no']) ?></div>
                                         </td>
                                         <td>
-                                            <div class="fw-600 text-forest"><?= esc($row['source_name'] ?: 'General Fund') ?></div>
+                                            <div class="fw-600 "><?= esc($row['source_name'] ?: 'General Fund') ?></div>
                                             <div class="small text-muted mt-1 opacity-75"><?= esc($row['notes'] ?: 'Revenue Entry') ?></div>
                                         </td>
                                         <td>
-                                            <span class="badge bg-light  border px-3 py-2 rounded-pill small fw-bold">
+                                            <span class="badge bg-transparent border px-3 py-2 rounded-pill small fw-bold">
                                                 <?= strtoupper($row['payment_method']) ?>
                                             </span>
                                         </td>
@@ -484,17 +471,17 @@ $pageTitle = "Revenue Portal";
                                 data-values='<?= json_encode(array_values($source_breakdown)) ?>'>
                             </canvas>
                         </div>
-                        <div class="mt-4 pt-3 border-top">
+                        <div class="mt-4 pt-3 border-top border-secondary opacity-50">
                             <h6 class="fw-bold mb-3 mt-4">Top Revenue Sources</h6>
                             <?php 
                             arsort($source_breakdown);
                             $count = 0;
                             foreach ($source_breakdown as $name => $val): 
-                                if ($count++ >= 5) break;
+                                if ($count++ >= 5) break; // Use $count here
                             ?>
-                                <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+                                <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom border-light border-opacity-10">
                                     <div class="d-flex align-items-center gap-2">
-                                        <div class="badge bg-forest text-lime rounded-circle" style="width: 8px; height: 8px;"></div>
+                                        <div class="badge bg-lime rounded-circle" style="width: 8px; height: 8px;"></div>
                                         <span class="small fw-600"><?= $name ?></span>
                                     </div>
                                     <span class="small fw-bold">KES <?= number_format((float)$val) ?></span>
@@ -535,11 +522,11 @@ $pageTitle = "Revenue Portal";
                             </select>
                         </div>
                         <div class="col-12 mt-3 d-none" id="target_info_box">
-                            <div class="alert alert-info border-0 rounded-4 bg-forest-soft d-flex align-items-center mb-0">
-                                <i class="bi bi-info-circle-fill fs-4 me-3 text-forest"></i>
+                            <div class="alert alert-info border-0 rounded-4 bg-opacity-10 d-flex align-items-center mb-0">
+                                <i class="bi bi-info-circle-fill fs-4 me-3 text-info"></i>
                                 <div>
-                                    <div class="small fw-800 text-forest text-uppercase mb-1">Asset Performance Target</div>
-                                    <div class="fw-bold " id="targetText">Target: KES 0.00</div>
+                                    <div class="small fw-800 text-info text-uppercase mb-1">Asset Performance Target</div>
+                                    <div class="fw-bold text-white" id="targetText">Target: KES 0.00</div>
                                 </div>
                             </div>
                         </div>
@@ -618,7 +605,7 @@ $pageTitle = "Revenue Portal";
                         labels: labels,
                         datasets: [{
                             data: values,
-                            backgroundColor: ['#d0f35d', '#0f2e25', '#1a4d3d', '#a8cf12', '#22c55e'],
+                            backgroundColor: ['#bef264', '#15803d', '#1e293b', '#64748b', '#22c55e'],
                             borderWidth: 0
                         }]
                     },

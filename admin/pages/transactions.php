@@ -166,58 +166,53 @@ $pageTitle = "Golden Ledger Vault";
     <link rel="stylesheet" href="<?= BASE_URL ?>/public/assets/css/style.css">
     
     <style>
-        :root { --forest: #0F2E25; --lime: #D0F35D; --glass: rgba(255, 255, 255, 0.95); }
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f0f4f3; color: #1a1a1a; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
         
         .main-content { margin-left: 280px; padding: 40px; min-height: 100vh; }
         
         .hp-banner {
-            background: linear-gradient(135deg, var(--forest) 0%, #1a4d3e 100%);
-            border-radius: 30px; padding: 40px; color: white; margin-bottom: 30px;
-            box-shadow: 0 20px 40px rgba(15, 46, 37, 0.15);
+            border-radius: 30px; padding: 40px; margin-bottom: 30px;
             position: relative; overflow: hidden;
         }
         .hp-banner::after {
             content: ''; position: absolute; bottom: -20%; right: -5%; width: 350px; height: 350px;
-            background: radial-gradient(circle, rgba(208, 243, 93, 0.1) 0%, transparent 70%);
+            background: radial-gradient(circle, rgba(190, 242, 100, 0.05) 0%, transparent 70%);
             border-radius: 50%;
         }
 
         .ledger-glass {
-            background: var(--glass); backdrop-filter: blur(10px);
-            border-radius: 28px; border: 1px solid rgba(255,255,255,0.5);
-            box-shadow: 0 15px 35px rgba(0,0,0,0.03);
-            overflow: hidden;
+            border-radius: 28px; border: 1px solid var(--border-color);
+            overflow: hidden; box-shadow: none !important;
         }
 
         .table-premium { width: 100%; border-collapse: separate; border-spacing: 0; }
         .table-premium thead th {
-            background: #f8fafc; color: #64748b; font-weight: 700;
+            color: #64748b; font-weight: 700;
             text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.1em;
-            padding: 20px 25px; border-bottom: 2px solid #edf2f7;
+            padding: 20px 25px; border-bottom: 2px solid var(--border-color);
         }
         .table-premium tbody td {
-            padding: 20px 25px; border-bottom: 1px solid #f1f5f9;
+            padding: 20px 25px; border-bottom: 1px solid var(--border-color);
             vertical-align: middle; transition: 0.2s;
         }
-        .table-premium tr:hover td { background: #fcfdfe; }
+        .table-premium tr:hover td { background: rgba(255,255,255,0.02); }
 
         .type-pill {
             padding: 6px 14px; border-radius: 10px; font-size: 0.75rem; font-weight: 700;
             text-transform: uppercase; letter-spacing: 0.05em; display: inline-flex; align-items: center; gap: 6px;
         }
-        .type-in { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
-        .type-out { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+        .type-in { background: rgba(22, 163, 74, 0.1); color: #16a34a; border: 1px solid rgba(22, 163, 74, 0.2); }
+        .type-out { background: rgba(220, 38, 38, 0.1); color: #dc2626; border: 1px solid rgba(220, 38, 38, 0.2); }
 
         .search-pill {
-            background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 15px;
+            border: 1.5px solid var(--border-color); border-radius: 15px;
             padding: 10px 20px; transition: 0.3s; width: 100%;
         }
-        .search-pill:focus { border-color: var(--forest); background: white; outline: none; box-shadow: 0 0 0 4px rgba(15, 46, 37, 0.05); }
+        .search-pill:focus { border-color: var(--lime); outline: none; box-shadow: 0 0 0 4px rgba(190, 242, 100, 0.05); }
 
         .stat-bubble {
-            background: rgba(255, 255, 255, 0.5); border-radius: 20px; padding: 15px 25px;
-            border: 1px solid rgba(0,0,0,0.05);
+            background: rgba(255, 255, 255, 0.05); border-radius: 20px; padding: 15px 25px;
+            border: 1px solid var(--border-color);
         }
     </style>
 
@@ -230,8 +225,7 @@ $pageTitle = "Golden Ledger Vault";
 
     <div class="flex-fill main-content">
         <?php $layout->topbar($pageTitle ?? 'Golden Ledger Vault'); ?>
-
-    <div class="hp-banner shadow-lg fade-in">
+        <div class="hp-banner shadow-lg fade-in">
         <div class="row align-items-center">
             <div class="col-lg-7">
                 <span class="badge bg-white bg-opacity-10 text-white rounded-pill px-3 py-2 mb-3">Audit-Ready Ledger</span>

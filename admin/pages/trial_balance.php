@@ -101,71 +101,41 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
 <head>
     <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
     <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= $pageTitle ?> | <?= SITE_NAME ?></title>
-    
+    <title><?= $pageTitle ?> | USMS Audit</title>
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    
+
     <style>
-        :root {
-            --forest: #0f2e25;
-            --forest-light: #1a4d3d;
-            --lime: #d0f35d;
-            --lime-dark: #a8cf12;
-            --glass-bg: rgba(255, 255, 255, 0.95);
-            --glass-border: rgba(15, 46, 37, 0.05);
-            --glass-shadow: 0 10px 40px rgba(15, 46, 37, 0.06);
-            --card-radius: 28px;
-        }
-
-        body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background: #f4f7f6;
-            color: var(--forest);
-            min-height: 100vh;
-        }
-
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
         .main-content { margin-left: 280px; padding: 30px; transition: 0.3s; }
-        
+
         .portal-header {
-            background: linear-gradient(135deg, var(--forest) 0%, #1a4d3e 100%);
-            border-radius: 30px; padding: 40px; color: white; margin-bottom: 30px;
-            box-shadow: 0 20px 40px rgba(15, 46, 37, 0.15);
             position: relative; overflow: hidden;
+            border-radius: 30px; padding: 40px; margin-bottom: 30px;
         }
         .portal-header::after {
             content: ''; position: absolute; bottom: -20%; right: -5%; width: 350px; height: 350px;
-            background: radial-gradient(circle, rgba(208, 243, 93, 0.1) 0%, transparent 70%);
+            background: radial-gradient(circle, rgba(190, 242, 100, 0.05) 0%, transparent 70%);
             border-radius: 50%;
         }
 
-        .proof-card {
-            background: white; border-radius: var(--card-radius); border: 1px solid var(--glass-border);
-            box-shadow: var(--glass-shadow); overflow: hidden; height: 100%; transition: 0.3s;
-        }
+        .proof-card { border-radius: 28px; overflow: hidden; height: 100%; transition: 0.3s; }
         .proof-card:hover { transform: translateY(-5px); }
         
-        .card-header-gradient {
-            background: linear-gradient(to right, var(--forest), var(--forest-light));
-            padding: 25px 30px; color: white; border: none;
-        }
+        .card-header-gradient { padding: 25px 30px; border: none; }
 
         .ledger-item {
-            padding: 18px 30px; border-bottom: 1px solid #f1f5f9;
+            padding: 18px 30px; border-bottom: 1px solid var(--border-color);
             display: flex; justify-content: space-between; align-items: center;
             cursor: pointer; transition: 0.2s;
         }
-        .ledger-item:hover { background: #fcfdfe; }
-        .ledger-item .acc-name { font-weight: 500; color: #64748b; font-size: 0.95rem; }
-        .ledger-item .acc-val { font-weight: 800; color: var(--forest); font-size: 1.05rem; }
+        .ledger-item:hover { transform: translateX(5px); }
+        .ledger-item .acc-name { font-weight: 500; font-size: 0.95rem; }
+        .ledger-item .acc-val { font-weight: 800; font-size: 1.05rem; color: var(--lime); }
 
-        .total-row {
-            background: #f8fafc; padding: 25px 30px;
-            border-top: 2px solid #edf2f7;
-        }
+        .total-row { padding: 25px 30px; border-top: 2px solid var(--border-color); }
 
         .status-banner {
             border-radius: 24px; padding: 25px; margin-top: 40px;
@@ -173,23 +143,21 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
             animation: pulse-border 2s infinite;
         }
         @keyframes pulse-border {
-            0% { box-shadow: 0 0 0 0 rgba(208, 243, 93, 0.4); }
-            70% { box-shadow: 0 0 0 15px rgba(208, 243, 93, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(208, 243, 93, 0); }
+            0% { box-shadow: 0 0 0 0 rgba(190, 242, 100, 0.2); }
+            70% { box-shadow: 0 0 0 15px rgba(190, 242, 100, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(190, 242, 100, 0); }
         }
 
-        .balanced-theme { background: var(--lime); color: var(--forest); border: 1px solid var(--lime-dark); }
-        .imbalanced-theme { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+        .balanced-theme { background: var(--lime) !important; color: #000000 !important; }
+        .imbalanced-theme { background: rgba(244, 33, 46, 0.1) !important; color: #f4212e !important; }
 
         .btn-lime-pill {
-            background: var(--lime); color: var(--forest); border-radius: 50px;
+            background: var(--lime); color: #000000; border-radius: 50px;
             font-weight: 800; padding: 12px 30px; border: none; transition: 0.3s;
         }
-        .btn-lime-pill:hover { background: var(--lime-dark); transform: translateY(-2px); box-shadow: 0 10px 20px rgba(15, 46, 37, 0.1); }
+        .btn-lime-pill:hover { transform: translateY(-2px); opacity: 0.9; }
 
-        /* Modal Customization */
-        .modal-content { border-radius: 30px; border: none; }
-        .modal-header { background: var(--forest); color: white; border: none; padding: 25px 35px; border-radius: 30px 30px 0 0; }
+        .modal-content { border-radius: 30px; }
         
         @media (max-width: 991.98px) { .main-content { margin-left: 0; } }
     </style>
