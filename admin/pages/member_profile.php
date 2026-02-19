@@ -213,45 +213,44 @@ $pageTitle = $member['full_name'] . " - Member Profile";
     <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
     <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
     <meta charset="UTF-8">
+    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
+    <meta charset="UTF-8">
     <title><?= $pageTitle ?> | USMS Admin</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="<?= BASE_URL ?>/public/assets/css/style.css">
     <style>
-        :root { --forest: #0F2E25; --lime: #D0F35D; --glass: rgba(255, 255, 255, 0.9); }
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f0f4f3; color: #1a1a1a; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
         
         .main-content { margin-left: 280px; padding: 40px; min-height: 100vh; }
         
         /* Profile Header */
         .profile-hero {
-            background: linear-gradient(135deg, var(--forest) 0%, #1a4d3e 100%);
-            border-radius: 30px; padding: 40px; color: white; margin-bottom: 30px;
-            box-shadow: 0 20px 40px rgba(15, 46, 37, 0.15);
             position: relative; overflow: hidden;
+            border-radius: 30px; padding: 40px; margin-bottom: 30px;
         }
         .profile-hero::after {
             content: ''; position: absolute; top: -20%; right: -5%; width: 300px; height: 300px;
-            background: radial-gradient(circle, rgba(208, 243, 93, 0.1) 0%, transparent 70%);
+            background: radial-gradient(circle, rgba(190, 242, 100, 0.05) 0%, transparent 70%);
             border-radius: 50%;
         }
         
         .profile-avatar {
             width: 120px; height: 120px; border-radius: 30px;
-            object-fit: cover; border: 4px solid rgba(255,255,255,0.2);
-            background: var(--lime); color: var(--forest);
+            object-fit: cover; border: 4px solid rgba(255,255,255,0.1);
+            background: var(--lime); color: #000000;
             display: flex; align-items: center; justify-content: center;
             font-size: 3rem; font-weight: 800;
         }
         
         /* Stats Grid */
         .stat-card {
-            background: white; border-radius: 24px; padding: 25px;
-            border: 1px solid rgba(0,0,0,0.05); transition: 0.3s;
+            border-radius: 24px; padding: 25px;
+            transition: 0.3s;
             height: 100%;
         }
-        .stat-card:hover { transform: translateY(-5px); box-shadow: 0 15px 30px rgba(0,0,0,0.05); }
+        .stat-card:hover { transform: translateY(-5px); }
         .icon-box {
             width: 50px; height: 50px; border-radius: 15px;
             display: flex; align-items: center; justify-content: center;
@@ -262,28 +261,24 @@ $pageTitle = $member['full_name'] . " - Member Profile";
         .nav-tabs-custom { border: none; margin-bottom: 25px; gap: 10px; }
         .nav-tabs-custom .nav-link {
             border: none; border-radius: 15px; padding: 12px 25px;
-            font-weight: 700; color: #64748b; background: white;
-            transition: 0.3s;
+            font-weight: 700; transition: 0.3s;
         }
         .nav-tabs-custom .nav-link.active {
-            background: var(--forest); color: white;
-            box-shadow: 0 10px 20px rgba(15, 46, 37, 0.1);
+            background: var(--lime); color: #000000;
         }
         
-        .glass-card {
-            background: var(--glass); backdrop-filter: blur(10px);
-            border-radius: 24px; border: 1px solid rgba(255,255,255,0.5);
-            padding: 30px; margin-bottom: 30px;
-        }
+        .glass-card { border-radius: 24px; padding: 30px; margin-bottom: 30px; border: 1px solid var(--border-color); }
         
-        .info-label { font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: #94a3b8; letter-spacing: 1px; margin-bottom: 5px; }
-        .info-value { font-weight: 600; color: var(--forest); }
+        .info-label { font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; color: var(--lime); }
+        .info-value { font-weight: 600; }
         
         .badge-status { padding: 6px 16px; border-radius: 50px; font-weight: 700; font-size: 0.75rem; }
     </style>
 
     <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
 </head>
+<body>
+
 <div class="d-flex">
     <?php $layout->sidebar(); ?>
 

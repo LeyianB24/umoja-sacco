@@ -112,41 +112,26 @@ $php_v     = phpversion();
     </script>
 
     <style>
-        :root {
-            --bg-body: #f8f9fa;
-            --bg-card: #ffffff;
-            --text-dark: #111827;
-            --text-gray: #6b7280;
-            --accent-lime: #bef264;
-            --accent-dark: #1a2e05;
-            --border-color: #e5e7eb;
-        }
-        body { background-color: var(--bg-body); color: var(--text-dark); font-family: 'Plus Jakarta Sans', sans-serif; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
         
         /* Layout */
         .main-content-wrapper { margin-left: 260px; min-height: 100vh; display: flex; flex-direction: column; }
         @media(max-width: 991px){ .main-content-wrapper{ margin-left:0; } }
 
         /* Component Styles */
-        .card-custom {
-            background: var(--bg-card);
-            border-radius: 24px;
-            border: 1px solid rgba(0,0,0,0.03);
-            box-shadow: 0 4px 20px rgba(0,0,0,0.02);
-        }
-        .nav-pills .nav-link {
-            color: var(--text-gray); font-weight: 500; border-radius: 12px; padding: 12px 20px; margin-bottom: 8px; transition: all 0.3s;
-        }
-        .nav-pills .nav-link:hover { background-color: rgba(0,0,0,0.03); color: var(--text-dark); }
-        .nav-pills .nav-link.active { background-color: var(--accent-dark); color: var(--accent-lime); }
+        .card-custom { border-radius: 24px; border: 1px solid var(--border-color); }
+
+        .nav-pills .nav-link { font-weight: 500; border-radius: 12px; padding: 12px 20px; margin-bottom: 8px; transition: all 0.3s; }
+        .nav-pills .nav-link:hover { background-color: rgba(255,255,255,0.05); }
+        .nav-pills .nav-link.active { background-color: var(--lime); color: #000000; }
         
-        .form-control { background-color: #f3f4f6; border: 1px solid transparent; border-radius: 12px; padding: 12px 16px; }
-        .form-control:focus { background-color: #fff; border-color: var(--accent-lime); box-shadow: 0 0 0 4px rgba(190, 242, 100, 0.2); }
+        .form-control { border-radius: 12px; padding: 12px 16px; }
+        .form-control:focus { background-color: var(--bs-body-bg); border-color: var(--lime); box-shadow: 0 0 0 4px rgba(190, 242, 100, 0.2); }
         
-        .btn-lime { background-color: var(--accent-lime); color: var(--accent-dark); font-weight: 600; border-radius: 50px; padding: 10px 24px; border: none; }
-        .btn-lime:hover { background-color: #a3e635; transform: translateY(-1px); }
+        .btn-lime { background-color: var(--lime); color: #000000; font-weight: 600; border-radius: 50px; padding: 10px 24px; border: none; }
+        .btn-lime:hover { opacity: 0.9; transform: translateY(-1px); }
         
-        .avatar-circle { width: 80px; height: 80px; background-color: var(--accent-dark); color: var(--accent-lime); font-size: 1.8rem; display: flex; align-items: center; justify-content: center; border-radius: 50%; margin: 0 auto; }
+        .avatar-circle { width: 80px; height: 80px; background-color: rgba(255,255,255,0.05); color: var(--lime); font-size: 1.8rem; display: flex; align-items: center; justify-content: center; border-radius: 50%; margin: 0 auto; }
     </style>
 
     <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
@@ -154,11 +139,10 @@ $php_v     = phpversion();
 <body>
 
 <div class="d-flex">
-        <?php $layout->sidebar(); ?>
+    <?php $layout->sidebar(); ?>
 
-        <div class="flex-fill main-content-wrapper" style="margin-left: 280px; transition: margin-left 0.3s ease;">
-            
-            <?php $layout->topbar($pageTitle ?? ''); ?>
+    <div class="flex-fill main-content">
+        <?php $layout->topbar($me['full_name']); ?>
             
             <div class="container-fluid">
         

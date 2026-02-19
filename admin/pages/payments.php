@@ -196,67 +196,36 @@ $pageTitle = "Payments Ledger";
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
     <style>
-        :root {
-            /* Forest & Lime Palette */
-            --forest-dark: #0d3935;
-            --forest-mid: #1a4d48;
-            --lime-accent: #bef264;
-            --lime-dim: #d9f99d;
-            --lime-bg-subtle: #ecfccb;
-            --text-dark: #1e293b;
-            --text-grey: #64748b;
-            --bg-body: #f8fafc;
-            --bg-card: #ffffff;
-            --card-radius: 20px;
-        }
-
-        body {
-            background-color: var(--bg-body);
-            color: var(--text-dark);
-            font-family: 'Outfit', sans-serif;
-        }
+        body { font-family: 'Outfit', sans-serif; }
 
         .main-content { margin-left: 260px; transition: 0.3s; min-height: 100vh; padding-bottom: 2rem; }
         @media (max-width: 991px) { .main-content { margin-left: 0; } }
 
         /* Card Styles */
-        .card-custom {
-            background: var(--bg-card);
-            border: none;
-            border-radius: var(--card-radius);
-            box-shadow: 0 4px 20px rgba(0,0,0,0.03);
-        }
+        .card-custom { border: 1px solid var(--border-color); border-radius: 20px; }
 
         /* Buttons */
         .btn-lime {
-            background-color: var(--lime-accent);
-            color: var(--forest-dark);
+            background-color: var(--lime);
+            color: #000000;
             font-weight: 600;
             border: none;
             border-radius: 50px;
             padding: 0.5rem 1.5rem;
             transition: all 0.2s;
         }
-        .btn-lime:hover { background-color: #a3e635; color: var(--forest-dark); transform: translateY(-1px); }
+        .btn-lime:hover { opacity: 0.9; transform: translateY(-1px); }
 
         .btn-forest {
-            background-color: var(--forest-dark);
-            color: white;
+            background-color: var(--lime);
+            color: #000000;
             border-radius: 50px;
             padding: 0.5rem 1.5rem;
         }
-        .btn-forest:hover { background-color: var(--forest-mid); color: white; }
+        .btn-forest:hover { opacity: 0.9; }
 
         /* Form Controls */
-        .form-control, .form-select {
-            border-radius: 12px;
-            border: 1px solid #e2e8f0;
-            padding: 0.6rem 1rem;
-        }
-        .form-control:focus, .form-select:focus {
-            border-color: var(--forest-dark);
-            box-shadow: 0 0 0 2px rgba(13, 57, 53, 0.1);
-        }
+        .form-control, .form-select { border-radius: 12px; padding: 0.6rem 1rem; }
 
         /* Table Styling */
         .table-custom th {
@@ -264,18 +233,17 @@ $pageTitle = "Payments Ledger";
             text-transform: uppercase;
             font-size: 0.75rem;
             letter-spacing: 0.5px;
-            color: var(--text-grey);
-            border-bottom: 2px solid #f1f5f9;
+            border-bottom: 2px solid var(--border-color);
             padding: 1rem;
         }
         .table-custom td {
             padding: 1rem;
             vertical-align: middle;
-            border-bottom: 1px solid #f1f5f9;
+            border-bottom: 1px solid var(--border-color);
             font-size: 0.95rem;
         }
         .table-custom tr:last-child td { border-bottom: none; }
-        .table-custom tr:hover td { background-color: #f8fafc; }
+        .table-custom tr:hover td { background-color: rgba(255, 255, 255, 0.02); }
 
         /* Avatars */
         .avatar-initials {
@@ -284,6 +252,7 @@ $pageTitle = "Payments Ledger";
             display: flex; align-items: center; justify-content: center;
             font-weight: 600;
             font-size: 0.9rem;
+            background: rgba(255,255,255,0.05); color: var(--lime);
         }
 
         /* Badges */
@@ -293,12 +262,12 @@ $pageTitle = "Payments Ledger";
             font-weight: 500;
             font-size: 0.75rem;
         }
-        .badge-in { background-color: var(--lime-bg-subtle); color: var(--forest-dark); }
-        .badge-out { background-color: #fee2e2; color: #991b1b; }
+        .badge-in { background-color: rgba(190, 242, 100, 0.1); color: var(--lime); }
+        .badge-out { background-color: rgba(220, 38, 38, 0.1); color: #dc2626; }
 
         /* Modal */
-        .modal-header { background-color: var(--forest-dark); color: white; border-top-left-radius: 20px; border-top-right-radius: 20px; }
-        .modal-content { border-radius: 20px; border: none; }
+        .modal-header { background-color: #000000; color: white; border-top-left-radius: 20px; border-top-right-radius: 20px; border-bottom: 1px solid var(--border-color); }
+        .modal-content { border-radius: 20px; }
         .btn-close { filter: invert(1) grayscale(100%) brightness(200%); }
     </style>
 
@@ -307,13 +276,13 @@ $pageTitle = "Payments Ledger";
 <body>
 
 <div class="d-flex">
-        <?php $layout->sidebar(); ?>
+    <?php $layout->sidebar(); ?>
 
-        <div class="flex-fill main-content-wrapper" style="margin-left: 280px; transition: margin-left 0.3s ease;">
-            
-            <?php $layout->topbar($pageTitle ?? ''); ?>
-            
-            <div class="container-fluid">
+    <div class="flex-fill main-content-wrapper" style="margin-left: 280px; transition: margin-left 0.3s ease;">
+        
+        <?php $layout->topbar($pageTitle ?? ''); ?>
+        
+        <div class="container-fluid">
             
             <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-5 gap-3">
                 <div>

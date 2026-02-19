@@ -107,7 +107,7 @@ define('SUPPORT_ROUTING_MAP', [
 ]);
 
 // ============================================================
-// 9. THEME COLORS (Optional - for PHP usage)
+// 9. THEME COLORS
 // ============================================================
 $theme = [
     'primary'       => '#1b5e20', // Sacco Green

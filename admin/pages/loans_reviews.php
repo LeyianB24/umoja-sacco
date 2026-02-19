@@ -259,46 +259,34 @@ function ksh($v, $d = 2) { return number_format((float)($v ?? 0), $d); }
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
     
     <style>
-        :root {
-            --bg-app: #f0fdf4; /* Very light green background */
-            --glass-bg: rgba(255, 255, 255, 0.9);
-            --glass-border: 1px solid rgba(16, 185, 129, 0.2); /* Emerald border */
-            --text-main: #064e3b; /* Dark Emerald */
-            --primary-green: #10b981;
-            --dark-green: #047857;
-        }
-        
-        body { background-color: var(--bg-app); color: var(--text-main); font-family: 'Inter', sans-serif; }
+        body { font-family: 'Inter', sans-serif; }
         
         .main-content-wrapper { margin-left: 260px; min-height: 100vh; padding: 20px; transition: margin-left 0.3s; }
         @media (max-width: 991.98px) { .main-content-wrapper { margin-left: 0; } }
         
         /* Glass Components */
         .glass-card {
-            background: var(--glass-bg);
-            backdrop-filter: blur(10px);
-            border: var(--glass-border);
+            border: 1px solid var(--border-color);
             border-radius: 16px;
-            box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.1);
         }
 
         /* Avatar */
         .avatar-circle {
             width: 42px; height: 42px; object-fit: cover;
-            border: 2px solid #a7f3d0;
+            border: 2px solid var(--border-color);
         }
 
         /* Custom Badges */
         .badge-status { padding: 6px 12px; font-weight: 500; border-radius: 6px; letter-spacing: 0.3px; }
-        .st-pending { background: #fff7ed; color: #9a3412; border: 1px solid #ffedd5; }
-        .st-approved { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
-        .st-disbursed { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
-        .st-rejected { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+        .st-pending { background: rgba(217, 119, 6, 0.1); color: #d97706; border: 1px solid rgba(217, 119, 6, 0.2); }
+        .st-approved { background: rgba(16, 163, 74, 0.1); color: #16a34a; border: 1px solid rgba(16, 163, 74, 0.2); }
+        .st-disbursed { background: rgba(59, 130, 246, 0.1); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.2); }
+        .st-rejected { background: rgba(220, 38, 38, 0.1); color: #dc2626; border: 1px solid rgba(220, 38, 38, 0.2); }
 
         /* Filter Buttons */
-        .btn-filter { border: 1px solid transparent; color: #065f46; background: rgba(255,255,255,0.5); font-weight: 500; }
-        .btn-filter.active { background-color: var(--primary-green); color: white; border-color: var(--primary-green); }
-        .btn-filter:hover:not(.active) { background-color: #d1fae5; }
+        .btn-filter { border: 1px solid transparent; }
+        .btn-filter.active { background-color: var(--lime); color: #000000; border-color: var(--lime); }
+        .btn-filter:hover:not(.active) { background-color: rgba(255,255,255,0.05); }
     </style>
 
     <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>

@@ -159,21 +159,14 @@ $pageTitle = "Ticket View";
     </script>
     
     <style>
-        :root {
-            --hope-bg: #f3f4f6;
-            --hope-green-dark: #102a1e;
-            --hope-lime: #bef264;
-            --hope-border: #e5e7eb;
-        }
-        
-        body { background: var(--hope-bg); color: #111827; font-family: 'Plus Jakarta Sans', sans-serif; }
-        .hope-card { background: #fff; border-radius: 28px; border: 1px solid var(--hope-border); box-shadow: 0 4px 20px rgba(0,0,0,0.02); overflow: hidden; }
-        .chat-area { background: #fafafa; border-radius: 20px; padding: 25px; max-height: 500px; overflow-y: auto; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .hope-card { border-radius: 28px; border: 1px solid var(--border-color); overflow: hidden; }
+        .chat-area { border-radius: 20px; padding: 25px; max-height: 500px; overflow-y: auto; background: rgba(255,255,255,0.02); }
         .msg-bubble { max-width: 80%; padding: 14px 20px; border-radius: 20px; margin-bottom: 20px; font-size: 0.92rem; }
-        .msg-member { background: #fff; color: #374151; border: 1px solid var(--hope-border); border-bottom-left-radius: 4px; margin-right: auto; }
-        .msg-admin { background: var(--hope-green-dark); color: #fff; border-bottom-right-radius: 4px; margin-left: auto; }
+        .msg-member { border: 1px solid var(--border-color); border-bottom-left-radius: 4px; margin-right: auto; }
+        .msg-admin { background: #000000; color: white; border: 1px solid var(--lime); border-bottom-right-radius: 4px; margin-left: auto; }
         .avatar-circle { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.75rem; }
-        .btn-hope-lime { background: var(--hope-lime); color: var(--hope-green-dark); border-radius: 50px; font-weight: 700; padding: 12px 30px; border: none; }
+        .btn-hope-lime { background: var(--lime); color: #000000; border-radius: 50px; font-weight: 700; padding: 12px 30px; border: none; }
         .main-content { margin-left: 280px; transition: margin-left 0.3s ease; }
     </style>
 

@@ -34,6 +34,11 @@ $pageTitle = "Statement Portal";
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= $pageTitle ?> | USMS Administration</title>
     
+    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?= $pageTitle ?> | USMS Administration</title>
+    
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -41,90 +46,64 @@ $pageTitle = "Statement Portal";
     <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
 
     <style>
-        :root {
-            --forest: #0f2e25;
-            --forest-light: #1a4d3d;
-            --lime: #d0f35d;
-            --surface: #f8fafc;
-        }
-
-        body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: var(--surface);
-            color: #1e293b;
-        }
-
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
         .wrapper { display: flex; min-height: 100vh; }
         .main-content { flex: 1; padding: 2rem; transition: all 0.3s; }
 
         /* Banner & Glassmorphism */
         .portal-header {
-            background: linear-gradient(135deg, var(--forest) 0%, var(--forest-light) 100%);
-            border-radius: 2rem; padding: 3rem; color: white; margin-bottom: 2.5rem;
-            box-shadow: 0 20px 40px rgba(15, 46, 37, 0.15);
             position: relative; overflow: hidden;
+            border-radius: 2rem; padding: 3rem; margin-bottom: 2.5rem;
         }
         .portal-header::before {
             content: ''; position: absolute; top: -50%; right: -10%; width: 400px; height: 400px;
-            background: radial-gradient(circle, rgba(208, 243, 93, 0.15) 0%, transparent 70%);
+            background: radial-gradient(circle, rgba(190, 242, 100, 0.05) 0%, transparent 70%);
             border-radius: 50%;
         }
 
         .stat-badge {
-            background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 1rem;
+            background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 1rem;
             padding: 1rem 1.5rem; text-align: center;
         }
 
         /* Forms & Cards */
-        .glass-card {
-            background: white; border-radius: 1.5rem; border: 1px solid rgba(0,0,0,0.05);
-            padding: 2.5rem; box-shadow: 0 10px 30px rgba(0,0,0,0.02);
-            height: 100%;
-        }
+        .glass-card { border-radius: 1.5rem; padding: 2.5rem; height: 100%; border: 1px solid var(--border-color); }
 
-        .form-label { font-weight: 700; color: var(--forest); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; }
-        .form-control, .form-select {
-            border-radius: 0.85rem; border: 1.5px solid #e2e8f0; padding: 0.75rem 1.25rem;
-            font-weight: 500; transition: all 0.2s;
-        }
-        .form-control:focus { border-color: var(--forest); box-shadow: 0 0 0 4px rgba(15, 46, 37, 0.05); }
+        .form-label { font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--lime); }
+        .form-control, .form-select { border-radius: 0.85rem; padding: 0.75rem 1.25rem; font-weight: 500; }
 
         /* Type Selector */
         .type-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
         .type-card {
-            border: 2px solid #f1f5f9; border-radius: 1rem; padding: 1.5rem; cursor: pointer;
-            text-align: center; transition: all 0.2s; background: #f8fafc;
+            border: 2px solid var(--border-color); border-radius: 1rem; padding: 1.5rem; cursor: pointer;
+            text-align: center; transition: all 0.2s;
         }
-        .type-card i { font-size: 1.75rem; display: block; margin-bottom: 0.75rem; color: var(--forest); opacity: 0.4; }
+        .type-card i { font-size: 1.75rem; display: block; margin-bottom: 0.75rem; opacity: 0.4; }
         .type-card div { font-weight: 700; font-size: 0.85rem; }
         
         .type-input { display: none; }
-        .type-input:checked + .type-card {
-            border-color: var(--forest); background: white; box-shadow: 0 10px 20px rgba(0,0,0,0.05);
-        }
-        .type-input:checked + .type-card i { opacity: 1; transform: scale(1.1); }
+        .type-input:checked + .type-card { border-color: var(--lime); box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
+        .type-input:checked + .type-card i { opacity: 1; transform: scale(1.1); color: var(--lime); }
 
         /* Submit Button */
         .btn-premium {
-            background: var(--forest); color: white; border-radius: 1rem;
+            background: var(--lime); color: #000000; border-radius: 1rem;
             padding: 1.25rem; font-weight: 800; border: none; width: 100%;
             display: flex; align-items: center; justify-content: center; gap: 0.75rem;
             transition: all 0.3s;
         }
-        .btn-premium:hover { background: var(--forest-light); transform: translateY(-2px); box-shadow: 0 12px 24px rgba(15, 46, 37, 0.2); }
+        .btn-premium:hover { opacity: 0.9; transform: translateY(-2px); }
 
         /* Preview State */
         .preview-placeholder {
-            background: #f1f5f9; border: 2px dashed #cbd5e1; border-radius: 1.5rem;
+            border: 2px dashed var(--border-color); border-radius: 1.5rem;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            padding: 3rem; color: #64748b; height: 100%; min-height: 400px;
+            padding: 3rem; height: 100%; min-height: 400px;
         }
 
         /* Select2 Customization */
-        .select2-container--bootstrap-5 .select2-selection {
-            border-radius: 0.85rem; border: 1.5px solid #e2e8f0; height: auto; padding: 0.5rem 0.75rem;
-        }
+        .select2-container--bootstrap-5 .select2-selection { border-radius: 0.85rem; height: auto; padding: 0.5rem 0.75rem; }
     </style>
 
     <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
