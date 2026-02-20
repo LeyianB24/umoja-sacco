@@ -15,10 +15,6 @@ $layout = LayoutManager::create('admin');
  * Enhanced UI with grouped permissions and real-time toggle
  */
 
-require_permission();
-
-// Initialize Layout Manager
-$layout = LayoutManager::create('admin');
 require_superadmin();
 ?>
 <?php
@@ -144,6 +140,8 @@ $pageTitle = "Roles & Permissions";
     .role-actions { display: flex; gap: 8px; }
     .btn-icon { width: 36px; height: 36px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 8px; }
     .locked-badge { background: var(--lime); color: var(--forest-green); padding: 6px 16px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; }
+    .main-content { margin-left: 280px; transition: all 0.3s; }
+    @media (max-width: 991px) { .main-content { margin-left: 0; } }
 </style>
 
 <div class="d-flex">
@@ -297,8 +295,7 @@ $pageTitle = "Roles & Permissions";
         </div>
     </div>
     <?php endforeach; ?>
-    </div><!-- End main-content -->
-</div><!-- End d-flex -->
+    </div><!-- End rolesContainer -->
 
 <!-- Add Role Modal -->
 <div class="modal fade" id="addRoleModal" tabindex="-1">
@@ -457,6 +454,7 @@ function deleteRole(id, name) {
     }
 }
 </script>
+    </div><!-- End main-content -->
+</div><!-- End d-flex -->
+
 <?php $layout->footer(); ?>
-</body>
-</html>

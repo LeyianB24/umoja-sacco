@@ -157,7 +157,6 @@ $php_v     = phpversion();
         .section-title::after { content: ""; flex: 1; height: 1px; background: rgba(190, 242, 100, 0.15); }
     </style>
 
-<body>
 
 <div class="d-flex">
     <?php $layout->sidebar(); ?>
@@ -390,10 +389,11 @@ $php_v     = phpversion();
 
                     </div>
                 </div>
-                <?php $layout->footer(); ?>
-        </div>
-    </div>
-</div>
+            </div><!-- End container-fluid -->
+    </div><!-- End main-content -->
+</div><!-- End d-flex -->
+
+<?php $layout->footer(); ?>
 
 
 

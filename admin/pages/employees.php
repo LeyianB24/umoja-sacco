@@ -415,7 +415,6 @@ $pageTitle = "People & Access";
         .nav-tabs-custom .nav-link.active { color: var(--color-primary-dark); border-bottom-color: var(--color-primary); background: transparent; }
         .nav-tabs-custom .nav-link:hover:not(.active) { color: var(--color-primary); }
     </style>
-<body>
 
 <div class="d-flex">
     <?php $layout->sidebar(); ?>
@@ -1041,7 +1040,8 @@ $pageTitle = "People & Access";
     </div>
 </div>
 
-            <?php $layout->footer(); ?>
-        </div>
-    </div>
-</div>
+        </div><!-- End container-fluid -->
+    </div><!-- End main-content -->
+</div><!-- End d-flex -->
+
+<?php $layout->footer(); ?>
