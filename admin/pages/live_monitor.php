@@ -21,59 +21,7 @@ $recent_logs = $recent_logs_q->fetch_all(MYSQLI_ASSOC);
 
 $pageTitle = "Live Operations Monitor";
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
-    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
-    <meta charset="UTF-8">
-    <title><?= $pageTitle ?> | USMS Administration</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="<?= ASSET_BASE ?>/css/style.css">
-    <style>
-        :root { --forest: #0F2E25; --lime: #D0F35D; --glass: rgba(255, 255, 255, 0.9); }
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f8fafc; }
-        .main-content { margin-left: 280px; padding: 40px; min-height: 100vh; transition: 0.3s; }
-        .monitor-hero { 
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); 
-            border-radius: 30px; padding: 40px; color: white; margin-bottom: 40px;
-            box-shadow: 0 20px 40px rgba(15, 23, 42, 0.1);
-            position: relative; overflow: hidden;
-        }
-        .monitor-hero::after {
-            content: ''; position: absolute; top: -50%; right: -10%; width: 400px; height: 400px;
-            background: radial-gradient(circle, rgba(208, 243, 93, 0.05) 0%, transparent 70%);
-            border-radius: 50%;
-        }
-        .stat-card {
-            background: white; border-radius: 24px; padding: 24px; border: 1px solid #edf2f7;
-            transition: 0.3s; height: 100%; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-        }
-        .stat-card:hover { transform: translateY(-5px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
-        .log-table-card {
-            background: white; border-radius: 24px; border: 1px solid #edf2f7; overflow: hidden;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-        }
-        .severity-badge { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; padding: 4px 10px; border-radius: 8px; }
-        .severity-info { background: #f0f9ff; color: #0369a1; }
-        .severity-warning { background: #fffbeb; color: #92400e; }
-        .severity-critical { background: #fef2f2; color: #991b1b; }
-        .live-dot {
-            width: 10px; height: 10px; background: #10b981; border-radius: 50%;
-            display: inline-block; margin-right: 8px;
-            animation: pulse 2s infinite;
-        }
-        @keyframes pulse {
-            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
-            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
-            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
-        }
-    </style>
-
-    <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
-</head>
+<?php $layout->header($pageTitle); ?>
 <body>
 
 <?php $layout->sidebar(); ?>
@@ -90,17 +38,14 @@ $pageTitle = "Live Operations Monitor";
                         <span class="live-dot"></span>
                         <span class="text-lime fw-bold small text-uppercase tracking-wider">Live System Feed</span>
                     </div>
-                    <h1 class="display-5 fw-800 mb-3">Operations Monitor</h1>
-                    <p class="lead opacity-75 mb-0">Tracking real-time payment callbacks, notification delivery, and system activity logs.</p>
+                    <h1 class="display-5 fw-800 mb-3 text-white">Operations Monitor</h1>
+                    <p class="lead opacity-75 mb-0 text-white">Tracking real-time payment callbacks, notification delivery, and system activity logs.</p>
                 </div>
                 <div class="col-md-4 text-end d-none d-md-block">
                     <div class="d-flex flex-column gap-2">
                         <button onclick="location.reload()" class="btn btn-lime rounded-pill px-4 py-2 fw-bold">
                             <i class="bi bi-arrow-clockwise me-2"></i> REFRESH FEED
                         </button>
-                        <a href="monitor.php" class="btn btn-outline-light rounded-pill px-4 py-2 small fw-600">
-                            <i class="bi bi-list-check me-2"></i> TRANSACTION LOGS
-                        </a>
                     </div>
                 </div>
             </div>
@@ -194,10 +139,7 @@ $pageTitle = "Live Operations Monitor";
             </div>
         </div>
 
-        <?php $layout->footer(); ?>
+            <?php $layout->footer(); ?>
+        </div>
     </div>
 </div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>

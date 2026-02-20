@@ -7,13 +7,6 @@ require_once __DIR__ . '/../../config/db_connect.php';
 require_once __DIR__ . '/../../inc/Auth.php';
 require_once __DIR__ . '/../../inc/LayoutManager.php';
 
-$layout = LayoutManager::create('admin');
-
-// usms/admin/pages/audit_logs.php
-// System Audit Trails - Enhanced 'Hope' Theme (Forest & Lime)
-
-if (session_status() === PHP_SESSION_NONE) session_start();
-
 // AUTH CHECK
 require_admin();
 
@@ -143,187 +136,27 @@ function getActionStyle($action) {
 
 $pageTitle = "Audit Logs";
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
-    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= $pageTitle ?></title>
-
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
-    
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-
-    <style>
-        :root {
-            /* --- HOPE PALETTE --- */
-            /* Deep Forest Green: Used for Text High Contrast & Sidebar */
-            --forest-deep: #022c22;
-            
-            /* Rich Emerald: Used for Secondary Emphasis & Accents */
-            --emerald-rich: #064e3b;
-            
-            /* Vibrant Lime: Used for Primary Actions (Buttons) & Highlights */
-            --lime-vibrant: #bef264; 
-            --lime-hover: #a3e635;
-            
-            /* Pale Mint: Used for Background tints */
-            --mint-pale: #ecfccb; 
-            
-            /* Neutrals */
-            --bg-body: #f8fafc;
-            --surface: #ffffff;
-            --text-muted: #64748b;
-            --border-subtle: #f1f5f9;
-        }
-
-        body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: var(--bg-body);
-            color: var(--forest-deep);
-        }
-
-        /* Layout */
-        .main-content-wrapper { margin-left: 260px; transition: 0.3s; padding: 2.5rem; }
-        @media (max-width: 991px) { .main-content-wrapper { margin-left: 0; padding: 1.5rem; } }
-
-        /* Card System */
-        .card-hope {
-            background: var(--surface);
-            border: none;
-            border-radius: 24px; /* Large radius per screenshot */
-            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.03);
-            overflow: hidden;
-        }
-
-        /* Search Bar Enhancement */
-        .search-wrapper {
-            background: var(--surface);
-            border-radius: 50px;
-            padding: 8px 12px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
-            border: 1px solid transparent;
-            transition: all 0.3s ease;
-        }
-        .search-wrapper:focus-within {
-            border-color: var(--lime-vibrant);
-            box-shadow: 0 0 0 4px rgba(190, 242, 100, 0.2);
-        }
-        .search-input {
-            border: none;
-            outline: none;
-            background: transparent;
-            color: var(--forest-deep);
-            font-weight: 600;
-        }
-        .search-input::placeholder { color: #94a3b8; font-weight: 400; }
-
-        /* Primary Action Button (Lime) */
-        .btn-hope-primary {
-            background-color: var(--lime-vibrant);
-            color: var(--forest-deep);
-            border: none;
-            border-radius: 50px;
-            padding: 10px 28px;
-            font-weight: 700;
-            transition: all 0.2s;
-        }
-        .btn-hope-primary:hover {
-            background-color: var(--lime-hover);
-            transform: translateY(-1px);
-        }
-
-        /* Print Button (Outline) */
-        .btn-hope-outline {
-            background: transparent;
-            border: 2px solid #e2e8f0;
-            color: var(--text-muted);
-            border-radius: 50px;
-            padding: 8px 24px;
-            font-weight: 600;
-        }
-        .btn-hope-outline:hover {
-            border-color: var(--forest-deep);
-            color: var(--forest-deep);
-        }
-
-        /* Table Styling */
-        .table-hope { border-collapse: separate; border-spacing: 0; width: 100%; }
-        .table-hope thead th {
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            color: var(--text-muted);
-            font-weight: 700;
-            padding: 1.5rem;
-            border-bottom: 1px solid var(--border-subtle);
-        }
-        .table-hope tbody td {
-            padding: 1.25rem 1.5rem;
-            vertical-align: middle;
-            border-bottom: 1px solid var(--border-subtle);
-            color: var(--text-muted);
-            font-weight: 500;
-        }
-        .table-hope tbody tr:last-child td { border-bottom: none; }
-        .table-hope tbody tr:hover { background-color: #fcfdfd; }
-
-        /* Avatar */
-        .avatar-box {
-            width: 42px; height: 42px; 
-            border-radius: 14px;
-            background-color: #f1f5f9;
-            color: var(--forest-deep);
-            display: flex; align-items: center; justify-content: center;
-            font-weight: 800; font-size: 0.9rem;
-        }
-
-        /* Badge System - Utilizing the Green Palette */
-        .badge-pill {
-            padding: 8px 14px;
-            border-radius: 30px;
-            font-weight: 700;
-            font-size: 0.75rem;
-            display: inline-flex; align-items: center; gap: 8px;
-        }
-        
-        /* The Mint/Lime Badge for Positive actions */
-        .badge-soft-lime {
-            background-color: var(--mint-pale);
-            color: var(--emerald-rich);
-        }
-        
-        /* The Emerald Badge for Access */
-        .badge-soft-emerald {
-            background-color: #d1fae5;
-            color: var(--forest-deep);
-        }
-        
+<?php $layout->header($pageTitle); ?>
+<style>
+        .avatar-box { width: 42px; height: 42px; border-radius: 14px; background-color: #f1f5f9; color: var(--forest-deep); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.9rem; }
+        .badge-pill { padding: 8px 14px; border-radius: 30px; font-weight: 700; font-size: 0.75rem; display: inline-flex; align-items: center; gap: 8px; }
+        .badge-soft-lime { background-color: var(--mint-pale); color: var(--emerald-rich); }
+        .badge-soft-emerald { background-color: #d1fae5; color: var(--forest-deep); }
         .badge-soft-danger { background-color: #fee2e2; color: #991b1b; }
         .badge-soft-warning { background-color: #fef3c7; color: #92400e; }
         .badge-soft-secondary { background-color: #f1f5f9; color: #64748b; }
 
-        /* Text Utilities */
         .text-forest { color: var(--forest-deep); }
         .text-emerald { color: var(--emerald-rich); }
-
     </style>
 
-    <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
 </head>
 <body>
 
 <div class="d-flex">
-
     <?php $layout->sidebar(); ?>
 
-    <div class="flex-fill main-content-wrapper">
-
+    <div class="flex-fill main-content">
         <?php $layout->topbar($pageTitle ?? ''); ?>
 
         <div class="row align-items-end mb-5">
@@ -447,17 +280,5 @@ $pageTitle = "Audit Logs";
             </div>
             <?php $layout->footer(); ?>
         </div>
-
     </div>
 </div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-
-</body>
-</html>
-
-
-
-
-
-

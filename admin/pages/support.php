@@ -78,151 +78,27 @@ while ($row = $res->fetch_assoc()) { $tickets[] = $row; }
 function getInitials($name) { return strtoupper(substr($name ?? 'U', 0, 1)); }
 
 $pageTitle = "Helpdesk Support";
+$layout->header($pageTitle);
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
-    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title><?= $pageTitle ?></title>
-
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <script>
-        (() => {
-            const saved = localStorage.getItem('theme') || 'light';
-            document.documentElement.setAttribute('data-bs-theme', saved);
-        })();
-    </script>
-
-    <style>
-        :root {
-            --hope-bg: #f3f4f6;
-            --hope-green-dark: #102a1e;
-            --hope-lime: #bef264;
-            --hope-card-bg: #ffffff;
-            --hope-text-main: #111827;
-            --hope-text-muted: #6b7280;
-            --hope-border: #e5e7eb;
-        }
-
-        body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background: var(--hope-bg);
-            color: var(--hope-text-main);
-            min-height: 100vh;
-        }
-
-        .hope-card {
-            background: var(--hope-card-bg);
-            border-radius: 24px;
-            border: 1px solid var(--hope-border);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
-            overflow: hidden;
-            transition: all 0.3s ease;
-        }
-
-        .hope-card-dark {
-            background: var(--hope-green-dark);
-            color: #fff;
-            border: none;
-        }
-
-        .icon-box {
-            width: 48px;
-            height: 48px;
-            border-radius: 14px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.2rem;
-        }
-
-        .table-hope thead th {
-            background-color: #f9fafb;
-            text-transform: uppercase;
-            font-size: 0.7rem;
-            font-weight: 700;
-            color: var(--hope-text-muted);
-            letter-spacing: 0.05em;
-            padding: 18px 24px;
-            border-bottom: 1px solid var(--hope-border);
-        }
-
-        .table-hope tbody td {
-            padding: 18px 24px;
-            vertical-align: middle;
-            border-bottom: 1px solid var(--hope-border);
-        }
-
-        .btn-hope-lime {
-            background-color: var(--hope-lime);
-            color: var(--hope-green-dark);
-            border-radius: 50px;
-            font-weight: 600;
-            padding: 10px 24px;
-            border: none;
-        }
-        .btn-hope-lime:hover { background-color: #a3e635; color: #000; }
-
-        .badge-hope {
-            padding: 6px 12px;
-            border-radius: 50px;
-            font-size: 0.75rem;
-            font-weight: 600;
-        }
-        .bg-pending { background: #fef3c7; color: #92400e; }
-        .bg-open { background: #dcfce7; color: #166534; }
-        .bg-closed { background: #f3f4f6; color: #374151; }
-
-        .main-content-wrapper { margin-left: 280px; }
-        @media (max-width: 991px) { .main-content-wrapper { margin-left: 0; } }
-
-        .avatar-initial {
-            width: 35px;
-            height: 35px;
-            background: var(--hope-green-dark);
-            color: var(--hope-lime);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            font-size: 0.8rem;
-        }
-    </style>
-
-    <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
-</head>
 <body>
-
 <div class="d-flex">
     <?php $layout->sidebar(); ?>
-
-    <div class="flex-fill main-content-wrapper" style="transition: margin-left 0.3s ease;">
-        
+    <div class="main-content">
         <?php $layout->topbar($pageTitle ?? ''); ?>
-        
-        <div class="container-fluid">
-            <div class="d-flex justify-content-between align-items-center mb-5">
-                <div>
-                    <h2 class="fw-bold mb-1">Helpdesk Console</h2>
-                    <nav aria-label="breadcrumb">
-                        <ol class="breadcrumb mb-0">
-                            <li class="breadcrumb-item small text-muted">Admin</li>
-                            <li class="breadcrumb-item small active fw-bold " aria-current="page">Support</li>
-                        </ol>
-                    </nav>
-                </div>
-                <div class="d-flex gap-2">
-                    <a href="<?= BASE_URL ?>/admin/pages/dashboard.php" class="btn btn-outline-dark rounded-pill px-4 btn-sm fw-bold">
-                        <i class="bi bi-grid-fill me-2"></i>Dashboard
-                    </a>
-                </div>
-            </div>
+            <h1 class="fw-800 mb-1">Helpdesk Console</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item small text-muted">Admin</li>
+                    <li class="breadcrumb-item small active fw-bold " aria-current="page">Support</li>
+                </ol>
+            </nav>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="<?= BASE_URL ?>/admin/pages/dashboard.php" class="btn btn-outline-dark rounded-pill px-4 btn-sm fw-bold">
+                <i class="bi bi-grid-fill me-2"></i>Dashboard
+            </a>
+        </div>
+    </div>
 
             <div class="row g-4 mb-5">
                 <div class="col-md-3">
@@ -374,14 +250,12 @@ $pageTitle = "Helpdesk Support";
                         </tbody>
                     </table>
                 </div>
-                 <?php $layout->footer(); ?>
             </div>
-
         </div>
-       
     </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<?php $layout->footer(); ?>
 </body>
 </html>

@@ -12,7 +12,9 @@ $layout = LayoutManager::create('admin');
 // usms/admin/pages/investments.php
 
 require_permission();
-
+?>
+</style>
+<?php
 $admin_id = $_SESSION['admin_id'];
 
 // 1. HANDLE POST ACTIONS
@@ -296,94 +298,7 @@ $global = $conn->query("SELECT
 
 $pageTitle = "Investment Portfolio";
 ?>
-<!DOCTYPE html>
-<html lang="en" data-bs-theme="light">
-<head>
-    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
-    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= $pageTitle ?> | USMS Administration</title>
-    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= $pageTitle ?> | USMS Administration</title>
-    
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    
-    <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; }
-        .main-content { margin-left: 280px; padding: 30px; transition: 0.3s; }
-        
-        .portal-header {
-            position: relative; overflow: hidden;
-            border-radius: 30px; padding: 40px; margin-bottom: 30px;
-        }
-
-        .stat-card { border-radius: 24px; padding: 25px; height: 100%; transition: 0.3s; }
-        .stat-card:hover { transform: translateY(-5px); }
-
-        .icon-circle {
-            width: 50px; height: 50px; border-radius: 15px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1.25rem; margin-bottom: 15px;
-        }
-        .bg-lime-soft { background: rgba(190, 242, 100, 0.1); color: var(--lime); }
-        .bg-forest-soft { background: rgba(255, 255, 255, 0.05); color: var(--lime); }
-
-        .ledger-container { border-radius: 28px; overflow: hidden; }
-        .ledger-header { padding: 30px; border-bottom: 1px solid var(--border-color); }
-        
-        .table-custom { width: 100%; border-collapse: separate; border-spacing: 0; }
-        .table-custom thead th {
-            font-weight: 700; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.05em;
-            padding: 18px 25px; border-bottom: 2px solid var(--border-color);
-        }
-        .table-custom tbody td {
-            padding: 18px 25px; border-bottom: 1px solid var(--border-color);
-            vertical-align: middle; font-size: 0.95rem;
-        }
-        .table-custom tbody tr:hover td { background-color: rgba(255, 255, 255, 0.02); }
-
-        .asset-card { border-radius: 24px; padding: 25px; height: 100%; transition: 0.3s; position: relative; }
-        .asset-card:hover { transform: translateY(-5px); }
-
-        .asset-icon-box {
-            width: 50px; height: 50px; border-radius: 14px;
-            background: rgba(255, 255, 255, 0.05); color: var(--lime);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1.4rem;
-        }
-
-        .status-badge {
-            padding: 6px 12px; border-radius: 8px; font-size: 0.7rem; font-weight: 800;
-            text-transform: uppercase; letter-spacing: 0.05em;
-        }
-        .st-active { background: rgba(16, 163, 74, 0.1); color: #16a34a; border: 1px solid rgba(16, 163, 74, 0.2); }
-        .st-maintenance { background: rgba(217, 119, 6, 0.1); color: #d97706; border: 1px solid rgba(217, 119, 6, 0.2); }
-        .st-disposed { background: rgba(107, 114, 128, 0.1); color: #6b7280; border: 1px solid rgba(107, 114, 128, 0.2); }
-
-        .btn-lime {
-            background: var(--lime); color: #000000;
-            border-radius: 12px; font-weight: 800; border: none; padding: 10px 20px;
-            transition: 0.3s;
-        }
-        .btn-lime:hover { transform: translateY(-2px); opacity: 0.9; }
-
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        .fade-in { animation: fadeIn 0.6s ease-out; }
-        .slide-up { animation: slideUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; opacity: 0; }
-        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-
-        .form-control, .form-select { border-radius: 12px; padding: 10px 15px; }
-        
-        @media (max-width: 991.98px) { .main-content { margin-left: 0; } }
-    </style>
-
-    <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
-</head>
+<?php $layout->header($pageTitle); ?>
 <body>
 
 <div class="d-flex">
@@ -856,79 +771,4 @@ $pageTitle = "Investment Portfolio";
         </div>
     </div>
 </div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="<?= BASE_URL ?>/public/assets/js/main.js?v=<?= time() ?>"></script>
-<script>
-    function checkVehicle(val) {
-        const extra = document.getElementById('vehExtra');
-        if(val === 'vehicle_fleet') extra.classList.remove('d-none');
-        else extra.classList.add('d-none');
-    }
-
-    function openValuationModal(data) {
-        document.getElementById('val_id').value = data.id;
-        document.getElementById('val_source').value = data.source_table;
-        document.getElementById('val_input').value = data.current_value || 0;
-        document.getElementById('val_status').value = data.status;
-        document.getElementById('val_title').innerText = data.title;
-        new bootstrap.Modal(document.getElementById('valuationModal')).show();
-    }
-
-    function openEditModal(data) {
-        document.getElementById('edit_id').value = data.id;
-        document.getElementById('edit_title').value = data.title;
-        document.getElementById('edit_category').value = data.category;
-        document.getElementById('edit_description').value = data.description || '';
-        document.getElementById('edit_target').value = data.target_amount || 0;
-        document.getElementById('edit_period').value = data.target_period || 'monthly';
-        new bootstrap.Modal(document.getElementById('editModal')).show();
-    }
-
-    function openDisposeModal(data) {
-        document.getElementById('dispose_id').value = data.id;
-        document.getElementById('dispose_source').value = data.source_table;
-        document.getElementById('dispose_title').innerText = data.title;
-        document.getElementById('dispose_price').value = data.current_value || data.purchase_cost || 0;
-        new bootstrap.Modal(document.getElementById('disposeModal')).show();
-    }
-
-    // Interactive Search
-    document.getElementById('assetSearch')?.addEventListener('keyup', function() {
-        const query = this.value.toLowerCase();
-        document.querySelectorAll('.asset-card').forEach(card => {
-            const container = card.closest('[class*="col-"]');
-            const text = card.innerText.toLowerCase();
-            if(container) container.style.display = text.includes(query) ? '' : 'none';
-        });
-    });
-
-    // Portfolio Chart
-    document.addEventListener('DOMContentLoaded', () => {
-        const ctx = document.getElementById('portfolioChart');
-        if(ctx) {
-            const labels = JSON.parse(ctx.getAttribute('data-labels') || '[]');
-            const values = JSON.parse(ctx.getAttribute('data-values') || '[]');
-            new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        data: values,
-                        backgroundColor: ['#bef264', '#15803d', '#1e293b', '#64748b', '#22c55e'],
-                        borderWidth: 0
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    cutout: '75%'
-                }
-            });
-        }
-    });
-</script>
-</body>
-</html>
+<?php $layout->footer(); ?>

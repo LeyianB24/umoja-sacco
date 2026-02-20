@@ -12,7 +12,9 @@ $layout = LayoutManager::create('admin');
 
 require_admin();
 require_permission();
-
+?>
+</style>
+<?php
 // 2. Handle Form Submission (Add Expense)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'add_expense') {
     verify_csrf_token();
@@ -140,51 +142,12 @@ $investments_list = $conn->query("SELECT investment_id, title FROM investments W
 $investments_all = $investments_list->fetch_all(MYSQLI_ASSOC);
 $pageTitle = "Expenses Portal";
 ?>
-<!DOCTYPE html>
-<html lang="en" data-bs-theme="light">
-<head>
-    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
-    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= $pageTitle ?> | <?= SITE_NAME ?></title>
-    
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
-    <style>
-        body { font-family: 'Outfit', sans-serif; }
-        .main-content { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding-bottom: 2rem; }
-        @media (max-width: 991px) { .main-content { margin-left: 0; } }
-
-        .card-custom { border: 1px solid var(--border-color); border-radius: 20px; }
-        .btn-lime { background-color: var(--lime); color: #000000; font-weight: 600; border: none; border-radius: 50px; padding: 0.5rem 1.5rem; transition: all 0.2s; }
-        .btn-lime:hover { opacity: 0.9; transform: translateY(-1px); }
-        .btn-forest { background-color: var(--lime); color: #000000; border-radius: 50px; padding: 0.5rem 1.5rem; }
-        .btn-forest:hover { opacity: 0.9; }
-
-        .form-control, .form-select { border-radius: 12px; padding: 0.6rem 1rem; }
-        .table-custom th { font-weight: 600; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; border-bottom: 2px solid var(--border-color); padding: 1rem; }
-        .table-custom td { padding: 1rem; vertical-align: middle; border-bottom: 1px solid var(--border-color); font-size: 0.95rem; }
-
-        .modal-header { background-color: #000000; color: white; border-top-left-radius: 20px; border-top-right-radius: 20px; border-bottom: 1px solid var(--border-color); }
-        .modal-content { border-radius: 20px; }
-        .btn-close { filter: invert(1) grayscale(100%) brightness(200%); }
-        
-        .stat-icon { width: 48px; height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; background: rgba(255,255,255,0.05); }
-        .bg-lime-subtle { color: var(--lime); }
-        .bg-red-subtle { color: #dc2626; }
-    </style>
-
-    <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
-</head>
+<?php $layout->header($pageTitle); ?>
 <body>
 <div class="d-flex">
     <?php $layout->sidebar(); ?>
-
-    <div class="flex-fill main-content">
-        <?php $layout->topbar($pageTitle); ?>
+    <div class="main-content">
+        <?php $layout->topbar($pageTitle ?? ''); ?>
 
         <div class="container-fluid">
             <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-5 gap-3">
@@ -416,15 +379,7 @@ $pageTitle = "Expenses Portal";
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-    function toggleDateInputs(val) {
-        if(val === 'custom') document.getElementById('customDateRange').classList.remove('d-none');
-        else {
-            document.getElementById('customDateRange').classList.add('d-none');
-            document.getElementById('filterForm').submit();
-        }
-    }
-</script>
-</body>
-</html>
+            <?php $layout->footer(); ?>
+        </div>
+    </div>
+</div>

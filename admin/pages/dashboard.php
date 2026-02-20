@@ -54,18 +54,19 @@ $pageTitle = "System Dashboard";
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
-    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
     <meta charset="UTF-8">
     <title><?= $pageTitle ?> | USMS</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="<?= BASE_URL ?>/public/assets/css/style.css">
     <style>
         :root { --forest: #0F2E25; --lime: #D0F35D; }
         body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f0f4f3; }
-        .main-content { margin-left: 280px; padding: 40px; min-height: 100vh; }
+        
+        /* Layout Fixes */
+        .main-content { margin-left: 280px; padding: 2.5rem; min-height: 100vh; transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        @media (max-width: 991px) { .main-content { margin-left: 0; padding: 1.5rem; } }
+
         .hp-hero { 
             background: linear-gradient(135deg, var(--forest) 0%, #1a4d3e 100%); 
             border-radius: 30px; padding: 50px; color: white; margin-bottom: 40px;
@@ -88,17 +89,7 @@ $pageTitle = "System Dashboard";
             display: flex; align-items: center; justify-content: center; font-size: 1.5rem;
         }
         .table-glass { background: white; border-radius: 24px; overflow: hidden; border: none; }
-        .nav-pill-custom {
-            padding: 15px 25px; border-radius: 20px; background: white; 
-            color: var(--forest); text-decoration: none; font-weight: 700;
-            display: flex; align-items: center; gap: 15px; transition: 0.3s;
-            margin-bottom: 15px; border: 1px solid rgba(0,0,0,0.02);
-        }
-        .nav-pill-custom:hover { background: var(--forest); color: white; transform: translateX(5px); }
-        .nav-pill-custom i { font-size: 1.2rem; opacity: 0.7; }
     </style>
-
-    <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
 </head>
 <body>
 
@@ -333,20 +324,7 @@ $pageTitle = "System Dashboard";
             <?php endif; ?>
             <?php $layout->footer(); ?>
         </div>
-        
-    </div>
-    
     </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
-
-
-
-
-
-
-
-

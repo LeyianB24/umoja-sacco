@@ -31,53 +31,7 @@ $recent_logs = $recent_logs_q->fetch_all(MYSQLI_ASSOC);
 
 $pageTitle = "System Health & Integrity";
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
-    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
-    <meta charset="UTF-8">
-    <title><?= $pageTitle ?> | USMS Administration</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="<?= ASSET_BASE ?>/css/style.css">
-    <style>
-        :root { --forest: #0F2E25; --lime: #D0F35D; --glass: rgba(255, 255, 255, 0.9); }
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f0f4f3; }
-        .main-content { margin-left: 280px; padding: 40px; min-height: 100vh; transition: 0.3s; }
-        .hp-hero { 
-            background: linear-gradient(135deg, var(--forest) 0%, #1a4d3e 100%); 
-            border-radius: 30px; padding: 50px; color: white; margin-bottom: 40px;
-            box-shadow: 0 20px 40px rgba(15, 46, 37, 0.15);
-            position: relative; overflow: hidden;
-        }
-        .hp-hero::after {
-            content: ''; position: absolute; top: -50%; right: -10%; width: 500px; height: 500px;
-            background: radial-gradient(circle, rgba(208, 243, 93, 0.1) 0%, transparent 70%);
-            border-radius: 50%;
-        }
-        .stat-card {
-            background: var(--glass); backdrop-filter: blur(10px);
-            border-radius: 24px; padding: 24px; border: 1px solid rgba(255,255,255,0.5);
-            transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); height: 100%;
-        }
-        .stat-card:hover { transform: translateY(-5px); box-shadow: 0 15px 35px rgba(0,0,0,0.05); }
-        .audit-log-table {
-            background: white; border-radius: 24px; overflow: hidden; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.03);
-        }
-        .severity-badge { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; padding: 4px 10px; border-radius: 10px; }
-        .severity-info { background: #e0f2fe; color: #0369a1; }
-        .severity-warning { background: #fef3c7; color: #92400e; }
-        .severity-critical { background: #fee2e2; color: #991b1b; }
-        .health-indicator { width: 12px; height: 12px; border-radius: 50%; display: inline-block; margin-right: 8px; }
-        .bg-ok { background: #10b981; box-shadow: 0 0 10px rgba(16, 185, 129, 0.5); }
-        .bg-err { background: #ef4444; box-shadow: 0 0 10px rgba(239, 68, 68, 0.5); }
-    </style>
-
-    <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
-</head>
+<?php $layout->header($pageTitle); ?>
 <body>
 
 <?php $layout->sidebar(); ?>
@@ -200,10 +154,7 @@ $pageTitle = "System Health & Integrity";
             </div>
         </div>
 
-        <?php $layout->footer(); ?>
+            <?php $layout->footer(); ?>
+        </div>
     </div>
 </div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>

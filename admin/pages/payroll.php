@@ -189,109 +189,13 @@ if ($active_run) {
 }
 
 $history_runs = $db->query("SELECT * FROM payroll_runs ORDER BY month DESC LIMIT 12");
-
-function ksh($v, $d = 2) { return number_format((float)($v ?? 0), $d); }
 ?>
-<!DOCTYPE html>
-<html lang="en" data-bs-theme="light">
-<head>
-    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
-    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= $pageTitle ?> | USMS</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    
-    <style>
-        :root {
-            /* Emerald Theme */
-            --primary-hue: 158; 
-            --primary-sat: 64%; 
-            --primary-lig: 52%;
-            --color-primary: hsl(var(--primary-hue), var(--primary-sat), var(--primary-lig));
-            --color-primary-dark: hsl(var(--primary-hue), var(--primary-sat), 25%);
-            --color-primary-light: hsl(var(--primary-hue), var(--primary-sat), 94%);
-            
-            --bg-app: #f0f2f5;
-            --text-main: #1e293b;
-            --text-muted: #64748b;
-            
-            --glass-bg: rgba(255, 255, 255, 0.85);
-            --glass-border: 1px solid rgba(255, 255, 255, 0.6);
-            --glass-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-            
-            --card-radius: 16px;
-        }
-
-        [data-bs-theme="dark"] {
-            --bg-app: #0f172a;
-            --text-main: #f1f5f9;
-            --text-muted: #94a3b8;
-            --glass-bg: rgba(30, 41, 59, 0.7);
-            --glass-border: 1px solid rgba(255, 255, 255, 0.08);
-        }
-
-        body {
-            background-color: var(--bg-app);
-            color: var(--text-main);
-            font-family: 'Plus Jakarta Sans', sans-serif;
-        }
-
-        /* Glass Components */
-        .hd-glass {
-            background: var(--glass-bg);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: var(--glass-border);
-            border-radius: var(--card-radius);
-            box-shadow: var(--glass-shadow);
-        }
-
-        /* Layout */
-        .main-content-wrapper { margin-left: 260px; transition: 0.3s; min-height: 100vh; }
-        @media (max-width: 991.98px) { .main-content-wrapper { margin-left: 0; } }
-
-        /* Custom Buttons */
-        .btn-primary {
-            background-color: var(--color-primary);
-            border-color: var(--color-primary);
-            color: #fff;
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
-            border-radius: 50rem;
-        }
-        .btn-primary:hover {
-            background-color: var(--color-primary-dark);
-            border-color: var(--color-primary-dark);
-        }
-
-        /* Stats Cards */
-        .stat-icon {
-            width: 48px; height: 48px;
-            display: flex; align-items: center; justify-content: center;
-            border-radius: 12px; font-size: 1.5rem;
-        }
-        
-        /* Table */
-        .table-custom tr { transition: all 0.2s ease; }
-        .table-custom tr:hover td { background-color: rgba(var(--primary-hue), 185, 129, 0.05); }
-    </style>
-
-    <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
-</head>
+<?php $layout->header($pageTitle); ?>
 <body>
-
 <div class="d-flex">
     <?php $layout->sidebar(); ?>
-
-    <div class="flex-fill main-content-wrapper" style="margin-left: 280px; transition: margin-left 0.3s ease;">
-        <?php $layout->topbar($pageTitle); ?>
-        
-        <div class="container-fluid">
-            <?php flash_render(); ?>
-
-            <!-- HEADER -->
+    <div class="main-content">
+        <?php $layout->topbar($pageTitle ?? ''); ?>
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
                     <h3 class="fw-bold mb-1 text-gradient">Payroll Management</h3>
@@ -543,12 +447,3 @@ function ksh($v, $d = 2) { return number_format((float)($v ?? 0), $d); }
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
-    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-      return new bootstrap.Tooltip(tooltipTriggerEl)
-    })
-</script>
-</body>
-</html>

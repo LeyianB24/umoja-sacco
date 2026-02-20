@@ -155,10 +155,8 @@ $pageTitle = "Golden Ledger Vault";
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
-    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
     <meta charset="UTF-8">
-    <title><?= $pageTitle ?> | USMS</title>
+    <title><?= $pageTitle ?> | Umoja Sacco</title>
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
@@ -166,9 +164,10 @@ $pageTitle = "Golden Ledger Vault";
     <link rel="stylesheet" href="<?= BASE_URL ?>/public/assets/css/style.css">
     
     <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg-primary); color: var(--text-main); }
         
-        .main-content { margin-left: 280px; padding: 40px; min-height: 100vh; }
+        .main-content { margin-left: 280px; padding: 2.5rem; min-height: 100vh; transition: margin-left 0.3s ease; }
+        @media (max-width: 991px) { .main-content { margin-left: 0; padding: 1.5rem; } }
         
         .hp-banner {
             border-radius: 30px; padding: 40px; margin-bottom: 30px;
@@ -216,7 +215,6 @@ $pageTitle = "Golden Ledger Vault";
         }
     </style>
 
-    <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
 </head>
 <body>
 
@@ -379,11 +377,7 @@ $pageTitle = "Golden Ledger Vault";
                     <?php endif; ?>
                 </tbody>
             </table>
-        </div>
-    <?php $layout->footer(); ?>
-    </div>
-</div>
+    </div><!-- End main-content -->
+</div><!-- End d-flex -->
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+<?php $layout->footer(); ?>

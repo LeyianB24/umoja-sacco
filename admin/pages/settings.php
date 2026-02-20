@@ -6,14 +6,9 @@ require_once __DIR__ . '/../../config/app_config.php';
 require_once __DIR__ . '/../../config/db_connect.php';
 require_once __DIR__ . '/../../inc/Auth.php';
 require_once __DIR__ . '/../../inc/LayoutManager.php';
+require_once __DIR__ . '/../../inc/SettingsHelper.php';
 
-$layout = LayoutManager::create('admin');
-
-// usms/admin/pages/settings.php
-// User Settings - Configuration & Profile
-
-if (session_status() === PHP_SESSION_NONE) session_start();
-
+// AUTH CHECK
 require_permission();
 
 // Initialize Layout Manager
@@ -82,6 +77,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password'])) {
     }
 }
 
+// --- LOGIC: System Configuration ---
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_system_settings'])) {
+    verify_csrf_token();
+    if ($_SESSION['role_id'] != 1) {
+        flash_set("Unauthorized action.", 'error');
+    } else {
+        $fields = [
+            'site_name', 'site_short_name', 'site_tagline',
+            'company_email', 'company_phone', 'company_address',
+            'social_facebook', 'social_twitter', 'social_instagram', 'social_youtube'
+        ];
+        
+        $success_count = 0;
+        foreach ($fields as $field) {
+            $key = strtoupper($field);
+            if (isset($_POST[$field])) {
+                if (SettingsHelper::set($key, trim($_POST[$field]), $admin_id)) {
+                    $success_count++;
+                }
+            }
+        }
+        
+        if ($success_count > 0) {
+            flash_set("System settings updated successfully.", 'success');
+            if (isset($db)) {
+               $db->query("INSERT INTO audit_logs (admin_id, action, details, ip_address) VALUES (\$admin_id, 'system_update', 'Updated Global Configuration', '{\$_SERVER['REMOTE_ADDR']}')");
+            }
+        } else {
+            flash_set("No changes were saved.", 'warning');
+        }
+    }
+}
+
+// Fetch System Settings
+$sys_settings = SettingsHelper::all();
+
 // Initials helper
 function getInitials($name) {
     if (!$name) return '??';
@@ -93,30 +124,14 @@ function getInitials($name) {
 $server_ip = $_SERVER['SERVER_ADDR'] ?? '127.0.0.1';
 $php_v     = phpversion();
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
-    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
-    <meta charset="utf-8">
-    <title>Settings | USMS Admin</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <script>
-        (() => {
-            const saved = localStorage.getItem('theme') || 'light';
-            document.documentElement.setAttribute('data-bs-theme', saved);
-        })();
-    </script>
+<?php $layout->header($pageTitle); ?>
 
     <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: var(--bg-primary); color: var(--text-main); }
         
         /* Layout */
-        .main-content-wrapper { margin-left: 260px; min-height: 100vh; display: flex; flex-direction: column; }
-        @media(max-width: 991px){ .main-content-wrapper{ margin-left:0; } }
+        .main-content { margin-left: 280px; min-height: 100vh; display: flex; flex-direction: column; transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1); padding: 2.5rem; }
+        @media(max-width: 991px){ .main-content { margin-left:0; padding: 1.5rem; } }
 
         /* Component Styles */
         .card-custom { border-radius: 24px; border: 1px solid var(--border-color); }
@@ -132,10 +147,16 @@ $php_v     = phpversion();
         .btn-lime:hover { opacity: 0.9; transform: translateY(-1px); }
         
         .avatar-circle { width: 80px; height: 80px; background-color: rgba(255,255,255,0.05); color: var(--lime); font-size: 1.8rem; display: flex; align-items: center; justify-content: center; border-radius: 50%; margin: 0 auto; }
+
+        /* Hope UI Styles */
+        .glass-card { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .tab-content-wrapper { animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .section-title { font-size: 0.9rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--lime); margin-bottom: 1.5rem; display: flex; align-items: center; gap: 10px; }
+        .section-title::after { content: ""; flex: 1; height: 1px; background: rgba(190, 242, 100, 0.15); }
     </style>
 
-    <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
-</head>
 <body>
 
 <div class="d-flex">
@@ -191,6 +212,9 @@ $php_v     = phpversion();
                                 <i class="bi bi-shield-lock me-2"></i> Security
                             </button>
                             <?php if($_SESSION['role_id'] == 1): ?>
+                            <button class="nav-link text-start" data-bs-toggle="pill" data-bs-target="#v-pills-global">
+                                <i class="bi bi-globe2 me-2"></i> Global Config
+                            </button>
                             <button class="nav-link text-start" data-bs-toggle="pill" data-bs-target="#v-pills-system">
                                 <i class="bi bi-hdd-network me-2"></i> System Status
                             </button>
@@ -268,6 +292,70 @@ $php_v     = phpversion();
                         </div>
 
                         <?php if($_SESSION['role_id'] == 1): ?>
+                        <div class="tab-pane fade" id="v-pills-global">
+                            <div class="card-custom p-4 p-md-5">
+                                <form method="post">
+                                    <?= csrf_field() ?>
+                                    
+                                    <div class="section-title">Sacco Information</div>
+                                    <div class="row g-4 mb-5">
+                                        <div class="col-md-6">
+                                            <label class="form-label">Sacco Name</label>
+                                            <input type="text" class="form-control" name="site_name" value="<?= htmlspecialchars($sys_settings['SITE_NAME'] ?? SITE_NAME) ?>" required>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Short Name</label>
+                                            <input type="text" class="form-control" name="site_short_name" value="<?= htmlspecialchars($sys_settings['SITE_SHORT_NAME'] ?? SITE_SHORT_NAME) ?>" required>
+                                        </div>
+                                        <div class="col-12">
+                                            <label class="form-label">Tagline</label>
+                                            <input type="text" class="form-control" name="site_tagline" value="<?= htmlspecialchars($sys_settings['SITE_TAGLINE'] ?? SITE_TAGLINE) ?>">
+                                        </div>
+                                    </div>
+
+                                    <div class="section-title">Contact Details</div>
+                                    <div class="row g-4 mb-5">
+                                        <div class="col-md-6">
+                                            <label class="form-label">Public Email</label>
+                                            <input type="email" class="form-control" name="company_email" value="<?= htmlspecialchars($sys_settings['COMPANY_EMAIL'] ?? COMPANY_EMAIL) ?>">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Contact Phone</label>
+                                            <input type="text" class="form-control" name="company_phone" value="<?= htmlspecialchars($sys_settings['COMPANY_PHONE'] ?? COMPANY_PHONE) ?>">
+                                        </div>
+                                        <div class="col-12">
+                                            <label class="form-label">Address / Office Location</label>
+                                            <textarea class="form-control" name="company_address" rows="2"><?= htmlspecialchars($sys_settings['COMPANY_ADDRESS'] ?? COMPANY_ADDRESS) ?></textarea>
+                                        </div>
+                                    </div>
+
+                                    <div class="section-title">Social Presence</div>
+                                    <div class="row g-4">
+                                        <div class="col-md-6">
+                                            <label class="form-label">Facebook URL</label>
+                                            <input type="url" class="form-control" name="social_facebook" value="<?= htmlspecialchars($sys_settings['SOCIAL_FACEBOOK'] ?? SOCIAL_FACEBOOK) ?>">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Twitter URL</label>
+                                            <input type="url" class="form-control" name="social_twitter" value="<?= htmlspecialchars($sys_settings['SOCIAL_TWITTER'] ?? SOCIAL_TWITTER) ?>">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Instagram URL</label>
+                                            <input type="url" class="form-control" name="social_instagram" value="<?= htmlspecialchars($sys_settings['SOCIAL_INSTAGRAM'] ?? SOCIAL_INSTAGRAM) ?>">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">YouTube URL</label>
+                                            <input type="url" class="form-control" name="social_youtube" value="<?= htmlspecialchars($sys_settings['SOCIAL_YOUTUBE'] ?? SOCIAL_YOUTUBE) ?>">
+                                        </div>
+                                    </div>
+
+                                    <div class="mt-5 d-flex justify-content-end">
+                                        <button type="submit" name="update_system_settings" class="btn btn-lime shadow-sm px-5">Save Global Configuration</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+
                         <div class="tab-pane fade" id="v-pills-system">
                             <div class="card-custom p-4 p-md-5">
                                 <h5 class="fw-bold mb-4">Environment Status</h5>
@@ -303,22 +391,9 @@ $php_v     = phpversion();
                     </div>
                 </div>
                 <?php $layout->footer(); ?>
-            </div>
         </div>
-        
     </div>
 </div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        window.addEventListener('themeChanged', (e) => {
-            document.documentElement.setAttribute('data-bs-theme', e.detail.theme);
-        });
-    });
-</script>
-</body>
-</html>
 
 
 

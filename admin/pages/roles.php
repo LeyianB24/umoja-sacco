@@ -20,7 +20,8 @@ require_permission();
 // Initialize Layout Manager
 $layout = LayoutManager::create('admin');
 require_superadmin();
-
+?>
+<?php
 // 1. Handle AJAX Toggle (Permission Checkboxes)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['toggle_permission'])) {
     header('Content-Type: application/json');
@@ -115,234 +116,35 @@ while($m = $map_res->fetch_assoc()) {
 
 $pageTitle = "Roles & Permissions";
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
-    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= $pageTitle ?> | USMS</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --forest-green: #0F2E25;
-            --forest-mid: #134e3b;
-            --lime: #D0F35D;
-            --lime-hover: #e1ff8d;
-        }
-        
-        body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background: #f8f9fa;
-        }
-        
-        .main-content {
-            margin-left: 280px;
-            padding: 40px;
-            transition: margin-left 0.3s;
-        }
-        
-        @media (max-width: 991px) {
-            .main-content { margin-left: 0; }
-        }
-        
-        .page-header {
-            background: linear-gradient(135deg, var(--forest-green) 0%, var(--forest-mid) 100%);
-            color: white;
-            padding: 30px;
-            border-radius: 20px;
-            margin-bottom: 30px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-        }
-        
-        .role-card {
-            background: white;
-            border-radius: 16px;
-            padding: 25px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            border: 1px solid #e9ecef;
-            transition: all 0.3s;
-        }
-        
-        .role-card:hover {
-            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
-            transform: translateY(-2px);
-        }
-        
-        .role-card.superadmin {
-            background: linear-gradient(135deg, var(--forest-green) 0%, var(--forest-mid) 100%);
-            color: white;
-            border: none;
-        }
-        
-        .role-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid #e9ecef;
-        }
-        
-        .role-card.superadmin .role-header {
-            border-bottom-color: rgba(255,255,255,0.2);
-        }
-        
-        .role-title {
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin: 0;
-        }
-        
-        .role-desc {
-            font-size: 0.9rem;
-            opacity: 0.8;
-            margin: 5px 0 0 0;
-        }
-        
-        .perm-category {
-            margin-bottom: 20px;
-        }
-        
-        .category-label {
-            font-size: 0.75rem;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 1.2px;
-            color: #6c757d;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .role-card.superadmin .category-label {
-            color: var(--lime);
-        }
-        
-        .category-label i {
-            font-size: 1rem;
-        }
-        
-        .perm-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            gap: 12px;
-        }
-        
-        .perm-checkbox {
-            display: flex;
-            align-items: center;
-            padding: 12px 16px;
-            background: #f8f9fa;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: all 0.2s;
-            border: 2px solid transparent;
-        }
-        
-        .perm-checkbox:hover {
-            background: #e9ecef;
-            border-color: var(--forest-green);
-        }
-        
-        .perm-checkbox.active {
-            background: var(--lime);
-            border-color: var(--forest-green);
-        }
-        
-        .role-card.superadmin .perm-checkbox {
-            background: rgba(255,255,255,0.1);
-            border-color: rgba(255,255,255,0.2);
-            color: white;
-        }
-        
-        .role-card.superadmin .perm-checkbox.active {
-            background: var(--lime);
-            color: var(--forest-green);
-            border-color: var(--lime);
-        }
-        
-        .perm-checkbox input[type="checkbox"] {
-            width: 20px;
-            height: 20px;
-            margin-right: 12px;
-            cursor: pointer;
-            accent-color: var(--forest-green);
-        }
-        
-        .perm-label {
-            font-size: 0.9rem;
-            font-weight: 500;
-            flex: 1;
-        }
-        
-        .btn-lime {
-            background: var(--lime);
-            color: var(--forest-green);
-            border: none;
-            font-weight: 700;
-            padding: 12px 24px;
-            border-radius: 12px;
-            transition: all 0.3s;
-        }
-        
-        .btn-lime:hover {
-            background: var(--lime-hover);
-            color: var(--forest-green);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(208, 243, 93, 0.4);
-        }
-        
-        .badge-count {
-            background: var(--forest-green);
-            color: var(--lime);
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: 700;
-        }
-        
-        .role-card.superadmin .badge-count {
-            background: var(--lime);
-            color: var(--forest-green);
-        }
-        
-        .role-actions {
-            display: flex;
-            gap: 8px;
-        }
-        
-        .btn-icon {
-            width: 36px;
-            height: 36px;
-            padding: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 8px;
-        }
-        
-        .locked-badge {
-            background: var(--lime);
-            color: var(--forest-green);
-            padding: 6px 16px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 700;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-        }
-    </style>
-
-    <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
-</head>
-<body>
+<?php $layout->header($pageTitle); ?>
+<style>
+/* Role Matrix Styles */
+    .role-matrix-header { border-radius: 20px; margin-bottom: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+    .role-card { background: white; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); border: 1px solid #e9ecef; transition: all 0.3s; }
+    .role-card:hover { box-shadow: 0 8px 25px rgba(0,0,0,0.1); transform: translateY(-2px); }
+    .role-card.superadmin { background: linear-gradient(135deg, var(--forest-green) 0%, var(--forest-mid) 100%); color: white; border: none; }
+    .role-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #e9ecef; }
+    .role-card.superadmin .role-header { border-bottom-color: rgba(255,255,255,0.2); }
+    .role-title { font-size: 1.5rem; font-weight: 700; margin: 0; }
+    .role-desc { font-size: 0.9rem; opacity: 0.8; margin: 5px 0 0 0; }
+    .category-label { font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1.2px; color: #6c757d; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+    .role-card.superadmin .category-label { color: var(--lime); }
+    .perm-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
+    .perm-checkbox { display: flex; align-items: center; padding: 12px 16px; background: #f8f9fa; border-radius: 10px; cursor: pointer; transition: all 0.2s; border: 2px solid transparent; }
+    .perm-checkbox:hover { background: #e9ecef; border-color: var(--forest-green); }
+    .perm-checkbox.active { background: var(--lime); border-color: var(--forest-green); }
+    .role-card.superadmin .perm-checkbox { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); color: white; }
+    .role-card.superadmin .perm-checkbox.active { background: var(--lime); color: var(--forest-green); border-color: var(--lime); }
+    .perm-checkbox input[type="checkbox"] { width: 20px; height: 20px; margin-right: 12px; cursor: pointer; accent-color: var(--forest-green); }
+    .perm-label { font-size: 0.9rem; font-weight: 500; flex: 1; }
+    .btn-lime { background: var(--lime); color: var(--forest-green); border: none; font-weight: 700; padding: 12px 24px; border-radius: 12px; transition: all 0.3s; }
+    .btn-lime:hover { background: var(--lime-hover); color: var(--forest-green); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(208, 243, 93, 0.4); }
+    .badge-count { background: var(--forest-green); color: var(--lime); padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 700; }
+    .role-card.superadmin .badge-count { background: var(--lime); color: var(--forest-green); }
+    .role-actions { display: flex; gap: 8px; }
+    .btn-icon { width: 36px; height: 36px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 8px; }
+    .locked-badge { background: var(--lime); color: var(--forest-green); padding: 6px 16px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; }
+</style>
 
 <div class="d-flex">
     <?php $layout->sidebar(); ?>
@@ -495,12 +297,8 @@ $pageTitle = "Roles & Permissions";
         </div>
     </div>
     <?php endforeach; ?>
-    <?php $layout->footer(); ?>
-    </div>
-    
-    </div>
-    
-</div>
+    </div><!-- End main-content -->
+</div><!-- End d-flex -->
 
 <!-- Add Role Modal -->
 <div class="modal fade" id="addRoleModal" tabindex="-1">
@@ -659,6 +457,6 @@ function deleteRole(id, name) {
     }
 }
 </script>
-
+<?php $layout->footer(); ?>
 </body>
 </html>
