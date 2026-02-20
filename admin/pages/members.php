@@ -130,190 +130,192 @@ $pageTitle = "Member Directory";
 <body>
 <div class="d-flex">
     <?php $layout->sidebar(); ?>
-    <div class="main-content">
-        <?php $layout->topbar($pageTitle ?? ''); ?>
+    <div class="flex-fill main-content">
+        <?php $layout->topbar($pageTitle ?? 'Member Directory'); ?>
         
         <!-- Header -->
-        <div class="portal-header fade-in">
-            <div class="row align-items-center">
-                <div class="col-lg-8">
-                    <span class="badge bg-white bg-opacity-10 text-white rounded-pill px-3 py-2 mb-3 small">Membership Control Engine</span>
-                    <h1 class="display-5 fw-800 mb-2">Member Directory</h1>
-                    <p class="opacity-75 fs-5 mb-0">Managing the core registry of <?= number_format((float)$stats['total']) ?> USMS members.</p>
-                </div>
-                <div class="col-lg-4 text-lg-end mt-4 mt-lg-0">
-                    <div class="dropdown">
-                        <button class="btn btn-lime shadow-lg px-4 dropdown-toggle" data-bs-toggle="dropdown">
-                            <i class="bi bi-download me-2"></i>Export Registry
-                        </button>
-                        <ul class="dropdown-menu shadow-lg border-0 mt-2">
-                            <li><a class="dropdown-item py-2" href="?<?= http_build_query(array_merge($_GET, ['action' => 'export_pdf'])) ?>"><i class="bi bi-file-pdf text-danger me-2"></i>Full List (PDF)</a></li>
-                            <li><a class="dropdown-item py-2" href="?<?= http_build_query(array_merge($_GET, ['action' => 'export_excel'])) ?>"><i class="bi bi-file-excel text-success me-2"></i>Spreadsheet (XLS)</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item py-2" href="?<?= http_build_query(array_merge($_GET, ['action' => 'print_report'])) ?>" target="_blank"><i class="bi bi-printer me-2"></i>Print Registry</a></li>
-                        </ul>
-                    </div>
+        <div class="hp-hero fade-in">
+            <div class="hp-hero-content">
+                <span class="badge bg-white bg-opacity-10 text-white rounded-pill px-3 py-2 mb-3 small letter-spacing-1">MEMBERSHIP CONTROL ENGINE</span>
+                <h1 class="display-5 fw-800 mb-2">Member Directory</h1>
+                <p class="opacity-75 fs-5 mb-0">Managing the core registry of <span class="text-lime fw-bold"><?= number_format((float)$stats['total']) ?></span> USMS members.</p>
+            </div>
+            <div class="hp-hero-action">
+                <div class="dropdown">
+                    <button class="btn btn-lime shadow-lg px-4 dropdown-toggle fw-bold" data-bs-toggle="dropdown">
+                        <i class="bi bi-download me-2"></i>Export Registry
+                    </button>
+                    <ul class="dropdown-menu shadow-lg border-0 mt-2">
+                        <li><a class="dropdown-item py-2" href="?<?= http_build_query(array_merge($_GET, ['action' => 'export_pdf'])) ?>"><i class="bi bi-file-pdf text-danger me-2"></i>Full List (PDF)</a></li>
+                        <li><a class="dropdown-item py-2" href="?<?= http_build_query(array_merge($_GET, ['action' => 'export_excel'])) ?>"><i class="bi bi-file-excel text-success me-2"></i>Spreadsheet (XLS)</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item py-2" href="?<?= http_build_query(array_merge($_GET, ['action' => 'print_report'])) ?>" target="_blank"><i class="bi bi-printer me-2"></i>Print Registry</a></li>
+                    </ul>
                 </div>
             </div>
         </div>
 
-        <?php flash_render(); ?>
+        <div class="container-fluid px-4" style="margin-top: -40px;">
+            <?php flash_render(); ?>
 
-        <!-- KPIs -->
-        <div class="row g-4 mb-4">
-            <div class="col-md-3">
-                <div class="stat-card slide-up">
-                    <div class="icon-circle bg-lime-soft">
-                        <i class="bi bi-people-fill"></i>
-                    </div>
-                    <div class="text-muted small fw-bold text-uppercase">Active Members</div>
-                    <div class="h2 fw-800  mt-2 mb-0"><?= number_format((float)$stats['active']) ?></div>
-                    <div class="small text-muted mt-1">Authorized & Online</div>
-                </div>
-            </div>
-            
-            <div class="col-md-3">
-                <div class="stat-card slide-up" style="animation-delay: 0.1s">
-                    <div class="icon-circle bg-red-soft">
-                        <i class="bi bi-person-x-fill"></i>
-                    </div>
-                    <div class="text-muted small fw-bold text-uppercase">Suspended</div>
-                    <div class="h2 fw-800  mt-2 mb-0"><?= number_format((float)$stats['suspended']) ?></div>
-                    <div class="small text-muted mt-1">Restricted access</div>
-                </div>
-            </div>
-
-            <div class="col-md-3">
-                <div class="stat-card slide-up" style="animation-delay: 0.2s">
-                    <div class="icon-circle bg-forest-soft">
-                        <i class="bi bi-clock-history"></i>
-                    </div>
-                    <div class="text-muted small fw-bold text-uppercase">Pending Review</div>
-                    <div class="h2 fw-800  mt-2 mb-0"><?= number_format((float)$stats['pending']) ?></div>
-                    <div class="small text-muted mt-1">Awaiting approval</div>
-                </div>
-            </div>
-
-            <div class="col-md-3">
-                <div class="stat-card slide-up" style="animation-delay: 0.3s">
-                    <form method="GET" id="memberFilter" class="h-100 d-flex flex-column justify-content-between">
-                        <div>
-                            <label class="small text-muted fw-bold text-uppercase mb-2 d-block">Status Filter</label>
-                            <select name="status" class="form-select border-0 bg-light rounded-3" onchange="this.form.submit()">
-                                <option value="all" <?= $filter === 'all' ? 'selected' : '' ?>>All Registrants</option>
-                                <option value="active" <?= $filter === 'active' ? 'selected' : '' ?>>Active Status</option>
-                                <option value="suspended" <?= $filter === 'suspended' ? 'selected' : '' ?>>Suspended</option>
-                                <option value="inactive" <?= $filter === 'inactive' ? 'selected' : '' ?>>Pending (Inactive)</option>
-                            </select>
+            <!-- KPIs -->
+            <div class="row g-4 mb-5">
+                <div class="col-md-3">
+                    <div class="glass-stat slide-up">
+                        <div class="glass-stat-icon bg-lime-soft text-lime">
+                            <i class="bi bi-people-fill"></i>
                         </div>
-                        <input type="hidden" name="q" value="<?= htmlspecialchars($search) ?>">
-                    </form>
+                        <div class="glass-stat-label">Active Members</div>
+                        <div class="glass-stat-value"><?= number_format((float)$stats['active']) ?></div>
+                        <div class="glass-stat-trend text-lime">Authorized & Online</div>
+                    </div>
+                </div>
+                
+                <div class="col-md-3">
+                    <div class="glass-stat slide-up" style="animation-delay: 0.1s">
+                        <div class="glass-stat-icon bg-red-soft text-danger">
+                            <i class="bi bi-person-x-fill"></i>
+                        </div>
+                        <div class="glass-stat-label">Suspended</div>
+                        <div class="glass-stat-value"><?= number_format((float)$stats['suspended']) ?></div>
+                        <div class="glass-stat-trend text-danger">Restricted Access</div>
+                    </div>
+                </div>
+
+                <div class="col-md-3">
+                    <div class="glass-stat slide-up" style="animation-delay: 0.2s">
+                        <div class="glass-stat-icon bg-forest-soft text-white">
+                            <i class="bi bi-clock-history"></i>
+                        </div>
+                        <div class="glass-stat-label">Pending Review</div>
+                        <div class="glass-stat-value"><?= number_format((float)$stats['pending']) ?></div>
+                        <div class="glass-stat-trend opacity-50">Awaiting Approval</div>
+                    </div>
+                </div>
+
+                <div class="col-md-3">
+                    <div class="glass-stat slide-up h-100" style="animation-delay: 0.3s">
+                        <form method="GET" id="memberFilter" class="p-2 h-100 d-flex flex-column justify-content-center">
+                            <label class="small text-muted fw-bold text-uppercase mb-2 d-block letter-spacing-1">Registry Filter</label>
+                            <select name="status" class="form-select border-0 bg-white bg-opacity-10 rounded-3 text-white" onchange="this.form.submit()" style="backdrop-filter: blur(10px);">
+                                <option value="all" class="text-dark" <?= $filter === 'all' ? 'selected' : '' ?>>All Registrants</option>
+                                <option value="active" class="text-dark" <?= $filter === 'active' ? 'selected' : '' ?>>Active Status</option>
+                                <option value="suspended" class="text-dark" <?= $filter === 'suspended' ? 'selected' : '' ?>>Suspended</option>
+                                <option value="inactive" class="text-dark" <?= $filter === 'inactive' ? 'selected' : '' ?>>Pending (Inactive)</option>
+                            </select>
+                            <input type="hidden" name="q" value="<?= htmlspecialchars($search) ?>">
+                        </form>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Ledger -->
-        <div class="ledger-container slide-up" style="animation-delay: 0.4s">
-            <div class="ledger-header d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
-                <form method="GET" class="position-relative flex-grow-1" style="max-width: 500px;">
-                    <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
-                    <input type="text" name="q" class="search-box" placeholder="Search by name, National ID or email..." value="<?= htmlspecialchars($search) ?>">
-                    <input type="hidden" name="status" value="<?= $filter ?>">
-                </form>
-                <div class="text-muted small fw-medium">
-                    Showing latest <?= count($members) ?> entries
+            <!-- Ledger -->
+            <div class="glass-card slide-up" style="animation-delay: 0.4s">
+                <div class="p-4 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 border-bottom border-white border-opacity-10">
+                    <form method="GET" class="position-relative flex-grow-1" style="max-width: 500px;">
+                        <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
+                        <input type="text" name="q" class="form-control ps-5 rounded-pill border-0 bg-white bg-opacity-5" placeholder="Search by name, ID or email..." value="<?= htmlspecialchars($search) ?>">
+                        <input type="hidden" name="status" value="<?= $filter ?>">
+                    </form>
+                    <div class="text-muted small fw-medium">
+                        Showing latest <span class="text-white"><?= count($members) ?></span> entries
+                    </div>
+                </div>
+                
+                <div class="table-responsive">
+                    <table class="table table-custom mb-0">
+                        <thead>
+                            <tr>
+                                <th class="ps-4">Identity & Profile</th>
+                                <th>Contact Channels</th>
+                                <th>Registry Status</th>
+                                <th>Onboarding Date</th>
+                                <th class="text-end pe-4">Management</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if(empty($members)): ?>
+                                <tr>
+                                    <td colspan="5" class="text-center py-5">
+                                        <div class="opacity-25 mb-4"><i class="bi bi-person-slash display-2"></i></div>
+                                        <h5 class="fw-bold text-muted">No Members Found</h5>
+                                        <p class="text-muted">No records match your criteria.</p>
+                                    </td>
+                                </tr>
+                            <?php else: 
+                            foreach($members as $m): 
+                                $status_class = match($m['status']) {
+                                    'active' => 'bg-success bg-opacity-10 text-success',
+                                    'suspended' => 'bg-danger bg-opacity-10 text-danger',
+                                    'inactive' => 'bg-warning bg-opacity-10 text-warning',
+                                    default => 'bg-light text-dark border'
+                                };
+                            ?>
+                                <tr class="member-row">
+                                    <td class="ps-4">
+                                        <div class="d-flex align-items-center gap-3">
+                                            <?php if(!empty($m['profile_pic'])): ?>
+                                                <img src="data:image/jpeg;base64,<?= base64_encode($m['profile_pic']) ?>" class="rounded-3 shadow-sm" style="width: 40px; height: 40px; object-fit: cover;">
+                                            <?php else: ?>
+                                                <div class="rounded-3 shadow-sm bg-lime text-forest d-flex align-items-center justify-content-center fw-bold" style="width: 40px; height: 40px;">
+                                                    <?= strtoupper(substr($m['full_name'],0,1)) ?>
+                                                </div>
+                                            <?php endif; ?>
+                                            <div>
+                                                <div class="fw-bold "><?= esc($m['full_name']) ?></div>
+                                                <div class="small text-muted opacity-75">ID: <?= esc($m['national_id']) ?></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="fw-600  small"><?= esc($m['email']) ?></div>
+                                        <div class="small text-muted"><?= esc($m['phone']) ?></div>
+                                    </td>
+                                    <td>
+                                        <span class="badge <?= $status_class ?> rounded-pill px-3 py-2 fw-bold" style="font-size: 0.65rem;">
+                                            <?= strtoupper($m['status'] === 'inactive' ? 'pending' : $m['status']) ?>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="small fw-semibold "><?= date('d M, Y', strtotime($m['join_date'])) ?></div>
+                                        <div class="small text-muted opacity-75">System Registered</div>
+                                    </td>
+                                    <td class="text-end pe-4">
+                                        <div class="d-flex justify-content-end gap-2">
+                                            <?php if(can('manage_members')): ?>
+                                                <?php if($m['status'] == 'inactive'): ?>
+                                                    <form method="POST" class="d-inline">
+                                                        <?= csrf_field() ?><input type="hidden" name="member_id" value="<?= $m['member_id'] ?>"><input type="hidden" name="action" value="approve">
+                                                        <button class="btn btn-lime btn-sm px-3 fw-bold rounded-pill">Approve</button>
+                                                    </form>
+                                                <?php elseif($m['status'] == 'active'): ?>
+                                                    <form method="POST" class="d-inline">
+                                                        <?= csrf_field() ?><input type="hidden" name="member_id" value="<?= $m['member_id'] ?>"><input type="hidden" name="action" value="suspend">
+                                                        <button class="btn btn-outline-danger btn-sm px-3 fw-bold rounded-pill">Suspend</button>
+                                                    </form>
+                                                <?php else: ?>
+                                                    <form method="POST" class="d-inline">
+                                                        <?= csrf_field() ?><input type="hidden" name="member_id" value="<?= $m['member_id'] ?>"><input type="hidden" name="action" value="reactivate">
+                                                        <button class="btn btn-outline-success btn-sm px-3 fw-bold rounded-pill">Reactivate</button>
+                                                    </form>
+                                                <?php endif; ?>
+                                            <?php endif; ?>
+                                            <a href="transactions.php?member_id=<?= $m['member_id'] ?>" class="btn btn-light rounded-circle shadow-sm" style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;" title="View Ledger">
+                                                <i class="bi bi-journal-text text-forest small"></i>
+                                            </a>
+                                            <a href="member_profile.php?id=<?= $m['member_id'] ?>" class="btn btn-light rounded-circle shadow-sm" style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;" title="View Profile">
+                                                <i class="bi bi-person-lines-fill text-forest small"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            <?php endforeach; endif; ?>
+                        </tbody>
+                    </table>
                 </div>
             </div>
             
-            <div class="table-responsive">
-                <table class="table-custom" id="memberTable">
-                    <thead>
-                        <tr>
-                            <th>Identity & Profile</th>
-                            <th>Contact Channels</th>
-                            <th>Registry Status</th>
-                            <th>Onboarding Date</th>
-                            <th class="text-end">Management</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php if(empty($members)): ?>
-                            <tr>
-                                <td colspan="5" class="text-center py-5">
-                                    <div class="opacity-25 mb-4"><i class="bi bi-person-slash display-2"></i></div>
-                                    <h5 class="fw-bold text-muted">No Members Found</h5>
-                                    <p class="text-muted">No records match your current search or filter criteria.</p>
-                                </td>
-                            </tr>
-                        <?php else: 
-                        foreach($members as $m): 
-                            $status_class = match($m['status']) {
-                                'active' => 'status-active',
-                                'suspended' => 'status-suspended',
-                                'inactive' => 'status-pending',
-                                default => 'bg-light text-dark border'
-                            };
-                        ?>
-                            <tr class="member-row">
-                                <td>
-                                    <div class="d-flex align-items-center gap-3">
-                                        <?php if(!empty($m['profile_pic'])): ?>
-                                            <img src="data:image/jpeg;base64,<?= base64_encode($m['profile_pic']) ?>" class="member-avatar">
-                                        <?php else: ?>
-                                            <div class="member-avatar"><?= strtoupper(substr($m['full_name'],0,1)) ?></div>
-                                        <?php endif; ?>
-                                        <div>
-                                            <div class="fw-800 "><?= esc($m['full_name']) ?></div>
-                                            <div class="small text-muted opacity-75 mt-1">ID: <?= esc($m['national_id']) ?></div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="fw-600  small"><?= esc($m['email']) ?></div>
-                                    <div class="small text-muted mt-1"><?= esc($m['phone']) ?></div>
-                                </td>
-                                <td>
-                                    <span class="status-pill <?= $status_class ?>">
-                                        <?= strtoupper($m['status'] === 'inactive' ? 'pending' : $m['status']) ?>
-                                    </span>
-                                </td>
-                                <td>
-                                    <div class="small fw-semibold "><?= date('d M, Y', strtotime($m['join_date'])) ?></div>
-                                    <div class="small text-muted opacity-75 mt-1">System Registered</div>
-                                </td>
-                                <td class="text-end">
-                                    <div class="d-flex justify-content-end gap-2">
-                                        <?php if(can('manage_members')): ?>
-                                            <?php if($m['status'] == 'inactive'): ?>
-                                                <form method="POST" class="d-inline">
-                                                    <?= csrf_field() ?><input type="hidden" name="member_id" value="<?= $m['member_id'] ?>"><input type="hidden" name="action" value="approve">
-                                                    <button class="btn btn-lime btn-sm px-3 fw-bold">Approve</button>
-                                                </form>
-                                            <?php elseif($m['status'] == 'active'): ?>
-                                                <form method="POST" class="d-inline">
-                                                    <?= csrf_field() ?><input type="hidden" name="member_id" value="<?= $m['member_id'] ?>"><input type="hidden" name="action" value="suspend">
-                                                    <button class="btn btn-outline-danger btn-sm px-3 fw-bold rounded-pill">Suspend</button>
-                                                </form>
-                                            <?php else: ?>
-                                                <form method="POST" class="d-inline">
-                                                    <?= csrf_field() ?><input type="hidden" name="member_id" value="<?= $m['member_id'] ?>"><input type="hidden" name="action" value="reactivate">
-                                                    <button class="btn btn-outline-success btn-sm px-3 fw-bold rounded-pill">Reactivate</button>
-                                                </form>
-                                            <?php endif; ?>
-                                        <?php endif; ?>
-                                        <a href="transactions.php?member_id=<?= $m['member_id'] ?>" class="btn btn-light rounded-circle shadow-sm" title="View Transaction Ledger">
-                                            <i class="bi bi-journal-text text-forest"></i>
-                                        </a>
-                                        <a href="member_profile.php?id=<?= $m['member_id'] ?>" class="btn btn-light rounded-circle shadow-sm" title="View Profile">
-                                            <i class="bi bi-person-lines-fill text-forest"></i>
-                                        </a>
-                                    </div>
-                                </td>
-                            </tr>
-                        <?php endforeach; endif; ?>
-                    </tbody>
-                </table>
-            </div>
+            <?php $layout->footer(); ?>
         </div>
     </div>
 </div>
