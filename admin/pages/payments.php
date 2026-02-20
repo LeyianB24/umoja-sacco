@@ -8,10 +8,8 @@ require_once __DIR__ . '/../../inc/Auth.php';
 require_once __DIR__ . '/../../inc/LayoutManager.php';
 
 $layout = LayoutManager::create('admin');
-require_permission();
-?>
-</style>
-<?php
+// Initialize Layout Manager
+$layout = LayoutManager::create('admin');
 // accountant/payments.php
 
 require_once __DIR__ . '/../../inc/FinancialEngine.php';
@@ -184,8 +182,69 @@ $transactions = $stmt->get_result();
 
 $pageTitle = "Payments Ledger";
 ?>
-<?php $layout->header($pageTitle); ?>
-<style>
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+<head>
+    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
+    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?= $pageTitle ?></title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body { font-family: 'Outfit', sans-serif; }
+
+        .main-content { margin-left: 260px; transition: 0.3s; min-height: 100vh; padding-bottom: 2rem; }
+        @media (max-width: 991px) { .main-content { margin-left: 0; } }
+
+        /* Card Styles */
+        .card-custom { border: 1px solid var(--border-color); border-radius: 20px; }
+
+        /* Buttons */
+        .btn-lime {
+            background-color: var(--lime);
+            color: #000000;
+            font-weight: 600;
+            border: none;
+            border-radius: 50px;
+            padding: 0.5rem 1.5rem;
+            transition: all 0.2s;
+        }
+        .btn-lime:hover { opacity: 0.9; transform: translateY(-1px); }
+
+        .btn-forest {
+            background-color: var(--lime);
+            color: #000000;
+            border-radius: 50px;
+            padding: 0.5rem 1.5rem;
+        }
+        .btn-forest:hover { opacity: 0.9; }
+
+        /* Form Controls */
+        .form-control, .form-select { border-radius: 12px; padding: 0.6rem 1rem; }
+
+        /* Table Styling */
+        .table-custom th {
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid var(--border-color);
+            padding: 1rem;
+        }
+        .table-custom td {
+            padding: 1rem;
+            vertical-align: middle;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.95rem;
+        }
+        .table-custom tr:last-child td { border-bottom: none; }
+        .table-custom tr:hover td { background-color: rgba(255, 255, 255, 0.02); }
+
         /* Avatars */
         .avatar-initials {
             width: 40px; height: 40px;
@@ -211,13 +270,15 @@ $pageTitle = "Payments Ledger";
         .modal-content { border-radius: 20px; }
         .btn-close { filter: invert(1) grayscale(100%) brightness(200%); }
     </style>
+
+    <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
 </head>
 <body>
 
 <div class="d-flex">
     <?php $layout->sidebar(); ?>
 
-    <div class="flex-fill main-content">
+    <div class="flex-fill main-content-wrapper" style="margin-left: 280px; transition: margin-left 0.3s ease;">
         
         <?php $layout->topbar($pageTitle ?? ''); ?>
         
@@ -378,6 +439,7 @@ $pageTitle = "Payments Ledger";
                         </tbody>
                     </table>
                 </div>
+                <?php $layout->footer(); ?>
             </div>
 
         </div>
@@ -471,8 +533,6 @@ $pageTitle = "Payments Ledger";
         </div>
     </div>
 </div>
-
-<?php $layout->footer(); ?>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
