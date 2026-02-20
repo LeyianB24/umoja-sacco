@@ -636,5 +636,7 @@ $pageTitle = "Executive Reports";
         }
     });
 </script>
-    <?php $layout->footer(); ?>
-</div>
+    </div><!-- End main-content -->
+</div><!-- End d-flex -->
+
+<?php $layout->footer(); ?>

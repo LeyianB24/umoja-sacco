@@ -80,7 +80,6 @@ function getInitials($name) { return strtoupper(substr($name ?? 'U', 0, 1)); }
 $pageTitle = "Helpdesk Support";
 $layout->header($pageTitle);
 ?>
-<body>
 <div class="d-flex">
     <?php $layout->sidebar(); ?>
     <div class="main-content">
@@ -256,6 +255,7 @@ $layout->header($pageTitle);
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    </div><!-- End main-content -->
+</div><!-- End d-flex -->
+
 <?php $layout->footer(); ?>
-</body>
-</html>

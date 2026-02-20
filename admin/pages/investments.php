@@ -13,6 +13,8 @@ $layout = LayoutManager::create('admin');
 
 require_permission();
 ?>
+    .main-content { margin-left: 280px; transition: all 0.3s; }
+    @media (max-width: 991px) { .main-content { margin-left: 0; } }
 </style>
 <?php
 $admin_id = $_SESSION['admin_id'];
@@ -538,7 +540,6 @@ $pageTitle = "Investment Portfolio";
                 </div>
             </div>
             <?php endforeach; endif; ?>
-             <?php $layout->footer(); ?>
         </div>
          
     </div>
@@ -771,4 +772,7 @@ $pageTitle = "Investment Portfolio";
         </div>
     </div>
 </div>
+    </div><!-- End main-content -->
+</div><!-- End d-flex -->
+
 <?php $layout->footer(); ?>
