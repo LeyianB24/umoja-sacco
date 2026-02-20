@@ -1,3 +1,4 @@
+<?php
 declare(strict_types=1);
 if (session_status() === PHP_SESSION_NONE) session_start();
 
@@ -6,7 +7,16 @@ require_once __DIR__ . '/../../config/db_connect.php';
 require_once __DIR__ . '/../../inc/Auth.php';
 require_once __DIR__ . '/../../inc/LayoutManager.php';
 
-// AUTHENTICATION & PERMISSION
+$layout = LayoutManager::create('admin');
+
+/**
+ * admin/member_profile.php
+ * Member Portrait & Financial Intelligence Hub - V28 Glassmorphism
+ */
+
+if (session_status() === PHP_SESSION_NONE) session_start();
+
+// 1. AUTHENTICATION & PERMISSION
 require_permission();
 
 // Initialize Layout Manager
@@ -197,7 +207,63 @@ $member_docs = $q_docs->get_result()->fetch_all(MYSQLI_ASSOC);
 
 $pageTitle = $member['full_name'] . " - Member Profile";
 ?>
-<?php $layout->header($pageTitle); ?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
+    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
+    <meta charset="UTF-8">
+    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
+    <meta charset="UTF-8">
+    <title><?= $pageTitle ?> | USMS Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="<?= BASE_URL ?>/public/assets/css/style.css">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        
+        .main-content { margin-left: 280px; padding: 40px; min-height: 100vh; }
+        
+        /* Profile Header */
+        .profile-hero {
+            position: relative; overflow: hidden;
+            border-radius: 30px; padding: 40px; margin-bottom: 30px;
+        }
+        .profile-hero::after {
+            content: ''; position: absolute; top: -20%; right: -5%; width: 300px; height: 300px;
+            background: radial-gradient(circle, rgba(190, 242, 100, 0.05) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+        
+        .profile-avatar {
+            width: 120px; height: 120px; border-radius: 30px;
+            object-fit: cover; border: 4px solid rgba(255,255,255,0.1);
+            background: var(--lime); color: #000000;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 3rem; font-weight: 800;
+        }
+        
+        /* Stats Grid */
+        .stat-card {
+            border-radius: 24px; padding: 25px;
+            transition: 0.3s;
+            height: 100%;
+        }
+        .stat-card:hover { transform: translateY(-5px); }
+        .icon-box {
+            width: 50px; height: 50px; border-radius: 15px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.25rem; margin-bottom: 20px;
+        }
+        
+        /* Tabs & Content */
+        .nav-tabs-custom { border: none; margin-bottom: 25px; gap: 10px; }
+        .nav-tabs-custom .nav-link {
+            border: none; border-radius: 15px; padding: 12px 25px;
+            font-weight: 700; transition: 0.3s;
+        }
+        .nav-tabs-custom .nav-link.active {
             background: var(--lime); color: #000000;
         }
         
@@ -209,6 +275,7 @@ $pageTitle = $member['full_name'] . " - Member Profile";
         .badge-status { padding: 6px 16px; border-radius: 50px; font-weight: 700; font-size: 0.75rem; }
     </style>
 
+    <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
 </head>
 <body>
 
@@ -552,10 +619,9 @@ $pageTitle = $member['full_name'] . " - Member Profile";
     </div>
 </div>
 
-            <?php $layout->footer(); ?>
-        </div>
-    </div>
-</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
 
 
 
