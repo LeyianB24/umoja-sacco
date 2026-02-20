@@ -13,9 +13,23 @@ $layout = LayoutManager::create('admin');
 
 require_permission();
 ?>
-    .main-content { margin-left: 280px; transition: all 0.3s; }
-    @media (max-width: 991px) { .main-content { margin-left: 0; } }
-</style>
+    <style>
+        .main-content { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; }
+        @media (max-width: 991px) { .main-content { margin-left: 0; padding: 1.5rem; } }
+        
+        /* Asset Card Refinements */
+        .asset-card { 
+            background: white; border-radius: 24px; padding: 1.5rem; 
+            border: 1px solid var(--glass-border); transition: 0.3s;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.02);
+        }
+        .asset-card:hover { transform: translateY(-5px); box-shadow: 0 15px 35px rgba(0,0,0,0.05); }
+        .asset-icon-box { 
+            width: 50px; height: 50px; border-radius: 16px; 
+            background: rgba(15, 46, 37, 0.05); color: var(--forest);
+            display: flex; align-items: center; justify-content: center; font-size: 1.5rem;
+        }
+    </style>
 <?php
 $admin_id = $_SESSION['admin_id'];
 
@@ -310,26 +324,26 @@ $pageTitle = "Investment Portfolio";
         <?php $layout->topbar($pageTitle ?? ''); ?>
         
         <!-- Header -->
-        <div class="portal-header fade-in">
+        <div class="hp-hero">
             <div class="row align-items-center">
                 <div class="col-lg-8">
-                    <span class="badge bg-white bg-opacity-10 text-white rounded-pill px-3 py-2 mb-3 small fw-bold">Capital Assets Portfolio</span>
-                    <h1 class="display-5 fw-800 mb-2">Asset Management</h1>
-                    <p class="opacity-75 fs-5 mb-0">Managing <?= $global['total_count'] ?> high-value investments and fleet assets.</p>
+                    <span class="badge bg-white bg-opacity-10 text-white rounded-pill px-3 py-2 mb-3">Capital Assets Portfolio</span>
+                    <h1 class="display-4 fw-800 mb-2">Asset Management.</h1>
+                    <p class="opacity-75 fs-5">Managing <?= $global['total_count'] ?> high-value investments and fleet assets with <span class="text-lime fw-bold">precision intelligence</span>.</p>
                 </div>
                 <div class="col-lg-4 text-lg-end mt-4 mt-lg-0">
-                    <button class="btn btn-lime shadow-lg px-4 fs-6" data-bs-toggle="modal" data-bs-target="#addAssetModal">
+                    <button class="btn btn-lime shadow-lg px-4 fs-6 rounded-pill fw-bold" data-bs-toggle="modal" data-bs-target="#addAssetModal">
                         <i class="bi bi-plus-lg me-2"></i>Register New Asset
                     </button>
-                    <div class="mt-2">
-                        <a href="revenue.php" class="text-white opacity-75 small text-decoration-none me-3">
-                            <i class="bi bi-cash-coin me-1"></i> Track Revenue
+                    <div class="mt-3 d-flex flex-wrap justify-content-lg-end gap-3 no-print">
+                        <a href="revenue.php" class="text-white opacity-75 small text-decoration-none">
+                            <i class="bi bi-cash-coin me-1 text-lime"></i> Revenue
                         </a>
-                        <a href="expenses.php" class="text-white opacity-75 small text-decoration-none me-3">
-                            <i class="bi bi-receipt me-1"></i> Track Expenses
+                        <a href="expenses.php" class="text-white opacity-75 small text-decoration-none">
+                            <i class="bi bi-receipt me-1 text-lime"></i> Expenses
                         </a>
                         <a href="?action=print_report" target="_blank" class="text-white opacity-75 small text-decoration-none">
-                            <i class="bi bi-printer me-1"></i> Print Portfolio Matrix
+                            <i class="bi bi-printer me-1 text-lime"></i> Print Matrix
                         </a>
                     </div>
                 </div>
@@ -343,49 +357,48 @@ $pageTitle = "Investment Portfolio";
             <div class="col-md-9">
                 <div class="row g-4">
                     <div class="col-md-4">
-                        <div class="stat-card slide-up">
-                            <div class="icon-circle bg-lime-soft">
+                        <div class="glass-stat h-100">
+                            <div class="stat-icon bg-forest bg-opacity-10 text-forest p-3 rounded-4 fs-3 mb-3 d-inline-block">
                                 <i class="bi bi-safe2"></i>
                             </div>
-                            <div class="text-muted small fw-bold text-uppercase">Active Valuation</div>
-                            <div class="h2 fw-800  mt-2 mb-0">KES <?= number_format((float)($global['active_valuation'] ?? 0)) ?></div>
-                            <div class="small text-muted mt-1"><i class="bi bi-building-check text-success me-1"></i> Current live assets</div>
+                            <div class="text-muted small fw-800 text-uppercase ls-1">Active Valuation</div>
+                            <div class="h2 fw-800 text-forest mt-1 mb-0">KES <?= number_format((float)($global['active_valuation'] ?? 0)) ?></div>
+                            <div class="small text-muted mt-2"><i class="bi bi-building-check text-success me-1"></i> Live Assets</div>
                         </div>
                     </div>
                     
                     <div class="col-md-4">
-                        <div class="stat-card slide-up" style="animation-delay: 0.1s">
-                            <div class="icon-circle bg-forest-soft">
+                        <div class="glass-stat h-100 stat-card-dark">
+                            <div class="stat-icon bg-white bg-opacity-10 text-lime p-3 rounded-4 fs-3 mb-3 d-inline-block">
                                 <i class="bi bi-cash-coin"></i>
                             </div>
-                            <div class="text-muted small fw-bold text-uppercase">Realized Exit Gains</div>
-                            <div class="h2 fw-800  mt-2 mb-0">KES <?= number_format((float)($global['realized_gains'] ?? 0)) ?></div>
-                            <div class="small text-muted mt-1"><i class="bi bi-check-all text-success me-1"></i> Profit from sold assets</div>
+                            <div class="text-white opacity-50 small fw-800 text-uppercase ls-1">Realized Exit Gains</div>
+                            <div class="h2 fw-800 text-white mt-1 mb-0">KES <?= number_format((float)($global['realized_gains'] ?? 0)) ?></div>
+                            <div class="small text-white opacity-50 mt-2"><i class="bi bi-check-all text-lime me-1"></i> Sold Profit</div>
                         </div>
                     </div>
 
                     <div class="col-md-4">
-                        <div class="stat-card slide-up" style="animation-delay: 0.2s">
-                           <div class="icon-circle bg-lime-soft" style="background: rgba(208, 243, 93, 0.1);">
+                        <div class="glass-stat h-100 stat-card-accent">
+                            <div class="stat-icon bg-forest bg-opacity-10 text-forest p-3 rounded-4 fs-3 mb-3 d-inline-block">
                                 <i class="bi bi-graph-up-arrow"></i>
                             </div>
-                            <div class="text-muted small fw-bold text-uppercase">Projected Multiplier</div>
+                            <div class="text-forest opacity-50 small fw-800 text-uppercase ls-1">Projected Multiplier</div>
                             <?php 
                                 $total_val = ($global['active_valuation'] ?? 0) + ($global['total_exit_value'] ?? 0);
-                                $total_cost = ($global['active_cost'] ?? 0) + ($global['active_cost'] > 0 ? ($global['total_exit_value'] - $global['realized_gains'] ) : 0); // This is complex, better use total cost from investments
                                 $q_cost_res = $conn->query("SELECT SUM(purchase_cost) as c FROM investments")->fetch_assoc();
                                 $q_cost = (float)($q_cost_res['c'] ?? 0) ?: 1;
                                 $multiplier = $total_val / $q_cost;
                             ?>
-                            <div class="h2 fw-800  mt-2 mb-1"><?= number_format($multiplier, 2) ?>x</div>
-                            <div class="small text-muted mt-1"><i class="bi bi-stars text-success me-1"></i> Overall portfolio growth</div>
+                            <div class="h2 fw-800 text-forest mt-1 mb-0"><?= number_format($multiplier, 2) ?>x</div>
+                            <div class="small text-forest opacity-50 mt-2"><i class="bi bi-stars text-forest me-1"></i> Total Growth</div>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="col-md-3 text-center">
-                <div class="stat-card slide-up" style="animation-delay: 0.3s; padding: 25px;">
-                    <h6 class="small fw-bold text-uppercase text-muted mb-3">Asset Mix</h6>
+            <div class="col-md-3">
+                <div class="glass-stat h-100 text-center">
+                    <h6 class="small fw-800 text-uppercase text-muted mb-4">Asset Mix</h6>
                     <div style="height: 140px;">
                         <canvas id="portfolioChart" data-labels='<?= json_encode(array_keys($cat_stats)) ?>' data-values='<?= json_encode(array_values($cat_stats)) ?>'></canvas>
                     </div>
@@ -553,8 +566,8 @@ $pageTitle = "Investment Portfolio";
 <div class="modal fade" id="addAssetModal" tabindex="-1">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content shadow-2xl">
-            <div class="modal-header">
-                <h5 class="modal-title fw-800"><i class="bi bi-box-seam me-2"></i>Asset Registration</h5>
+            <div class="modal-header bg-forest text-white border-0 py-4 px-5">
+                <h5 class="modal-title fw-800"><i class="bi bi-box-seam me-2 text-lime"></i>Asset Registration</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <form method="POST">
@@ -650,8 +663,8 @@ $pageTitle = "Investment Portfolio";
 <div class="modal fade" id="valuationModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content shadow-2xl">
-            <div class="modal-header">
-                <h5 class="modal-title fw-800"><i class="bi bi-graph-up me-2"></i>Valuation Audit</h5>
+            <div class="modal-header bg-forest text-white border-0 py-4 px-5">
+                <h5 class="modal-title fw-800"><i class="bi bi-graph-up me-2 text-lime"></i>Valuation Audit</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <form method="POST">
@@ -686,8 +699,8 @@ $pageTitle = "Investment Portfolio";
 <div class="modal fade" id="editModal" tabindex="-1">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content shadow-2xl">
-            <div class="modal-header">
-                <h5 class="modal-title fw-800"><i class="bi bi-pencil-square me-2"></i>Edit Investment</h5>
+            <div class="modal-header bg-forest text-white border-0 py-4 px-5">
+                <h5 class="modal-title fw-800"><i class="bi bi-pencil-square me-2 text-lime"></i>Edit Investment</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <form method="POST">

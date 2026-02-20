@@ -80,73 +80,94 @@ function getInitials($name) { return strtoupper(substr($name ?? 'U', 0, 1)); }
 $pageTitle = "Helpdesk Support";
 $layout->header($pageTitle);
 ?>
+    <style>
+        .main-content { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; }
+        @media (max-width: 991px) { .main-content { margin-left: 0; padding: 1.5rem; } }
+        
+        .badge-hope { padding: 8px 16px; border-radius: 12px; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; }
+        .bg-pending { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
+        .bg-open { background: rgba(37, 99, 235, 0.1); color: #2563eb; }
+        .bg-closed { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+
+        .avatar-initial { 
+            width: 32px; height: 32px; border-radius: 10px; 
+            background: var(--forest-light); color: var(--lime);
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 800; font-size: 0.75rem;
+        }
+    </style>
+</head>
+<body>
 <div class="d-flex">
     <?php $layout->sidebar(); ?>
     <div class="main-content">
         <?php $layout->topbar($pageTitle ?? ''); ?>
-            <h1 class="fw-800 mb-1">Helpdesk Console</h1>
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb mb-0">
-                    <li class="breadcrumb-item small text-muted">Admin</li>
-                    <li class="breadcrumb-item small active fw-bold " aria-current="page">Support</li>
-                </ol>
-            </nav>
+        
+        <div class="hp-hero mb-4">
+            <div class="row align-items-center">
+                <div class="col-lg-7">
+                    <span class="badge bg-white bg-opacity-10 text-white rounded-pill px-3 py-2 mb-3">Service Management</span>
+                    <h1 class="display-4 fw-800 mb-2">Helpdesk Console.</h1>
+                    <p class="opacity-75 fs-5">Resolving member inquiries and system alerts with <span class="text-lime fw-bold">priority care</span>.</p>
+                </div>
+                <div class="col-lg-5 text-lg-end mt-4 mt-lg-0">
+                    <div class="d-inline-flex flex-wrap gap-2 justify-content-lg-end no-print">
+                        <a href="<?= BASE_URL ?>/admin/pages/dashboard.php" class="btn btn-white bg-opacity-10 text-white border-white border-opacity-25 rounded-pill px-4 fw-bold shadow-sm">
+                            <i class="bi bi-grid-fill me-2"></i>Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="d-flex gap-2">
-            <a href="<?= BASE_URL ?>/admin/pages/dashboard.php" class="btn btn-outline-dark rounded-pill px-4 btn-sm fw-bold">
-                <i class="bi bi-grid-fill me-2"></i>Dashboard
-            </a>
-        </div>
-    </div>
 
             <div class="row g-4 mb-5">
                 <div class="col-md-3">
-                    <div class="hope-card p-4 hope-card-dark shadow-lg">
-                        <div class="d-flex justify-content-between">
+                    <div class="glass-stat h-100 stat-card-dark">
+                        <div class="d-flex justify-content-between align-items-start">
                             <div>
-                                <div class="small opacity-75 fw-bold text-uppercase">Pending</div>
-                                <h2 class="fw-bold mt-1 mb-0"><?= $stats['pending'] ?></h2>
+                                <div class="small text-white opacity-50 fw-800 text-uppercase ls-1">Pending</div>
+                                <h2 class="fw-800 text-white mt-1 mb-0"><?= $stats['pending'] ?></h2>
                             </div>
-                            <div class="icon-box" style="background: rgba(190, 242, 100, 0.2); color: var(--hope-lime);">
+                            <div class="stat-icon bg-white bg-opacity-10 text-lime p-2 rounded-3 fs-4">
                                 <i class="bi bi-hourglass-split"></i>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <div class="hope-card p-4 shadow-sm">
-                        <div class="d-flex justify-content-between">
+                    <div class="glass-stat h-100">
+                        <div class="d-flex justify-content-between align-items-start">
                             <div>
-                                <div class="small text-muted fw-bold text-uppercase">In Progress</div>
-                                <h2 class="fw-bold mt-1 mb-0"><?= $stats['open'] ?></h2>
+                                <div class="small text-muted fw-800 text-uppercase ls-1">In Progress</div>
+                                <h2 class="fw-800 text-forest mt-1 mb-0"><?= $stats['open'] ?></h2>
                             </div>
-                            <div class="icon-box" style="background: #eff6ff; color: #2563eb;">
+                            <div class="stat-icon bg-forest bg-opacity-10 text-forest p-2 rounded-3 fs-4">
                                 <i class="bi bi-cpu"></i>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <div class="hope-card p-4 shadow-sm">
-                        <div class="d-flex justify-content-between">
+                    <div class="glass-stat h-100 stat-card-accent">
+                        <div class="d-flex justify-content-between align-items-start">
                             <div>
-                                <div class="small text-muted fw-bold text-uppercase">Resolved</div>
-                                <h2 class="fw-bold mt-1 mb-0"><?= $stats['closed'] ?></h2>
+                                <div class="small text-forest opacity-50 fw-800 text-uppercase ls-1">Resolved</div>
+                                <h2 class="fw-800 text-forest mt-1 mb-0"><?= $stats['closed'] ?></h2>
                             </div>
-                            <div class="icon-box" style="background: #ecfdf5; color: #10b981;">
+                            <div class="stat-icon bg-forest bg-opacity-10 text-forest p-2 rounded-3 fs-4">
                                 <i class="bi bi-check2-circle"></i>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <div class="hope-card p-4 shadow-sm">
-                        <div class="d-flex justify-content-between">
+                    <div class="glass-stat h-100">
+                        <div class="d-flex justify-content-between align-items-start">
                             <div>
-                                <div class="small text-muted fw-bold text-uppercase">Total Tickets</div>
-                                <h2 class="fw-bold mt-1 mb-0"><?= $stats['total'] ?></h2>
+                                <div class="small text-muted fw-800 text-uppercase ls-1">Total Issues</div>
+                                <h2 class="fw-800 text-forest mt-1 mb-0"><?= $stats['total'] ?></h2>
                             </div>
-                            <div class="icon-box" style="background: #f3f4f6; color: #374151;">
+                            <div class="stat-icon bg-forest bg-opacity-10 text-forest p-2 rounded-3 fs-4">
                                 <i class="bi bi-archive"></i>
                             </div>
                         </div>
@@ -154,8 +175,8 @@ $layout->header($pageTitle);
                 </div>
             </div>
 
-            <div class="hope-card shadow-sm mb-5">
-                <div class="p-4 border-bottom bg-white">
+            <div class="glass-card p-0 overflow-hidden mb-5">
+                <div class="p-4 border-bottom bg-light bg-opacity-10">
                     <form method="get" class="row g-3 align-items-center">
                         <div class="col-md-3">
                             <select name="status" class="form-select bg-light border-0 shadow-none" onchange="this.form.submit()">

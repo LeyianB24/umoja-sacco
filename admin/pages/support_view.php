@@ -121,121 +121,192 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 if (isset($_GET['msg']) && $_GET['msg'] === 'success') $success = "Reply transmitted successfully.";
 
-// Fetch Conversation
+// Mark related messages as read
+$ticket_subject_search = "Ticket #$support_id";
+$conn->query("UPDATE messages SET is_read = 1 WHERE to_admin_id = $admin_id AND subject LIKE '%$ticket_subject_search%'");
+
+// Fetch Conversation (Unified: support_replies + messages)
 $conversation = [];
+
+// 1. Get Support Replies
 $sql_chat = "SELECT r.message, r.created_at, r.sender_type,
-             CASE WHEN r.sender_type='admin' THEN a.full_name ELSE m.full_name END as sender_name
+             CASE WHEN r.sender_type='admin' THEN a.full_name ELSE m.full_name END as sender_name,
+             'support' as origin
              FROM support_replies r
              LEFT JOIN admins a ON r.sender_type='admin' AND r.sender_id = a.admin_id
              LEFT JOIN members m ON r.sender_type='member' AND r.sender_id = m.member_id
-             WHERE r.support_id = ? ORDER BY r.created_at ASC";
+             WHERE r.support_id = ?";
 $stmt_chat = $db->prepare($sql_chat);
 $stmt_chat->bind_param("i", $support_id);
 $stmt_chat->execute();
 $res_chat = $stmt_chat->get_result();
 while($row = $res_chat->fetch_assoc()) { $conversation[] = $row; }
 
+// 2. Get Related General Messages
+$sql_msg = "SELECT body as message, sent_at as created_at, 
+            CASE WHEN from_admin_id IS NOT NULL THEN 'admin' ELSE 'member' END as sender_type,
+            CASE WHEN from_admin_id IS NOT NULL THEN a.full_name ELSE m.full_name END as sender_name,
+            'inbox' as origin
+            FROM messages msg
+            LEFT JOIN admins a ON msg.from_admin_id = a.admin_id
+            LEFT JOIN members m ON msg.from_member_id = m.member_id
+            WHERE (msg.to_admin_id = ? OR msg.from_admin_id = ?) 
+            AND msg.subject LIKE ? 
+            AND (msg.to_member_id = ? OR msg.from_member_id = ?)";
+
+$search_term = "%Ticket #$support_id%";
+$member_id_ref = (int)$ticket['member_id'];
+
+$stmt_msg = $db->prepare($sql_msg);
+$stmt_msg->bind_param("iisii", $admin_id, $admin_id, $search_term, $member_id_ref, $member_id_ref);
+$stmt_msg->execute();
+$res_msg = $stmt_msg->get_result();
+while($row = $res_msg->fetch_assoc()) { $conversation[] = $row; }
+
+// Sort conversation by creation time
+usort($conversation, function($a, $b) {
+    return strtotime($a['created_at']) <=> strtotime($b['created_at']);
+});
+
 function getInitials($name) { return strtoupper(substr($name ?? 'U', 0, 1)); }
 
 $pageTitle = "Ticket View";
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Ticket #<?= $support_id ?> | Umoja Sacco</title>
-    
-    
-    <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg-primary); color: var(--text-main); }
-        .hope-card { border-radius: 28px; border: 1px solid var(--border-color); overflow: hidden; background: var(--bg-surface); }
-        .chat-area { border-radius: 20px; padding: 25px; max-height: 500px; overflow-y: auto; background: rgba(0,0,0,0.02); }
-        .msg-bubble { max-width: 80%; padding: 14px 20px; border-radius: 20px; margin-bottom: 20px; font-size: 0.92rem; }
-        .msg-member { border: 1px solid var(--border-color); border-bottom-left-radius: 4px; margin-right: auto; background: var(--bg-primary); }
-        .msg-admin { background: #000000; color: white; border: 1px solid var(--lime); border-bottom-right-radius: 4px; margin-left: auto; }
-        .avatar-circle { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.75rem; }
-        .btn-hope-lime { background: var(--lime); color: #000000; border-radius: 50px; font-weight: 700; padding: 12px 30px; border: none; }
-        .main-content { margin-left: 280px; padding: 2.5rem; transition: margin-left 0.3s ease; }
-        @media (max-width: 991px) { .main-content { margin-left: 0; padding: 1.5rem; } }
-    </style>
+<?php $layout->header($pageTitle); ?>
 
-</head>
-<body>
+<style>
+    .main-content { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; }
+    @media (max-width: 991px) { .main-content { margin-left: 0; padding: 1.5rem; } }
+    
+    .chat-area { 
+        border-radius: 24px; padding: 30px; max-height: 600px; 
+        overflow-y: auto; background: rgba(15, 46, 37, 0.02); 
+        border: 1px solid rgba(0,0,0,0.05);
+        scrollbar-width: thin;
+        scrollbar-color: var(--forest-light) transparent;
+    }
+    .msg-bubble { max-width: 85%; padding: 18px 24px; border-radius: 28px; margin-bottom: 20px; font-size: 0.95rem; line-height: 1.6; position: relative; }
+    .msg-member { background: white; border: 1px solid var(--glass-border); border-bottom-left-radius: 4px; color: var(--text-primary); box-shadow: 0 4px 15px rgba(0,0,0,0.02); }
+    .msg-admin { background: var(--forest); color: white; border-bottom-right-radius: 4px; box-shadow: 0 12px 24px rgba(15, 46, 37, 0.15); }
+    
+    .chat-avatar { 
+        width: 44px; height: 44px; border-radius: 14px; 
+        display: flex; align-items: center; justify-content: center; 
+        font-weight: 800; font-size: 0.9rem; flex-shrink: 0;
+    }
+    .reply-area {
+        background: white; border-radius: 28px; padding: 25px;
+        border: 1px solid var(--glass-border);
+        box-shadow: 0 15px 35px rgba(0,0,0,0.05);
+    }
+    
+    /* Animation for chat bubbles */
+    .chat-bubble-anim { animation: fadeInUp 0.4s ease-out forwards; opacity: 0; }
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
 
 <div class="d-flex">
     <?php $layout->sidebar(); ?>
-
     <div class="flex-fill main-content">
         <?php $layout->topbar($pageTitle ?? 'Support Ticket'); ?>
-        <div class="container-fluid py-4">
-            <div class="d-flex justify-content-between align-items-end mb-4">
-                <div>
-                    <a href="support.php" class="text-decoration-none text-muted small fw-bold"><i class="bi bi-chevron-left"></i> BACK TO QUEUE</a>
-                    <h2 class="fw-bold mt-2">Ticket #<?= $support_id ?></h2>
+        
+        <div class="hp-hero mb-4">
+            <div class="row align-items-center">
+                <div class="col-lg-8">
+                    <a href="support.php" class="text-white opacity-75 small fw-bold text-decoration-none mb-3 d-inline-block">
+                        <i class="bi bi-arrow-left me-1"></i> BACK TO QUEUE
+                    </a>
+                    <h1 class="display-4 fw-800 mb-2">Ticket #<?= $support_id ?>.</h1>
+                    <p class="opacity-75 fs-5">Managing member inquiry with <span class="text-lime fw-bold">secure communication</span>.</p>
                 </div>
-                <div class="text-end">
-                    <span class="badge rounded-pill px-3 py-2 bg-white  border fw-bold"><?= strtoupper($ticket['status']) ?></span>
+                <div class="col-lg-4 text-lg-end mt-4 mt-lg-0">
+                    <span class="badge rounded-pill px-4 py-2 bg-white bg-opacity-10 text-white border border-white border-opacity-25 fw-bold">
+                        <?= strtoupper($ticket['status']) ?>
+                    </span>
                 </div>
             </div>
-
+        </div>
+        <div class="container-fluid py-4">
             <div class="row g-4">
                 <div class="col-lg-8">
-                    <div class="hope-card p-4">
+                    <div class="glass-card p-4">
                         <div class="mb-4 pb-3 border-bottom">
-                            <h4 class="fw-bold "><?= htmlspecialchars($ticket['subject']) ?></h4>
-                            <p class="text-muted small mb-0">Original request filed by <?= htmlspecialchars($creator_name) ?></p>
+                            <h4 class="fw-800 text-forest mb-1"><?= htmlspecialchars($ticket['subject']) ?></h4>
+                            <p class="text-muted small mb-0">Original request filed by <span class="fw-bold text-forest"><?= htmlspecialchars($creator_name) ?></span></p>
                         </div>
 
-                        <div class="chat-area mb-4" id="chatBox">
-                            <div class="d-flex gap-3 mb-4">
-                                <div class="avatar-circle bg-light border "><?= getInitials($creator_name) ?></div>
-                                <div class="msg-bubble msg-member shadow-sm">
+                        <div class="chat-area mb-4 shadow-sm" id="chatBox">
+                            <div class="d-flex gap-3 mb-4 chat-bubble-anim">
+                                <div class="chat-avatar bg-forest-light text-lime"><?= getInitials($creator_name) ?></div>
+                                <div class="msg-bubble msg-member">
+                                    <div class="fw-bold mb-1 small text-forest"><?= htmlspecialchars($creator_name) ?></div>
                                     <?= nl2br(htmlspecialchars($ticket['message'])) ?>
                                     <?php if($ticket['attachment']): ?>
-                                        <div class="mt-2 pt-2 border-top small">
-                                            <a href="<?= BASE_URL . '/' . htmlspecialchars($ticket['attachment']) ?>" target="_blank" class="text-primary fw-bold">
-                                                <i class="bi bi-file-earmark-arrow-down"></i> Download Attachment
+                                        <div class="mt-3 pt-3 border-top small">
+                                            <a href="<?= BASE_URL . '/' . htmlspecialchars($ticket['attachment']) ?>" target="_blank" class="btn btn-light btn-sm rounded-pill px-3 fw-bold border">
+                                                <i class="bi bi-file-earmark-arrow-down me-1 text-forest"></i> Download Attachment
                                             </a>
                                         </div>
                                     <?php endif; ?>
+                                    <div class="mt-2 text-muted" style="font-size: 0.65rem;">
+                                        <?= date('H:i • d M', strtotime($ticket['created_at'])) ?>
+                                    </div>
                                 </div>
                             </div>
 
-                            <?php foreach ($conversation as $msg): 
+                            <?php foreach ($conversation as $index => $msg): 
                                 $is_admin = ($msg['sender_type'] === 'admin');
                             ?>
-                                <div class="d-flex gap-3 <?= $is_admin ? 'flex-row-reverse' : '' ?> mb-3">
-                                    <div class="avatar-circle <?= $is_admin ? 'bg-success text-white' : 'bg-light border' ?>">
+                                <div class="d-flex gap-3 <?= $is_admin ? 'flex-row-reverse' : '' ?> mb-3 chat-bubble-anim" style="animation-delay: <?= $index * 0.1 ?>s">
+                                    <div class="chat-avatar <?= $is_admin ? 'bg-lime text-forest' : 'bg-forest-light text-lime' ?>">
                                         <?= getInitials($msg['sender_name']) ?>
                                     </div>
-                                    <div class="msg-bubble <?= $is_admin ? 'msg-admin' : 'msg-member shadow-sm' ?>">
+                                    <div class="msg-bubble <?= $is_admin ? 'msg-admin' : 'msg-member' ?>">
+                                        <?php if(!$is_admin): ?>
+                                            <div class="fw-bold mb-1 small text-forest"><?= htmlspecialchars($msg['sender_name']) ?></div>
+                                        <?php endif; ?>
+                                        
+                                        <?php if(isset($msg['origin']) && $msg['origin'] === 'inbox'): ?>
+                                            <div class="small fw-800 opacity-50 mb-1" style="font-size: 0.7rem; letter-spacing: 0.5px;">
+                                                <i class="bi bi-mailbox me-1"></i> VIA GENERAL INBOX
+                                            </div>
+                                        <?php endif; ?>
+                                        
                                         <?= nl2br(htmlspecialchars($msg['message'])) ?>
+                                        
+                                        <div class="mt-2" style="font-size: 0.65rem; opacity: 0.7;">
+                                            <?= date('H:i • d M', strtotime($msg['created_at'])) ?>
+                                        </div>
                                     </div>
                                 </div>
                             <?php endforeach; ?>
                         </div>
 
-                        <div class="bg-light p-4 rounded-4">
+                        <div class="bg-forest bg-opacity-5 p-4 rounded-4 border">
                             <?php if($success): ?>
-                                <div class="alert alert-success border-0 rounded-3 small"><?= $success ?></div>
+                                <div class="alert alert-success border-0 rounded-4 fw-bold small"><i class="bi bi-check-circle-fill me-2"></i><?= $success ?></div>
                             <?php endif; ?>
                             <?php if($error): ?>
-                                <div class="alert alert-danger border-0 rounded-3 small"><?= $error ?></div>
+                                <div class="alert alert-danger border-0 rounded-4 fw-bold small"><i class="bi bi-exclamation-triangle-fill me-2"></i><?= $error ?></div>
                             <?php endif; ?>
                             
                             <form method="post">
-                                <textarea name="reply_message" class="form-control border-0 rounded-4 shadow-sm mb-3 p-3" rows="4" placeholder="Type your response..." required></textarea>
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <div class="d-flex align-items-center gap-3">
-                                        <span class="small fw-bold text-muted">Status:</span>
-                                        <select name="status" class="form-select form-select-sm border-0 shadow-sm rounded-pill px-3">
+                                <textarea name="reply_message" class="form-control border-0 rounded-4 shadow-sm mb-4 p-3" rows="4" placeholder="Type your response here..." required></textarea>
+                                <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                                    <div class="d-flex align-items-center gap-3 bg-white p-2 rounded-pill shadow-sm border px-3">
+                                        <span class="small fw-800 text-muted text-uppercase ls-1">Update Status:</span>
+                                        <select name="status" class="form-select form-select-sm border-0 bg-transparent fw-bold text-forest" style="width: auto; min-width: 120px;">
                                             <option value="Pending" <?= $ticket['status']=='Pending'?'selected':'' ?>>Pending</option>
-                                            <option value="Open" <?= $ticket['status']=='Open'?'selected':'' ?>>Open</option>
-                                            <option value="Closed" <?= $ticket['status']=='Closed'?'selected':'' ?>>Closed</option>
+                                            <option value="Open" <?= $ticket['status']=='Open'?'selected':'' ?>>Open (Active)</option>
+                                            <option value="Closed" <?= $ticket['status']=='Closed'?'selected':'' ?>>Closed (Resolved)</option>
                                         </select>
                                     </div>
-                                    <button type="submit" class="btn btn-hope-lime">Send Reply <i class="bi bi-send ms-2"></i></button>
+                                    <button type="submit" class="btn btn-lime rounded-pill px-5 py-2 fw-bold shadow-lg">
+                                        Send Reply <i class="bi bi-send-fill ms-2"></i>
+                                    </button>
                                 </div>
                             </form>
                         </div>
@@ -243,30 +314,36 @@ $pageTitle = "Ticket View";
                 </div>
 
                 <div class="col-lg-4">
-                    <div class="hope-card p-4">
-                        <h6 class="fw-bold text-uppercase small text-muted mb-4">Ticket Details</h6>
-                        <div class="d-flex justify-content-between mb-3">
+                    <div class="glass-card">
+                        <h6 class="fw-800 text-uppercase small text-muted mb-4 ls-1">Meta-Information</h6>
+                        <div class="d-flex justify-content-between mb-3 pb-3 border-bottom">
                             <span class="text-muted small">Category</span>
-                            <span class="fw-bold small text-primary"><?= ucfirst($ticket['category']) ?></span>
+                            <span class="badge bg-forest bg-opacity-10 text-forest rounded-pill px-3"><?= ucfirst($ticket['category']) ?></span>
                         </div>
-                        <div class="d-flex justify-content-between mb-3">
-                            <span class="text-muted small">Submitted</span>
-                            <span class="fw-bold small"><?= date('d M, Y', strtotime($ticket['created_at'])) ?></span>
+                        <div class="d-flex justify-content-between mb-3 pb-3 border-bottom">
+                            <span class="text-muted small">Submitted On</span>
+                            <span class="fw-800 text-forest small"><?= date('d M, Y', strtotime($ticket['created_at'])) ?></span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span class="text-muted small">Ticket Reference</span>
+                            <span class="fw-800 text-forest small">#US-<?= $support_id ?></span>
                         </div>
                     </div>
                 </div>
             </div>
             <?php $layout->footer(); ?>
         </div>
-    
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         const chatBox = document.getElementById('chatBox');
-        if(chatBox) chatBox.scrollTop = chatBox.scrollHeight;
+        if(chatBox) {
+            chatBox.scrollTop = chatBox.scrollHeight;
+            // Add a slight delay to trigger animations sequentially if needed
+        }
     });
 </script>
 </body>

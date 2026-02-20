@@ -230,84 +230,26 @@ $pageTitle = "Executive Reports";
         <?php $layout->topbar($pageTitle ?? ''); ?>
     
     <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; overflow-x: hidden; background: var(--bg-primary); color: var(--text-main); }
-
-
-        /* --- Modern Cards --- */
-        .stat-card {
-            border: none;
-            border-radius: 20px;
-            padding: 1.5rem;
-            transition: transform 0.2s, box-shadow 0.2s;
-            position: relative;
-            overflow: hidden;
-            height: 100%;
-        }
-        .stat-card:hover { transform: translateY(-4px); }
+        .main-content { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; }
+        @media (max-width: 991px) { .main-content { margin-left: 0; padding: 1.5rem; } }
         
-        /* Card Variants */
-        .card-dark { background: linear-gradient(135deg, #000000, #15181c); color: white; border: 1px solid var(--border-color); }
+        /* Filter Bar Refinement */
+        .filter-bar { border-radius: 20px; padding: 20px; border: 1px solid var(--glass-border); background: white; margin-bottom: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.02); }
         
-        .card-accent { background: var(--lime); color: #000000; }
-        .card-accent .text-muted { color: #000000 !important; opacity: 0.75; }
-        .card-accent .icon-box { background: rgba(0, 0, 0, 0.1); color: #000000; }
+        /* Trend Badges */
+        .hp-trend { font-size: 0.75rem; font-weight: 800; padding: 6px 12px; border-radius: 50px; display: inline-flex; align-items: center; gap: 4px; }
+        .hp-trend-up { background: rgba(25, 135, 84, 0.1); color: #198754; }
+        .hp-trend-down { background: rgba(220, 53, 69, 0.1); color: #dc3545; }
 
-        .icon-box {
-            width: 48px; height: 48px;
-            border-radius: 14px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1.4rem;
-            margin-bottom: 1rem;
-        }
-
-        /* --- Trend Indicators --- */
-        .trend-badge {
-            font-size: 0.75rem;
-            font-weight: 700;
-            padding: 4px 10px;
-            border-radius: 30px;
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-        }
-        .trend-up { background: rgba(25, 135, 84, 0.1); color: #198754; }
-        .trend-down { background: rgba(220, 53, 69, 0.1); color: #dc3545; }
-
-        /* --- Controls & Inputs --- */
-        .filter-bar {
-            padding: 1rem;
-            border-radius: 16px;
-            margin-bottom: 2rem;
-            border: 1px solid var(--border-color);
-        }
-        .form-select, .form-control { border-radius: 10px; font-size: 0.9rem; padding: 0.6rem 1rem; }
+        .stat-card-dark { background: linear-gradient(135deg, var(--forest) 0%, var(--forest-mid) 100%); color: white; }
+        .stat-card-accent { background: var(--lime); color: var(--forest); }
         
-        .btn-forest {
-            background-color: var(--lime);
-            color: #000000;
-            border: none;
-            padding: 0.6rem 1.5rem;
-            border-radius: 10px;
-            font-weight: 600;
-            transition: all 0.2s;
-        }
-        .btn-forest:hover { opacity: 0.9; transform: translateY(-1px); }
-
-        /* --- Charts & Tables --- */
-        .chart-container { position: relative; height: 320px; width: 100%; }
-        .table-custom th {
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            border-bottom: 1px solid var(--border-color);
-        }
-        .table-custom td { padding: 1rem 0.5rem; vertical-align: middle; }
-
+        .chart-container { position: relative; height: 350px; width: 100%; }
+        
         @media print {
-            .sidebar, .no-print, .btn, .filter-bar { display: none !important; }
+            .sidebar, .no-print, .btn, .filter-bar, .hp-hero { display: none !important; }
             .main-content { margin: 0; padding: 0; }
-            body { background: white; color: black; }
-            .stat-card { border: 1px solid #ddd; box-shadow: none; }
+            .glass-card { border: 1px solid #ddd; box-shadow: none; background: white !important; }
         }
     </style>
 
@@ -321,32 +263,37 @@ $pageTitle = "Executive Reports";
         <?php $layout->topbar($pageTitle ?? ''); ?>
 
         <div class="container-fluid p-0">
-            <div class="d-flex flex-wrap justify-content-between align-items-end mb-4 gap-3">
-                <div>
-                    <h2 class="fw-bold mb-1" style="color: var(--forest);">Financial Overview</h2>
-                    <p class="text-muted mb-0">
-                        Performance report for 
-                        <span class="fw-bold "><?= date('M d, Y', strtotime($start_date)) ?></span> to 
-                        <span class="fw-bold "><?= date('M d, Y', strtotime($end_date)) ?></span>
-                    </p>
+        <div class="hp-hero">
+            <div class="row align-items-center">
+                <div class="col-md-7">
+                    <span class="badge bg-white bg-opacity-10 text-white rounded-pill px-3 py-2 mb-3">Executive Analytics</span>
+                    <h1 class="display-4 fw-800 mb-2">Financial Insights.</h1>
+                    <p class="opacity-75 fs-5">Track liquidity, growth, and operational efficiency. Real-time data visualization meets <span class="text-lime fw-bold">exclusive intelligence</span>.</p>
                 </div>
-                <div class="d-flex gap-2 no-print">
-                    <div class="dropdown">
-                        <button class="btn btn-white border shadow-sm dropdown-toggle fw-semibold" type="button" data-bs-toggle="dropdown">
-                            <i class="bi bi-file-earmark-arrow-down me-2 text-primary"></i> Export Report
-                        </button>
-                        <ul class="dropdown-menu shadow-lg border-0">
-                            <li><a class="dropdown-item" href="?action=export_pdf&duration=<?= $duration ?>&start_date=<?= $start_date ?>&end_date=<?= $end_date ?>"><i class="bi bi-file-pdf text-danger me-2"></i> PDF Document</a></li>
-                            <li><a class="dropdown-item" href="?action=export_excel&duration=<?= $duration ?>&start_date=<?= $start_date ?>&end_date=<?= $end_date ?>"><i class="bi bi-file-excel text-success me-2"></i> Excel Sheet</a></li>
-                        </ul>
+                <div class="col-md-5 text-end d-none d-lg-block">
+                    <div class="d-flex gap-2 justify-content-end no-print mb-3">
+                        <div class="dropdown">
+                            <button class="btn btn-white bg-opacity-10 text-white border-white border-opacity-25 shadow-sm dropdown-toggle fw-bold rounded-pill px-4" type="button" data-bs-toggle="dropdown">
+                                <i class="bi bi-file-earmark-arrow-down me-2 text-lime"></i> Export
+                            </button>
+                            <ul class="dropdown-menu shadow-lg border-0">
+                                <li><a class="dropdown-item" href="?action=export_pdf&duration=<?= $duration ?>&start_date=<?= $start_date ?>&end_date=<?= $end_date ?>"><i class="bi bi-file-pdf text-danger me-2"></i> PDF Document</a></li>
+                                <li><a class="dropdown-item" href="?action=export_excel&duration=<?= $duration ?>&start_date=<?= $start_date ?>&end_date=<?= $end_date ?>"><i class="bi bi-file-excel text-success me-2"></i> Excel Sheet</a></li>
+                            </ul>
+                        </div>
+                        <form method="POST" onsubmit="return confirm('Email this report to all members?');">
+                            <button type="submit" name="send_to_all" class="btn btn-lime shadow-sm fw-bold rounded-pill px-4">
+                                <i class="bi bi-send-fill me-2"></i> Email All
+                            </button>
+                        </form>
                     </div>
-                    <form method="POST" onsubmit="return confirm('Email this report to all members?');">
-                        <button type="submit" name="send_to_all" class="btn btn-dark shadow-sm fw-semibold">
-                            <i class="bi bi-send-fill me-2"></i> Email All Members
-                        </button>
-                    </form>
+                    <div class="d-inline-block text-start p-3 rounded-4 bg-white bg-opacity-10 backdrop-blur">
+                        <div class="small opacity-75">Active Period</div>
+                        <div class="fw-bold mb-0 text-lime"><?= date('M d, Y', strtotime($start_date)) ?> - <?= date('M d, Y', strtotime($end_date)) ?></div>
+                    </div>
                 </div>
             </div>
+        </div>
 
             <div class="filter-bar d-flex flex-wrap align-items-center gap-3 no-print">
                 <div class="d-flex align-items-center gap-2">
@@ -379,72 +326,70 @@ $pageTitle = "Executive Reports";
 
             <div class="row g-4 mb-4">
                 <div class="col-xl-3 col-md-6">
-                    <div class="stat-card card-dark">
-                        <div class="d-flex justify-content-between align-items-start">
-                            <div class="icon-box">
+                    <div class="glass-stat stat-card-dark h-100">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div class="stat-icon bg-white bg-opacity-10 text-lime p-3 rounded-4 fs-3">
                                 <i class="bi bi-graph-up-arrow"></i>
                             </div>
-                            <?php $trend = $growth_inflow >= 0 ? 'trend-up' : 'trend-down'; $icon = $growth_inflow >= 0 ? 'bi-arrow-up' : 'bi-arrow-down'; ?>
-                            <span class="trend-badge <?= $trend ?>">
+                            <?php $trend = $growth_inflow >= 0 ? 'hp-trend-up' : 'hp-trend-down'; $icon = $growth_inflow >= 0 ? 'bi-arrow-up' : 'bi-arrow-down'; ?>
+                            <span class="hp-trend <?= $trend ?>">
                                 <i class="bi <?= $icon ?>"></i> <?= number_format(abs($growth_inflow), 1) ?>%
                             </span>
                         </div>
-                        <div class="mt-2">
-                            <h2 class="fw-bold mb-0">KES <?= number_format((float)($totals['total_inflow'] ?? 0)) ?></h2>
-                            <p class="text-muted small mb-0">Total Inflow</p>
+                        <div>
+                            <h2 class="fw-800 mb-0">KES <?= number_format((float)($totals['total_inflow'] ?? 0)) ?></h2>
+                            <p class="text-white opacity-50 small fw-800 text-uppercase mb-0">Total Inflow</p>
                         </div>
                     </div>
                 </div>
 
                 <div class="col-xl-3 col-md-6">
-                    <div class="stat-card">
-                        <div class="d-flex justify-content-between align-items-start">
-                            <div class="icon-box bg-danger bg-opacity-10 text-danger">
+                    <div class="glass-stat h-100">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div class="stat-icon bg-forest bg-opacity-10 text-forest p-3 rounded-4 fs-3">
                                 <i class="bi bi-graph-down-arrow"></i>
                             </div>
-                            <?php $trend = $growth_outflow <= 0 ? 'trend-up' : 'trend-down'; 
-                                  $icon = $growth_outflow >= 0 ? 'bi-arrow-up' : 'bi-arrow-down'; 
-                                  $color_cls = $growth_outflow <= 0 ? 'text-success bg-success' : 'text-danger bg-danger'; 
-                            ?>
-                            <span class="trend-badge" style="background: rgba(var(--bs-<?= $growth_outflow <= 0 ? 'success' : 'danger' ?>-rgb), 0.1); color: var(--bs-<?= $growth_outflow <= 0 ? 'success' : 'danger' ?>)">
+                            <?php $trend = $growth_outflow <= 0 ? 'hp-trend-up' : 'hp-trend-down'; $icon = $growth_outflow >= 0 ? 'bi-arrow-up' : 'bi-arrow-down'; ?>
+                            <span class="hp-trend <?= $trend ?>">
                                 <i class="bi <?= $icon ?>"></i> <?= number_format(abs($growth_outflow), 1) ?>%
                             </span>
                         </div>
-                        <div class="mt-2">
-                            <h2 class="fw-bold mb-0 ">KES <?= number_format((float)($totals['total_outflow'] ?? 0)) ?></h2>
-                            <p class="text-muted small mb-0">Total Outflow</p>
+                        <div>
+                            <h2 class="fw-800 mb-0 text-forest">KES <?= number_format((float)($totals['total_outflow'] ?? 0)) ?></h2>
+                            <p class="text-muted small fw-800 text-uppercase mb-0">Total Outflow</p>
                         </div>
                     </div>
                 </div>
 
                 <div class="col-xl-3 col-md-6">
-                    <div class="stat-card card-accent">
-                        <div class="d-flex justify-content-between align-items-start">
-                            <div class="icon-box">
+                    <div class="glass-stat stat-card-accent h-100">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div class="stat-icon bg-forest bg-opacity-10 text-forest p-3 rounded-4 fs-3">
                                 <i class="bi bi-wallet2"></i>
                             </div>
-                            <span class="badge bg-dark bg-opacity-25  rounded-pill">Net Position</span>
+                            <span class="hp-badge" style="background: var(--forest); color: var(--lime);">Net Position</span>
                         </div>
-                        <div class="mt-2">
-                            <h2 class="fw-bold mb-0">KES <?= number_format((float)($net_cash_flow ?? 0)) ?></h2>
-                            <p class="text-muted small mb-0">Net Cash Flow</p>
+                        <div>
+                            <h2 class="fw-800 mb-0">KES <?= number_format((float)($net_cash_flow ?? 0)) ?></h2>
+                            <p class="text-forest opacity-50 small fw-800 text-uppercase mb-0">Net Cash Flow</p>
                         </div>
                     </div>
                 </div>
 
                 <div class="col-xl-3 col-md-6">
-                    <div class="stat-card">
-                        <div class="d-flex justify-content-between align-items-start">
-                            <div class="icon-box bg-warning bg-opacity-10 text-warning">
+                    <div class="glass-stat h-100">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div class="stat-icon bg-forest bg-opacity-10 text-forest p-3 rounded-4 fs-3">
                                 <i class="bi bi-receipt"></i>
                             </div>
-                             <span class="trend-badge <?= $growth_expense <= 0 ? 'trend-up' : 'trend-down' ?>">
+                            <?php $trend = $growth_expense <= 0 ? 'hp-trend-up' : 'hp-trend-down'; ?>
+                             <span class="hp-trend <?= $trend ?>">
                                 <i class="bi <?= $growth_expense >= 0 ? 'bi-arrow-up' : 'bi-arrow-down' ?>"></i> <?= number_format(abs($growth_expense), 1) ?>%
                             </span>
                         </div>
-                        <div class="mt-2">
-                            <h2 class="fw-bold mb-0 ">KES <?= number_format((float)($totals['operational_expense'] ?? 0)) ?></h2>
-                            <p class="text-muted small mb-0">Op. Expenses</p>
+                        <div>
+                            <h2 class="fw-800 mb-0 text-forest">KES <?= number_format((float)($totals['operational_expense'] ?? 0)) ?></h2>
+                            <p class="text-muted small fw-800 text-uppercase mb-0">Op. Expenses</p>
                         </div>
                     </div>
                 </div>
@@ -452,28 +397,28 @@ $pageTitle = "Executive Reports";
 
             <div class="row g-4 mb-4">
                 <div class="col-lg-8">
-                    <div class="stat-card">
-                        <h5 class="fw-bold mb-4">Cash Flow Trends</h5>
+                    <div class="glass-card h-100">
+                        <h5 class="fw-800 mb-4 text-forest">Cash Flow Trends</h5>
                         <div class="chart-container">
                             <canvas id="trendChart"></canvas>
                         </div>
                     </div>
                 </div>
                 <div class="col-lg-4">
-                    <div class="stat-card">
-                        <h5 class="fw-bold mb-4">Inflow Sources</h5>
+                    <div class="glass-card h-100 text-center">
+                        <h5 class="fw-800 mb-4 text-forest text-start">Inflow Sources</h5>
                         <div style="height: 220px; position: relative;">
                             <canvas id="sourceChart"></canvas>
                         </div>
-                        <div class="mt-4 small">
+                        <div class="mt-4 small text-start">
                             <?php 
                             $top_sources = $inflow_dist;
                             arsort($top_sources);
                             $top_sources = array_slice($top_sources, 0, 3);
                             foreach($top_sources as $k => $v): ?>
                             <div class="d-flex justify-content-between align-items-center mb-2">
-                                <span class="text-muted"><i class="bi bi-circle-fill me-2" style="font-size: 8px;"></i><?= $k ?></span>
-                                <span class="fw-bold">KES <?= number_format($v) ?></span>
+                                <span class="text-muted"><i class="bi bi-circle-fill me-2 text-lime" style="font-size: 10px;"></i><?= $k ?></span>
+                                <span class="fw-800 text-forest">KES <?= number_format($v) ?></span>
                             </div>
                             <?php endforeach; ?>
                         </div>
@@ -481,10 +426,10 @@ $pageTitle = "Executive Reports";
                 </div>
             </div>
 
-            <div class="stat-card p-0 overflow-hidden">
-                <div class="p-4 border-bottom d-flex justify-content-between align-items-center">
-                    <h5 class="fw-bold mb-0">Monthly Breakdown</h5>
-                    <button class="btn btn-sm btn-light border" onclick="window.print()"><i class="bi bi-printer"></i> Print</button>
+            <div class="glass-card p-0 overflow-hidden mb-5">
+                <div class="p-4 border-bottom d-flex justify-content-between align-items-center bg-light bg-opacity-10">
+                    <h5 class="fw-800 mb-0 text-forest">Monthly Breakdown</h5>
+                    <button class="btn btn-sm btn-white border rounded-pill px-3 shadow-sm" onclick="window.print()"><i class="bi bi-printer me-2"></i>Print Report</button>
                 </div>
                 <div class="table-responsive">
                     <table class="table table-hover table-custom mb-0 align-middle">
@@ -547,12 +492,12 @@ $pageTitle = "Executive Reports";
     
     // Gradients
     let gradIn = ctxTrend.createLinearGradient(0, 0, 0, 400);
-    gradIn.addColorStop(0, '#bef264');
-    gradIn.addColorStop(1, 'rgba(190, 242, 100, 0.1)');
+    gradIn.addColorStop(0, '#D0F35D');
+    gradIn.addColorStop(1, 'rgba(208, 243, 93, 0.1)');
 
     let gradOut = ctxTrend.createLinearGradient(0, 0, 0, 400);
-    gradOut.addColorStop(0, '#1e293b');
-    gradOut.addColorStop(1, '#0f172a');
+    gradOut.addColorStop(0, '#0F2E25');
+    gradOut.addColorStop(1, 'rgba(15, 46, 37, 0.2)');
 
     new Chart(ctxTrend, {
         type: 'bar',
