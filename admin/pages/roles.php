@@ -114,34 +114,88 @@ $pageTitle = "Roles & Permissions";
 ?>
 <?php $layout->header($pageTitle); ?>
 <style>
-/* Role Matrix Styles */
-    .role-matrix-header { border-radius: 20px; margin-bottom: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
-    .role-card { background: white; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); border: 1px solid #e9ecef; transition: all 0.3s; }
-    .role-card:hover { box-shadow: 0 8px 25px rgba(0,0,0,0.1); transform: translateY(-2px); }
-    .role-card.superadmin { background: linear-gradient(135deg, var(--forest-green) 0%, var(--forest-mid) 100%); color: white; border: none; }
-    .role-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #e9ecef; }
-    .role-card.superadmin .role-header { border-bottom-color: rgba(255,255,255,0.2); }
-    .role-title { font-size: 1.5rem; font-weight: 700; margin: 0; }
-    .role-desc { font-size: 0.9rem; opacity: 0.8; margin: 5px 0 0 0; }
-    .category-label { font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1.2px; color: #6c757d; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
-    .role-card.superadmin .category-label { color: var(--lime); }
-    .perm-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
-    .perm-checkbox { display: flex; align-items: center; padding: 12px 16px; background: #f8f9fa; border-radius: 10px; cursor: pointer; transition: all 0.2s; border: 2px solid transparent; }
-    .perm-checkbox:hover { background: #e9ecef; border-color: var(--forest-green); }
-    .perm-checkbox.active { background: var(--lime); border-color: var(--forest-green); }
-    .role-card.superadmin .perm-checkbox { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); color: white; }
-    .role-card.superadmin .perm-checkbox.active { background: var(--lime); color: var(--forest-green); border-color: var(--lime); }
-    .perm-checkbox input[type="checkbox"] { width: 20px; height: 20px; margin-right: 12px; cursor: pointer; accent-color: var(--forest-green); }
-    .perm-label { font-size: 0.9rem; font-weight: 500; flex: 1; }
-    .btn-lime { background: var(--lime); color: var(--forest-green); border: none; font-weight: 700; padding: 12px 24px; border-radius: 12px; transition: all 0.3s; }
-    .btn-lime:hover { background: var(--lime-hover); color: var(--forest-green); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(208, 243, 93, 0.4); }
-    .badge-count { background: var(--forest-green); color: var(--lime); padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 700; }
-    .role-card.superadmin .badge-count { background: var(--lime); color: var(--forest-green); }
-    .role-actions { display: flex; gap: 8px; }
-    .btn-icon { width: 36px; height: 36px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 8px; }
-    .locked-badge { background: var(--lime); color: var(--forest-green); padding: 6px 16px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; }
-    .main-content { margin-left: 280px; transition: all 0.3s; }
-    @media (max-width: 991px) { .main-content { margin-left: 0; } }
+/* Hope UI Forest & Lime Tokens */
+:root {
+    --forest: #0F2E25;
+    --forest-mid: #1A4D3E;
+    --lime: #D0F35D;
+    --lime-hover: #BCE04B;
+    --glass-bg: rgba(255, 255, 255, 0.9);
+    --glass-border: rgba(255, 255, 255, 0.5);
+}
+
+/* Layout Overrides */
+.main-content { margin-left: 280px; padding: 2.5rem; min-height: 100vh; background: #f0f4f3; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+@media (max-width: 991px) { .main-content { margin-left: 0; padding: 1.5rem; } }
+
+/* Hero Section */
+.hp-hero { 
+    background: linear-gradient(135deg, var(--forest) 0%, var(--forest-mid) 100%); 
+    border-radius: 30px; padding: 50px; color: white; margin-bottom: 40px;
+    box-shadow: 0 20px 40px rgba(15, 46, 37, 0.15);
+    position: relative; overflow: hidden;
+}
+.hp-hero::after {
+    content: ''; position: absolute; top: -50%; right: -10%; width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(208, 243, 93, 0.1) 0%, transparent 70%);
+    border-radius: 50%;
+}
+
+/* Glass Stat (Role Selector) */
+.glass-stat { 
+    background: var(--glass-bg); backdrop-filter: blur(10px);
+    border-radius: 24px; padding: 1.5rem; border: 1px solid var(--glass-border);
+    transition: 0.3s; box-shadow: 0 10px 30px rgba(0,0,0,0.03);
+}
+.glass-stat:hover { transform: translateY(-3px); box-shadow: 0 15px 35px rgba(0,0,0,0.05); }
+
+/* Role Card Refinement */
+.role-card { background: white; border-radius: 24px; padding: 2.5rem; box-shadow: 0 10px 40px rgba(0,0,0,0.02); border: 1px solid rgba(0,0,0,0.05); }
+.role-card.superadmin { background: linear-gradient(135deg, var(--forest) 0%, var(--forest-mid) 100%); color: white; border: none; }
+.role-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid rgba(0,0,0,0.05); }
+.role-card.superadmin .role-header { border-bottom-color: rgba(255,255,255,0.1); }
+.role-title { font-size: 1.75rem; font-weight: 800; letter-spacing: -0.5px; }
+.role-desc { font-size: 1rem; opacity: 0.7; margin-top: 5px; }
+
+/* Permission Grid */
+.category-label { font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-muted); margin: 30px 0 15px 0; display: flex; align-items: center; gap: 10px; }
+.role-card.superadmin .category-label { color: var(--lime); }
+.perm-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
+.perm-checkbox { 
+    display: flex; align-items: center; padding: 15px 20px; 
+    background: #f8fafc; border-radius: 16px; cursor: pointer; 
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); border: 1px solid transparent; 
+}
+.perm-checkbox:hover { background: #f1f5f9; transform: scale(1.02); }
+.perm-checkbox.active { background: #f0fdf4; border-color: rgba(34, 197, 94, 0.2); }
+.role-card.superadmin .perm-checkbox { background: rgba(255,255,255,0.05); color: white; border-color: rgba(255,255,255,0.1); }
+.role-card.superadmin .perm-checkbox.active { background: var(--lime); color: var(--forest); border-color: var(--lime); }
+
+.perm-checkbox input[type="checkbox"] { width: 20px; height: 20px; margin-right: 15px; cursor: pointer; accent-color: var(--forest); }
+.perm-label { font-size: 0.95rem; font-weight: 600; flex: 1; }
+
+/* Buttons & Badges */
+.btn-lime { background: var(--lime); color: var(--forest); border: none; font-weight: 700; padding: 12px 28px; border-radius: 14px; transition: 0.3s; }
+.btn-lime:hover { background: var(--lime-hover); transform: translateY(-2px); box-shadow: 0 10px 20px rgba(208, 243, 93, 0.2); }
+.badge-count { background: #f1f5f9; color: var(--forest); padding: 6px 16px; border-radius: 12px; font-size: 0.85rem; font-weight: 700; }
+.role-card.superadmin .badge-count { background: rgba(255,255,255,0.1); color: var(--lime); }
+.locked-badge { background: var(--lime); color: var(--forest); padding: 6px 16px; border-radius: 50px; font-size: 0.75rem; font-weight: 800; letter-spacing: 0.5px; }
+
+/* Modals & Action Buttons */
+.modal-content { border-radius: 28px; border: 1px solid var(--glass-border); box-shadow: 0 25px 50px rgba(0,0,0,0.15); border: none; }
+.modal-header { border-bottom: 1px solid rgba(0,0,0,0.05); padding: 2rem 2rem 1.5rem; }
+.modal-body { padding: 2rem; }
+.modal-footer { border-top: 1px solid rgba(0,0,0,0.05); padding: 1.5rem 2rem 2rem; }
+.form-control, .form-select { border-radius: 14px; padding: 12px 18px; border: 1.5px solid #e2e8f0; }
+.form-control:focus { border-color: var(--forest); box-shadow: 0 0 0 4px rgba(15, 46, 37, 0.05); }
+
+.role-actions .btn-icon { 
+    width: 42px; height: 42px; border-radius: 14px; 
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: 0.2s; border: 1px solid transparent; background: #f8fafc; color: var(--forest);
+}
+.role-actions .btn-icon:hover { background: var(--forest); color: var(--lime); transform: translateY(-2px); }
+.role-actions .btn-outline-danger.btn-icon:hover { background: #ef4444; color: white; }
 </style>
 
 <div class="d-flex">
@@ -149,16 +203,21 @@ $pageTitle = "Roles & Permissions";
 
     <div class="flex-fill main-content">
         <?php $layout->topbar($pageTitle ?? 'Role Matrix'); ?>
-    <div class="page-header">
+    <div class="hp-hero">
         <div class="row align-items-center">
-            <div class="col-md-6">
-                <h1 class="mb-2"><i class="bi bi-grid-3x3-gap me-2"></i> Roles & Permissions</h1>
-                <p class="mb-0 opacity-75">Define access levels for your staff.</p>
-            </div>
-            <div class="col-md-6 text-md-end mt-3 mt-md-0">
-                <button class="btn btn-lime shadow-sm" data-bs-toggle="modal" data-bs-target="#addRoleModal">
+            <div class="col-md-7">
+                <span class="badge bg-white bg-opacity-10 text-white rounded-pill px-3 py-2 mb-3">RBAC Console V24</span>
+                <h1 class="display-4 fw-800 mb-2">Roles & Permissions.</h1>
+                <p class="opacity-75 fs-5">Everything is organized. Configure access levels with <span class="text-lime fw-bold">surgical precision</span>.</p>
+                <button class="btn btn-lime rounded-pill px-4 py-2 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#addRoleModal">
                     <i class="bi bi-plus-circle me-2"></i> Create New Role
                 </button>
+            </div>
+            <div class="col-md-5 text-end d-none d-lg-block">
+                <div class="d-inline-block p-4 rounded-4 bg-white bg-opacity-10 backdrop-blur">
+                    <div class="small opacity-75">Security Integrity</div>
+                    <div class="h3 fw-bold mb-0 text-lime">ACID Verified</div>
+                </div>
             </div>
         </div>
     </div>
@@ -166,22 +225,22 @@ $pageTitle = "Roles & Permissions";
     <?php flash_render(); ?>
 
     <!-- Role Selector Control -->
-    <div class="card border-0 shadow-sm mb-4" style="border-radius: 16px;">
-        <div class="card-body p-4 d-flex align-items-center gap-3 bg-white rounded-4">
+    <div class="glass-stat mb-4">
+        <div class="d-flex align-items-center gap-4">
             <div class="flex-grow-1">
-                <label class="small text-muted fw-bold text-uppercase mb-1">Select Role to Configure</label>
-                <div class="input-group">
-                    <span class="input-group-text bg-light border-end-0"><i class="bi bi-person-badge"></i></span>
-                    <select id="roleSelector" class="form-select border-start-0 fw-bold" style="height: 50px;">
+                <label class="small text-muted fw-800 text-uppercase mb-2 d-block" style="letter-spacing: 1px;">Select Role to Configure</label>
+                <div class="input-group input-group-lg">
+                    <span class="input-group-text bg-white border-end-0 rounded-start-4"><i class="bi bi-person-badge text-forest"></i></span>
+                    <select id="roleSelector" class="form-select border-start-0 rounded-end-4 fw-bold" style="height: 60px; font-size: 1.1rem;">
                         <?php foreach ($roles_data as $role): ?>
                             <option value="role_<?= $role['id'] ?>"><?= htmlspecialchars($role['name']) ?></option>
                         <?php endforeach; ?>
                     </select>
                 </div>
             </div>
-            <div class="d-none d-md-block text-end ps-4 border-start">
-                <div class="small text-muted">Active Roles</div>
-                <div class="h3 fw-bold mb-0 text-forest"><?= count($roles_data) ?></div>
+            <div class="d-none d-md-block text-end ps-5 border-start border-2">
+                <div class="small text-muted fw-bold">Active Roles</div>
+                <div class="display-6 fw-800 mb-0 text-forest"><?= count($roles_data) ?></div>
             </div>
         </div>
     </div>
@@ -284,11 +343,10 @@ $pageTitle = "Roles & Permissions";
                 </div>
             </div>
             <?php endforeach; ?>
-            
             <?php if(!$is_super): ?>
-            <div class="mt-4 pt-3 border-top text-end">
-                <button class="btn btn-forest px-4 rounded-pill" onclick="simulateSave()">
-                    <i class="bi bi-check2-all me-2"></i> Save Configuration
+            <div class="mt-5 pt-4 border-top text-end">
+                <button class="btn btn-forest rounded-pill px-5 py-3 fw-bold shadow-sm" style="background: var(--forest); color: white;" onclick="simulateSave()">
+                    <i class="bi bi-shield-check me-2"></i> Deploy Security Configuration
                 </button>
             </div>
             <?php endif; ?>

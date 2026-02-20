@@ -394,98 +394,87 @@ $pageTitle = "People & Access";
 <?php $layout->header($pageTitle); ?>
     
     <style>
-        :root {
-            --primary-hue: 158; --primary-sat: 64%; --primary-lig: 52%;
-            --color-primary: hsl(var(--primary-hue), var(--primary-sat), var(--primary-lig));
-            --color-primary-dark: hsl(var(--primary-hue), var(--primary-sat), 25%);
-            --color-primary-light: hsl(var(--primary-hue), var(--primary-sat), 94%);
-            --bg-app: #f0f2f5; --text-main: #1e293b; --glass-bg: rgba(255, 255, 255, 0.85); --glass-border: 1px solid rgba(255, 255, 255, 0.6);
-            --card-radius: 16px;
-        }
-        [data-bs-theme="dark"] {
-            --bg-app: #0f172a; --text-main: #f1f5f9; --glass-bg: rgba(30, 41, 59, 0.7); --glass-border: 1px solid rgba(255, 255, 255, 0.08);
-        }
-        body { background-color: var(--bg-primary); color: var(--text-main); font-family: 'Plus Jakarta Sans', sans-serif; }
-        .hd-glass { background: var(--glass-bg); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: var(--glass-border); border-radius: var(--card-radius); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
-        .main-content { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; }
+        .main-content { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; }
         @media (max-width: 991px) { .main-content { margin-left: 0; padding: 1.5rem; } }
-        .avatar-circle { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.9rem; background: var(--color-primary-light); color: var(--color-primary-dark); }
-        .table-custom tr:hover td { background-color: rgba(var(--primary-hue), 185, 129, 0.05); }
-        .nav-tabs-custom .nav-link { border: 0; color: var(--text-muted); font-weight: 500; padding: 1rem 1.5rem; background: transparent; border-bottom: 2px solid transparent; }
-        .nav-tabs-custom .nav-link.active { color: var(--color-primary-dark); border-bottom-color: var(--color-primary); background: transparent; }
-        .nav-tabs-custom .nav-link:hover:not(.active) { color: var(--color-primary); }
+        
+        /* Tab Refinement */
+        .nav-tabs-custom .nav-link { border: 0; color: var(--text-muted); font-weight: 700; padding: 1.25rem 2rem; background: transparent; border-bottom: 3px solid transparent; transition: 0.3s; }
+        .nav-tabs-custom .nav-link.active { color: var(--forest); border-bottom-color: var(--lime); background: transparent; }
+        .nav-tabs-custom .nav-link:hover:not(.active) { color: var(--forest); background: rgba(208, 243, 93, 0.05); }
+        
+        .table-custom tr:hover td { background-color: rgba(208, 243, 93, 0.05); }
     </style>
 
-<div class="d-flex">
-    <?php $layout->sidebar(); ?>
-
-    <div class="flex-fill main-content">
-        <?php $layout->topbar($pageTitle); ?>
-        
-        <div class="container-fluid">
-            
-            <div class="d-flex justify-content-between align-items-end mb-4">
-                <div>
-                    <h3 class="fw-bold mb-1 text-gradient">People & Access</h3>
-                    <p class="text-muted small mb-0">Unified management for Employees, Payroll, and System Administrators.</p>
-                </div>
-                <div class="d-flex gap-2">
+    <div class="hp-hero">
+        <div class="row align-items-center">
+            <div class="col-md-7">
+                <span class="badge bg-white bg-opacity-10 text-white rounded-pill px-3 py-2 mb-3">Staff Command Center</span>
+                <h1 class="display-4 fw-800 mb-2">HR & Identity.</h1>
+                <p class="opacity-75 fs-5 mb-4">Manage your talent ecosystem. Hire, compensate, and secure your workforce with <span class="text-lime fw-bold">vibrant efficiency</span>.</p>
+                
+                <div class="d-flex gap-3">
                     <?php if($current_view === 'hr'): ?>
-                        <div class="dropdown">
-                            <button class="btn btn-sm btn-outline-dark dropdown-toggle rounded-pill px-3" data-bs-toggle="dropdown">
-                                <i class="bi bi-download me-1"></i> Export
-                            </button>
-                            <ul class="dropdown-menu shadow-sm">
-                                <li><a class="dropdown-item" href="#"><i class="bi bi-file-pdf text-danger me-2"></i>PDF List</a></li>
-                                <li><a class="dropdown-item" href="#"><i class="bi bi-file-excel text-success me-2"></i>Excel Sheet</a></li>
-                            </ul>
-                        </div>
-                        <button class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#addStaffModal">
+                        <button class="btn btn-lime rounded-pill px-4 py-2 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#addStaffModal">
                             <i class="bi bi-person-plus-fill me-2"></i>Hire Employee
                         </button>
                     <?php elseif($current_view === 'payroll'): ?>
-                        <button class="btn btn-outline-dark rounded-pill px-4 shadow-sm" data-bs-toggle="modal" data-bs-target="#historyModal">
-                            <i class="bi bi-clock-history me-2"></i>History
-                        </button>
-                        <button class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#newRunModal">
+                        <button class="btn btn-lime rounded-pill px-4 py-2 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#newRunModal">
                             <i class="bi bi-plus-lg me-2"></i>New Pay Period
                         </button>
                     <?php elseif(($current_view === 'sys' && ($admin_role == 1 || can('system_settings')))): ?>
-                        <button class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#addAdminModal">
+                        <button class="btn btn-lime rounded-pill px-4 py-2 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#addAdminModal">
                             <i class="bi bi-shield-lock-fill me-2"></i>New Admin
                         </button>
                     <?php endif; ?>
-                </div>
-            </div>
-
-            <!-- KPIs -->
-            <div class="row g-4 mb-4">
-                <?php 
-                $stats = [
-                    ['label' => $kpi1_lbl, 'val' => $kpi1_val, 'icon' => 'people-fill', 'color' => 'primary'],
-                    ['label' => $kpi2_lbl, 'val' => $kpi2_val, 'icon' => 'wallet2', 'color' => 'success'],
-                    ['label' => $kpi3_lbl, 'val' => $kpi3_val, 'icon' => 'activity', 'color' => 'info'],
-                ];
-                foreach($stats as $s): ?>
-                <div class="col-md-4">
-                    <div class="hd-glass p-4 h-100 d-flex align-items-center justify-content-between">
-                        <div>
-                            <h6 class="text-muted text-uppercase fw-semibold fs-7 mb-2"><?= $s['label'] ?></h6>
-                            <h2 class="fw-bold mb-0 text-<?= $s['color'] ?>"><?= $s['val'] ?></h2>
-                        </div>
-                        <div class="stat-icon bg-<?= $s['color'] ?> bg-opacity-10 text-<?= $s['color'] ?> fs-1 p-3 rounded-4">
-                            <i class="bi bi-<?= $s['icon'] ?>"></i>
-                        </div>
+                    
+                    <div class="dropdown">
+                        <button class="btn btn-white bg-opacity-10 text-white border-white border-opacity-25 rounded-pill px-4 py-2 dropdown-toggle" data-bs-toggle="dropdown">
+                            <i class="bi bi-download me-2"></i>Export
+                        </button>
+                        <ul class="dropdown-menu shadow-lg">
+                            <li><a class="dropdown-item" href="#"><i class="bi bi-file-pdf text-danger me-2"></i>PDF List</a></li>
+                            <li><a class="dropdown-item" href="#"><i class="bi bi-file-excel text-success me-2"></i>Excel Sheet</a></li>
+                        </ul>
                     </div>
                 </div>
-                <?php endforeach; ?>
             </div>
+            <div class="col-md-5 text-end d-none d-lg-block">
+                <div class="d-inline-block p-4 rounded-4 bg-white bg-opacity-10 backdrop-blur">
+                    <div class="small opacity-75">Workforce Strength</div>
+                    <div class="h2 fw-800 mb-0 text-lime"><?= $db->query("SELECT COUNT(*) FROM employees WHERE status='active'")->fetch_row()[0] ?> Active</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="row g-4 mb-4">
+        <?php 
+        $stats = [
+            ['label' => $kpi1_lbl, 'val' => $kpi1_val, 'icon' => 'people-fill', 'color' => 'forest'],
+            ['label' => $kpi2_lbl, 'val' => $kpi2_val, 'icon' => 'wallet2', 'color' => 'lime'],
+            ['label' => $kpi3_lbl, 'val' => $kpi3_val, 'icon' => 'activity', 'color' => 'forest'],
+        ];
+        foreach($stats as $s): ?>
+        <div class="col-md-4">
+            <div class="glass-stat h-100 d-flex align-items-center justify-content-between">
+                <div>
+                    <h6 class="text-muted text-uppercase fw-800 fs-7 mb-2" style="letter-spacing: 1px;"><?= $s['label'] ?></h6>
+                    <h2 class="fw-800 mb-0 text-forest"><?= $s['val'] ?></h2>
+                </div>
+                <div class="stat-icon bg-<?= $s['color'] == 'lime' ? 'lime' : 'forest' ?> bg-opacity-10 text-<?= $s['color'] == 'lime' ? 'forest' : 'forest' ?> fs-1 p-3 rounded-4">
+                    <i class="bi bi-<?= $s['icon'] ?>"></i>
+                </div>
+            </div>
+        </div>
+        <?php endforeach; ?>
+    </div>
 
             <?php flash_render(); ?>
 
             <!-- TABBED VIEW -->
-            <div class="hd-glass overflow-hidden">
-                <div class="d-flex border-bottom bg-light bg-opacity-25 px-3 justify-content-between align-items-center">
+            <div class="glass-card p-0 overflow-hidden">
+                <div class="d-flex border-bottom bg-white bg-opacity-50 px-3 justify-content-between align-items-center">
                     <ul class="nav nav-tabs-custom mb-0">
                         <li class="nav-item">
                             <a class="nav-link <?= $current_view === 'hr' ? 'active' : '' ?>" href="?view=hr">

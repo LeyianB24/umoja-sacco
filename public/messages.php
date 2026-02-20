@@ -99,6 +99,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_message'])) {
     $attachment     = saveAttachment($_FILES['attachment'] ?? null);
     $subject        = ($recipient_role === 'broadcast') ? 'Broadcast' : 'Chat';
 
+    // Subject Inheritance: If replying to a thread, keep the context (e.g., Ticket #ID)
+    if ($recipient_role !== 'broadcast' && $target_id > 0) {
+        $history_sql = match ($my_role) {
+            'member' => ($recipient_role === 'admin')
+                ? "SELECT subject FROM messages WHERE (from_member_id = $my_id AND to_admin_id = $target_id) OR (from_admin_id = $target_id AND to_member_id = $my_id) ORDER BY sent_at DESC LIMIT 1"
+                : "SELECT subject FROM messages WHERE (from_member_id = $my_id AND to_member_id = $target_id) OR (from_member_id = $target_id AND to_member_id = $my_id) ORDER BY sent_at DESC LIMIT 1",
+            default => ($recipient_role === 'admin')
+                ? "SELECT subject FROM messages WHERE (from_admin_id = $my_id AND to_admin_id = $target_id) OR (from_admin_id = $target_id AND to_admin_id = $my_id) ORDER BY sent_at DESC LIMIT 1"
+                : "SELECT subject FROM messages WHERE (from_admin_id = $my_id AND to_member_id = $target_id) OR (from_member_id = $target_id AND to_admin_id = $my_id) ORDER BY sent_at DESC LIMIT 1",
+        };
+        $history_res = $conn->query($history_sql);
+        if ($history_res && $history_row = $history_res->fetch_assoc()) {
+            $subject = $history_row['subject'] ?: 'Chat';
+        }
+    }
+
     if ($body || $attachment) {
         
         // A. BROADCAST LOGIC

@@ -127,34 +127,27 @@ $php_v     = phpversion();
 <?php $layout->header($pageTitle); ?>
 
     <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: var(--bg-primary); color: var(--text-main); }
+        .main-content { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; }
+        @media (max-width: 991px) { .main-content { margin-left: 0; padding: 1.5rem; } }
         
-        /* Layout */
-        .main-content { margin-left: 280px; min-height: 100vh; display: flex; flex-direction: column; transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1); padding: 2.5rem; }
-        @media(max-width: 991px){ .main-content { margin-left:0; padding: 1.5rem; } }
+        /* Navigation Pills */
+        .nav-pills .nav-link { 
+            font-weight: 700; border-radius: 16px; padding: 15px 25px; 
+            margin-bottom: 10px; transition: 0.3s; color: var(--forest);
+            border: 1px solid transparent; background: white;
+        }
+        .nav-pills .nav-link:hover { background-color: rgba(208, 243, 93, 0.1); }
+        .nav-pills .nav-link.active { background-color: var(--forest); color: var(--lime); border-color: var(--forest); }
+        
+        .avatar-hero { 
+            width: 90px; height: 90px; border-radius: 24px; 
+            background: var(--lime); color: var(--forest);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 2rem; font-weight: 800; border: 4px solid rgba(255,255,255,0.2);
+        }
 
-        /* Component Styles */
-        .card-custom { border-radius: 24px; border: 1px solid var(--border-color); }
-
-        .nav-pills .nav-link { font-weight: 500; border-radius: 12px; padding: 12px 20px; margin-bottom: 8px; transition: all 0.3s; }
-        .nav-pills .nav-link:hover { background-color: rgba(255,255,255,0.05); }
-        .nav-pills .nav-link.active { background-color: var(--lime); color: #000000; }
-        
-        .form-control { border-radius: 12px; padding: 12px 16px; }
-        .form-control:focus { background-color: var(--bs-body-bg); border-color: var(--lime); box-shadow: 0 0 0 4px rgba(190, 242, 100, 0.2); }
-        
-        .btn-lime { background-color: var(--lime); color: #000000; font-weight: 600; border-radius: 50px; padding: 10px 24px; border: none; }
-        .btn-lime:hover { opacity: 0.9; transform: translateY(-1px); }
-        
-        .avatar-circle { width: 80px; height: 80px; background-color: rgba(255,255,255,0.05); color: var(--lime); font-size: 1.8rem; display: flex; align-items: center; justify-content: center; border-radius: 50%; margin: 0 auto; }
-
-        /* Hope UI Styles */
-        .glass-card { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
-        .tab-content-wrapper { animation: fadeIn 0.4s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        
-        .section-title { font-size: 0.9rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--lime); margin-bottom: 1.5rem; display: flex; align-items: center; gap: 10px; }
-        .section-title::after { content: ""; flex: 1; height: 1px; background: rgba(190, 242, 100, 0.15); }
+        .section-title { font-size: 0.8rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-muted); margin: 40px 0 20px 0; display: flex; align-items: center; gap: 15px; }
+        .section-title::after { content: ""; flex: 1; height: 1px; background: rgba(0,0,0,0.05); }
     </style>
 
 
@@ -167,42 +160,48 @@ $php_v     = phpversion();
             <div class="container-fluid">
         
             
-            <div class="d-flex justify-content-between align-items-end mb-5">
-                <div>
-                    <h2 class="fw-bold mb-1" style="color: var(--accent-dark);">Settings</h2>
-                    <p class="text-muted mb-0">Manage your profile and system preferences</p>
+        <div class="hp-hero">
+            <div class="row align-items-center">
+                <div class="col-md-7">
+                    <span class="badge bg-white bg-opacity-10 text-white rounded-pill px-3 py-2 mb-3">System Control Panel</span>
+                    <h1 class="display-4 fw-800 mb-2">Global Configuration.</h1>
+                    <p class="opacity-75 fs-5">Fine-tune your portal. Manage identity, security, and global parameters with <span class="text-lime fw-bold">exclusive precision</span>.</p>
+                </div>
+                <div class="col-md-5 text-end d-none d-lg-block">
+                    <div class="d-inline-block p-4 rounded-4 bg-white bg-opacity-10 backdrop-blur text-start">
+                        <div class="small opacity-75">Server Status</div>
+                        <div class="h3 fw-bold mb-0 text-lime"><i class="bi bi-cpu me-2"></i>Operational</div>
+                    </div>
                 </div>
             </div>
+        </div>
 
-            <?php flash_render(); ?>
+        <?php flash_render(); ?>
 
-            <div class="row g-4">
-                
-                <div class="col-lg-4 col-xl-3">
-                    
-                    <div class="card-custom p-4 text-center mb-4" style="background: linear-gradient(180deg, var(--accent-dark) 0%, #0f1c03 100%); color: white;">
-                        <div class="position-relative d-inline-block mb-3">
-                            <div class="avatar-circle border border-2 border-white  bg-white">
-                                 <?= getInitials($me['full_name']) ?>
-                            </div>
-                            <span class="position-absolute bottom-0 end-0 bg-success border border-2 border-dark rounded-circle p-2"></span>
-                        </div>
-                        <h5 class="mb-1 fw-bold"><?= htmlspecialchars($me['full_name']) ?></h5>
-                        <p class="text-white-50 small mb-3"><?= $me['email'] ?></p>
-                        
-                        <div class="d-flex justify-content-center gap-4 mt-3 pt-3 border-top border-secondary border-opacity-25">
-                            <div class="text-center">
-                                <h6 class="mb-0 fw-bold text-white">ID</h6>
-                                <small class="text-white-50">#<?= $admin_id ?></small>
-                            </div>
-                            <div class="text-center">
-                                <h6 class="mb-0 fw-bold text-white">Role</h6>
-                                <small class="text-white-50"><?= htmlspecialchars($me['role_name'] ?? 'Staff') ?></small>
-                            </div>
+        <div class="row g-4">
+            <div class="col-lg-4 col-xl-3">
+                <div class="glass-stat p-4 text-center mb-4" style="background: linear-gradient(180deg, var(--forest) 0%, var(--forest-mid) 100%); color: white;">
+                    <div class="position-relative d-inline-block mb-3">
+                        <div class="avatar-hero mx-auto">
+                             <?= getInitials($me['full_name']) ?>
                         </div>
                     </div>
+                    <h5 class="mb-1 fw-800"><?= htmlspecialchars($me['full_name']) ?></h5>
+                    <p class="text-white-50 small mb-4"><?= $me['email'] ?></p>
+                    
+                    <div class="d-flex justify-content-center gap-4 pt-3 border-top border-white border-opacity-10">
+                        <div class="text-center">
+                            <div class="small text-white-50 fw-bold text-uppercase" style="letter-spacing: 1px;">Admin ID</div>
+                            <div class="h5 fw-800 mb-0 text-lime">#<?= $admin_id ?></div>
+                        </div>
+                        <div class="text-center">
+                            <div class="small text-white-50 fw-bold text-uppercase" style="letter-spacing: 1px;">Role</div>
+                            <div class="h5 fw-800 mb-0 text-lime"><?= htmlspecialchars($me['role_name'] ?? 'Staff') ?></div>
+                        </div>
+                    </div>
+                </div>
 
-                    <div class="card-custom p-3">
+                <div class="glass-card p-3">
                         <div class="nav flex-column nav-pills" id="v-pills-tab" role="tablist">
                             <button class="nav-link active text-start" data-bs-toggle="pill" data-bs-target="#v-pills-profile">
                                 <i class="bi bi-person me-2"></i> Personal Info
@@ -226,27 +225,27 @@ $php_v     = phpversion();
                     <div class="tab-content" id="v-pills-tabContent">
                         
                         <div class="tab-pane fade show active" id="v-pills-profile">
-                            <div class="card-custom p-4 p-md-5">
+                            <div class="glass-card p-4 p-md-5">
                                 <div class="d-flex justify-content-between align-items-center mb-4">
-                                    <h5 class="fw-bold mb-0">Edit Profile</h5>
-                                    <span class="badge bg-light  border rounded-pill px-3 py-2">Personal Details</span>
+                                    <h5 class="fw-800 mb-0">Edit Profile</h5>
+                                    <span class="hp-badge">Personal Details</span>
                                 </div>
                                 <form method="post">
                                     <?= csrf_field() ?>
                                     <div class="row g-4">
                                         <div class="col-md-6">
-                                            <label>Full Name</label>
+                                            <label class="small fw-800 text-muted text-uppercase mb-2">Full Name</label>
                                             <input type="text" class="form-control" name="full_name" value="<?= htmlspecialchars($me['full_name']) ?>" required>
                                         </div>
                                         <div class="col-md-6">
-                                            <label>Username</label>
+                                            <label class="small fw-800 text-muted text-uppercase mb-2">Username</label>
                                             <div class="input-group">
                                                 <span class="input-group-text border-0 bg-light text-muted" style="border-radius: 12px 0 0 12px;">@</span>
                                                 <input type="text" class="form-control" name="username" value="<?= htmlspecialchars($me['username']) ?>" style="border-radius: 0 12px 12px 0;" required>
                                             </div>
                                         </div>
                                         <div class="col-12">
-                                            <label>Email Address</label>
+                                            <label class="small fw-800 text-muted text-uppercase mb-2">Email Address</label>
                                             <input type="email" class="form-control" name="email" value="<?= htmlspecialchars($me['email']) ?>" required>
                                         </div>
                                     </div>
@@ -258,33 +257,33 @@ $php_v     = phpversion();
                         </div>
 
                         <div class="tab-pane fade" id="v-pills-security">
-                            <div class="card-custom p-4 p-md-5">
+                            <div class="glass-card p-4 p-md-5">
                                 <div class="d-flex justify-content-between align-items-center mb-4">
-                                    <h5 class="fw-bold mb-0">Security</h5>
-                                    <span class="badge bg-light  border rounded-pill px-3 py-2">Password Manager</span>
+                                    <h5 class="fw-800 mb-0">Security</h5>
+                                    <span class="hp-badge">Password Manager</span>
                                 </div>
                                 <form method="post">
                                     <?= csrf_field() ?>
                                     <div class="mb-4">
-                                        <label>Current Password</label>
+                                        <label class="small fw-800 text-muted text-uppercase mb-2">Current Password</label>
                                         <input type="password" class="form-control" name="current_password" required>
                                     </div>
                                     <div class="row g-4 mb-4">
                                         <div class="col-md-6">
-                                            <label>New Password</label>
+                                            <label class="small fw-800 text-muted text-uppercase mb-2">New Password</label>
                                             <input type="password" class="form-control" name="new_password" placeholder="Min 6 characters" required>
                                         </div>
                                         <div class="col-md-6">
-                                            <label>Confirm Password</label>
+                                            <label class="small fw-800 text-muted text-uppercase mb-2">Confirm Password</label>
                                             <input type="password" class="form-control" name="confirm_password" required>
                                         </div>
                                     </div>
-                                    <div class="alert alert-warning border-0 bg-warning bg-opacity-10 text-warning d-flex align-items-start small">
+                                    <div class="alert alert-warning border-0 bg-warning bg-opacity-10 text-warning d-flex align-items-start small rounded-4">
                                         <i class="bi bi-exclamation-triangle-fill me-2 mt-1"></i>
-                                        <div>Changing your password will log you out of all other active sessions.</div>
+                                        <div>Changing your password will log you out of all other active sessions for security.</div>
                                     </div>
                                     <div class="mt-4 d-flex justify-content-end">
-                                        <button type="submit" name="change_password" class="btn btn-dark rounded-pill px-4">Update Password</button>
+                                        <button type="submit" name="change_password" class="btn btn-forest rounded-pill px-4 text-white" style="background: var(--forest);">Update Password</button>
                                     </div>
                                 </form>
                             </div>
@@ -292,22 +291,22 @@ $php_v     = phpversion();
 
                         <?php if($_SESSION['role_id'] == 1): ?>
                         <div class="tab-pane fade" id="v-pills-global">
-                            <div class="card-custom p-4 p-md-5">
+                            <div class="glass-card p-4 p-md-5">
                                 <form method="post">
                                     <?= csrf_field() ?>
                                     
                                     <div class="section-title">Sacco Information</div>
                                     <div class="row g-4 mb-5">
                                         <div class="col-md-6">
-                                            <label class="form-label">Sacco Name</label>
+                                            <label class="small fw-800 text-muted text-uppercase mb-2">Sacco Name</label>
                                             <input type="text" class="form-control" name="site_name" value="<?= htmlspecialchars($sys_settings['SITE_NAME'] ?? SITE_NAME) ?>" required>
                                         </div>
                                         <div class="col-md-6">
-                                            <label class="form-label">Short Name</label>
+                                            <label class="small fw-800 text-muted text-uppercase mb-2">Short Name</label>
                                             <input type="text" class="form-control" name="site_short_name" value="<?= htmlspecialchars($sys_settings['SITE_SHORT_NAME'] ?? SITE_SHORT_NAME) ?>" required>
                                         </div>
                                         <div class="col-12">
-                                            <label class="form-label">Tagline</label>
+                                            <label class="small fw-800 text-muted text-uppercase mb-2">Tagline</label>
                                             <input type="text" class="form-control" name="site_tagline" value="<?= htmlspecialchars($sys_settings['SITE_TAGLINE'] ?? SITE_TAGLINE) ?>">
                                         </div>
                                     </div>
@@ -315,36 +314,16 @@ $php_v     = phpversion();
                                     <div class="section-title">Contact Details</div>
                                     <div class="row g-4 mb-5">
                                         <div class="col-md-6">
-                                            <label class="form-label">Public Email</label>
+                                            <label class="small fw-800 text-muted text-uppercase mb-2">Public Email</label>
                                             <input type="email" class="form-control" name="company_email" value="<?= htmlspecialchars($sys_settings['COMPANY_EMAIL'] ?? COMPANY_EMAIL) ?>">
                                         </div>
                                         <div class="col-md-6">
-                                            <label class="form-label">Contact Phone</label>
+                                            <label class="small fw-800 text-muted text-uppercase mb-2">Contact Phone</label>
                                             <input type="text" class="form-control" name="company_phone" value="<?= htmlspecialchars($sys_settings['COMPANY_PHONE'] ?? COMPANY_PHONE) ?>">
                                         </div>
                                         <div class="col-12">
-                                            <label class="form-label">Address / Office Location</label>
+                                            <label class="small fw-800 text-muted text-uppercase mb-2">Address / Office Location</label>
                                             <textarea class="form-control" name="company_address" rows="2"><?= htmlspecialchars($sys_settings['COMPANY_ADDRESS'] ?? COMPANY_ADDRESS) ?></textarea>
-                                        </div>
-                                    </div>
-
-                                    <div class="section-title">Social Presence</div>
-                                    <div class="row g-4">
-                                        <div class="col-md-6">
-                                            <label class="form-label">Facebook URL</label>
-                                            <input type="url" class="form-control" name="social_facebook" value="<?= htmlspecialchars($sys_settings['SOCIAL_FACEBOOK'] ?? SOCIAL_FACEBOOK) ?>">
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label">Twitter URL</label>
-                                            <input type="url" class="form-control" name="social_twitter" value="<?= htmlspecialchars($sys_settings['SOCIAL_TWITTER'] ?? SOCIAL_TWITTER) ?>">
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label">Instagram URL</label>
-                                            <input type="url" class="form-control" name="social_instagram" value="<?= htmlspecialchars($sys_settings['SOCIAL_INSTAGRAM'] ?? SOCIAL_INSTAGRAM) ?>">
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label">YouTube URL</label>
-                                            <input type="url" class="form-control" name="social_youtube" value="<?= htmlspecialchars($sys_settings['SOCIAL_YOUTUBE'] ?? SOCIAL_YOUTUBE) ?>">
                                         </div>
                                     </div>
 
@@ -356,25 +335,19 @@ $php_v     = phpversion();
                         </div>
 
                         <div class="tab-pane fade" id="v-pills-system">
-                            <div class="card-custom p-4 p-md-5">
-                                <h5 class="fw-bold mb-4">Environment Status</h5>
+                            <div class="glass-card p-4 p-md-5">
+                                <h5 class="fw-800 mb-4">Environment Status</h5>
                                 <div class="row g-3">
                                     <div class="col-md-6">
-                                        <div class="p-3 bg-light rounded-4 border border-light">
+                                        <div class="p-3 bg-white bg-opacity-50 rounded-4 border">
                                             <small class="text-muted d-block mb-1">PHP Version</small>
                                             <span class="fw-bold font-monospace fs-5"><?= $php_v ?></span>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
-                                        <div class="p-3 bg-light rounded-4 border border-light">
+                                        <div class="p-3 bg-white bg-opacity-50 rounded-4 border">
                                             <small class="text-muted d-block mb-1">Server IP</small>
                                             <span class="fw-bold font-monospace fs-5"><?= $server_ip ?></span>
-                                        </div>
-                                    </div>
-                                    <div class="col-12">
-                                        <div class="p-3 bg-light rounded-4 border border-light">
-                                            <small class="text-muted d-block mb-1">Software</small>
-                                            <span class="fw-bold font-monospace"><?= $_SERVER['SERVER_SOFTWARE'] ?></span>
                                         </div>
                                     </div>
                                 </div>
