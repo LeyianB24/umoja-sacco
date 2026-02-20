@@ -28,35 +28,25 @@ $requests = $conn->query("SELECT r.*, m.full_name, m.phone
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
-    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
     <meta charset="UTF-8">
-    <title><?= $pageTitle ?> | USMS Admin</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="<?= BASE_URL ?>/public/assets/css/style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title><?= $pageTitle ?> | Umoja Sacco</title>
     <style>
-        .table-premium { background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg-primary); color: var(--text-main); }
+        .main-content { margin-left: 280px; padding: 2.5rem; transition: margin-left 0.3s ease; min-height: 100vh; }
+        @media (max-width: 991px) { .main-content { margin-left: 0; padding: 1.5rem; } }
+        .table-premium { background: var(--bg-surface); border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border: 1px solid var(--border-color); }
         .callback-status-success { color: #059669; background: #ecfdf5; padding: 4px 12px; border-radius: 99px; font-size: 12px; font-weight: 600; }
         .callback-status-failed { color: #dc2626; background: #fef2f2; padding: 4px 12px; border-radius: 99px; font-size: 12px; font-weight: 600; }
         .raw-payload { max-width: 300px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: monospace; font-size: 11px; color: #64748b; }
     </style>
-
-    <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
 </head>
-<body class="bg-light">
+<body>
     <div class="d-flex">
         <?php $layout->sidebar(); ?>
-        <div class="flex-fill p-4" style="margin-left: 280px;">
+        <div class="flex-fill main-content">
             <?php $layout->topbar($pageTitle); ?>
 
-            <div class="mb-4 d-flex justify-content-between align-items-center">
-                <h4 class="fw-bold m-0 text-forest">Live Operations Monitor</h4>
-                <div class="btn-group">
-                    <button class="btn btn-outline-forest active" id="btnCallbacks">Callback Logs</button>
-                    <button class="btn btn-outline-forest" id="btnRequests">Outbound Requests</button>
-                </div>
-            </div>
 
             <!-- Callback Logs -->
             <div id="sectionCallbacks" class="table-premium">

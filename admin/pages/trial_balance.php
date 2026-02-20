@@ -11,7 +11,9 @@ require_once __DIR__ . '/../../inc/LayoutManager.php';
 require_admin();
 require_permission();
 $layout = LayoutManager::create('admin');
-
+?>
+</style>
+<?php
 /**
  * admin/pages/trial_balance.php
  * The Mathematical Proof - Golden Ledger V10
@@ -96,74 +98,7 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
     exit;
 }
 ?>
-<!DOCTYPE html>
-<html lang="en" data-bs-theme="light">
-<head>
-    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
-    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
-    <title><?= $pageTitle ?> | USMS Audit</title>
-
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-
-    <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; }
-        .main-content { margin-left: 280px; padding: 30px; transition: 0.3s; }
-
-        .portal-header {
-            position: relative; overflow: hidden;
-            border-radius: 30px; padding: 40px; margin-bottom: 30px;
-        }
-        .portal-header::after {
-            content: ''; position: absolute; bottom: -20%; right: -5%; width: 350px; height: 350px;
-            background: radial-gradient(circle, rgba(190, 242, 100, 0.05) 0%, transparent 70%);
-            border-radius: 50%;
-        }
-
-        .proof-card { border-radius: 28px; overflow: hidden; height: 100%; transition: 0.3s; }
-        .proof-card:hover { transform: translateY(-5px); }
-        
-        .card-header-gradient { padding: 25px 30px; border: none; }
-
-        .ledger-item {
-            padding: 18px 30px; border-bottom: 1px solid var(--border-color);
-            display: flex; justify-content: space-between; align-items: center;
-            cursor: pointer; transition: 0.2s;
-        }
-        .ledger-item:hover { transform: translateX(5px); }
-        .ledger-item .acc-name { font-weight: 500; font-size: 0.95rem; }
-        .ledger-item .acc-val { font-weight: 800; font-size: 1.05rem; color: var(--lime); }
-
-        .total-row { padding: 25px 30px; border-top: 2px solid var(--border-color); }
-
-        .status-banner {
-            border-radius: 24px; padding: 25px; margin-top: 40px;
-            display: flex; align-items: center; justify-content: center; gap: 20px;
-            animation: pulse-border 2s infinite;
-        }
-        @keyframes pulse-border {
-            0% { box-shadow: 0 0 0 0 rgba(190, 242, 100, 0.2); }
-            70% { box-shadow: 0 0 0 15px rgba(190, 242, 100, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(190, 242, 100, 0); }
-        }
-
-        .balanced-theme { background: var(--lime) !important; color: #000000 !important; }
-        .imbalanced-theme { background: rgba(244, 33, 46, 0.1) !important; color: #f4212e !important; }
-
-        .btn-lime-pill {
-            background: var(--lime); color: #000000; border-radius: 50px;
-            font-weight: 800; padding: 12px 30px; border: none; transition: 0.3s;
-        }
-        .btn-lime-pill:hover { transform: translateY(-2px); opacity: 0.9; }
-
-        .modal-content { border-radius: 30px; }
-        
-        @media (max-width: 991.98px) { .main-content { margin-left: 0; } }
-    </style>
-
-    <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
-</head>
+<?php $layout->header($pageTitle); ?>
 <body>
 
 <div class="d-flex">
@@ -359,7 +294,7 @@ foreach($all_cats as $cat_name):
 </div>
 <?php endforeach; ?>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="<?= BASE_URL ?>/public/assets/js/main.js?v=<?= time() ?>"></script>
-</body>
-</html>
+            <?php $layout->footer(); ?>
+        </div>
+    </div>
+</div>

@@ -24,7 +24,18 @@ require_admin();
 // Initialize Layout Manager
 $layout = LayoutManager::create('admin');
 require_permission();
-
+?>
+<style>
+/* Review Console Styles */
+.btn-filter { border-radius: 30px; padding: 10px 20px; font-weight: 700; color: var(--text-muted); transition: 0.3s; border: none; }
+.btn-filter.active { background: var(--forest-green); color: white; box-shadow: 0 4px 15px rgba(15, 57, 43, 0.2); }
+.badge-status { padding: 6px 12px; border-radius: 10px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; }
+.st-pending { background: #fff7ed; color: #c2410c; }
+.st-approved { background: #ecfdf5; color: #065f46; }
+.st-disbursed { background: #eff6ff; color: #1e40af; }
+.st-rejected { background: #fef2f2; color: #991b1b; }
+</style>
+<?php
 // Generate CSRF Token
 if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
@@ -245,60 +256,12 @@ $stats = $db->query("SELECT
 
 function ksh($v, $d = 2) { return number_format((float)($v ?? 0), $d); }
 ?>
-<!DOCTYPE html>
-<html lang="en" data-bs-theme="light">
-<head>
-    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
-    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
-    <meta charset="UTF-8">
-    <title>Loan Management - Manager</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-    
-    <style>
-        body { font-family: 'Inter', sans-serif; }
-        
-        .main-content-wrapper { margin-left: 260px; min-height: 100vh; padding: 20px; transition: margin-left 0.3s; }
-        @media (max-width: 991.98px) { .main-content-wrapper { margin-left: 0; } }
-        
-        /* Glass Components */
-        .glass-card {
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-        }
-
-        /* Avatar */
-        .avatar-circle {
-            width: 42px; height: 42px; object-fit: cover;
-            border: 2px solid var(--border-color);
-        }
-
-        /* Custom Badges */
-        .badge-status { padding: 6px 12px; font-weight: 500; border-radius: 6px; letter-spacing: 0.3px; }
-        .st-pending { background: rgba(217, 119, 6, 0.1); color: #d97706; border: 1px solid rgba(217, 119, 6, 0.2); }
-        .st-approved { background: rgba(16, 163, 74, 0.1); color: #16a34a; border: 1px solid rgba(16, 163, 74, 0.2); }
-        .st-disbursed { background: rgba(59, 130, 246, 0.1); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.2); }
-        .st-rejected { background: rgba(220, 38, 38, 0.1); color: #dc2626; border: 1px solid rgba(220, 38, 38, 0.2); }
-
-        /* Filter Buttons */
-        .btn-filter { border: 1px solid transparent; }
-        .btn-filter.active { background-color: var(--lime); color: #000000; border-color: var(--lime); }
-        .btn-filter:hover:not(.active) { background-color: rgba(255,255,255,0.05); }
-    </style>
-
-    <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
-</head>
+<?php $layout->header($pageTitle); ?>
 <body>
-
 <div class="d-flex">
-        <?php $layout->sidebar(); ?>
-
-        <div class="flex-fill main-content-wrapper" style="margin-left: 280px; transition: margin-left 0.3s ease;">
-            
-            <?php $layout->topbar($pageTitle ?? ''); ?>
+    <?php $layout->sidebar(); ?>
+    <div class="main-content">
+        <?php $layout->topbar($pageTitle ?? ''); ?>
             
             <div class="container-fluid">
             
@@ -529,9 +492,10 @@ if($loans->num_rows > 0):
 
 <?php endwhile; endif; ?>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+            <?php $layout->footer(); ?>
+        </div>
+    </div>
+</div>
 
 
 

@@ -20,7 +20,9 @@ require_permission();
 // Initialize Layout Manager
 $layout = LayoutManager::create('admin');
 require_superadmin();
-
+?>
+</style>
+<?php
 // 1. Handle POST Actions
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     verify_csrf_token();
@@ -93,43 +95,16 @@ $users_res = $conn->query("SELECT a.*, r.name as role_name FROM admins a LEFT JO
 
 $pageTitle = "Staff Management";
 ?>
-<!DOCTYPE html>
-<html lang="en" data-bs-theme="light">
-<head>
-    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
-    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
-    <meta charset="utf-8">
-    <title><?= $pageTitle ?> | Umoja Sacco</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --forest-deep: #022c22;
-            --lime-vibrant: #bef264;
-            --bg-body: #f8fafc;
-            --card-radius: 20px;
-        }
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg-body); color: var(--forest-deep); }
-        .iq-card { background: #fff; border: none; border-radius: var(--card-radius); box-shadow: 0 4px 24px rgba(0,0,0,0.03); overflow: hidden; }
-        .main-content-wrapper { margin-left: 280px; transition: 0.3s; }
-        @media (max-width: 991px) { .main-content-wrapper { margin-left: 0; } }
-        .avatar-box { width: 40px; height: 40px; border-radius: 50%; background: var(--forest-deep); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: bold; }
-        .role-badge { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; padding: 4px 10px; border-radius: 50px; background: rgba(2, 44, 34, 0.05); color: var(--forest-deep); }
-    </style>
-
-    <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
-</head>
+<?php $layout->header($pageTitle); ?>
 <body>
 
 <div class="d-flex">
     <?php $layout->sidebar(); ?>
 
-    <div class="flex-fill main-content-wrapper">
+    <div class="flex-fill main-content">
         <?php $layout->topbar($pageTitle ?? ''); ?>
         
-        <div class="container-fluid p-4">
+        <div class="container-fluid p-0">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
                     <h2 class="fw-bold mb-1">Administrative Staff</h2>
@@ -198,10 +173,9 @@ $pageTitle = "Staff Management";
                         </tbody>
                     </table>
                 </div>
+                <?php $layout->footer(); ?>
             </div>
         </div>
-
-        <?php $layout->footer(); ?>
     </div>
 </div>
 
@@ -297,8 +271,7 @@ function openEditModal(data) {
     new bootstrap.Modal(document.getElementById('editUserModal')).show();
 }
 </script>
-</body>
-</html>
+</script>
 
 
 

@@ -28,27 +28,17 @@ $pageTitle = "Statement Portal";
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="light">
 <head>
-    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
-    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= $pageTitle ?> | USMS Administration</title>
-    
-    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= $pageTitle ?> | USMS Administration</title>
-    
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <title><?= $pageTitle ?> | Umoja Sacco</title>
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
 
     <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg-primary); color: var(--text-main); }
         .wrapper { display: flex; min-height: 100vh; }
-        .main-content { flex: 1; padding: 2rem; transition: all 0.3s; }
+        .main-content { flex: 1; padding: 2.5rem; transition: margin-left 0.3s ease; margin-left: 280px; }
+        @media(max-width: 991px) { .main-content { margin-left: 0; padding: 1.5rem; } }
 
         /* Banner & Glassmorphism */
         .portal-header {
@@ -106,7 +96,6 @@ $pageTitle = "Statement Portal";
         .select2-container--bootstrap-5 .select2-selection { border-radius: 0.85rem; height: auto; padding: 0.5rem 0.75rem; }
     </style>
 
-    <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
 </head>
 <body>
 

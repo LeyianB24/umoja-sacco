@@ -222,29 +222,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_to_all'])) {
 
 $pageTitle = "Executive Reports";
 ?>
-<!DOCTYPE html>
-<html lang="en" data-bs-theme="light">
-<head>
-    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
-    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= $pageTitle ?> | Umoja Sacco</title>
-    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= $pageTitle ?> | Umoja Sacco</title>
-    
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<?php $layout->header($pageTitle); ?>
+<body>
+<div class="d-flex">
+    <?php $layout->sidebar(); ?>
+    <div class="main-content">
+        <?php $layout->topbar($pageTitle ?? ''); ?>
     
     <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; overflow-x: hidden; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; overflow-x: hidden; background: var(--bg-primary); color: var(--text-main); }
 
-        /* --- Sidebar & Layout Adjustment --- */
-        .main-content { margin-left: 280px; padding: 2rem; transition: margin-left 0.3s ease; }
-        @media (max-width: 991px) { .main-content { margin-left: 0; } }
 
         /* --- Modern Cards --- */
         .stat-card {
@@ -324,7 +311,6 @@ $pageTitle = "Executive Reports";
         }
     </style>
 
-    <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
 </head>
 <body>
 
@@ -650,7 +636,5 @@ $pageTitle = "Executive Reports";
         }
     });
 </script>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+    <?php $layout->footer(); ?>
+</div>

@@ -1,5 +1,5 @@
 /* public/assets/css/variables.css */
-/* Global Design System for Umoja Sacco */
+/* Global Design System for Umoja Sacco - Hope UI Light Mode Baseline */
 
 :root {
     /* Fonts */
@@ -19,7 +19,7 @@
     --sacco-gold: #E2B34A;
     --sacco-gold-hover: #d4a438;
     
-    /* Light Mode Palette */
+    /* Light Mode Palette (Target: Yesterday 10 a.m. EAT) */
     --bg-primary: #f0f7f4;
     --bg-surface: #FFFFFF;
     --surface-1: #FFFFFF;
@@ -33,7 +33,7 @@
     --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
 }
 
-/* Dark Mode Palette */
+/* Dark Mode Palette (Reserved for optional usage) */
 [data-bs-theme="dark"] {
     --bg-primary: #0b1210;
     --bg-surface: #13241f;
@@ -42,7 +42,7 @@
     --border-color: #1F2937;
 }
 
-/* System-Wide Resets for Mobile Friendliness */
+/* System-Wide Resets */
 * {
     box-sizing: border-box;
 }
@@ -51,29 +51,10 @@ body {
     font-family: var(--font-main);
     background-color: var(--bg-primary);
     color: var(--text-main);
-    overflow-x: hidden; /* Prevent horizontal scroll on mobile */
+    overflow-x: hidden;
     line-height: 1.6;
 }
 
-/* Utility Classes */
-.card-premium {
-    background: var(--bg-surface);
-    border: 1px solid var(--border-color);
-    border-radius: 20px;
-    box-shadow: var(--shadow-sm);
-    padding: 1.5rem;
-    transition: transform 0.2s, box-shadow 0.2s;
-}
-
+/* Base Classes */
 .text-brand-lime { color: var(--brand-lime) !important; }
 .bg-brand-forest { background-color: var(--brand-forest) !important; }
-
-/* Responsive Container Tweak */
-@media (max-width: 576px) {
-    .container-fluid {
-        padding-left: 1rem !important;
-        padding-right: 1rem !important;
-    }
-    h1 { font-size: 1.75rem; }
-    h2 { font-size: 1.5rem; }
-}

@@ -81,19 +81,7 @@ $backup_logs = $db->query("
 
 function getInitials($n) { return strtoupper(substr($n ?? 'U', 0, 2)); }
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
-    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
-    <meta charset="utf-8">
-    <title>Database Maintenance | Admin</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; }
-        .main-content { margin-left: 280px; padding: 30px; transition: 0.3s; }
-        @media (max-width: 991.98px) { .main-content { margin-left: 0; } }
+<?php $layout->header($pageTitle); ?>
 
         .card-custom { border-radius: 24px; border: 1px solid var(--border-color); }
 
@@ -130,7 +118,6 @@ function getInitials($n) { return strtoupper(substr($n ?? 'U', 0, 2)); }
         }
     </style>
 
-    <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
 </head>
 <body>
 
@@ -138,9 +125,7 @@ function getInitials($n) { return strtoupper(substr($n ?? 'U', 0, 2)); }
     <?php $layout->sidebar(); ?>
 
     <div class="flex-fill main-content">
-        <?php $layout->topbar($pageTitle); ?>
-
-        <div class="flex-fill main-content-wrapper" style="margin-left: 0; transition: margin-left 0.3s ease;">
+        <?php $layout->topbar($pageTitle ?? 'Database Backups'); ?>
             
             <div class="container-fluid">
             
@@ -254,22 +239,10 @@ function getInitials($n) { return strtoupper(substr($n ?? 'U', 0, 2)); }
                     </div>
                 </div>
             </div>
-            <?php $layout->footer(); ?>
-        </div>
-        
-    </div>
-</div>
+    </div><!-- End main-content -->
+</div><!-- End d-flex -->
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        window.addEventListener('themeChanged', (e) => {
-            document.documentElement.setAttribute('data-bs-theme', e.detail.theme);
-        });
-    });
-</script>
-</body>
-</html>
+<?php $layout->footer(); ?>
 
 
 

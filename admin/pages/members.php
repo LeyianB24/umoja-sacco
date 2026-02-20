@@ -11,7 +11,9 @@ $layout = LayoutManager::create('admin');
 // admin/members.php
 
 require_permission();
+?>
 
+<?php
 // 1. HANDLE ACTIONS
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     verify_csrf_token();
@@ -124,136 +126,11 @@ $stats = $conn->query("SELECT
 
 $pageTitle = "Member Directory";
 ?>
-<!DOCTYPE html>
-<html lang="en" data-bs-theme="light">
-<head>
-    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
-    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= $pageTitle ?> | USMS Administration</title>
-    
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    
-    <style>
-        :root {
-            --forest: #0f2e25;
-            --forest-light: #1a4d3d;
-            --lime: #d0f35d;
-            --lime-dark: #a8cf12;
-            --glass-bg: rgba(255, 255, 255, 0.95);
-            --glass-border: rgba(15, 46, 37, 0.05);
-            --glass-shadow: 0 10px 40px rgba(15, 46, 37, 0.06);
-        }
-
-        body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background: #f4f7f6;
-            color: var(--forest);
-        }
-
-        .main-content { margin-left: 280px; padding: 30px; transition: 0.3s; }
-        
-        /* Banner Styles */
-        .portal-header {
-            background: linear-gradient(135deg, var(--forest) 0%, #1a4d3e 100%);
-            border-radius: 30px; padding: 40px; color: white; margin-bottom: 30px;
-            box-shadow: 0 20px 40px rgba(15, 46, 37, 0.15);
-            position: relative; overflow: hidden;
-        }
-
-        /* Stat Cards */
-        .stat-card {
-            background: white; border-radius: 24px; padding: 25px;
-            box-shadow: var(--glass-shadow); border: 1px solid var(--glass-border);
-            height: 100%; transition: 0.3s;
-        }
-        .stat-card:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(15, 46, 37, 0.08); }
-
-        .icon-circle {
-            width: 50px; height: 50px; border-radius: 15px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1.25rem; margin-bottom: 15px;
-        }
-        .bg-lime-soft { background: rgba(208, 243, 93, 0.2); color: var(--forest); }
-        .bg-forest-soft { background: rgba(15, 46, 37, 0.05); color: var(--forest); }
-        .bg-red-soft { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
-
-        /* Ledger Table */
-        .ledger-container {
-            background: white; border-radius: 28px; 
-            box-shadow: var(--glass-shadow); border: 1px solid var(--glass-border);
-            overflow: hidden;
-        }
-        .ledger-header { padding: 30px; border-bottom: 1px solid #f1f5f9; background: #fff; }
-        
-        .table-custom { width: 100%; border-collapse: separate; border-spacing: 0; }
-        .table-custom thead th {
-            background: #f8fafc; color: #64748b; font-weight: 700;
-            text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.05em;
-            padding: 18px 25px; border-bottom: 2px solid #edf2f7;
-        }
-        .table-custom tbody td {
-            padding: 18px 25px; border-bottom: 1px solid #f1f5f9;
-            vertical-align: middle; font-size: 0.95rem;
-        }
-        .table-custom tbody tr:hover td { background-color: #fcfdfe; }
-
-        /* Avatars */
-        .member-avatar {
-            width: 44px; height: 44px; border-radius: 12px;
-            object-fit: cover; background: linear-gradient(135deg, var(--forest) 0%, #1a4d3e 100%);
-            display: flex; align-items: center; justify-content: center;
-            color: var(--lime); font-weight: 800; font-size: 1rem;
-            box-shadow: 0 4px 10px rgba(15, 46, 37, 0.1);
-        }
-
-        /* Statuses */
-        .status-pill {
-            padding: 6px 14px; border-radius: 10px; font-size: 0.7rem; font-weight: 800;
-            text-transform: uppercase; letter-spacing: 0.05em;
-        }
-        .status-active { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
-        .status-suspended { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
-        .status-pending { background: #fffbeb; color: #d97706; border: 1px solid #fef3c7; }
-
-        .btn-lime {
-            background: var(--lime); color: var(--forest);
-            border-radius: 12px; font-weight: 800; border: none; padding: 10px 20px;
-            transition: 0.3s;
-        }
-        .btn-lime:hover { background: var(--lime-dark); transform: translateY(-2px); box-shadow: 0 8px 15px rgba(208, 243, 93, 0.3); }
-
-        .btn-outline-forest {
-            background: transparent; border: 2px solid var(--forest); color: var(--forest);
-            border-radius: 12px; font-weight: 700; padding: 8px 18px; transition: 0.3s;
-        }
-        .btn-outline-forest:hover { background: var(--forest); color: white; }
-
-        .search-box {
-            background: #f8fafc; border: none; border-radius: 12px;
-            padding: 10px 15px 10px 40px; width: 100%; transition: 0.3s;
-        }
-        .search-box:focus { background: white; box-shadow: 0 0 0 4px rgba(15, 46, 37, 0.05); outline: none; }
-
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        .fade-in { animation: fadeIn 0.6s ease-out; }
-        .slide-up { animation: slideUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; opacity: 0; }
-        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-
-        @media (max-width: 991.98px) { .main-content { margin-left: 0; } }
-    </style>
-
-    <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
-</head>
+<?php $layout->header($pageTitle); ?>
 <body>
-
 <div class="d-flex">
     <?php $layout->sidebar(); ?>
-
-    <div class="flex-fill main-content">
+    <div class="main-content">
         <?php $layout->topbar($pageTitle ?? ''); ?>
         
         <!-- Header -->
@@ -437,11 +314,8 @@ $pageTitle = "Member Directory";
                     </tbody>
                 </table>
             </div>
-            <?php $layout->footer(); ?>
         </div>
-    
     </div>
-    
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>

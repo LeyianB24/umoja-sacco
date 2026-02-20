@@ -178,61 +178,11 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
 
 $pageTitle = "Revenue Portal";
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
-    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= $pageTitle ?> | USMS Finance</title>
-    
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    
-    <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; }
-        .main-content { margin-left: 280px; padding: 30px; transition: 0.3s; }
-        .portal-header { border-radius: 30px; padding: 40px; margin-bottom: 30px; position: relative; overflow: hidden; }
-        .stat-card { border-radius: 24px; padding: 25px; border: 1px solid var(--border-color); height: 100%; transition: 0.3s; }
-        .stat-card:hover { transform: translateY(-5px); }
-        .icon-circle { width: 54px; height: 54px; border-radius: 18px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; margin-bottom: 20px; }
-        .bg-lime-soft { background: rgba(190, 242, 100, 0.1); color: var(--lime); }
-        .bg-forest-soft { background: rgba(255, 255, 255, 0.05); color: white; }
-        .ledger-container { border-radius: 28px; border: 1px solid var(--border-color); overflow: hidden; }
-        .ledger-header { padding: 30px; border-bottom: 1px solid var(--border-color); }
-        .table-custom { width: 100%; border-collapse: separate; border-spacing: 0; }
-        .table-custom thead th { color: #64748b; font-weight: 700; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.05em; padding: 18px 25px; border-bottom: 2px solid var(--border-color); }
-        .table-custom tbody td { padding: 20px 25px; border-bottom: 1px solid var(--border-color); vertical-align: middle; font-size: 0.95rem; }
-        .table-custom tbody tr:hover td { background-color: rgba(255, 255, 255, 0.02); }
-        .btn-lime { background: var(--lime); color: #000000; border-radius: 14px; font-weight: 800; border: none; padding: 12px 25px; transition: 0.3s; }
-        .btn-lime:hover { opacity: 0.9; transform: translateY(-2px); }
-        .btn-outline-forest { background: transparent; border: 2px solid var(--lime); color: var(--lime); border-radius: 14px; font-weight: 700; padding: 10px 22px; transition: 0.3s; }
-        .btn-outline-forest:hover { background: var(--lime); color: #000000; }
-        .search-box { border: 1px solid var(--border-color); border-radius: 15px; padding: 12px 20px 12px 45px; width: 100%; transition: 0.3s; }
-        .modal-content { border-radius: 30px; border: none; overflow: hidden; }
-        .modal-header { background: #000000; color: white; border-bottom: 1px solid var(--border-color); padding: 25px 35px; }
-        .modal-body { padding: 35px; }
-        .form-control, .form-select { border-radius: 15px; padding: 12px 20px; }
-
-        .slide-up { animation: slideUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; opacity: 0; }
-        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        @media (max-width: 991.98px) { .main-content { margin-left: 0; } }
-        
-        .bg-success-soft { background: rgba(34, 197, 94, 0.1); color: #22c55e; }
-        .bg-warning-soft { background: rgba(234, 179, 8, 0.1); color: #eab308; }
-        .bg-danger-soft { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
-    </style>
-
-    <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
-</head>
+<?php $layout->header($pageTitle); ?>
 <body>
-
 <div class="d-flex">
     <?php $layout->sidebar(); ?>
-
-    <div class="flex-fill main-content">
+    <div class="main-content">
         <?php $layout->topbar($pageTitle ?? ''); ?>
         
         <!-- Header Banner -->

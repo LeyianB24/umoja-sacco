@@ -137,31 +137,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $pageTitle = "Register Member";
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
-    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
-    <meta charset="UTF-8">
-    <title><?= $pageTitle ?> | Clerk Portal</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; }
-        .glass-card { border-radius: 20px; border: none; box-shadow: 0 10px 40px rgba(0,0,0,0.05); }
-        .form-label { font-weight: 600; font-size: 0.85rem; text-transform: uppercase; }
-        .btn-green { background: #0F392B; color: white; border-radius: 12px; font-weight: bold; }
-        .btn-green:hover { background: #1a5a45; color: white; }
-    </style>
-    <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
-</head>
+<?php $layout->header($pageTitle); ?>
 <body>
 
 <div class="d-flex">
     <?php $layout->sidebar(); ?>
 
-    <div class="flex-fill main-content">
+    <div class="main-content">
         <?php $layout->topbar($pageTitle ?? ''); ?>
         
         
@@ -284,11 +266,9 @@ $pageTitle = "Register Member";
                 </div>
             </div>
             
-        <?php $layout->footer(); ?>
+            <?php $layout->footer(); ?>
+        </div>
     </div>
-     
-    </div>
-   
 </div>
 
 <script>
@@ -296,5 +276,4 @@ $pageTitle = "Register Member";
         document.getElementById('paymentDetails').style.display = checked ? 'block' : 'none';
     }
 </script>
-</body>
-</html>
+</script>

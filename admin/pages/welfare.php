@@ -244,40 +244,14 @@ $cases = $conn->query($sql);
 
 $pageTitle = "Unified Welfare Suite";
 ?>
-<!DOCTYPE html>
-<html lang="en" data-bs-theme="light">
-<head>
-    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
-    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
-    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
-    <meta charset="UTF-8">
-    <title><?= $pageTitle ?> | USMS</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; }
-        .main-content { margin-left: 280px; padding: 2rem; }
-        @media (max-width: 991px) { .main-content { margin-left: 0; } }
-        .glass-card { border: none; border-radius: 16px; transition: 0.2s; }
-        .glass-card:hover { transform: translateY(-3px); }
-        .badge-pending { background: rgba(245, 158, 11, 0.1); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.2); }
-        .badge-active { background: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.2); }
-        .badge-approved { background: rgba(59, 130, 246, 0.1); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.2); }
-        .icon-box { width: 45px; height: 45px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; }
-        .nav-tabs-custom .nav-link { border: none; font-weight: 600; padding: 1rem; border-bottom: 2px solid transparent; }
-        .nav-tabs-custom .nav-link.active { color: var(--lime); border-bottom-color: var(--lime); background: transparent; }
-    </style>
-
-    <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
-</head>
+<?php $layout->header($pageTitle); ?>
 <body>
 
 <div class="d-flex">
     <?php $layout->sidebar(); ?>
 
-    <div class="flex-fill main-content">
-        <?php $layout->topbar($pageTitle); ?>
+    <div class="main-content">
+        <?php $layout->topbar($pageTitle ?? ''); ?>
 
         <div class="row g-4 mb-4">
             <div class="col-xl-3 col-md-6">
@@ -513,31 +487,7 @@ $pageTitle = "Unified Welfare Suite";
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-    function openProcessModal(data) {
-        document.getElementById('proc_case_id').value = data.case_id;
-        document.getElementById('proc_req_amt').innerText = 'KES ' + new Intl.NumberFormat().format(data.requested_amount);
-        document.getElementById('proc_app_amt').value = data.requested_amount;
-        document.getElementById('reject_section').classList.add('d-none');
-        document.getElementById('pool_approval_section').classList.remove('d-none');
-        new bootstrap.Modal(document.getElementById('processModal')).show();
-    }
-    function switchReject() {
-        document.getElementById('pool_approval_section').classList.add('d-none');
-        document.getElementById('reject_section').classList.remove('d-none');
-    }
-    function confirmReject() {
-        document.getElementById('proc_action').value = 'reject';
-        document.querySelector('#processModal form').submit();
-    }
-    function openDonationModal(data) {
-        document.getElementById('don_case_id').value = data.case_id;
-        new bootstrap.Modal(document.getElementById('donationModal')).show();
-    }
-    function openViewer(data) {
-        alert("Case #" + data.case_id + " - " + data.title + "\nStatus: " + data.status);
-    }
-</script>
-</body>
-</html>
+    <?php $layout->footer(); ?>
+        </div>
+    </div>
+</div>

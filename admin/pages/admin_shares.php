@@ -1,10 +1,8 @@
-<?php
-// admin/pages/admin_shares.php
-require_once '../../config/db_connect.php';
-require_once '../../inc/Auth.php';
-require_once '../../inc/ShareValuationEngine.php';
+require_once '../../inc/LayoutManager.php';
 
 Auth::requireAdmin();
+$layout = LayoutManager::create('admin');
+require_permission();
 
 $pageTitle = "Equity & Share Management";
 $svEngine = new ShareValuationEngine($conn);
@@ -40,11 +38,14 @@ $totalU = (float)$valuation['total_units'] ?: 1;
 $stmt->bind_param("d", $totalU);
 $stmt->execute();
 $topHolders = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
-
-include '../../inc/header.php';
-include '../../inc/sidebar.php';
-include '../../inc/topbar.php';
+<?php
+$layout->header($pageTitle);
 ?>
+<body>
+<div class="d-flex">
+    <?php $layout->sidebar(); ?>
+    <div class="main-content">
+        <?php $layout->topbar($pageTitle ?? ''); ?>
 
 <div class="container-fluid py-4">
     <?= $msg ?>
@@ -156,4 +157,9 @@ include '../../inc/topbar.php';
     </div>
 </div>
 
-<?php include '../../inc/footer.php'; ?>
+    </div>
+</div>
+<?php $layout->footer(); ?>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -391,18 +391,7 @@ if ($current_view === 'hr') {
 
 $pageTitle = "People & Access";
 ?>
-<!DOCTYPE html>
-<html lang="en" data-bs-theme="light">
-<head>
-    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
-    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
-    <meta charset="utf-8">
-    <title><?= $pageTitle ?> | Umoja Sacco</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="<?= BASE_URL ?>/public/assets/css/style.css?v=<?= time() ?>">
+<?php $layout->header($pageTitle); ?>
     
     <style>
         :root {
@@ -416,27 +405,25 @@ $pageTitle = "People & Access";
         [data-bs-theme="dark"] {
             --bg-app: #0f172a; --text-main: #f1f5f9; --glass-bg: rgba(30, 41, 59, 0.7); --glass-border: 1px solid rgba(255, 255, 255, 0.08);
         }
-        body { background-color: var(--bg-app); color: var(--text-main); font-family: 'Plus Jakarta Sans', sans-serif; }
+        body { background-color: var(--bg-primary); color: var(--text-main); font-family: 'Plus Jakarta Sans', sans-serif; }
         .hd-glass { background: var(--glass-bg); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: var(--glass-border); border-radius: var(--card-radius); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
-        .main-content-wrapper { margin-left: 280px; transition: 0.3s; min-height: 100vh; }
+        .main-content { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; }
+        @media (max-width: 991px) { .main-content { margin-left: 0; padding: 1.5rem; } }
         .avatar-circle { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.9rem; background: var(--color-primary-light); color: var(--color-primary-dark); }
         .table-custom tr:hover td { background-color: rgba(var(--primary-hue), 185, 129, 0.05); }
         .nav-tabs-custom .nav-link { border: 0; color: var(--text-muted); font-weight: 500; padding: 1rem 1.5rem; background: transparent; border-bottom: 2px solid transparent; }
         .nav-tabs-custom .nav-link.active { color: var(--color-primary-dark); border-bottom-color: var(--color-primary); background: transparent; }
         .nav-tabs-custom .nav-link:hover:not(.active) { color: var(--color-primary); }
     </style>
-
-    <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
-</head>
 <body>
 
 <div class="d-flex">
     <?php $layout->sidebar(); ?>
 
-    <div class="flex-fill main-content-wrapper">
+    <div class="flex-fill main-content">
         <?php $layout->topbar($pageTitle); ?>
         
-        <div class="container-fluid py-4">
+        <div class="container-fluid">
             
             <div class="d-flex justify-content-between align-items-end mb-4">
                 <div>
@@ -1054,35 +1041,7 @@ $pageTitle = "People & Access";
     </div>
 </div>
 
-<!-- SCRIPTS -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-function updSal() {
-    const s = document.getElementById('grade_sel');
-    const opt = s.options[s.selectedIndex];
-    if(opt.dataset.sal) document.getElementById('sal_inp').value = opt.dataset.sal;
-}
-
-function editEmp(emp) {
-    document.getElementById('edit_emp_id').value = emp.employee_id;
-    document.getElementById('edit_emp_name').value = emp.full_name;
-    document.getElementById('edit_emp_phone').value = emp.phone;
-    document.getElementById('edit_emp_title').value = emp.job_title;
-    document.getElementById('edit_emp_salary').value = emp.salary;
-    document.getElementById('edit_emp_status').value = emp.status;
-    document.getElementById('edit_emp_kra').value = emp.kra_pin || '';
-    document.getElementById('edit_emp_nssf').value = emp.nssf_no || '';
-    document.getElementById('edit_emp_sha').value = emp.sha_no || '';
-    new bootstrap.Modal(document.getElementById('editEmpModal')).show();
-}
-
-function editAdmin(admin) {
-    document.getElementById('edit_admin_id').value = admin.admin_id;
-    document.getElementById('edit_admin_name').value = admin.full_name;
-    document.getElementById('edit_admin_email').value = admin.email;
-    document.getElementById('edit_admin_role').value = admin.role_id;
-    new bootstrap.Modal(document.getElementById('editAdminModal')).show();
-}
-</script>
-</body>
-</html>
+            <?php $layout->footer(); ?>
+        </div>
+    </div>
+</div>

@@ -67,6 +67,7 @@ $stuck = $monitor->getStuckPending(5);
 $alerts = $monitor->getActiveAlerts();
 
 $layout->header("Transaction Monitor"); ?>
+</style>
 
 <div class="d-flex">
     <?php $layout->sidebar(); ?>
@@ -74,7 +75,7 @@ $layout->header("Transaction Monitor"); ?>
     <div class="flex-fill main-content">
         <?php $layout->topbar("Transaction Monitor"); ?>
 
-        <div class="container-fluid p-4">
+        <div class="container-fluid">
     <div class="row">
         <div class="col-12">
             <div class="card card-flush">

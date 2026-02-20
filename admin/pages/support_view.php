@@ -142,35 +142,24 @@ $pageTitle = "Ticket View";
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
-    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Ticket #<?= $support_id ?></title>
+    <title>Ticket #<?= $support_id ?> | Umoja Sacco</title>
     
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <script>
-        (() => {
-            const saved = localStorage.getItem('theme') || 'light';
-            document.documentElement.setAttribute('data-bs-theme', saved);
-        })();
-    </script>
     
     <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; }
-        .hope-card { border-radius: 28px; border: 1px solid var(--border-color); overflow: hidden; }
-        .chat-area { border-radius: 20px; padding: 25px; max-height: 500px; overflow-y: auto; background: rgba(255,255,255,0.02); }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg-primary); color: var(--text-main); }
+        .hope-card { border-radius: 28px; border: 1px solid var(--border-color); overflow: hidden; background: var(--bg-surface); }
+        .chat-area { border-radius: 20px; padding: 25px; max-height: 500px; overflow-y: auto; background: rgba(0,0,0,0.02); }
         .msg-bubble { max-width: 80%; padding: 14px 20px; border-radius: 20px; margin-bottom: 20px; font-size: 0.92rem; }
-        .msg-member { border: 1px solid var(--border-color); border-bottom-left-radius: 4px; margin-right: auto; }
+        .msg-member { border: 1px solid var(--border-color); border-bottom-left-radius: 4px; margin-right: auto; background: var(--bg-primary); }
         .msg-admin { background: #000000; color: white; border: 1px solid var(--lime); border-bottom-right-radius: 4px; margin-left: auto; }
         .avatar-circle { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.75rem; }
         .btn-hope-lime { background: var(--lime); color: #000000; border-radius: 50px; font-weight: 700; padding: 12px 30px; border: none; }
-        .main-content { margin-left: 280px; transition: margin-left 0.3s ease; }
+        .main-content { margin-left: 280px; padding: 2.5rem; transition: margin-left 0.3s ease; }
+        @media (max-width: 991px) { .main-content { margin-left: 0; padding: 1.5rem; } }
     </style>
 
-    <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
 </head>
 <body>
 
