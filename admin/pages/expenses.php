@@ -12,6 +12,8 @@ $layout = LayoutManager::create('admin');
 
 require_admin();
 require_permission();
+
+$pageTitle = "Expenditure Portal";
 ?>
 <?php $layout->header($pageTitle); ?>
     <style>

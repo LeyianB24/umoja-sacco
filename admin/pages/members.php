@@ -8,6 +8,43 @@ require_once __DIR__ . '/../../inc/Auth.php';
 require_once __DIR__ . '/../../inc/LayoutManager.php';
 
 $layout = LayoutManager::create('admin');
+
+// 1. Stats Aggregation
+$stats = $conn->query("SELECT 
+    COUNT(CASE WHEN status='active' THEN 1 END) as active, 
+    COUNT(CASE WHEN status='suspended' THEN 1 END) as suspended, 
+    COUNT(CASE WHEN status='inactive' THEN 1 END) as pending, 
+    COUNT(*) as total 
+FROM members")->fetch_assoc();
+
+// 2. Fetch Members Table
+$filter = $_GET['status'] ?? 'all';
+$search = $_GET['q'] ?? '';
+$where = "1=1";
+$params = [];
+$types = "";
+
+if ($filter !== 'all') {
+    $where .= " AND status = ?";
+    $params[] = $filter;
+    $types .= "s";
+}
+if (!empty($search)) {
+    $sq = "%$search%";
+    $where .= " AND (full_name LIKE ? OR national_id LIKE ? OR email LIKE ? OR phone LIKE ?)";
+    $params[] = $sq; $params[] = $sq; $params[] = $sq; $params[] = $sq;
+    $types .= "ssss";
+}
+
+$query = "SELECT * FROM members WHERE $where ORDER BY join_date DESC LIMIT 100";
+$stmt = $conn->prepare($query);
+if (!empty($params)) {
+    $stmt->bind_param($types, ...$params);
+}
+$stmt->execute();
+$members = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+
+$pageTitle = "Registry Control Center";
 // admin/members.php
 
 require_permission();

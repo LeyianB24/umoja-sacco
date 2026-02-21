@@ -232,7 +232,7 @@ class PdfTemplate extends FPDF {
         if($w == 0)
             $w = $this->w - $this->rMargin - $this->x;
         $wmax = ($w - 2 * $this->cMargin) * 1000 / $this->FontSize;
-        $s = str_replace("\r", '', $txt);
+        $s = str_replace("\r", '', (string)$txt);
         $nb = strlen($s);
         if($nb > 0 && $s[$nb - 1] == "\n")
             $nb--;

@@ -15,12 +15,11 @@ $layout = LayoutManager::create('admin');
  * Umoja Sacco V17
  */
 
-require_permission();
-
-// Initialize Layout Manager
+$pageTitle = "Umoja Sacco Admin :: Staff Control";
 $layout = LayoutManager::create('admin');
 require_superadmin();
 ?>
+<?php $layout->header($pageTitle); ?>
 <?php flash_render(); ?>
     <style>
         .main-content-wrapper { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; }
@@ -275,9 +274,4 @@ function openEditModal(data) {
     new bootstrap.Modal(document.getElementById('editUserModal')).show();
 }
 </script>
-</script>
-
-
-
-
-
+<?php $layout->footer(); ?>

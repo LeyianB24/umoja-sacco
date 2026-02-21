@@ -61,7 +61,7 @@ define('SOCIAL_TIKTOK',    'https://tiktok.com/@umojadriverssacco');
 // 5. SECURITY
 // ============================================================
 define('APP_SECRET', 'a-very-long-random-secret-you-generate');
-define('APP_ENV',    'sandbox'); // 'sandbox' or 'production'
+define('APP_ENV',    'development'); // 'sandbox' or 'production'
 
 // ============================================================
 // 6. NOTIFICATION SETTINGS
