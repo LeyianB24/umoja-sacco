@@ -152,6 +152,7 @@ $gl_stats = $stmt_s->get_result()->fetch_assoc();
 
 $pageTitle = "Golden Ledger Vault";
 ?>
+<?php $layout->header($pageTitle); ?>
     <style>
         .main-content-wrapper { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; }
         @media (max-width: 991px) { .main-content-wrapper { margin-left: 0; padding: 1.5rem; } }

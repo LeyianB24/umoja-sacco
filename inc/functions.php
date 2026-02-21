@@ -244,6 +244,27 @@ function generate_member_no($conn) {
    ========================================================================== */
 
 /**
+ * Format Currency (KSH) - Shorthand
+ */
+function ksh($v, $d = 2) { 
+    return number_format((float)($v ?? 0), $d); 
+}
+
+/**
+ * Get Initials from name
+ */
+function getInitials($name) {
+    if (empty($name)) return "S";
+    $words = explode(" ", $name);
+    $initials = "";
+    foreach ($words as $w) {
+        $initials .= strtoupper(substr($w, 0, 1));
+        if (strlen($initials) >= 2) break;
+    }
+    return $initials ?: "S";
+}
+
+/**
  * Dump and Die (Debugging helper)
  */
 function dd($data)

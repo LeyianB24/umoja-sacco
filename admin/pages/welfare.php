@@ -22,6 +22,21 @@ $layout = LayoutManager::create('admin');
 $admin_id = $_SESSION['admin_id'];
 
 $pageTitle = "Welfare Management";
+
+// --- Data Aggregation ---
+$filter = $_GET['filter'] ?? 'all';
+$cases = $conn->query("SELECT c.*, m.full_name, m.phone, m.national_id, m.profile_pic FROM welfare_cases c JOIN members m ON c.member_id = m.member_id WHERE c.status = '$filter' OR '$filter' = 'all' ORDER BY c.created_at DESC");
+
+// Fetch stats
+$stats = $conn->query("SELECT 
+    COUNT(CASE WHEN status='pending' THEN 1 END) as pending, 
+    COUNT(CASE WHEN status='active' THEN 1 END) as active, 
+    SUM(CASE WHEN status='disbursed' OR status='funded' THEN disbursed_amount ELSE 0 END) as total_disbursed, 
+    SUM(CASE WHEN status='active' OR status='funded' OR status='disbursed' THEN total_raised ELSE 0 END) as total_raised 
+FROM welfare_cases")->fetch_assoc();
+
+// Fetch pool balance
+$pool_balance = $conn->query("SELECT SUM(amount) as balance FROM welfare_pool")->fetch_assoc()['balance'] ?? 0;
 ?>
 <?php $layout->header($pageTitle); ?>
     <style>

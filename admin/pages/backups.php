@@ -25,6 +25,20 @@ $admin_id   = $_SESSION['admin_id'];
 $admin_name = $_SESSION['full_name'] ?? 'IT Admin';
 $db         = $conn;
 
+// 1. Fetch DB Stats
+$stats_q = $conn->query("SELECT 
+    COUNT(*) as tables, 
+    SUM(TABLE_ROWS) as rows, 
+    SUM(DATA_LENGTH + INDEX_LENGTH) / 1024 / 1024 as size_mb 
+    FROM information_schema.TABLES 
+    WHERE TABLE_SCHEMA = DATABASE()");
+$stats = $stats_q->fetch_assoc();
+$stats['size_mb'] = number_format((float)$stats['size_mb'], 2);
+
+// 2. Fetch Backup Logs
+$backup_logs = $conn->query("SELECT a.*, admin_id as username FROM audit_logs a WHERE action LIKE '%backup%' ORDER BY created_at DESC LIMIT 8");
+
+$pageTitle = "System Maintenance Hub";
 ?>
 <?php $layout->header($pageTitle ?? 'Database Backups'); ?>
     <style>

@@ -783,6 +783,6 @@ $global = $conn->query("SELECT
     </div>
 </div>
         </div>
-        <?php $layout->footer(); ?>
+        
     </div>
 </div>
