@@ -83,6 +83,7 @@ function getInitials($n) { return strtoupper(substr($n ?? 'U', 0, 2)); }
 ?>
 <?php $layout->header($pageTitle); ?>
 
+    <style>
         .card-custom { border-radius: 24px; border: 1px solid var(--border-color); }
 
         /* --- Table Styling --- */
@@ -102,14 +103,18 @@ function getInitials($n) { return strtoupper(substr($n ?? 'U', 0, 2)); }
         /* --- Buttons --- */
         .btn-lime {
             background-color: var(--lime);
-            color: #000000;
-            font-weight: 600;
-            border-radius: 50px;
+            color: var(--forest);
+            font-weight: 700;
+            border-radius: 12px;
             padding: 12px 24px;
             border: none;
-            transition: all 0.2s;
+            transition: all 0.3s ease;
         }
-        .btn-lime:hover { opacity: 0.9; transform: translateY(-1px); }
+        .btn-lime:hover { 
+            background-color: var(--lime-hover);
+            transform: translateY(-2px); 
+            box-shadow: 0 10px 20px rgba(208, 243, 93, 0.2);
+        }
 
         .avatar-circle {
             width: 44px; height: 44px; border-radius: 12px;
@@ -117,9 +122,6 @@ function getInitials($n) { return strtoupper(substr($n ?? 'U', 0, 2)); }
             font-weight: 700; font-size: 0.85rem;
         }
     </style>
-
-</head>
-<body>
 
 <div class="d-flex">
     <?php $layout->sidebar(); ?>
@@ -131,7 +133,7 @@ function getInitials($n) { return strtoupper(substr($n ?? 'U', 0, 2)); }
             
             <div class="d-flex justify-content-between align-items-center mb-5">
                 <div>
-                    <h2 class="fw-bold mb-1" style="color: var(--accent-dark);">Database Backups</h2>
+                    <h2 class="fw-bold mb-1" style="color: var(--forest);">Database Backups</h2>
                     <p class="text-muted mb-0">Monitor system health and generate recovery points</p>
                 </div>
                 <form method="post" onsubmit="return confirm('Generate full SQL backup?');">
@@ -144,7 +146,7 @@ function getInitials($n) { return strtoupper(substr($n ?? 'U', 0, 2)); }
 
             <div class="row g-4">
                 <div class="col-xl-4">
-                    <div class="card-custom p-4 mb-4" style="background: linear-gradient(135deg, var(--accent-dark) 0%, #0f1c03 100%); color: white;">
+                    <div class="card-custom p-4 mb-4" style="background: linear-gradient(135deg, var(--forest) 0%, var(--forest-mid) 100%); color: white;">
                         <h6 class="text-white-50 small text-uppercase fw-bold mb-4">Storage Overview</h6>
                         <div class="d-flex align-items-end gap-2 mb-2">
                             <h1 class="display-5 fw-bold mb-0 text-white"><?= $stats['size_mb'] ?></h1>

@@ -10,9 +10,9 @@ require_once __DIR__ . '/../../inc/functions.php';
 
 $layout = LayoutManager::create('admin');
 // usms/admin/pages/investments.php
-
 require_permission();
 ?>
+<?php $layout->header($pageTitle); ?>
     <style>
         .main-content { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; }
         @media (max-width: 991px) { .main-content { margin-left: 0; padding: 1.5rem; } }
@@ -29,7 +29,10 @@ require_permission();
             background: rgba(15, 46, 37, 0.05); color: var(--forest);
             display: flex; align-items: center; justify-content: center; font-size: 1.5rem;
         }
+        .stat-card-dark { background: linear-gradient(135deg, var(--forest) 0%, var(--forest-mid) 100%); color: white; }
+        .stat-card-accent { background: var(--lime); color: var(--forest); }
     </style>
+
 <?php
 $admin_id = $_SESSION['admin_id'];
 
@@ -311,11 +314,7 @@ $global = $conn->query("SELECT
     SUM(CASE WHEN status='sold' THEN (sale_price - purchase_cost) ELSE 0 END) as realized_gains,
     SUM(CASE WHEN status='sold' THEN sale_price ELSE 0 END) as total_exit_value
     FROM investments")->fetch_assoc();
-
-$pageTitle = "Investment Portfolio";
 ?>
-<?php $layout->header($pageTitle); ?>
-<body>
 
 <div class="d-flex">
     <?php $layout->sidebar(); ?>

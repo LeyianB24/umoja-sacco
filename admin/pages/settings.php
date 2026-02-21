@@ -140,14 +140,16 @@ $php_v     = phpversion();
         .nav-pills .nav-link.active { background-color: var(--forest); color: var(--lime); border-color: var(--forest); }
         
         .avatar-hero { 
-            width: 90px; height: 90px; border-radius: 24px; 
+            width: 90px; height: 90px; border-radius: 20px; 
             background: var(--lime); color: var(--forest);
             display: flex; align-items: center; justify-content: center;
             font-size: 2rem; font-weight: 800; border: 4px solid rgba(255,255,255,0.2);
         }
 
-        .section-title { font-size: 0.8rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-muted); margin: 40px 0 20px 0; display: flex; align-items: center; gap: 15px; }
+        .section-title { font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-muted); margin: 40px 0 20px 0; display: flex; align-items: center; gap: 15px; }
         .section-title::after { content: ""; flex: 1; height: 1px; background: rgba(0,0,0,0.05); }
+
+        .hp-badge { background: rgba(208, 243, 93, 0.15); color: var(--forest-mid); font-weight: 700; padding: 6px 12px; border-radius: 10px; font-size: 0.7rem; }
     </style>
 
 

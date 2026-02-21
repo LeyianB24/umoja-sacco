@@ -138,20 +138,17 @@ $pageTitle = "Audit Logs";
 ?>
 <?php $layout->header($pageTitle); ?>
 <style>
-        .avatar-box { width: 42px; height: 42px; border-radius: 14px; background-color: #f1f5f9; color: var(--forest-deep); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.9rem; }
+        .avatar-box { width: 42px; height: 42px; border-radius: 14px; background-color: var(--bg-primary); color: var(--forest); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.9rem; }
         .badge-pill { padding: 8px 14px; border-radius: 30px; font-weight: 700; font-size: 0.75rem; display: inline-flex; align-items: center; gap: 8px; }
-        .badge-soft-lime { background-color: var(--mint-pale); color: var(--emerald-rich); }
-        .badge-soft-emerald { background-color: #d1fae5; color: var(--forest-deep); }
+        .badge-soft-lime { background-color: rgba(208, 243, 93, 0.1); color: var(--forest-mid); }
+        .badge-soft-emerald { background-color: rgba(15, 46, 37, 0.05); color: var(--forest); }
         .badge-soft-danger { background-color: #fee2e2; color: #991b1b; }
         .badge-soft-warning { background-color: #fef3c7; color: #92400e; }
-        .badge-soft-secondary { background-color: #f1f5f9; color: #64748b; }
+        .badge-soft-secondary { background-color: var(--bg-primary); color: #64748b; }
 
-        .text-forest { color: var(--forest-deep); }
-        .text-emerald { color: var(--emerald-rich); }
+        .text-forest { color: var(--forest); }
+        .text-emerald { color: var(--forest-mid); }
     </style>
-
-</head>
-<body>
 
 <div class="d-flex">
     <?php $layout->sidebar(); ?>

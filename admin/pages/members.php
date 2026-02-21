@@ -12,122 +12,20 @@ $layout = LayoutManager::create('admin');
 
 require_permission();
 ?>
-
-<?php
-// 1. HANDLE ACTIONS
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
-    verify_csrf_token();
-    $target_id = intval($_POST['member_id']);
-    $action = $_POST['action'];
-
-    if (in_array($action, ['approve', 'suspend', 'reactivate'])) {
-        if (!can('manage_members')) {
-            flash_set("Access Denied: manage_members permission required.", "danger");
-        } else {
-            $new_status = match($action) {
-                'approve'    => 'active',
-                'suspend'    => 'suspended',
-                'reactivate' => 'active',
-                default      => null
-            };
-
-            if ($new_status) {
-                $stmt = $conn->prepare("UPDATE members SET status = ? WHERE member_id = ?");
-                $stmt->bind_param("si", $new_status, $target_id);
-                if ($stmt->execute()) {
-                    flash_set("Member #$target_id updated to $new_status.", "success");
-                }
-            }
-        }
-    }
-    header("Location: members.php");
-    exit;
-}
-
-// 2. DEFINE FILTERS
-$filter = $_GET['status'] ?? 'all';
-$search = trim($_GET['q'] ?? '');
-
-$where = [];
-$params = [];
-$types = "";
-
-if ($filter !== 'all') {
-    $where[] = "status = ?";
-    $params[] = $filter;
-    $types .= "s";
-}
-if ($search) {
-    if (is_numeric($search)) {
-        $where[] = "national_id LIKE ?";
-    } else {
-        $where[] = "(full_name LIKE ? OR email LIKE ?)";
-    }
-    $term = "%$search%";
-    if (is_numeric($search)) {
-        $params[] = $term;
-        $types .= "s";
-    } else {
-        $params[] = $term; $params[] = $term;
-        $types .= "ss";
-    }
-}
-
-// 2b. HANDLE EXPORT
-if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_excel', 'print_report'])) {
-    $where_sql_export = count($where) > 0 ? "WHERE " . implode(" AND ", $where) : "";
-    $sql_export = "SELECT * FROM members $where_sql_export ORDER BY join_date DESC";
-    $stmt_e = $conn->prepare($sql_export);
-    if (!empty($params)) $stmt_e->bind_param($types, ...$params);
-    $stmt_e->execute();
-    $export_members = $stmt_e->get_result()->fetch_all(MYSQLI_ASSOC);
-
-    require_once __DIR__ . '/../../core/exports/UniversalExportEngine.php';
-    
-    $format = 'pdf';
-    if ($_GET['action'] === 'export_excel') $format = 'excel';
-    if ($_GET['action'] === 'print_report') $format = 'print';
-
-    $data = [];
-    foreach ($export_members as $m) {
-        $data[] = [
-            'Name' => $m['full_name'],
-            'National ID' => $m['national_id'],
-            'Phone' => $m['phone'],
-            'Email' => $m['email'],
-            'Status' => strtoupper($m['status']),
-            'Joined' => date('d-M-Y', strtotime($m['join_date']))
-        ];
-    }
-
-    UniversalExportEngine::handle($format, $data, [
-        'title' => 'Member Directory',
-        'module' => 'Member Management',
-        'headers' => ['Name', 'National ID', 'Phone', 'Email', 'Status', 'Joined']
-    ]);
-    exit;
-}
-
-// 3. FETCH DATA
-$where_sql = count($where) > 0 ? "WHERE " . implode(" AND ", $where) : "";
-$sql = "SELECT * FROM members $where_sql ORDER BY join_date DESC LIMIT 500";
-$stmt = $conn->prepare($sql);
-if (!empty($params)) $stmt->bind_param($types, ...$params);
-$stmt->execute();
-$members = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
-
-// KPIs
-$stats = $conn->query("SELECT 
-    COUNT(*) as total, 
-    SUM(CASE WHEN status='active' THEN 1 ELSE 0 END) as active,
-    SUM(CASE WHEN status='suspended' THEN 1 ELSE 0 END) as suspended,
-    SUM(CASE WHEN status='inactive' THEN 1 ELSE 0 END) as pending
-    FROM members")->fetch_assoc();
-
-$pageTitle = "Member Directory";
-?>
 <?php $layout->header($pageTitle); ?>
-<body>
+    <style>
+        .main-content { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; }
+        @media (max-width: 991px) { .main-content { margin-left: 0; padding: 1.5rem; } }
+        
+        /* Member Card Styles */
+        .member-row { transition: 0.2s; }
+        .member-row:hover { background: rgba(208, 243, 93, 0.05); }
+        .glass-stat-icon { width: 50px; height: 50px; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; margin-bottom: 1rem; }
+        .bg-lime-soft { background: rgba(208, 243, 93, 0.1); color: var(--forest-mid); }
+        .bg-red-soft { background: rgba(239, 68, 68, 0.1); color: #dc2626; }
+        .bg-forest-soft { background: rgba(15, 46, 37, 0.05); color: var(--forest); }
+    </style>
+
 <div class="d-flex">
     <?php $layout->sidebar(); ?>
     <div class="flex-fill main-content">

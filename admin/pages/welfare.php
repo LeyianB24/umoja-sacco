@@ -245,11 +245,32 @@ $cases = $conn->query($sql);
 $pageTitle = "Unified Welfare Suite";
 ?>
 <?php $layout->header($pageTitle); ?>
-<body>
+    <style>
+        .main-content { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; }
+        @media (max-width: 991px) { .main-content { margin-left: 0; padding: 1.5rem; } }
+        
+        .glass-card { 
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.02);
+            overflow: hidden;
+        }
+        
+        .icon-box { width: 50px; height: 50px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
+        .nav-tabs-custom { border: none; display: flex; gap: 10px; padding: 1.5rem 1.5rem 0 1.5rem; }
+        .nav-tabs-custom .nav-link { border: none; border-radius: 10px; padding: 8px 16px; font-weight: 700; color: var(--forest); }
+        .nav-tabs-custom .nav-link.active { background: var(--forest); color: var(--lime); }
+
+        .badge-pending { background: rgba(217, 119, 6, 0.1); color: #d97706; }
+        .badge-active { background: rgba(15, 46, 37, 0.05); color: var(--forest); }
+        .badge-approved { background: rgba(208, 243, 93, 0.1); color: var(--forest-mid); }
+        .badge-rejected { background: rgba(220, 38, 38, 0.1); color: #dc2626; }
+    </style>
 
 <div class="d-flex">
     <?php $layout->sidebar(); ?>
-
     <div class="main-content">
         <?php $layout->topbar($pageTitle ?? ''); ?>
 
@@ -488,6 +509,4 @@ $pageTitle = "Unified Welfare Suite";
 </div>
 
     <?php $layout->footer(); ?>
-        </div>
-    </div>
 </div>

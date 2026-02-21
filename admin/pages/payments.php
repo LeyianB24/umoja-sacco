@@ -182,104 +182,33 @@ $transactions = $stmt->get_result();
 
 $pageTitle = "Payments Ledger";
 ?>
-<!DOCTYPE html>
-<html lang="en" data-bs-theme="light">
-<head>
-    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
-    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= $pageTitle ?></title>
-    
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
+<?php $layout->header($pageTitle); ?>
     <style>
-        body { font-family: 'Outfit', sans-serif; }
-
-        .main-content { margin-left: 260px; transition: 0.3s; min-height: 100vh; padding-bottom: 2rem; }
-        @media (max-width: 991px) { .main-content { margin-left: 0; } }
-
-        /* Card Styles */
-        .card-custom { border: 1px solid var(--border-color); border-radius: 20px; }
-
-        /* Buttons */
-        .btn-lime {
-            background-color: var(--lime);
-            color: #000000;
-            font-weight: 600;
-            border: none;
-            border-radius: 50px;
-            padding: 0.5rem 1.5rem;
-            transition: all 0.2s;
+        .main-content-wrapper { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; }
+        @media (max-width: 991px) { .main-content-wrapper { margin-left: 0; padding: 1.5rem; } }
+        
+        /* Custom Cards */
+        .card-custom { 
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.02);
         }
-        .btn-lime:hover { opacity: 0.9; transform: translateY(-1px); }
-
-        .btn-forest {
-            background-color: var(--lime);
-            color: #000000;
-            border-radius: 50px;
-            padding: 0.5rem 1.5rem;
-        }
-        .btn-forest:hover { opacity: 0.9; }
-
-        /* Form Controls */
-        .form-control, .form-select { border-radius: 12px; padding: 0.6rem 1rem; }
-
-        /* Table Styling */
-        .table-custom th {
-            font-weight: 600;
-            text-transform: uppercase;
-            font-size: 0.75rem;
-            letter-spacing: 0.5px;
-            border-bottom: 2px solid var(--border-color);
-            padding: 1rem;
-        }
-        .table-custom td {
-            padding: 1rem;
-            vertical-align: middle;
-            border-bottom: 1px solid var(--border-color);
-            font-size: 0.95rem;
-        }
-        .table-custom tr:last-child td { border-bottom: none; }
-        .table-custom tr:hover td { background-color: rgba(255, 255, 255, 0.02); }
-
-        /* Avatars */
+        
+        .badge-type { padding: 6px 12px; font-weight: 700; border-radius: 10px; font-size: 0.7rem; letter-spacing: 0.5px; }
+        .badge-in { background: rgba(208, 243, 93, 0.1); color: var(--forest-mid); }
+        .badge-out { background: rgba(239, 68, 68, 0.1); color: #dc2626; }
+        
         .avatar-initials {
-            width: 40px; height: 40px;
-            border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            font-weight: 600;
-            font-size: 0.9rem;
-            background: rgba(255,255,255,0.05); color: var(--lime);
+            width: 42px; height: 42px; border-radius: 14px; background: rgba(15, 46, 37, 0.05); color: var(--forest);
+            display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.9rem;
         }
-
-        /* Badges */
-        .badge-type {
-            padding: 0.4em 0.8em;
-            border-radius: 30px;
-            font-weight: 500;
-            font-size: 0.75rem;
-        }
-        .badge-in { background-color: rgba(190, 242, 100, 0.1); color: var(--lime); }
-        .badge-out { background-color: rgba(220, 38, 38, 0.1); color: #dc2626; }
-
-        /* Modal */
-        .modal-header { background-color: #000000; color: white; border-top-left-radius: 20px; border-top-right-radius: 20px; border-bottom: 1px solid var(--border-color); }
-        .modal-content { border-radius: 20px; }
-        .btn-close { filter: invert(1) grayscale(100%) brightness(200%); }
     </style>
-
-    <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
-</head>
-<body>
 
 <div class="d-flex">
     <?php $layout->sidebar(); ?>
-
-    <div class="flex-fill main-content-wrapper" style="margin-left: 280px; transition: margin-left 0.3s ease;">
-        
+    <div class="flex-fill main-content-wrapper">
         <?php $layout->topbar($pageTitle ?? ''); ?>
         
         <div class="container-fluid">

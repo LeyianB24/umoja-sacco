@@ -13,7 +13,13 @@ $layout = LayoutManager::create('admin');
 require_admin();
 require_permission();
 ?>
-</style>
+<?php $layout->header($pageTitle); ?>
+    <style>
+        .main-content { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; }
+        @media (max-width: 991px) { .main-content { margin-left: 0; padding: 1.5rem; } }
+        .stat-icon { width: 48px; height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; }
+    </style>
+
 <?php
 // 2. Handle Form Submission (Add Expense)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'add_expense') {
@@ -140,10 +146,8 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
 
 $investments_list = $conn->query("SELECT investment_id, title FROM investments WHERE status = 'active' ORDER BY title ASC");
 $investments_all = $investments_list->fetch_all(MYSQLI_ASSOC);
-$pageTitle = "Expenses Portal";
 ?>
-<?php $layout->header($pageTitle); ?>
-<body>
+
 <div class="d-flex">
     <?php $layout->sidebar(); ?>
     <div class="main-content">

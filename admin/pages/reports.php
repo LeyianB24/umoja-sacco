@@ -252,10 +252,6 @@ $pageTitle = "Executive Reports";
             .glass-card { border: 1px solid #ddd; box-shadow: none; background: white !important; }
         }
     </style>
-
-</head>
-<body>
-
 <div class="d-flex">
     <?php $layout->sidebar(); ?>
 

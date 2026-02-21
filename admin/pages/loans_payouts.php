@@ -191,8 +191,17 @@ if (isset($_GET['export']) && in_array($_GET['export'], ['pdf', 'excel'])) {
 
 $pageTitle = "Loan Management";
 ?>
-<?php $layout->header($pageTitle); ?>
-<body>
+    <style>
+        .main-content { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; }
+        @media (max-width: 991px) { .main-content { margin-left: 0; padding: 1.5rem; } }
+        
+        /* Loan Stat Badges */
+        .glass-stat-icon { width: 50px; height: 50px; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; margin-bottom: 1rem; }
+        .bg-warning-soft { background: rgba(217, 119, 6, 0.1); color: #d97706; }
+        .bg-primary-soft { background: rgba(15, 46, 37, 0.05); color: var(--forest); }
+        .bg-success-soft { background: rgba(208, 243, 93, 0.1); color: var(--forest-mid); }
+    </style>
+
 <div class="d-flex">
     <?php $layout->sidebar(); ?>
     <div class="flex-fill main-content">
