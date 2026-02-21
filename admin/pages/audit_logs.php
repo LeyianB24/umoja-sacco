@@ -138,6 +138,9 @@ $pageTitle = "Audit Logs";
 ?>
 <?php $layout->header($pageTitle); ?>
 <style>
+        .main-content-wrapper { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; }
+        @media (max-width: 991px) { .main-content-wrapper { margin-left: 0; padding: 1.5rem; } }
+
         .avatar-box { width: 42px; height: 42px; border-radius: 14px; background-color: var(--bg-primary); color: var(--forest); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.9rem; }
         .badge-pill { padding: 8px 14px; border-radius: 30px; font-weight: 700; font-size: 0.75rem; display: inline-flex; align-items: center; gap: 8px; }
         .badge-soft-lime { background-color: rgba(208, 243, 93, 0.1); color: var(--forest-mid); }
@@ -150,130 +153,137 @@ $pageTitle = "Audit Logs";
         .text-emerald { color: var(--forest-mid); }
     </style>
 
+<div class="d-flex">
     <?php $layout->sidebar(); ?>
-    <div class="main-wrapper">
+    <div class="flex-fill main-content-wrapper">
         <?php $layout->topbar($pageTitle ?? 'System Audit Trails'); ?>
-        <main class="main-content">
-
-        <div class="row align-items-end mb-5">
-            <div class="col-md-7">
-                <h2 class="fw-bold mb-1 display-6" style="letter-spacing: -0.03em;">System Audit Trails</h2>
-                <p class="text-muted mb-0">Track admin activities and security events in real-time.</p>
-            </div>
-            <div class="col-md-5 text-md-end mt-3 mt-md-0 d-flex justify-content-end gap-2">
-                <a href="?<?= http_build_query(array_merge($_GET, ['action' => 'print_report'])) ?>" target="_blank" class="btn btn-hope-outline">
-                    <i class="bi bi-printer me-2"></i> Print
-                </a>
-                <div class="btn-group">
-                    <button type="button" class="btn btn-dark rounded-pill px-4 fw-bold dropdown-toggle" data-bs-toggle="dropdown">
-                        <i class="bi bi-download me-2"></i> Export
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg">
-                        <li><a class="dropdown-item" href="?<?= http_build_query(array_merge($_GET, ['action' => 'export_pdf'])) ?>"><i class="bi bi-file-earmark-pdf text-danger me-2"></i>Export PDF</a></li>
-                        <li><a class="dropdown-item" href="?<?= http_build_query(array_merge($_GET, ['action' => 'export_excel'])) ?>"><i class="bi bi-file-earmark-spreadsheet text-success me-2"></i>Export Excel</a></li>
-                    </ul>
+        
+        <div class="container-fluid">
+            <div class="row align-items-end mb-5">
+                <div class="col-md-7">
+                    <h2 class="fw-bold mb-1 display-6" style="letter-spacing: -0.03em;">System Audit Trails</h2>
+                    <p class="text-muted mb-0">Track admin activities and security events in real-time.</p>
                 </div>
-            </div>
-        </div>
-
-        <div class="row mb-4">
-            <div class="col-12">
-                <form method="GET">
-                    <div class="d-flex gap-2">
-                        <div class="flex-grow-1 search-wrapper d-flex align-items-center bg-white">
-                            <i class="bi bi-search text-emerald ps-3 pe-2 fs-5"></i>
-                            <input type="text" name="q" class="search-input w-100" 
-                                   placeholder="Search logs by actor, action, or details..." 
-                                   value="<?= htmlspecialchars($search) ?>">
-                        </div>
-                        <button type="submit" class="btn btn-hope-primary shadow-sm">
-                            Search Logs
+                <div class="col-md-5 text-md-end mt-3 mt-md-0 d-flex justify-content-end gap-2">
+                    <a href="?<?= http_build_query(array_merge($_GET, ['action' => 'print_report'])) ?>" target="_blank" class="btn btn-hope-outline">
+                        <i class="bi bi-printer me-2"></i> Print
+                    </a>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-dark rounded-pill px-4 fw-bold dropdown-toggle" data-bs-toggle="dropdown">
+                            <i class="bi bi-download me-2"></i> Export
                         </button>
+                        <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg">
+                            <li><a class="dropdown-item" href="?<?= http_build_query(array_merge($_GET, ['action' => 'export_pdf'])) ?>"><i class="bi bi-file-earmark-pdf text-danger me-2"></i>Export PDF</a></li>
+                            <li><a class="dropdown-item" href="?<?= http_build_query(array_merge($_GET, ['action' => 'export_excel'])) ?>"><i class="bi bi-file-earmark-spreadsheet text-success me-2"></i>Export Excel</a></li>
+                        </ul>
                     </div>
-                </form>
-            </div>
-        </div>
-
-        <div class="card-hope">
-            <div class="px-4 py-3 border-bottom border-light d-flex justify-content-between align-items-center">
-                <div class="d-flex align-items-center gap-2">
-                    <span class="badge rounded-circle bg-success p-2 border border-white border-2"></span>
-                    <h6 class="mb-0 fw-bold text-forest">Recent Activity</h6>
                 </div>
-                <span class="text-muted small fw-semibold bg-light px-3 py-1 rounded-pill">
-                    <?= $logs->num_rows ?> Records Found
-                </span>
             </div>
 
-            <div class="table-responsive">
-                <table class="table table-hope mb-0">
-                    <thead class="bg-light bg-opacity-50">
-                        <tr>
-                            <th>Time</th>
-                            <th>Actor</th>
-                            <th>Action Type</th>
-                            <th style="width: 35%;">Details</th>
-                            <th class="text-end">IP Address</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php if ($logs->num_rows === 0): ?>
+            <div class="row mb-4">
+                <div class="col-12">
+                    <form method="GET">
+                        <div class="d-flex gap-2">
+                            <div class="flex-grow-1 search-wrapper d-flex align-items-center bg-white">
+                                <i class="bi bi-search text-emerald ps-3 pe-2 fs-5"></i>
+                                <input type="text" name="q" class="search-input w-100" 
+                                       placeholder="Search logs by actor, action, or details..." 
+                                       value="<?= htmlspecialchars($search) ?>">
+                            </div>
+                            <button type="submit" class="btn btn-hope-primary shadow-sm">
+                                Search Logs
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card-hope mb-4">
+                <div class="px-4 py-3 border-bottom border-light d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge rounded-circle bg-success p-2 border border-white border-2"></span>
+                        <h6 class="mb-0 fw-bold text-forest">Recent Activity</h6>
+                    </div>
+                    <span class="text-muted small fw-semibold bg-light px-3 py-1 rounded-pill">
+                        <?= $logs->num_rows ?> Records Found
+                    </span>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-hope mb-0">
+                        <thead class="bg-light bg-opacity-50">
                             <tr>
-                                <td colspan="5" class="text-center py-5">
-                                    <i class="bi bi-tree text-emerald opacity-25" style="font-size: 3rem;"></i>
-                                    <p class="text-muted mt-2 fw-semibold">No audit logs found.</p>
-                                </td>
+                                <th>Time</th>
+                                <th>Actor</th>
+                                <th>Action Type</th>
+                                <th style="width: 35%;">Details</th>
+                                <th class="text-end">IP Address</th>
                             </tr>
-                        <?php else: while ($row = $logs->fetch_assoc()):
-                            $style = getActionStyle($row['action']);
-                            $name  = $row['full_name'] ?? $row['username'] ?? 'System';
-                            $role  = ucfirst($row['role'] ?? 'System');
-                        ?>
-                            <tr>
-                                <td>
-                                    <div class="fw-bold text-forest"><?= date("H:i", strtotime($row['created_at'])) ?></div>
-                                    <small class="text-muted" style="font-size: 0.75rem;"><?= date("M d, Y", strtotime($row['created_at'])) ?></small>
-                                </td>
+                        </thead>
+                        <tbody>
+                            <?php if ($logs->num_rows === 0): ?>
+                                <tr>
+                                    <td colspan="5" class="text-center py-5">
+                                        <i class="bi bi-tree text-emerald opacity-25" style="font-size: 3rem;"></i>
+                                        <p class="text-muted mt-2 fw-semibold">No audit logs found.</p>
+                                    </td>
+                                </tr>
+                            <?php else: while ($row = $logs->fetch_assoc()):
+                                $style = getActionStyle($row['action']);
+                                $name  = $row['full_name'] ?? $row['username'] ?? 'System';
+                                $role  = ucfirst($row['role'] ?? 'System');
+                            ?>
+                                <tr>
+                                    <td>
+                                        <div class="fw-bold text-forest"><?= date("H:i", strtotime($row['created_at'])) ?></div>
+                                        <small class="text-muted" style="font-size: 0.75rem;"><?= date("M d, Y", strtotime($row['created_at'])) ?></small>
+                                    </td>
 
-                                <td>
-                                    <div class="d-flex align-items-center gap-3">
-                                        <div class="avatar-box">
-                                            <?= getInitials($name) ?>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-3">
+                                            <div class="avatar-box">
+                                                <?= getInitials($name) ?>
+                                            </div>
+                                            <div>
+                                                <div class="fw-bold text-emerald"><?= htmlspecialchars($name) ?></div>
+                                                <div class="small text-muted"><?= $role ?></div>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <div class="fw-bold text-emerald"><?= htmlspecialchars($name) ?></div>
-                                            <div class="small text-muted"><?= $role ?></div>
-                                        </div>
-                                    </div>
-                                </td>
+                                    </td>
 
-                                <td>
-                                    <span class="badge-pill <?= $style['class'] ?>">
-                                        <i class="bi <?= $style['icon'] ?>"></i>
-                                        <?= ucwords(str_replace('_', ' ', $row['action'])) ?>
-                                    </span>
-                                </td>
+                                    <td>
+                                        <span class="badge-pill <?= $style['class'] ?>">
+                                            <i class="bi <?= $style['icon'] ?>"></i>
+                                            <?= ucwords(str_replace('_', ' ', $row['action'])) ?>
+                                        </span>
+                                    </td>
 
-                                <td>
-                                    <span class="text-forest opacity-75">
-                                        <?= htmlspecialchars($row['details']) ?>
-                                    </span>
-                                </td>
+                                    <td>
+                                        <span class="text-forest opacity-75">
+                                            <?= htmlspecialchars($row['details']) ?>
+                                        </span>
+                                    </td>
 
-                                <td class="text-end">
-                                    <span class="font-monospace small text-muted bg-light px-2 py-1 rounded border border-light">
-                                        <?= htmlspecialchars($row['ip_address'] ?? '::1') ?>
-                                    </span>
-                                </td>
-                            </tr>
-                        <?php endwhile; endif; ?>
-                    </tbody>
-                </table>
+                                    <td class="text-end">
+                                        <span class="font-monospace small text-muted bg-light px-2 py-1 rounded border border-light">
+                                            <?= htmlspecialchars($row['ip_address'] ?? '::1') ?>
+                                        </span>
+                                    </td>
+                                </tr>
+                            <?php endwhile; endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="px-4 py-3 border-top border-light text-center">
+                    <small class="text-muted fw-bold">Showing latest 200 entries</small>
+                </div>
             </div>
-            
-            <div class="px-4 py-3 border-top border-light text-center">
-                <small class="text-muted fw-bold">Showing latest 200 entries</small>
-            </div>
-        </main>
-        <?php $layout->footer(); ?>
+            <?php $layout->footer(); ?>
+        </div>
     </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

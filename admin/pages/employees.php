@@ -394,9 +394,8 @@ $pageTitle = "People & Access";
 <?php $layout->header($pageTitle); ?>
     
     <style>
-        /* Layout Fixes */
-        .main-content { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; }
-        @media (max-width: 991px) { .main-content { margin-left: 0; padding: 1.5rem; } }
+        .main-content-wrapper { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; }
+        @media (max-width: 991px) { .main-content-wrapper { margin-left: 0; padding: 1.5rem; } }
         
         /* Tab Refinement */
         .nav-tabs-custom .nav-link { border: 0; color: var(--text-muted); font-weight: 700; padding: 1.25rem 2rem; background: transparent; border-bottom: 3px solid transparent; transition: 0.3s; }
@@ -406,75 +405,77 @@ $pageTitle = "People & Access";
         .table-custom tr:hover td { background-color: rgba(208, 243, 93, 0.05); }
         .avatar-circle { width: 40px; height: 40px; border-radius: 12px; background: var(--bg-surface); color: var(--forest); display: flex; align-items: center; justify-content: center; font-weight: 800; }
     </style>
-    <?php $layout->sidebar(); ?>
-    <div class="main-wrapper">
-        <?php $layout->topbar($pageTitle ?? 'Staff Command Center'); ?>
-        <main class="main-content">
 
-    <div class="hp-hero">
-        <div class="row align-items-center">
-            <div class="col-md-7">
-                <span class="badge bg-white bg-opacity-10 text-white rounded-pill px-3 py-2 mb-3">Staff Command Center</span>
-                <h1 class="display-4 fw-800 mb-2">HR & Identity.</h1>
-                <p class="opacity-75 fs-5 mb-4">Manage your talent ecosystem. Hire, compensate, and secure your workforce with <span class="text-lime fw-bold">vibrant efficiency</span>.</p>
-                
-                <div class="d-flex gap-3">
-                    <?php if($current_view === 'hr'): ?>
-                        <button class="btn btn-lime rounded-pill px-4 py-2 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#addStaffModal">
-                            <i class="bi bi-person-plus-fill me-2"></i>Hire Employee
-                        </button>
-                    <?php elseif($current_view === 'payroll'): ?>
-                        <button class="btn btn-lime rounded-pill px-4 py-2 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#newRunModal">
-                            <i class="bi bi-plus-lg me-2"></i>New Pay Period
-                        </button>
-                    <?php elseif(($current_view === 'sys' && ($admin_role == 1 || can('system_settings')))): ?>
-                        <button class="btn btn-lime rounded-pill px-4 py-2 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#addAdminModal">
-                            <i class="bi bi-shield-lock-fill me-2"></i>New Admin
-                        </button>
-                    <?php endif; ?>
-                    
-                    <div class="dropdown">
-                        <button class="btn btn-white bg-opacity-10 text-white border-white border-opacity-25 rounded-pill px-4 py-2 dropdown-toggle" data-bs-toggle="dropdown">
-                            <i class="bi bi-download me-2"></i>Export
-                        </button>
-                        <ul class="dropdown-menu shadow-lg">
-                            <li><a class="dropdown-item" href="#"><i class="bi bi-file-pdf text-danger me-2"></i>PDF List</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="bi bi-file-excel text-success me-2"></i>Excel Sheet</a></li>
-                        </ul>
+<div class="d-flex">
+    <?php $layout->sidebar(); ?>
+    <div class="flex-fill main-content-wrapper">
+        <?php $layout->topbar($pageTitle ?? 'Staff Command Center'); ?>
+        
+        <div class="container-fluid">
+            <div class="hp-hero">
+                <div class="row align-items-center">
+                    <div class="col-md-7">
+                        <span class="badge bg-white bg-opacity-10 text-white rounded-pill px-3 py-2 mb-3">Staff Command Center</span>
+                        <h1 class="display-4 fw-800 mb-2">HR & Identity.</h1>
+                        <p class="opacity-75 fs-5 mb-4">Manage your talent ecosystem. Hire, compensate, and secure your workforce with <span class="text-lime fw-bold">vibrant efficiency</span>.</p>
+                        
+                        <div class="d-flex gap-3">
+                            <?php if($current_view === 'hr'): ?>
+                                <button class="btn btn-lime rounded-pill px-4 py-2 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#addStaffModal">
+                                    <i class="bi bi-person-plus-fill me-2"></i>Hire Employee
+                                </button>
+                            <?php elseif($current_view === 'payroll'): ?>
+                                <button class="btn btn-lime rounded-pill px-4 py-2 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#newRunModal">
+                                    <i class="bi bi-plus-lg me-2"></i>New Pay Period
+                                </button>
+                            <?php elseif(($current_view === 'sys' && ($admin_role == 1 || can('system_settings')))): ?>
+                                <button class="btn btn-lime rounded-pill px-4 py-2 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#addAdminModal">
+                                    <i class="bi bi-shield-lock-fill me-2"></i>New Admin
+                                </button>
+                            <?php endif; ?>
+                            
+                            <div class="dropdown">
+                                <button class="btn btn-white bg-opacity-10 text-white border-white border-opacity-25 rounded-pill px-4 py-2 dropdown-toggle" data-bs-toggle="dropdown">
+                                    <i class="bi bi-download me-2"></i>Export
+                                </button>
+                                <ul class="dropdown-menu shadow-lg">
+                                    <li><a class="dropdown-item" href="#"><i class="bi bi-file-pdf text-danger me-2"></i>PDF List</a></li>
+                                    <li><a class="dropdown-item" href="#"><i class="bi bi-file-excel text-success me-2"></i>Excel Sheet</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-5 text-end d-none d-lg-block">
+                        <div class="d-inline-block p-4 rounded-4 bg-white bg-opacity-10 backdrop-blur">
+                            <div class="small opacity-75">Workforce Strength</div>
+                            <div class="h2 fw-800 mb-0 text-lime"><?= $db->query("SELECT COUNT(*) FROM employees WHERE status='active'")->fetch_row()[0] ?> Active</div>
+                        </div>
                     </div>
                 </div>
             </div>
-            <div class="col-md-5 text-end d-none d-lg-block">
-                <div class="d-inline-block p-4 rounded-4 bg-white bg-opacity-10 backdrop-blur">
-                    <div class="small opacity-75">Workforce Strength</div>
-                    <div class="h2 fw-800 mb-0 text-lime"><?= $db->query("SELECT COUNT(*) FROM employees WHERE status='active'")->fetch_row()[0] ?> Active</div>
-                </div>
-            </div>
-        </div>
-    </div>
 
-    <!-- KPIs -->
-    <div class="row g-4 mb-4">
-        <?php 
-        $stats = [
-            ['label' => $kpi1_lbl, 'val' => $kpi1_val, 'icon' => 'people-fill', 'color' => 'forest'],
-            ['label' => $kpi2_lbl, 'val' => $kpi2_val, 'icon' => 'wallet2', 'color' => 'lime'],
-            ['label' => $kpi3_lbl, 'val' => $kpi3_val, 'icon' => 'activity', 'color' => 'forest'],
-        ];
-        foreach($stats as $s): ?>
-        <div class="col-md-4">
-            <div class="glass-stat h-100 d-flex align-items-center justify-content-between">
-                <div>
-                    <h6 class="text-muted text-uppercase fw-800 fs-7 mb-2" style="letter-spacing: 1px;"><?= $s['label'] ?></h6>
-                    <h2 class="fw-800 mb-0 text-forest"><?= $s['val'] ?></h2>
+            <!-- KPIs -->
+            <div class="row g-4 mb-4">
+                <?php 
+                $stats = [
+                    ['label' => $kpi1_lbl, 'val' => $kpi1_val, 'icon' => 'people-fill', 'color' => 'forest'],
+                    ['label' => $kpi2_lbl, 'val' => $kpi2_val, 'icon' => 'wallet2', 'color' => 'lime'],
+                    ['label' => $kpi3_lbl, 'val' => $kpi3_val, 'icon' => 'activity', 'color' => 'forest'],
+                ];
+                foreach($stats as $s): ?>
+                <div class="col-md-4">
+                    <div class="glass-stat h-100 d-flex align-items-center justify-content-between">
+                        <div>
+                            <h6 class="text-muted text-uppercase fw-800 fs-7 mb-2" style="letter-spacing: 1px;"><?= $s['label'] ?></h6>
+                            <h2 class="fw-800 mb-0 text-forest"><?= $s['val'] ?></h2>
+                        </div>
+                        <div class="stat-icon bg-<?= $s['color'] == 'lime' ? 'lime' : 'forest' ?> bg-opacity-10 text-<?= $s['color'] == 'lime' ? 'forest' : 'forest' ?> fs-1 p-3 rounded-4">
+                            <i class="bi bi-<?= $s['icon'] ?>"></i>
+                        </div>
+                    </div>
                 </div>
-                <div class="stat-icon bg-<?= $s['color'] == 'lime' ? 'lime' : 'forest' ?> bg-opacity-10 text-<?= $s['color'] == 'lime' ? 'forest' : 'forest' ?> fs-1 p-3 rounded-4">
-                    <i class="bi bi-<?= $s['icon'] ?>"></i>
-                </div>
+                <?php endforeach; ?>
             </div>
-        </div>
-        <?php endforeach; ?>
-    </div>
 
             <?php flash_render(); ?>
 
@@ -749,7 +750,8 @@ $pageTitle = "People & Access";
                 </div>
                 <?php endif; ?>
             </div>
-
+            
+            <?php $layout->footer(); ?>
         </div>
     </div>
 </div>

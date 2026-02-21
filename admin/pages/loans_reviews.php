@@ -247,21 +247,14 @@ function ksh($v, $d = 2) { return number_format((float)($v ?? 0), $d); }
 ?>
 <?php $layout->header($pageTitle ?? 'Loan Management'); ?>
     <style>
-        /* Page-specific overrides */
-        body { font-family: 'Inter', sans-serif; }
-        
+        .main-content-wrapper { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; }
+        @media (max-width: 991px) { .main-content-wrapper { margin-left: 0; padding: 1.5rem; } }
         
         /* Glass Components */
-        .glass-card {
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-        }
+        .glass-card { border: 1px solid var(--border-color); border-radius: 16px; background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(10px); }
 
         /* Avatar */
-        .avatar-circle {
-            width: 42px; height: 42px; object-fit: cover;
-            border: 2px solid var(--border-color);
-        }
+        .avatar-circle { width: 42px; height: 42px; object-fit: cover; border: 2px solid var(--border-color); }
 
         /* Custom Badges */
         .badge-status { padding: 6px 12px; font-weight: 500; border-radius: 6px; letter-spacing: 0.3px; }
@@ -276,19 +269,13 @@ function ksh($v, $d = 2) { return number_format((float)($v ?? 0), $d); }
         .btn-filter:hover:not(.active) { background-color: rgba(255,255,255,0.05); }
     </style>
 
-    <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
-</head>
-<body>
-
 <div class="d-flex">
-        <?php $layout->sidebar(); ?>
-
-        <div class="flex-fill main-content-wrapper" style="margin-left: 280px; transition: margin-left 0.3s ease;">
-            
-            <?php $layout->topbar($pageTitle ?? ''); ?>
-            
-            <div class="container-fluid">
-            
+    <?php $layout->sidebar(); ?>
+    <div class="flex-fill main-content-wrapper">
+        <?php $layout->topbar($pageTitle ?? 'Loan Management'); ?>
+        
+        <div class="container-fluid">
+            <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
                     <h4 class="fw-bold mb-1" style="color: var(--dark-green);">Loan Portfolio</h4>
                     <p class="text-muted small mb-0">Review applications and monitor disbursements.</p>
@@ -315,13 +302,13 @@ function ksh($v, $d = 2) { return number_format((float)($v ?? 0), $d); }
                 <div class="d-flex flex-wrap gap-3 align-items-center justify-content-between">
                     <div class="btn-group shadow-sm rounded-pill overflow-hidden" role="group">
                         <a href="?status=pending" class="btn btn-sm btn-filter <?= $filter=='pending'?'active':'' ?>">
-                            Pending <span class="badge bg-white  ms-1 rounded-pill"><?= $stats['pending'] ?></span>
+                            Pending <span class="badge bg-white  ms-1 rounded-pill text-dark"><?= $stats['pending'] ?></span>
                         </a>
                         <a href="?status=approved" class="btn btn-sm btn-filter <?= $filter=='approved'?'active':'' ?>">
-                            Approved <span class="badge bg-white  ms-1 rounded-pill"><?= $stats['approved'] ?></span>
+                            Approved <span class="badge bg-white  ms-1 rounded-pill text-dark"><?= $stats['approved'] ?></span>
                         </a>
                         <a href="?status=disbursed" class="btn btn-sm btn-filter <?= $filter=='disbursed'?'active':'' ?>">
-                            Active <span class="badge bg-white  ms-1 rounded-pill"><?= $stats['active'] ?></span>
+                            Active <span class="badge bg-white  ms-1 rounded-pill text-dark"><?= $stats['active'] ?></span>
                         </a>
                         <a href="?status=all" class="btn btn-sm btn-filter <?= $filter=='all'?'active':'' ?>">All History</a>
                     </div>
@@ -402,14 +389,120 @@ function ksh($v, $d = 2) { return number_format((float)($v ?? 0), $d); }
                         </tbody>
                     </table>
                 </div>
-                <?php $layout->footer(); ?>
             </div>
 
+            <?php $layout->footer(); ?>
         </div>
-        
     </div>
-    
 </div>
+
+<?php 
+if($loans->num_rows > 0): 
+    $loans->data_seek(0); 
+    while($l = $loans->fetch_assoc()):
+        if($l['status'] !== 'pending') continue;
+?>
+
+<div class="modal fade" id="approveModal<?= $l['loan_id'] ?>" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="modal-header border-0 bg-success bg-opacity-10">
+                <h5 class="modal-title fw-bold text-success">Review Application</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="text-center mb-4">
+                    <div class="avatar-circle mx-auto mb-2 d-flex align-items-center justify-content-center bg-success text-white fs-4 rounded-circle" style="width:60px; height:60px;">
+                        <i class="bi bi-cash-stack"></i>
+                    </div>
+                    <h3 class="fw-bold text-success mb-0">KES <?= ksh($l['amount']) ?></h3>
+                    <p class="text-muted small">Requested by <?= htmlspecialchars($l['full_name']) ?></p>
+                </div>
+
+                <div class="row g-2 mb-4">
+                    <div class="col-6">
+                        <div class="p-2 border rounded text-center bg-light">
+                            <small class="text-muted d-block">Duration</small>
+                            <span class="fw-bold "><?= $l['duration_months'] ?> Months</span>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-2 border rounded text-center bg-light">
+                            <small class="text-muted d-block">Type</small>
+                            <span class="fw-bold "><?= $l['loan_type'] ?></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label small fw-bold text-uppercase text-secondary mb-2">Guarantors</label>
+                    <div class="border rounded-3 p-3 bg-light">
+                        <?php 
+                        $resG = $db->query("SELECT lg.*, m.full_name FROM loan_guarantors lg JOIN members m ON lg.member_id = m.member_id WHERE lg.loan_id = " . (int)$l['loan_id']);
+                        if($resG && $resG->num_rows > 0): while($g = $resG->fetch_assoc()): ?>
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="small fw-bold "><?= htmlspecialchars($g['full_name']) ?></span>
+                                <span class="badge bg-white text-success border small ksh-font">KES <?= ksh($g['amount_locked']) ?></span>
+                            </div>
+                        <?php endwhile; else: ?>
+                            <div class="text-center text-muted small py-2">No guarantors assigned</div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-outline-danger w-50 py-2 rounded-pill fw-bold" data-bs-toggle="modal" data-bs-target="#rejectModal<?= $l['loan_id'] ?>" data-bs-dismiss="modal">
+                        Reject
+                    </button>
+                    
+                    <form method="POST" class="w-50">
+                        <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+                        <input type="hidden" name="loan_id" value="<?= $l['loan_id'] ?>">
+                        <input type="hidden" name="action" value="approve">
+                        <button type="submit" class="btn btn-success w-100 py-2 rounded-pill fw-bold shadow-sm">
+                            Approve <i class="bi bi-check-lg ms-1"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="rejectModal<?= $l['loan_id'] ?>" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-0 bg-danger bg-opacity-10">
+                <h5 class="modal-title fw-bold text-danger">Reject Application</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <p class="text-muted mb-3">Please provide a reason for rejecting the loan for <strong>KES <?= ksh($l['amount']) ?></strong>.</p>
+                
+                <form method="POST">
+                    <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+                    <input type="hidden" name="loan_id" value="<?= $l['loan_id'] ?>">
+                    <input type="hidden" name="action" value="reject">
+                    
+                    <div class="form-floating mb-4">
+                        <textarea name="notes" class="form-control" placeholder="Reason" style="height: 100px" required></textarea>
+                        <label>Reason for Rejection *</label>
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-light w-50 py-2 rounded-pill" data-bs-toggle="modal" data-bs-target="#approveModal<?= $l['loan_id'] ?>" data-bs-dismiss="modal">Back</button>
+                        <button type="submit" class="btn btn-danger w-50 py-2 rounded-pill fw-bold shadow-sm">Confirm Reject</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<?php endwhile; endif; ?>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
 
 <?php 
 if($loans->num_rows > 0): 

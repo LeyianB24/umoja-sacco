@@ -177,6 +177,7 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
 }
 
 $pageTitle = "Revenue Portal";
+    $layout->header($pageTitle);
 ?>
     <style>
         /* Page-specific overrides */
@@ -459,10 +460,11 @@ $pageTitle = "Revenue Portal";
                     <?php endif; ?>
                 </div>
             </div>
+<?php $layout->footer(); ?>
         </div>
     </div>
     
-    <?php $layout->footer(); ?>
+    
 </div>
 
 <!-- Modal -->
@@ -597,7 +599,7 @@ $pageTitle = "Revenue Portal";
     });
 </script>
         </main>
-        <?php $layout->footer(); ?>
+        
     </div>
 </body>
 </html>
