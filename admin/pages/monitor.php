@@ -35,16 +35,20 @@ if ($table_check && $table_check->num_rows > 0) {
 ?>
 <?php $layout->header($pageTitle); ?>
     <style>
+        .main-content-wrapper { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; }
+        @media (max-width: 991px) { .main-content-wrapper { margin-left: 0; padding: 1.5rem; } }
+
         /* Page-specific overrides */
         .table-premium { background: var(--bg-surface); border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border: 1px solid var(--border-color); }
         .callback_status-success { color: #059669; background: #ecfdf5; padding: 4px 12px; border-radius: 99px; font-size: 12px; font-weight: 600; }
         .callback_status-failed { color: #dc2626; background: #fef2f2; padding: 4px 12px; border-radius: 99px; font-size: 12px; font-weight: 600; }
         .raw-payload { max-width: 300px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: monospace; font-size: 11px; color: #64748b; }
     </style>
+<div class="d-flex">
     <?php $layout->sidebar(); ?>
-    <div class="main-wrapper">
-        <?php $layout->topbar($pageTitle); ?>
-        <main class="main-content">
+    <div class="flex-fill main-content-wrapper p-0">
+        <?php $layout->topbar($pageTitle ?? 'Digital Monitor'); ?>
+        <div class="container-fluid">
 
 
             <!-- Callback Logs -->
@@ -132,6 +136,7 @@ if ($table_check && $table_check->num_rows > 0) {
                     </table>
                 </div>
             </div>
-        </main>
+        </div>
         <?php $layout->footer(); ?>
     </div>
+</div>

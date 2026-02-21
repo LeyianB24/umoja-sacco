@@ -14,6 +14,9 @@ require_permission();
 ?>
 <?php $layout->header($pageTitle); ?>
     <style>
+        .main-content-wrapper { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; }
+        @media (max-width: 991px) { .main-content-wrapper { margin-left: 0; padding: 1.5rem; } }
+
         /* Page-specific overrides if any */
         .member-row { transition: 0.2s; }
         .member-row:hover { background: rgba(208, 243, 93, 0.05); }
@@ -23,10 +26,11 @@ require_permission();
         .bg-forest-soft { background: rgba(15, 46, 37, 0.05); color: var(--forest); }
     </style>
 
+<div class="d-flex">
     <?php $layout->sidebar(); ?>
-    <div class="main-wrapper">
-        <?php $layout->topbar($pageTitle ?? 'Member Directory'); ?>
-        <main class="main-content">
+    <div class="flex-fill main-content-wrapper p-0">
+        <?php $layout->topbar($pageTitle ?? 'Member Registry'); ?>
+        <div class="container-fluid">
         
         <!-- Header -->
         <div class="hp-hero fade-in">
@@ -210,6 +214,8 @@ require_permission();
                 </div>
             </div>
             
-        </main>
         <?php $layout->footer(); ?>
     </div>
+</div>
+</body>
+</html>

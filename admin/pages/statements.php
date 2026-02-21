@@ -29,10 +29,6 @@ $pageTitle = "Statement Portal";
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
 
-<?php $layout->header($pageTitle); ?>
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
-
     <style>
         .main-content-wrapper { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; }
         @media (max-width: 991px) { .main-content-wrapper { margin-left: 0; padding: 1.5rem; } }
@@ -95,9 +91,8 @@ $pageTitle = "Statement Portal";
 
 <div class="d-flex">
     <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper">
-        <?php $layout->topbar($pageTitle); ?>
-        
+    <div class="flex-fill main-content-wrapper p-0">
+        <?php $layout->topbar($pageTitle ?? 'Statement Portal'); ?>
         <div class="container-fluid">
             <!-- Portal Header -->
             <div class="portal-header shadow-lg">
@@ -258,35 +253,20 @@ $pageTitle = "Statement Portal";
                 </div>
             </div>
 
-            <?php $layout->footer(); ?>
         </div>
+        <?php $layout->footer(); ?>
     </div>
 </div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        if (typeof jQuery !== 'undefined') {
-            $('.select2-member').select2({
-                theme: 'bootstrap-5',
-                placeholder: $(this).data('placeholder'),
-                width: '100%'
-            });
-        }
+    $(document).ready(function() {
+        $('.select2-member').select2({
+            theme: 'bootstrap-5',
+            placeholder: "Search by Name, Reg No or National ID...",
+            width: '100%'
+        });
     });
 </script>
-</body>
-</html>
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            if (typeof jQuery !== 'undefined') {
-                $('.select2-member').select2({
-                    theme: 'bootstrap-5',
-                    placeholder: $(this).data('placeholder'),
-                    width: '100%'
-                });
-            }
-        });
-    </script>

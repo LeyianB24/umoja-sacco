@@ -81,8 +81,8 @@ $pageTitle = "Helpdesk Support";
 $layout->header($pageTitle);
 ?>
     <style>
-        .main-content { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; }
-        @media (max-width: 991px) { .main-content { margin-left: 0; padding: 1.5rem; } }
+        .main-content-wrapper { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; }
+        @media (max-width: 991px) { .main-content-wrapper { margin-left: 0; padding: 1.5rem; } }
         
         .badge-hope { padding: 8px 16px; border-radius: 12px; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; }
         .bg-pending { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
@@ -97,11 +97,11 @@ $layout->header($pageTitle);
         }
     </style>
 </head>
-<body>
 <div class="d-flex">
     <?php $layout->sidebar(); ?>
-    <div class="main-content">
-        <?php $layout->topbar($pageTitle ?? ''); ?>
+    <div class="flex-fill main-content-wrapper p-0">
+        <?php $layout->topbar($pageTitle ?? 'Helpdesk Support'); ?>
+        <div class="container-fluid">
         
         <div class="hp-hero mb-4">
             <div class="row align-items-center">
@@ -276,7 +276,7 @@ $layout->header($pageTitle);
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    </div><!-- End main-content -->
-</div><!-- End d-flex -->
-
-<?php $layout->footer(); ?>
+        </div>
+        <?php $layout->footer(); ?>
+    </div>
+</div>

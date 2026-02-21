@@ -23,6 +23,9 @@ require_superadmin();
 ?>
 <?php flash_render(); ?>
     <style>
+        .main-content-wrapper { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; }
+        @media (max-width: 991px) { .main-content-wrapper { margin-left: 0; padding: 1.5rem; } }
+
         /* Page-specific overrides */
         .avatar-box { width: 45px; height: 45px; border-radius: 14px; background: rgba(15, 46, 37, 0.05); color: var(--forest); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.2rem; }
         .role-badge { background: rgba(208, 243, 93, 0.15); color: var(--forest-mid); font-weight: 700; padding: 6px 12px; border-radius: 10px; font-size: 0.75rem; }
@@ -101,15 +104,12 @@ $users_res = $conn->query("SELECT a.*, r.name as role_name FROM admins a LEFT JO
 
 $pageTitle = "Staff Management";
 ?>
-<?php $layout->header($pageTitle); ?>
-<body>
-
+<div class="d-flex">
     <?php $layout->sidebar(); ?>
-    <div class="main-wrapper">
+    <div class="flex-fill main-content-wrapper p-0">
         <?php $layout->topbar($pageTitle ?? 'Staff Management'); ?>
-        <main class="main-content">
-        
-        <div class="container-fluid p-0">
+        <div class="container-fluid">
+            <?php flash_render(); ?>
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
                     <h2 class="fw-bold mb-1">Administrative Staff</h2>
@@ -178,9 +178,10 @@ $pageTitle = "Staff Management";
                         </tbody>
                     </table>
                 </div>
-        </main>
+        </div>
         <?php $layout->footer(); ?>
     </div>
+</div>
 
 <!-- Add User Modal -->
 <div class="modal fade" id="addUserModal" tabindex="-1">

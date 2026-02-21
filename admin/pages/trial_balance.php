@@ -12,7 +12,10 @@ require_admin();
 require_permission();
 $layout = LayoutManager::create('admin');
 ?>
-</style>
+    <style>
+        .main-content-wrapper { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; }
+        @media (max-width: 991px) { .main-content-wrapper { margin-left: 0; padding: 1.5rem; } }
+    </style>
 <?php
 /**
  * admin/pages/trial_balance.php
@@ -99,12 +102,11 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
 }
 ?>
 <?php $layout->header($pageTitle); ?>
-<body>
-
+<div class="d-flex">
     <?php $layout->sidebar(); ?>
-    <div class="main-wrapper">
-        <?php $layout->topbar($pageTitle); ?>
-        <main class="main-content">
+    <div class="flex-fill main-content-wrapper p-0">
+        <?php $layout->topbar($pageTitle ?? 'Accounting Ledger'); ?>
+        <div class="container-fluid">
 
         <!-- Layout Header -->
         <div class="portal-header fade-in">
@@ -240,7 +242,6 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
 
         <div class="text-center mt-5 text-muted small pb-5">
             Internal Audit Protocol V10.4 &bull; Generated <?= date('d M Y, H:i:s') ?> &bull; <?= SITE_NAME ?> Finance
-        <?php $layout->footer(); ?>
         </div>
         
         
@@ -292,7 +293,7 @@ foreach($all_cats as $cat_name):
     </div>
 </div>
 <?php endforeach; ?>
-
-        </main>
+        </div>
         <?php $layout->footer(); ?>
     </div>
+</div>

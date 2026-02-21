@@ -180,309 +180,308 @@ $pageTitle = "Revenue Portal";
     $layout->header($pageTitle);
 ?>
     <style>
-        /* Page-specific overrides */
+        .main-content-wrapper { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; }
+        @media (max-width: 991px) { .main-content-wrapper { margin-left: 0; padding: 1.5rem; } }
+
         .portal-header { 
-            background: linear-gradient(135deg, var(--brand-forest) 0%, var(--brand-forest-mid) 100%); 
-            border-radius: 30px; padding: 50px; color: white; margin-bottom: 40px;
+            background: linear-gradient(135deg, var(--forest) 0%, var(--forest-mid) 100%); 
+            border-radius: 2rem; padding: 3.5rem; color: white; margin-bottom: 2.5rem;
             box-shadow: 0 20px 40px rgba(15, 46, 37, 0.15);
             position: relative; overflow: hidden;
         }
         .stat-card {
-            background: rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 1.5rem;
-            border: 1px solid rgba(255, 255, 255, 0.4);
+            background: white; border-radius: 1.5rem; padding: 2rem;
+            border: 1px solid var(--border-color); box-shadow: 0 10px 30px rgba(0,0,0,0.05);
             transition: 0.3s;
         }
-        .stat-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
+        .stat-card:hover { transform: translateY(-5px); box-shadow: 0 15px 40px rgba(0,0,0,0.1); }
         .icon-circle { width: 50px; height: 50px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; margin-bottom: 1rem; }
     </style>
 
+<div class="d-flex">
     <?php $layout->sidebar(); ?>
-    <div class="main-wrapper">
-        <?php $layout->topbar($pageTitle ?? 'Revenue Ledger'); ?>
-        <main class="main-content">
-        
-        <!-- Header Banner -->
-        <div class="portal-header slide-up">
-            <div class="row align-items-center">
-                <div class="col-lg-7">
-                    <span class="badge bg-white bg-opacity-10 text-white rounded-pill px-3 py-2 mb-3">Treasury V4</span>
-                    <h1 class="display-5 fw-800 mb-2">Revenue Dashboard</h1>
-                    <p class="opacity-75 fs-5 mb-0">Monitor SACCO inflows and asset performance metrics.</p>
-                </div>
-                <div class="col-lg-5 text-lg-end mt-4 mt-lg-0">
-                    <button class="btn btn-lime shadow-lg px-4" data-bs-toggle="modal" data-bs-target="#recordRevenueModal">
-                        <i class="bi bi-plus-lg me-2"></i>Record New Inflow
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <?php flash_render(); ?>
-
-        <!-- Investment Performance Cards -->
-        <?php if (!empty($top_investments)): ?>
-        <div class="row g-4 mb-4">
-            <div class="col-12">
-                <div class="d-flex justify-content-between align-items-center mb-1">
-                    <h5 class="fw-800 mb-0"><i class="bi bi-trophy-fill text-warning me-2"></i>Portfolio Revenue Performance</h5>
-                    <a href="investments.php" class="btn btn-outline-forest btn-sm rounded-pill px-3">View All Assets</a>
-                </div>
-            </div>
-            <?php foreach ($top_investments as $inv): 
-                $icon = match($inv['category']) {
-                    'farm' => 'bi-flower3',
-                    'vehicle_fleet' => 'bi-truck-front',
-                    'petrol_station' => 'bi-fuel-pump',
-                    'apartments' => 'bi-building',
-                    default => 'bi-box-seam'
-                };
-                $v_badge = match($inv['viability_status']) {
-                    'viable' => '<span class="badge bg-success-soft px-2 py-1" style="font-size: 0.6rem;">VIABLE</span>',
-                    'underperforming' => '<span class="badge bg-warning-soft px-2 py-1" style="font-size: 0.6rem;">MARGINAL</span>',
-                    'loss_making' => '<span class="badge bg-danger-soft px-2 py-1" style="font-size: 0.6rem;">AT RISK</span>',
-                    default => '<span class="badge bg-light text-muted px-2 py-1" style="font-size: 0.6rem;">NEW</span>'
-                };
-            ?>
-            <div class="col-md-4">
-                <div class="stat-card slide-up h-100" style="border-left: 4px solid <?= $inv['target_achievement'] >= 100 ? '#22c55e' : ($inv['target_achievement'] >= 70 ? '#eab308' : '#ef4444') ?>;">
-                    <div class="d-flex justify-content-between align-items-start mb-3">
-                        <div class="icon-circle bg-lime-soft">
-                            <i class="<?= $icon ?>"></i>
-                        </div>
-                        <?= $v_badge ?>
+    <div class="flex-fill main-content-wrapper p-0">
+        <?php $layout->topbar($pageTitle ?? 'Revenue Portal'); ?>
+        <div class="container-fluid">
+            <!-- Header Banner -->
+            <div class="portal-header slide-up shadow-lg">
+                <div class="row align-items-center">
+                    <div class="col-lg-7">
+                        <span class="badge bg-white bg-opacity-10 text-white rounded-pill px-3 py-2 mb-3">Treasury V4</span>
+                        <h1 class="display-5 fw-800 mb-2">Revenue Dashboard</h1>
+                        <p class="opacity-75 fs-5 mb-0">Monitor SACCO inflows and asset performance metrics.</p>
                     </div>
-                    <div class="mb-3">
-                        <div class="text-muted small fw-bold text-uppercase mb-1"><?= ucfirst(str_replace('_', ' ', $inv['category'])) ?></div>
-                        <h6 class="fw-800 mb-0"><?= esc($inv['title']) ?></h6>
-                    </div>
-                    <div class="h4 fw-800  mb-1">KES <?= number_format((float)$inv['period_revenue']) ?></div>
-                    <div class="small text-muted mb-3">
-                        <i class="bi bi-bullseye me-1"></i>Target: KES <?= number_format((float)$inv['target_amount']) ?>
-                    </div>
-                    
-                    <div class="d-flex justify-content-between align-items-center small mb-1">
-                        <span class="text-muted fw-bold">Achievement</span>
-                        <span class="fw-800"><?= number_format($inv['target_achievement'], 1) ?>%</span>
-                    </div>
-                    <div class="progress" style="height: 6px; background: rgba(255,255,255,0.05);">
-                        <div class="progress-bar <?= $inv['target_achievement'] >= 100 ? 'bg-success' : ($inv['target_achievement'] >= 70 ? 'bg-warning' : 'bg-danger') ?>" 
-                             style="width: <?= min(100, $inv['target_achievement']) ?>%"></div>
-                    </div>
-                    <div class="mt-3 fs-xs text-muted d-flex justify-content-between">
-                        <span><i class="bi bi-clock-history me-1"></i><?= $inv['transaction_count'] ?> inputs</span>
-                        <span class="<?= $inv['net_profit'] >= 0 ? 'text-success' : 'text-danger' ?> fw-bold">Profit: <?= number_format($inv['net_profit']) ?></span>
+                    <div class="col-lg-5 text-lg-end mt-4 mt-lg-0">
+                        <button class="btn btn-lime shadow-lg px-4 text-dark fw-bold" data-bs-toggle="modal" data-bs-target="#recordRevenueModal">
+                            <i class="bi bi-plus-lg me-2"></i>Record New Inflow
+                        </button>
                     </div>
                 </div>
             </div>
-            <?php endforeach; ?>
-        </div>
-        <?php endif; ?>
 
-        <?php include __DIR__ . '/../../inc/finance_nav.php'; ?>
+            <?php flash_render(); ?>
 
-        <!-- KPIs -->
-        <div class="row g-4 mb-4">
-            <div class="col-md-4">
-                <div class="stat-card slide-up">
-                    <div class="icon-circle bg-lime-soft">
-                        <i class="bi bi-graph-up-arrow"></i>
+            <!-- Investment Performance Cards -->
+            <?php if (!empty($top_investments)): ?>
+            <div class="row g-4 mb-4">
+                <div class="col-12">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <h5 class="fw-800 mb-0"><i class="bi bi-trophy-fill text-warning me-2"></i>Portfolio Revenue Performance</h5>
+                        <a href="investments.php" class="btn btn-outline-forest btn-sm rounded-pill px-3">View All Assets</a>
                     </div>
-                    <div class="text-muted small fw-bold text-uppercase">Period Total</div>
-                    <div class="h2 fw-800  mt-2 mb-1">KES <?= number_format((float)$total_period_rev) ?></div>
-                    <div class="small text-muted"><i class="bi bi-calendar-range me-1"></i> <?= ucwords($duration) ?> aggregation</div>
                 </div>
-            </div>
-            
-            <div class="col-md-4">
-                <div class="stat-card slide-up" style="animation-delay: 0.1s">
-                    <div class="icon-circle bg-forest-soft">
-                        <i class="bi bi-bullseye"></i>
-                    </div>
-                    <div class="text-muted small fw-bold text-uppercase">Portfolio Efficiency</div>
-                    <div class="h2 fw-800  mt-2 mb-1"><?= number_format($global_target_pct, 1) ?>%</div>
-                    <div class="progress" style="height: 4px; background: rgba(255,255,255,0.05); margin-bottom: 8px;">
-                        <div class="progress-bar bg-info" style="width: <?= $global_target_pct ?>%"></div>
-                    </div>
-                    <div class="small text-muted"><i class="bi bi-info-circle me-1"></i> Actual vs. Investment Targets</div>
-                </div>
-            </div>
-
-            <div class="col-md-4">
-                <div class="stat-card slide-up" style="animation-delay: 0.2s">
-                    <form method="GET" id="filterForm" class="h-100 d-flex flex-column justify-content-between">
-                        <div>
-                            <label class="small text-muted fw-bold text-uppercase mb-2 d-block">Analysis Filters</label>
-                            <div class="row g-2">
-                                <div class="col-12">
-                                    <select name="duration" class="form-select form-select-sm border-0 bg-transparent" onchange="toggleDateInputs(this.value)">
-                                        <option value="all" <?= $duration === 'all' ? 'selected' : '' ?>>Historical Records</option>
-                                        <option value="today" <?= $duration === 'today' ? 'selected' : '' ?>>Today's activity</option>
-                                        <option value="weekly" <?= $duration === 'weekly' ? 'selected' : '' ?>>Past 7 Days</option>
-                                        <option value="monthly" <?= $duration === 'monthly' ? 'selected' : '' ?>>Current Month</option>
-                                        <option value="custom" <?= $duration === 'custom' ? 'selected' : '' ?>>Custom Range</option>
-                                    </select>
-                                </div>
-                                <div class="col-12">
-                                    <select name="asset_id" class="form-select form-select-sm border-0 bg-transparent" onchange="this.form.submit()">
-                                        <option value="0">All Investment Sources</option>
-                                        <?php foreach($investments_select_list as $inv): ?>
-                                            <option value="<?= $inv['investment_id'] ?>" <?= $filter_asset_id == $inv['investment_id'] ? 'selected' : '' ?>>
-                                                <?= esc($inv['title']) ?>
-                                            </option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                </div>
+                <?php foreach ($top_investments as $inv): 
+                    $icon = match($inv['category']) {
+                        'farm' => 'bi-flower3',
+                        'vehicle_fleet' => 'bi-truck-front',
+                        'petrol_station' => 'bi-fuel-pump',
+                        'apartments' => 'bi-building',
+                        default => 'bi-box-seam'
+                    };
+                    $v_badge = match($inv['viability_status']) {
+                        'viable' => '<span class="badge bg-success bg-opacity-10 text-success px-2 py-1" style="font-size: 0.6rem;">VIABLE</span>',
+                        'underperforming' => '<span class="badge bg-warning bg-opacity-10 text-warning px-2 py-1" style="font-size: 0.6rem;">MARGINAL</span>',
+                        'loss_making' => '<span class="badge bg-danger bg-opacity-10 text-danger px-2 py-1" style="font-size: 0.6rem;">AT RISK</span>',
+                        default => '<span class="badge bg-light text-muted px-2 py-1" style="font-size: 0.6rem;">NEW</span>'
+                    };
+                ?>
+                <div class="col-md-4">
+                    <div class="stat-card slide-up h-100" style="border-left: 4px solid <?= $inv['target_achievement'] >= 100 ? '#22c55e' : ($inv['target_achievement'] >= 70 ? '#eab308' : '#ef4444') ?>;">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div class="icon-circle bg-lime bg-opacity-10 text-forest">
+                                <i class="<?= $icon ?>"></i>
                             </div>
+                            <?= $v_badge ?>
                         </div>
-                        <div id="customDateRange" class="mt-2 <?= $duration !== 'custom' ? 'd-none' : '' ?>">
-                            <div class="d-flex gap-2">
-                                <input type="date" name="start_date" class="form-control form-control-sm" value="<?= $start_date ?>">
-                                <input type="date" name="end_date" class="form-control form-control-sm" value="<?= $end_date ?>">
-                            </div>
-                            <button type="submit" class="btn btn-lime btn-sm w-100 mt-2">Apply Filters</button>
+                        <div class="mb-3">
+                            <div class="text-muted small fw-bold text-uppercase mb-1"><?= ucfirst(str_replace('_', ' ', $inv['category'])) ?></div>
+                            <h6 class="fw-800 mb-0"><?= esc($inv['title']) ?></h6>
                         </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-
-        <div class="row g-4">
-            <!-- Table Section -->
-            <div class="col-lg-8">
-                <div class="ledger-container slide-up" style="animation-delay: 0.3s">
-                    <div class="ledger-header d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
-                        <div class="position-relative flex-grow-1" style="max-width: 400px;">
-                            <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
-                            <input type="text" id="revenueSearch" class="search-box" placeholder="Filter inflows...">
+                        <div class="h4 fw-800  mb-1">KES <?= number_format((float)$inv['period_revenue']) ?></div>
+                        <div class="small text-muted mb-3">
+                            <i class="bi bi-bullseye me-1"></i>Target: KES <?= number_format((float)$inv['target_amount']) ?>
                         </div>
-                        <div class="dropdown">
-                            <button class="btn btn-outline-dark rounded-pill px-4 dropdown-toggle border" data-bs-toggle="dropdown">
-                                <i class="bi bi-download me-2"></i>Export Analysis
-                            </button>
-                            <ul class="dropdown-menu shadow-lg border-0 mt-2">
-                                <li><a class="dropdown-item py-2" href="?<?= http_build_query(array_merge($_GET, ['action' => 'export_pdf'])) ?>"><i class="bi bi-file-pdf text-danger me-2"></i>Revenue Ledger (PDF)</a></li>
-                                <li><a class="dropdown-item py-2" href="?<?= http_build_query(array_merge($_GET, ['action' => 'export_excel'])) ?>"><i class="bi bi-file-excel text-success me-2"></i>Export Spreadsheet</a></li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item py-2" href="?<?= http_build_query(array_merge($_GET, ['action' => 'print_report'])) ?>" target="_blank"><i class="bi bi-printer me-2"></i>Print Friendly View</a></li>
-                            </ul>
+                        
+                        <div class="d-flex justify-content-between align-items-center small mb-1">
+                            <span class="text-muted fw-bold">Achievement</span>
+                            <span class="fw-800"><?= number_format($inv['target_achievement'], 1) ?>%</span>
+                        </div>
+                        <div class="progress" style="height: 6px; background: rgba(0,0,0,0.05);">
+                            <div class="progress-bar <?= $inv['target_achievement'] >= 100 ? 'bg-success' : ($inv['target_achievement'] >= 70 ? 'bg-warning' : 'bg-danger') ?>" 
+                                 style="width: <?= min(100, $inv['target_achievement']) ?>%"></div>
+                        </div>
+                        <div class="mt-3 fs-xs text-muted d-flex justify-content-between">
+                            <span><i class="bi bi-clock-history me-1"></i><?= $inv['transaction_count'] ?> inputs</span>
+                            <span class="<?= $inv['net_profit'] >= 0 ? 'text-success' : 'text-danger' ?> fw-bold">Profit: <?= number_format($inv['net_profit']) ?></span>
                         </div>
                     </div>
-                    <div class="table-responsive">
-                        <table class="table-custom" id="revenueTable">
-                            <thead>
-                                <tr>
-                                    <th>Date / Ref</th>
-                                    <th>Financial Source</th>
-                                    <th>Method</th>
-                                    <th class="text-end">Credit (KES)</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php if(empty($revenue_data)): ?>
-                                    <tr>
-                                        <td colspan="4" class="text-center py-5">
-                                            <div class="opacity-25 mb-4"><i class="bi bi-receipt-cutoff display-2"></i></div>
-                                            <h5 class="fw-bold text-muted">No Revenue Recorded</h5>
-                                            <p class="text-muted">No inflows found matching current filters.</p>
-                                        </td>
-                                    </tr>
-                                <?php else: 
-                                foreach($revenue_data as $row): ?>
-                                    <tr class="revenue-row">
-                                        <td>
-                                            <div class="fw-bold "><?= date('d M, Y', strtotime($row['transaction_date'])) ?></div>
-                                            <div class="small text-muted font-monospace mt-1"><?= esc($row['reference_no']) ?></div>
-                                        </td>
-                                        <td>
-                                            <div class="fw-600 "><?= esc($row['source_name'] ?: 'General Fund') ?></div>
-                                            <div class="small text-muted mt-1 opacity-75"><?= esc($row['notes'] ?: 'Revenue Entry') ?></div>
-                                        </td>
-                                        <td>
-                                            <span class="badge bg-transparent border px-3 py-2 rounded-pill small fw-bold">
-                                                <?= strtoupper((string)($row['payment_method'] ?? 'N/A')) ?>
-                                            </span>
-                                        </td>
-                                        <td class="text-end">
-                                            <div class="fw-800 fs-6 text-success">
-                                                + <?= number_format((float)$row['amount'], 2) ?>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; endif; ?>
-                            </tbody>
-                        </table>
+                </div>
+                <?php endforeach; ?>
+            </div>
+            <?php endif; ?>
+
+            <?php include __DIR__ . '/../../inc/finance_nav.php'; ?>
+
+            <!-- KPIs -->
+            <div class="row g-4 mb-4">
+                <div class="col-md-4">
+                    <div class="stat-card slide-up">
+                        <div class="icon-circle bg-lime bg-opacity-10 text-forest">
+                            <i class="bi bi-graph-up-arrow"></i>
+                        </div>
+                        <div class="text-muted small fw-bold text-uppercase">Period Total</div>
+                        <div class="h2 fw-800  mt-2 mb-1">KES <?= number_format((float)$total_period_rev) ?></div>
+                        <div class="small text-muted"><i class="bi bi-calendar-range me-1"></i> <?= ucwords($duration) ?> aggregation</div>
                     </div>
                 </div>
-            </div>
+                
+                <div class="col-md-4">
+                    <div class="stat-card slide-up" style="animation-delay: 0.1s">
+                        <div class="icon-circle bg-forest-soft">
+                            <i class="bi bi-bullseye"></i>
+                        </div>
+                        <div class="text-muted small fw-bold text-uppercase">Portfolio Efficiency</div>
+                        <div class="h2 fw-800  mt-2 mb-1"><?= number_format($global_target_pct, 1) ?>%</div>
+                        <div class="progress" style="height: 4px; background: rgba(0,0,0,0.05); margin-bottom: 8px;">
+                            <div class="progress-bar bg-info" style="width: <?= $global_target_pct ?>%"></div>
+                        </div>
+                        <div class="small text-muted"><i class="bi bi-info-circle me-1"></i> Actual vs. Investment Targets</div>
+                    </div>
+                </div>
 
-            <!-- Chart Section -->
-            <div class="col-lg-4">
-                <div class="stat-card slide-up" style="animation-delay: 0.4s">
-                    <h5 class="fw-bold mb-4">Source Distribution</h5>
-                    <?php 
-                    $source_breakdown = [];
-                    foreach ($revenue_data as $r) {
-                        $src = $r['source_name'] ?: 'Other';
-                        $source_breakdown[$src] = ($source_breakdown[$src] ?? 0) + $r['amount'];
-                    }
-                    if(empty($source_breakdown)): ?>
-                        <div class="text-center py-5">
-                            <i class="bi bi-pie-chart text-muted display-4 opacity-25"></i>
-                            <p class="text-muted small mt-3">Insufficient data for breakdown</p>
-                        </div>
-                    <?php else: ?>
-                        <div style="height: 250px;">
-                            <canvas id="revenueChart" 
-                                data-labels='<?= json_encode(array_keys($source_breakdown)) ?>' 
-                                data-values='<?= json_encode(array_values($source_breakdown)) ?>'>
-                            </canvas>
-                        </div>
-                        <div class="mt-4 pt-3 border-top border-secondary opacity-50">
-                            <h6 class="fw-bold mb-3 mt-4">Top Revenue Sources</h6>
-                            <?php 
-                            arsort($source_breakdown);
-                            $count = 0;
-                            foreach ($source_breakdown as $name => $val): 
-                                if ($count++ >= 5) break; // Use $count here
-                            ?>
-                                <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom border-light border-opacity-10">
-                                    <div class="d-flex align-items-center gap-2">
-                                        <div class="badge bg-lime rounded-circle" style="width: 8px; height: 8px;"></div>
-                                        <span class="small fw-600"><?= $name ?></span>
+                <div class="col-md-4">
+                    <div class="stat-card slide-up" style="animation-delay: 0.2s">
+                        <form method="GET" id="filterForm" class="h-100 d-flex flex-column justify-content-between">
+                            <div>
+                                <label class="small text-muted fw-bold text-uppercase mb-2 d-block">Analysis Filters</label>
+                                <div class="row g-2">
+                                    <div class="col-12">
+                                        <select name="duration" class="form-select form-select-sm border-0 bg-transparent" onchange="toggleDateInputs(this.value)">
+                                            <option value="all" <?= $duration === 'all' ? 'selected' : '' ?>>Historical Records</option>
+                                            <option value="today" <?= $duration === 'today' ? 'selected' : '' ?>>Today's activity</option>
+                                            <option value="weekly" <?= $duration === 'weekly' ? 'selected' : '' ?>>Past 7 Days</option>
+                                            <option value="monthly" <?= $duration === 'monthly' ? 'selected' : '' ?>>Current Month</option>
+                                            <option value="custom" <?= $duration === 'custom' ? 'selected' : '' ?>>Custom Range</option>
+                                        </select>
                                     </div>
-                                    <span class="small fw-bold">KES <?= number_format((float)$val) ?></span>
+                                    <div class="col-12">
+                                        <select name="asset_id" class="form-select form-select-sm border-0 bg-transparent" onchange="this.form.submit()">
+                                            <option value="0">All Investment Sources</option>
+                                            <?php foreach($investments_select_list as $inv): ?>
+                                                <option value="<?= $inv['investment_id'] ?>" <?= $filter_asset_id == $inv['investment_id'] ? 'selected' : '' ?>>
+                                                    <?= esc($inv['title']) ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
                                 </div>
-                            <?php endforeach; ?>
-                        </div>
-                    <?php endif; ?>
+                            </div>
+                            <div id="customDateRange" class="mt-2 <?= $duration !== 'custom' ? 'd-none' : '' ?>">
+                                <div class="d-flex gap-2">
+                                    <input type="date" name="start_date" class="form-control form-control-sm" value="<?= $start_date ?>">
+                                    <input type="date" name="end_date" class="form-control form-control-sm" value="<?= $end_date ?>">
+                                </div>
+                                <button type="submit" class="btn btn-lime btn-sm w-100 mt-2 text-dark fw-bold">Apply Filters</button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             </div>
-<?php $layout->footer(); ?>
+
+            <div class="row g-4 mb-5">
+                <!-- Table Section -->
+                <div class="col-lg-8">
+                    <div class="ledger-container slide-up" style="animation-delay: 0.3s">
+                        <div class="ledger-header d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                            <div class="position-relative flex-grow-1" style="max-width: 400px;">
+                                <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
+                                <input type="text" id="revenueSearch" class="search-box" placeholder="Filter inflows...">
+                            </div>
+                            <div class="dropdown">
+                                <button class="btn btn-outline-dark rounded-pill px-4 dropdown-toggle border" data-bs-toggle="dropdown">
+                                    <i class="bi bi-download me-2"></i>Export Analysis
+                                </button>
+                                <ul class="dropdown-menu shadow-lg border-0 mt-2">
+                                    <li><a class="dropdown-item py-2" href="?<?= http_build_query(array_merge($_GET, ['action' => 'export_pdf'])) ?>"><i class="bi bi-file-pdf text-danger me-2"></i>Revenue Ledger (PDF)</a></li>
+                                    <li><a class="dropdown-item py-2" href="?<?= http_build_query(array_merge($_GET, ['action' => 'export_excel'])) ?>"><i class="bi bi-file-excel text-success me-2"></i>Export Spreadsheet</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item py-2" href="?<?= http_build_query(array_merge($_GET, ['action' => 'print_report'])) ?>" target="_blank"><i class="bi bi-printer me-2"></i>Print Friendly View</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table-custom" id="revenueTable">
+                                <thead>
+                                    <tr>
+                                        <th>Date / Ref</th>
+                                        <th>Financial Source</th>
+                                        <th>Method</th>
+                                        <th class="text-end">Credit (KES)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php if(empty($revenue_data)): ?>
+                                        <tr>
+                                            <td colspan="4" class="text-center py-5">
+                                                <div class="opacity-25 mb-4"><i class="bi bi-receipt-cutoff display-2"></i></div>
+                                                <h5 class="fw-bold text-muted">No Revenue Recorded</h5>
+                                                <p class="text-muted">No inflows found matching current filters.</p>
+                                            </td>
+                                        </tr>
+                                    <?php else: 
+                                    foreach($revenue_data as $row): ?>
+                                        <tr class="revenue-row">
+                                            <td>
+                                                <div class="fw-bold "><?= date('d M, Y', strtotime($row['transaction_date'])) ?></div>
+                                                <div class="small text-muted font-monospace mt-1"><?= esc($row['reference_no']) ?></div>
+                                            </td>
+                                            <td>
+                                                <div class="fw-600 "><?= esc($row['source_name'] ?: 'General Fund') ?></div>
+                                                <div class="small text-muted mt-1 opacity-75"><?= esc($row['notes'] ?: 'Revenue Entry') ?></div>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-transparent border px-3 py-2 rounded-pill small fw-bold">
+                                                    <?= strtoupper((string)($row['payment_method'] ?? 'N/A')) ?>
+                                                </span>
+                                            </td>
+                                            <td class="text-end">
+                                                <div class="fw-800 fs-6 text-success">
+                                                    + <?= number_format((float)$row['amount'], 2) ?>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; endif; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chart Section -->
+                <div class="col-lg-4">
+                    <div class="stat-card slide-up h-100" style="animation-delay: 0.4s">
+                        <h5 class="fw-bold mb-4">Source Distribution</h5>
+                        <?php 
+                        $source_breakdown = [];
+                        foreach ($revenue_data as $r) {
+                            $src = $r['source_name'] ?: 'Other';
+                            $source_breakdown[$src] = ($source_breakdown[$src] ?? 0) + $r['amount'];
+                        }
+                        if(empty($source_breakdown)): ?>
+                            <div class="text-center py-5">
+                                <i class="bi bi-pie-chart text-muted display-4 opacity-25"></i>
+                                <p class="text-muted small mt-3">Insufficient data for breakdown</p>
+                            </div>
+                        <?php else: ?>
+                            <div style="height: 250px;">
+                                <canvas id="revenueChart" 
+                                    data-labels='<?= json_encode(array_keys($source_breakdown)) ?>' 
+                                    data-values='<?= json_encode(array_values($source_breakdown)) ?>'>
+                                </canvas>
+                            </div>
+                            <div class="mt-4 pt-3 border-top border-secondary opacity-50">
+                                <h6 class="fw-bold mb-3 mt-4">Top Revenue Sources</h6>
+                                <?php 
+                                arsort($source_breakdown);
+                                $count = 0;
+                                foreach ($source_breakdown as $name => $val): 
+                                    if ($count++ >= 5) break; // Use $count here
+                                ?>
+                                    <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom border-light border-opacity-10">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="badge bg-lime rounded-circle" style="width: 8px; height: 8px;"></div>
+                                            <span class="small fw-600"><?= $name ?></span>
+                                        </div>
+                                        <span class="small fw-bold">KES <?= number_format((float)$val) ?></span>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+
+            <?php $layout->footer(); ?>
         </div>
     </div>
-    
-    
 </div>
 
 <!-- Modal -->
 <div class="modal fade" id="recordRevenueModal" tabindex="-1">
     <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content shadow-2xl">
-            <div class="modal-header">
+        <div class="modal-content shadow-2xl rounded-4 overflow-hidden border-0">
+            <div class="modal-header bg-forest text-white p-4">
                 <h5 class="modal-title fw-800"><i class="bi bi-shield-check me-2"></i>Record Received Inflow</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <form method="POST">
                 <?= csrf_field() ?>
                 <input type="hidden" name="record_revenue" value="1">
-                <div class="modal-body">
+                <div class="modal-body p-4 bg-white">
                     <div class="row g-4">
                         <div class="col-12">
-                            <label class="form-label">Select Asset / Revenue Source</label>
-                            <select name="unified_asset_id" id="unified_asset_id" class="form-select" required onchange="updateTargetInfo()">
+                            <label class="form-label fw-bold">Select Asset / Revenue Source</label>
+                            <select name="unified_asset_id" id="unified_asset_id" class="form-select form-select-lg" required onchange="updateTargetInfo()">
                                 <option value="other_0">General Fund / Unassigned</option>
                                 <optgroup label="Active Portfolio">
                                     <?php foreach($investments_select_list as $inv): ?>
@@ -496,35 +495,35 @@ $pageTitle = "Revenue Portal";
                                 <i class="bi bi-info-circle-fill fs-4 me-3 text-info"></i>
                                 <div>
                                     <div class="small fw-800 text-info text-uppercase mb-1">Asset Performance Target</div>
-                                    <div class="fw-bold text-white" id="targetText">Target: KES 0.00</div>
+                                    <div class="fw-bold" id="targetText">Target: KES 0.00</div>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label">Amount Received (KES)</label>
-                            <input type="number" name="amount" class="form-control fw-bold" min="0.01" step="0.01" required>
+                            <label class="form-label fw-bold">Amount Received (KES)</label>
+                            <input type="number" name="amount" class="form-control form-control-lg fw-bold" min="0.01" step="0.01" required>
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label">Collection Date</label>
-                            <input type="date" name="revenue_date" class="form-control" value="<?= date('Y-m-d') ?>" required>
+                            <label class="form-label fw-bold">Collection Date</label>
+                            <input type="date" name="revenue_date" class="form-control form-control-lg" value="<?= date('Y-m-d') ?>" required>
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label">Receiving Method</label>
-                            <select name="payment_method" class="form-select" required>
+                            <label class="form-label fw-bold">Receiving Method</label>
+                            <select name="payment_method" class="form-select form-select-lg" required>
                                 <option value="cash">Cash Collection</option>
                                 <option value="mpesa">M-Pesa Business</option>
                                 <option value="bank">Bank Deposit</option>
                             </select>
                         </div>
                         <div class="col-12">
-                            <label class="form-label">Narration / Internal Reference</label>
+                            <label class="form-label fw-bold">Narration / Internal Reference</label>
                             <textarea name="description" class="form-control" rows="2" placeholder="e.g. Daily collection, Dividend check..."></textarea>
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer border-0 p-4 pt-0">
-                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-lime rounded-pill px-5 shadow-lg">Confirm & Post Ledger</button>
+                <div class="modal-footer border-0 p-4 pt-0 bg-white">
+                    <button type="button" class="btn btn-light rounded-pill px-4 fw-bold" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-lime rounded-pill px-5 shadow-lg text-dark fw-bold">Confirm & Post Ledger</button>
                 </div>
             </form>
         </div>
@@ -598,7 +597,8 @@ $pageTitle = "Revenue Portal";
         });
     });
 </script>
-        </main>
+</body>
+</html>
         
     </div>
 </body>

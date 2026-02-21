@@ -223,15 +223,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_to_all'])) {
 $pageTitle = "Executive Reports";
 ?>
 <?php $layout->header($pageTitle); ?>
-<body>
-<div class="d-flex">
-    <?php $layout->sidebar(); ?>
-    <div class="main-content">
-        <?php $layout->topbar($pageTitle ?? ''); ?>
-    
     <style>
-        .main-content { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; }
-        @media (max-width: 991px) { .main-content { margin-left: 0; padding: 1.5rem; } }
+        .main-content-wrapper { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; }
+        @media (max-width: 991px) { .main-content-wrapper { margin-left: 0; padding: 1.5rem; } }
         
         /* Filter Bar Refinement */
         .filter-bar { border-radius: 20px; padding: 20px; border: 1px solid var(--glass-border); background: white; margin-bottom: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.02); }
@@ -248,17 +242,16 @@ $pageTitle = "Executive Reports";
         
         @media print {
             .sidebar, .no-print, .btn, .filter-bar, .hp-hero { display: none !important; }
-            .main-content { margin: 0; padding: 0; }
+            .main-content-wrapper { margin: 0; padding: 0; }
             .glass-card { border: 1px solid #ddd; box-shadow: none; background: white !important; }
         }
     </style>
+
 <div class="d-flex">
     <?php $layout->sidebar(); ?>
-
-    <div class="flex-fill main-content">
-        <?php $layout->topbar($pageTitle ?? ''); ?>
-
-        <div class="container-fluid p-0">
+    <div class="flex-fill main-content-wrapper p-0">
+        <?php $layout->topbar($pageTitle ?? 'Financial Analytics'); ?>
+        <div class="container-fluid">
         <div class="hp-hero">
             <div class="row align-items-center">
                 <div class="col-md-7">
@@ -465,6 +458,7 @@ $pageTitle = "Executive Reports";
                 &copy; <?= date('Y') ?> Umoja Sacco Management System. All rights reserved.
             </div>
         </div>
+        <?php $layout->footer(); ?>
     </div>
 </div>
 
@@ -577,7 +571,3 @@ $pageTitle = "Executive Reports";
         }
     });
 </script>
-    </div><!-- End main-content -->
-</div><!-- End d-flex -->
-
-<?php $layout->footer(); ?>

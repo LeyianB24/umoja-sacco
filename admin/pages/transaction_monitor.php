@@ -67,14 +67,15 @@ $stuck = $monitor->getStuckPending(5);
 $alerts = $monitor->getActiveAlerts();
 
 $layout->header("Transaction Monitor"); ?>
-</style>
+    <style>
+        .main-content-wrapper { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; }
+        @media (max-width: 991px) { .main-content-wrapper { margin-left: 0; padding: 1.5rem; } }
+    </style>
 
 <div class="d-flex">
     <?php $layout->sidebar(); ?>
-
-    <div class="flex-fill main-content">
-        <?php $layout->topbar("Transaction Monitor"); ?>
-
+    <div class="flex-fill main-content-wrapper p-0">
+        <?php $layout->topbar($pageTitle ?? 'Watchdog Console'); ?>
         <div class="container-fluid">
     <div class="row">
         <div class="col-12">
@@ -202,6 +203,7 @@ function viewCallbackLog(checkoutId) {
 }
 </script>
 
-    <?php $layout->footer(); ?>
+        </div>
+        <?php $layout->footer(); ?>
     </div>
 </div>

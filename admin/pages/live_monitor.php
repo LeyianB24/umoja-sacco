@@ -62,8 +62,8 @@ $pageTitle = "Live Operations Monitor";
 
 <div class="d-flex">
     <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper">
-        <?php $layout->topbar($pageTitle); ?>
+    <div class="flex-fill main-content-wrapper p-0">
+        <?php $layout->topbar($pageTitle ?? 'Live Command'); ?>
         
         <div class="container-fluid">
             <!-- Hero Section -->

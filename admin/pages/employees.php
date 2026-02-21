@@ -408,9 +408,8 @@ $pageTitle = "People & Access";
 
 <div class="d-flex">
     <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper">
+    <div class="flex-fill main-content-wrapper p-0">
         <?php $layout->topbar($pageTitle ?? 'Staff Command Center'); ?>
-        
         <div class="container-fluid">
             <div class="hp-hero">
                 <div class="row align-items-center">
@@ -751,10 +750,6 @@ $pageTitle = "People & Access";
                 <?php endif; ?>
             </div>
             
-            <?php $layout->footer(); ?>
-        </div>
-    </div>
-</div>
 
 <!-- MODAL: HIRE EMPLOYEE (Modern Onboarding) -->
 <div class="modal fade" id="addStaffModal" tabindex="-1">
@@ -1037,6 +1032,7 @@ $pageTitle = "People & Access";
     </div>
 </div>
 
-        </main>
+        </div>
         <?php $layout->footer(); ?>
     </div>
+</div>

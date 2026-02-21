@@ -15,6 +15,9 @@ require_permission();
 ?>
 <?php $layout->header($pageTitle); ?>
     <style>
+        .main-content-wrapper { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; }
+        @media (max-width: 991px) { .main-content-wrapper { margin-left: 0; padding: 1.5rem; } }
+
         /* Page-specific overrides */
         .stat-icon { width: 48px; height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; }
     </style>
@@ -147,11 +150,10 @@ $investments_list = $conn->query("SELECT investment_id, title FROM investments W
 $investments_all = $investments_list->fetch_all(MYSQLI_ASSOC);
 ?>
 
+<div class="d-flex">
     <?php $layout->sidebar(); ?>
-    <div class="main-wrapper">
-        <?php $layout->topbar($pageTitle ?? 'Expenditure Portal'); ?>
-        <main class="main-content">
-
+    <div class="flex-fill main-content-wrapper p-0">
+        <?php $layout->topbar($pageTitle ?? 'Expense Management'); ?>
         <div class="container-fluid">
             <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-5 gap-3">
                 <div>
@@ -296,11 +298,8 @@ $investments_all = $investments_list->fetch_all(MYSQLI_ASSOC);
                         </tbody>
                     </table>
                 </div>
-                <?php $layout->footer(); ?>
+                </div>
             </div>
-        </div>
-    </div>
-</div>
 
 <!-- Classic Record Expenditure Modal -->
 <div class="modal fade" id="addExpenseModal" tabindex="-1">
@@ -382,6 +381,6 @@ $investments_all = $investments_list->fetch_all(MYSQLI_ASSOC);
     </div>
 </div>
 
-        </main>
         <?php $layout->footer(); ?>
     </div>
+</div>

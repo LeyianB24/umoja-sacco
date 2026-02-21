@@ -66,9 +66,8 @@ $pageTitle = "System Dashboard";
 
 <div class="d-flex">
     <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper">
+    <div class="flex-fill main-content-wrapper p-0">
         <?php $layout->topbar($pageTitle ?? 'System Dashboard'); ?>
-        
         <div class="container-fluid">
             <div class="hp-hero">
                 <div class="row align-items-center">
@@ -295,13 +294,7 @@ $pageTitle = "System Dashboard";
                     <?php endif; ?>
                 </div>
             </div>
-            <?php $layout->footer(); ?>
         </div>
+        <?php $layout->footer(); ?>
     </div>
 </div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>

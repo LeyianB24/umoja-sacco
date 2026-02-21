@@ -78,10 +78,8 @@ $db         = $conn;
 
 <div class="d-flex">
     <?php $layout->sidebar(); ?>
-
-    <div class="flex-fill main-content-wrapper">
+    <div class="flex-fill main-content-wrapper p-0">
         <?php $layout->topbar($pageTitle ?? 'Database Backups'); ?>
-        
         <div class="container-fluid">
             <div class="d-flex justify-content-between align-items-center mb-5">
                 <div>
@@ -193,14 +191,10 @@ $db         = $conn;
                     </div>
                 </div>
             </div>
-            <?php $layout->footer(); ?>
         </div>
+        <?php $layout->footer(); ?>
     </div>
 </div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
 
 
 
