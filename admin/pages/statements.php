@@ -25,42 +25,23 @@ $stats = $db->query("SELECT
 
 $pageTitle = "Statement Portal";
 ?>
-<!DOCTYPE html>
-<html lang="en" data-bs-theme="light">
-<head>
-    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
-    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= $pageTitle ?> | USMS Administration</title>
-    
-    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= $pageTitle ?> | USMS Administration</title>
-    
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<?php $layout->header($pageTitle); ?>
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
 
     <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; }
-        .wrapper { display: flex; min-height: 100vh; }
-        .main-content { flex: 1; padding: 2rem; transition: all 0.3s; }
-
-        /* Banner & Glassmorphism */
+        /* Page-specific overrides */
         .portal-header {
             position: relative; overflow: hidden;
             border-radius: 2rem; padding: 3rem; margin-bottom: 2.5rem;
+            background: linear-gradient(135deg, var(--brand-forest) 0%, var(--brand-forest-mid) 100%);
+            color: white;
         }
         .portal-header::before {
             content: ''; position: absolute; top: -50%; right: -10%; width: 400px; height: 400px;
             background: radial-gradient(circle, rgba(190, 242, 100, 0.05) 0%, transparent 70%);
             border-radius: 50%;
         }
-
         .stat-badge {
             background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 1rem;
@@ -108,10 +89,10 @@ $pageTitle = "Statement Portal";
 
     <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
 </head>
-<body>
-
-<div class="wrapper">
     <?php $layout->sidebar(); ?>
+    <div class="main-wrapper">
+        <?php $layout->topbar($pageTitle); ?>
+        <main class="main-content">
 
     <main class="main-content">
         <?php $layout->topbar('Statement Portal'); ?>
@@ -275,23 +256,18 @@ $pageTitle = "Statement Portal";
             </div>
         </div>
         
+        </main>
         <?php $layout->footer(); ?>
-    </main>
-</div>
-
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-
-<script>
-    $(document).ready(function() {
-        $('.select2-member').select2({
-            theme: 'bootstrap-5',
-            placeholder: $(this).data('placeholder'),
-            width: '100%'
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            if (typeof jQuery !== 'undefined') {
+                $('.select2-member').select2({
+                    theme: 'bootstrap-5',
+                    placeholder: $(this).data('placeholder'),
+                    width: '100%'
+                });
+            }
         });
-    });
-</script>
-
-</body>
-</html>
+    </script>

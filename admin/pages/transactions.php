@@ -153,9 +153,7 @@ $gl_stats = $stmt_s->get_result()->fetch_assoc();
 $pageTitle = "Golden Ledger Vault";
 ?>
     <style>
-        .main-content { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; }
-        @media (max-width: 991px) { .main-content { margin-left: 0; padding: 1.5rem; } }
-        
+        /* Page-specific overrides */
         .ledger-glass {
             background: rgba(255, 255, 255, 0.9);
             backdrop-filter: blur(10px);
@@ -186,10 +184,10 @@ $pageTitle = "Golden Ledger Vault";
         .type-out { background: rgba(239, 68, 68, 0.1); color: #dc2626; }
     </style>
 
-<div class="d-flex">
     <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content">
+    <div class="main-wrapper">
         <?php $layout->topbar($pageTitle ?? 'Golden Ledger Vault'); ?>
+        <main class="main-content">
         <div class="hp-hero mb-4">
             <div class="row align-items-center">
                 <div class="col-lg-7">
@@ -344,7 +342,6 @@ $pageTitle = "Golden Ledger Vault";
                     <?php endif; ?>
                 </tbody>
             </table>
-    </div><!-- End main-content -->
-</div><!-- End d-flex -->
-
-<?php $layout->footer(); ?>
+        </main>
+        <?php $layout->footer(); ?>
+    </div>

@@ -406,11 +406,10 @@ $pageTitle = "People & Access";
         .table-custom tr:hover td { background-color: rgba(208, 243, 93, 0.05); }
         .avatar-circle { width: 40px; height: 40px; border-radius: 12px; background: var(--bg-surface); color: var(--forest); display: flex; align-items: center; justify-content: center; font-weight: 800; }
     </style>
-<div class="d-flex">
     <?php $layout->sidebar(); ?>
-
-    <div class="flex-fill main-content">
-        <?php $layout->topbar($pageTitle ?? ''); ?>
+    <div class="main-wrapper">
+        <?php $layout->topbar($pageTitle ?? 'Staff Command Center'); ?>
+        <main class="main-content">
 
     <div class="hp-hero">
         <div class="row align-items-center">
@@ -1036,8 +1035,6 @@ $pageTitle = "People & Access";
     </div>
 </div>
 
-        </div><!-- End container-fluid -->
-    </div><!-- End main-content -->
-</div><!-- End d-flex -->
-
-<?php $layout->footer(); ?>
+        </main>
+        <?php $layout->footer(); ?>
+    </div>

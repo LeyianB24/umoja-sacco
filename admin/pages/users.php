@@ -21,7 +21,13 @@ require_permission();
 $layout = LayoutManager::create('admin');
 require_superadmin();
 ?>
-</style>
+<?php flash_render(); ?>
+    <style>
+        /* Page-specific overrides */
+        .avatar-box { width: 45px; height: 45px; border-radius: 14px; background: rgba(15, 46, 37, 0.05); color: var(--forest); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.2rem; }
+        .role-badge { background: rgba(208, 243, 93, 0.15); color: var(--forest-mid); font-weight: 700; padding: 6px 12px; border-radius: 10px; font-size: 0.75rem; }
+        .iq-card { background: white; border-radius: 20px; border: 1px solid var(--border-color); overflow: hidden; }
+    </style>
 <?php
 // 1. Handle POST Actions
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
@@ -98,11 +104,10 @@ $pageTitle = "Staff Management";
 <?php $layout->header($pageTitle); ?>
 <body>
 
-<div class="d-flex">
     <?php $layout->sidebar(); ?>
-
-    <div class="flex-fill main-content">
-        <?php $layout->topbar($pageTitle ?? ''); ?>
+    <div class="main-wrapper">
+        <?php $layout->topbar($pageTitle ?? 'Staff Management'); ?>
+        <main class="main-content">
         
         <div class="container-fluid p-0">
             <div class="d-flex justify-content-between align-items-center mb-4">
@@ -173,11 +178,9 @@ $pageTitle = "Staff Management";
                         </tbody>
                     </table>
                 </div>
-                <?php $layout->footer(); ?>
-            </div>
-        </div>
+        </main>
+        <?php $layout->footer(); ?>
     </div>
-</div>
 
 <!-- Add User Modal -->
 <div class="modal fade" id="addUserModal" tabindex="-1">

@@ -25,6 +25,17 @@ $admin_id   = $_SESSION['admin_id'];
 $admin_name = $_SESSION['full_name'] ?? 'IT Admin';
 $db         = $conn;
 
+?>
+<?php $layout->header($pageTitle ?? 'Database Backups'); ?>
+    <style>
+        /* Page-specific overrides */
+        .glass-table-card { 
+            background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); 
+            border-radius: 24px; border: 1px solid rgba(255,255,255,0.4); 
+            overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.03);
+        }
+    </style>
+<?php
 /* ======================================================
    1. GENERATE SQL BACKUP LOGIC
    ====================================================== */
@@ -244,7 +255,9 @@ function getInitials($n) { return strtoupper(substr($n ?? 'U', 0, 2)); }
     </div><!-- End main-content -->
 </div><!-- End d-flex -->
 
-<?php $layout->footer(); ?>
+        </main>
+        <?php $layout->footer(); ?>
+    </div>
 
 
 

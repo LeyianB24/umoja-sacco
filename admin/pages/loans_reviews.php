@@ -245,24 +245,11 @@ $stats = $db->query("SELECT
 
 function ksh($v, $d = 2) { return number_format((float)($v ?? 0), $d); }
 ?>
-<!DOCTYPE html>
-<html lang="en" data-bs-theme="light">
-<head>
-    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
-    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
-    <meta charset="UTF-8">
-    <title>Loan Management - Manager</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-    
+<?php $layout->header($pageTitle ?? 'Loan Management'); ?>
     <style>
+        /* Page-specific overrides */
         body { font-family: 'Inter', sans-serif; }
         
-        .main-content-wrapper { margin-left: 260px; min-height: 100vh; padding: 20px; transition: margin-left 0.3s; }
-        @media (max-width: 991.98px) { .main-content-wrapper { margin-left: 0; } }
         
         /* Glass Components */
         .glass-card {
@@ -526,12 +513,10 @@ if($loans->num_rows > 0):
         </div>
     </div>
 </div>
-
 <?php endwhile; endif; ?>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+        </main>
+        <?php $layout->footer(); ?>
+    </div>
 
 
 

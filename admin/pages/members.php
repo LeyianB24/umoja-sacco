@@ -14,10 +14,7 @@ require_permission();
 ?>
 <?php $layout->header($pageTitle); ?>
     <style>
-        .main-content { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; }
-        @media (max-width: 991px) { .main-content { margin-left: 0; padding: 1.5rem; } }
-        
-        /* Member Card Styles */
+        /* Page-specific overrides if any */
         .member-row { transition: 0.2s; }
         .member-row:hover { background: rgba(208, 243, 93, 0.05); }
         .glass-stat-icon { width: 50px; height: 50px; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; margin-bottom: 1rem; }
@@ -26,10 +23,10 @@ require_permission();
         .bg-forest-soft { background: rgba(15, 46, 37, 0.05); color: var(--forest); }
     </style>
 
-<div class="d-flex">
     <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content">
+    <div class="main-wrapper">
         <?php $layout->topbar($pageTitle ?? 'Member Directory'); ?>
+        <main class="main-content">
         
         <!-- Header -->
         <div class="hp-hero fade-in">
@@ -213,25 +210,6 @@ require_permission();
                 </div>
             </div>
             
-            <?php $layout->footer(); ?>
-        </div>
+        </main>
+        <?php $layout->footer(); ?>
     </div>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="<?= BASE_URL ?>/public/assets/js/main.js?v=<?= time() ?>"></script>
-<script>
-    // Real-time Ledger Search
-    const searchInput = document.querySelector('input[name="q"]');
-    if (searchInput) {
-        searchInput.addEventListener('input', function() {
-            const query = this.value.toLowerCase();
-            document.querySelectorAll('.member-row').forEach(row => {
-                const text = row.innerText.toLowerCase();
-                row.style.display = text.includes(query) ? '' : 'none';
-            });
-        });
-    }
-</script>
-</body>
-</html>

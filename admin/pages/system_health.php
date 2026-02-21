@@ -32,12 +32,11 @@ $recent_logs = $recent_logs_q->fetch_all(MYSQLI_ASSOC);
 $pageTitle = "System Health & Integrity";
 ?>
 <?php $layout->header($pageTitle); ?>
-<body>
 
-<?php $layout->sidebar(); ?>
-
-<div class="main-content">
-    <?php $layout->topbar($pageTitle); ?>
+    <?php $layout->sidebar(); ?>
+    <div class="main-wrapper">
+        <?php $layout->topbar($pageTitle); ?>
+        <main class="main-content">
 
     <div class="container-fluid">
         <!-- Hero Section -->
@@ -154,7 +153,6 @@ $pageTitle = "System Health & Integrity";
             </div>
         </div>
 
-            <?php $layout->footer(); ?>
-        </div>
+        </main>
+        <?php $layout->footer(); ?>
     </div>
-</div>

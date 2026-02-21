@@ -8,16 +8,11 @@ require_once __DIR__ . '/../../inc/Auth.php';
 require_once __DIR__ . '/../../inc/LayoutManager.php';
 require_once __DIR__ . '/../../inc/functions.php';
 
-$layout = LayoutManager::create('admin');
-// usms/admin/pages/investments.php
-require_permission();
+$pageTitle = "Investment Management";
 ?>
 <?php $layout->header($pageTitle); ?>
     <style>
-        .main-content { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; }
-        @media (max-width: 991px) { .main-content { margin-left: 0; padding: 1.5rem; } }
-        
-        /* Asset Card Refinements */
+        /* Page-specific overrides */
         .asset-card { 
             background: white; border-radius: 24px; padding: 1.5rem; 
             border: 1px solid var(--glass-border); transition: 0.3s;
@@ -316,11 +311,10 @@ $global = $conn->query("SELECT
     FROM investments")->fetch_assoc();
 ?>
 
-<div class="d-flex">
     <?php $layout->sidebar(); ?>
-
-    <div class="flex-fill main-content">
-        <?php $layout->topbar($pageTitle ?? ''); ?>
+    <div class="main-wrapper">
+        <?php $layout->topbar($pageTitle ?? 'Investment Assets'); ?>
+        <main class="main-content">
         
         <!-- Header -->
         <div class="hp-hero">
@@ -784,7 +778,6 @@ $global = $conn->query("SELECT
         </div>
     </div>
 </div>
-    </div><!-- End main-content -->
-</div><!-- End d-flex -->
-
-<?php $layout->footer(); ?>
+        </main>
+        <?php $layout->footer(); ?>
+    </div>
