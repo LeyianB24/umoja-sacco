@@ -174,44 +174,45 @@ $pageTitle = "Ticket View";
 ?>
 <?php $layout->header($pageTitle); ?>
 
-<style>
-    .main-content { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; }
-    @media (max-width: 991px) { .main-content { margin-left: 0; padding: 1.5rem; } }
-    
-    .chat-area { 
-        border-radius: 24px; padding: 30px; max-height: 600px; 
-        overflow-y: auto; background: rgba(15, 46, 37, 0.02); 
-        border: 1px solid rgba(0,0,0,0.05);
-        scrollbar-width: thin;
-        scrollbar-color: var(--forest-light) transparent;
-    }
-    .msg-bubble { max-width: 85%; padding: 18px 24px; border-radius: 28px; margin-bottom: 20px; font-size: 0.95rem; line-height: 1.6; position: relative; }
-    .msg-member { background: white; border: 1px solid var(--glass-border); border-bottom-left-radius: 4px; color: var(--text-primary); box-shadow: 0 4px 15px rgba(0,0,0,0.02); }
-    .msg-admin { background: var(--forest); color: white; border-bottom-right-radius: 4px; box-shadow: 0 12px 24px rgba(15, 46, 37, 0.15); }
-    
-    .chat-avatar { 
-        width: 44px; height: 44px; border-radius: 14px; 
-        display: flex; align-items: center; justify-content: center; 
-        font-weight: 800; font-size: 0.9rem; flex-shrink: 0;
-    }
-    .reply-area {
-        background: white; border-radius: 28px; padding: 25px;
-        border: 1px solid var(--glass-border);
-        box-shadow: 0 15px 35px rgba(0,0,0,0.05);
-    }
-    
-    /* Animation for chat bubbles */
-    .chat-bubble-anim { animation: fadeInUp 0.4s ease-out forwards; opacity: 0; }
-    @keyframes fadeInUp {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-</style>
+    <style>
+        .main-content-wrapper { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; }
+        @media (max-width: 991px) { .main-content-wrapper { margin-left: 0; padding: 1.5rem; } }
+        
+        .chat-area { 
+            border-radius: 24px; padding: 30px; max-height: 600px; 
+            overflow-y: auto; background: rgba(15, 46, 37, 0.02); 
+            border: 1px solid rgba(0,0,0,0.05);
+            scrollbar-width: thin;
+            scrollbar-color: var(--forest-light) transparent;
+        }
+        .msg-bubble { max-width: 85%; padding: 18px 24px; border-radius: 28px; margin-bottom: 20px; font-size: 0.95rem; line-height: 1.6; position: relative; }
+        .msg-member { background: white; border: 1px solid var(--glass-border); border-bottom-left-radius: 4px; color: var(--text-primary); box-shadow: 0 4px 15px rgba(0,0,0,0.02); }
+        .msg-admin { background: var(--forest); color: white; border-bottom-right-radius: 4px; box-shadow: 0 12px 24px rgba(15, 46, 37, 0.15); }
+        
+        .chat-avatar { 
+            width: 44px; height: 44px; border-radius: 14px; 
+            display: flex; align-items: center; justify-content: center; 
+            font-weight: 800; font-size: 0.9rem; flex-shrink: 0;
+        }
+        .reply-area {
+            background: white; border-radius: 28px; padding: 25px;
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.05);
+        }
+        
+        /* Animation for chat bubbles */
+        .chat-bubble-anim { animation: fadeInUp 0.4s ease-out forwards; opacity: 0; }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
 
 <div class="d-flex">
     <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content">
+    <div class="flex-fill main-content-wrapper p-0">
         <?php $layout->topbar($pageTitle ?? 'Support Ticket'); ?>
+        <div class="container-fluid">
         
         <div class="hp-hero mb-4">
             <div class="row align-items-center">
@@ -331,20 +332,7 @@ $pageTitle = "Ticket View";
                     </div>
                 </div>
             </div>
-            <?php $layout->footer(); ?>
         </div>
+        <?php $layout->footer(); ?>
     </div>
 </div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const chatBox = document.getElementById('chatBox');
-        if(chatBox) {
-            chatBox.scrollTop = chatBox.scrollHeight;
-            // Add a slight delay to trigger animations sequentially if needed
-        }
-    });
-</script>
-</body>
-</html>

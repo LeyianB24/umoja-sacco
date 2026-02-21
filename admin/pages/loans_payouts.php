@@ -192,180 +192,196 @@ if (isset($_GET['export']) && in_array($_GET['export'], ['pdf', 'excel'])) {
 
 $pageTitle = "Loan Management";
 ?>
+<?php $layout->header($pageTitle ?? 'Disbursement Console'); ?>
     <style>
-        /* Page-specific overrides if any */
+        .main-content-wrapper { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; }
+        @media (max-width: 991px) { .main-content-wrapper { margin-left: 0; padding: 1.5rem; } }
+
         .glass-stat-icon { width: 50px; height: 50px; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; margin-bottom: 1rem; }
         .bg-warning-soft { background: rgba(217, 119, 6, 0.1); color: #d97706; }
         .bg-primary-soft { background: rgba(15, 46, 37, 0.05); color: var(--forest); }
         .bg-success-soft { background: rgba(208, 243, 93, 0.1); color: var(--forest-mid); }
+        
+        .hp-hero {
+            position: relative; overflow: hidden;
+            border-radius: 2rem; padding: 3rem; margin-bottom: 2.5rem;
+            background: linear-gradient(135deg, var(--forest) 0%, var(--forest-mid) 100%);
+            color: white;
+        }
     </style>
 
+<div class="d-flex">
     <?php $layout->sidebar(); ?>
-    <div class="main-wrapper">
-        <?php $layout->topbar($pageTitle ?? 'Disbursement Console'); ?>
-        <main class="main-content">
+    <div class="flex-fill main-content-wrapper p-0">
+        <?php $layout->topbar($pageTitle ?? 'Loan Disbursements'); ?>
         
-        <!-- Header -->
-        <div class="hp-hero fade-in">
-            <div class="hp-hero-content">
-                <span class="badge bg-white bg-opacity-10 text-white rounded-pill px-3 py-2 mb-3 small letter-spacing-1">OPERATIONS ENGINE</span>
-                <h1 class="display-5 fw-800 mb-2">Loan Disbursement Center</h1>
-                <p class="opacity-75 fs-5 mb-0">Processing approved credit lines into active liquidity.</p>
-            </div>
-            <div class="hp-hero-action">
-                <div class="dropdown">
-                    <button class="btn btn-lime shadow-lg px-4 dropdown-toggle fw-bold" data-bs-toggle="dropdown">
-                        <i class="bi bi-cloud-download me-2"></i>Export Logs
-                    </button>
-                    <ul class="dropdown-menu shadow-lg border-0 mt-2">
-                        <li><a class="dropdown-item py-2" href="?export=pdf"><i class="bi bi-file-pdf text-danger me-2"></i>Disbursement PDF</a></li>
-                        <li><a class="dropdown-item py-2" href="?export=excel"><i class="bi bi-file-excel text-success me-2"></i>Excel Sheet</a></li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-
-        <div class="container-fluid px-4" style="margin-top: -40px;">
-            <?php flash_render(); ?>
-
-            <!-- Vital KPIs -->
-            <div class="row g-4 mb-5">
-                <div class="col-md-4">
-                    <div class="glass-stat slide-up">
-                        <div class="glass-stat-icon bg-warning-soft text-warning">
-                            <i class="bi bi-hourglass-split"></i>
-                        </div>
-                        <div class="glass-stat-label">Pending Review</div>
-                        <div class="glass-stat-value"><?= number_format((int)$stats['pending_count']) ?></div>
-                        <div class="glass-stat-trend">KES <?= number_format((float)$stats['pending_val']) ?> Value</div>
+        <div class="container-fluid">
+            <!-- Header -->
+            <div class="hp-hero fade-in shadow-lg">
+                <div class="row align-items-center">
+                    <div class="col-lg-8">
+                        <span class="badge bg-white bg-opacity-10 text-white rounded-pill px-3 py-2 mb-3 small letter-spacing-1">OPERATIONS ENGINE</span>
+                        <h1 class="display-5 fw-800 mb-2">Loan Disbursement Center</h1>
+                        <p class="opacity-75 fs-5 mb-0">Processing approved credit lines into active liquidity.</p>
                     </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="glass-stat slide-up" style="animation-delay: 0.1s">
-                        <div class="glass-stat-icon bg-primary-soft text-primary">
-                            <i class="bi bi-wallet2"></i>
+                    <div class="col-lg-4 text-end">
+                        <div class="dropdown">
+                            <button class="btn btn-lime shadow-lg px-4 dropdown-toggle fw-bold text-dark" data-bs-toggle="dropdown">
+                                <i class="bi bi-cloud-download me-2"></i>Export Logs
+                            </button>
+                            <ul class="dropdown-menu shadow-lg border-0 mt-2">
+                                <li><a class="dropdown-item py-2" href="?export=pdf"><i class="bi bi-file-pdf text-danger me-2"></i>Disbursement PDF</a></li>
+                                <li><a class="dropdown-item py-2" href="?export=excel"><i class="bi bi-file-excel text-success me-2"></i>Excel Sheet</a></li>
+                            </ul>
                         </div>
-                        <div class="glass-stat-label">Awaiting Payout</div>
-                        <div class="glass-stat-value"><?= number_format((int)$stats['approved_count']) ?></div>
-                        <div class="glass-stat-trend text-primary">KES <?= number_format((float)$stats['approved_val']) ?> Required</div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="glass-stat slide-up" style="animation-delay: 0.2s">
-                        <div class="glass-stat-icon bg-success-soft text-success">
-                            <i class="bi bi-graph-up-arrow"></i>
-                        </div>
-                        <div class="glass-stat-label">Active Portfolio</div>
-                        <div class="glass-stat-value"><?= number_format((int)$stats['active_count']) ?></div>
-                        <div class="glass-stat-trend text-success">KES <?= number_format((float)$stats['active_portfolio']) ?> Out</div>
                     </div>
                 </div>
             </div>
 
-            <div class="glass-card slide-up" style="animation-delay: 0.3s">
-                <div class="p-4 d-flex flex-wrap justify-content-between align-items-center gap-3 border-bottom border-white border-opacity-10">
-                    <h5 class="fw-bold mb-0">Payment Queue</h5>
-                    <div class="d-flex gap-2">
-                        <form class="d-flex gap-2" method="GET">
-                            <div class="position-relative">
-                                <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted small"></i>
-                                <input type="text" name="search" class="form-control ps-5 rounded-pill border-0 bg-white bg-opacity-5 text-white" placeholder="Search queue..." value="<?= htmlspecialchars($_GET['search'] ?? '') ?>">
+            <div class="px-2" style="margin-top: -40px;">
+                <?php flash_render(); ?>
+
+                <!-- Vital KPIs -->
+                <div class="row g-4 mb-5">
+                    <div class="col-md-4">
+                        <div class="glass-stat slide-up">
+                            <div class="glass-stat-icon bg-warning-soft text-warning">
+                                <i class="bi bi-hourglass-split"></i>
                             </div>
-                            <select name="status" class="form-select border-0 bg-white bg-opacity-5 rounded-pill px-3 text-white" onchange="this.form.submit()" style="backdrop-filter: blur(5px);">
-                                <option value="" class="text-dark">All Queues</option>
-                                <option value="pending" class="text-dark" <?= ($_GET['status'] ?? '') === 'pending' ? 'selected' : '' ?>>Queue: Review</option>
-                                <option value="approved" class="text-dark" <?= ($_GET['status'] ?? '') === 'approved' ? 'selected' : '' ?>>Queue: Payout</option>
-                                <option value="disbursed" class="text-dark" <?= ($_GET['status'] ?? '') === 'disbursed' ? 'selected' : '' ?>>Queue: Disbursed</option>
-                            </select>
-                        </form>
+                            <div class="glass-stat-label">Pending Review</div>
+                            <div class="glass-stat-value"><?= number_format((int)$stats['pending_count']) ?></div>
+                            <div class="glass-stat-trend">KES <?= number_format((float)$stats['pending_val']) ?> Value</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="glass-stat slide-up" style="animation-delay: 0.1s">
+                            <div class="glass-stat-icon bg-primary-soft text-primary">
+                                <i class="bi bi-wallet2"></i>
+                            </div>
+                            <div class="glass-stat-label">Awaiting Payout</div>
+                            <div class="glass-stat-value"><?= number_format((int)$stats['approved_count']) ?></div>
+                            <div class="glass-stat-trend text-primary">KES <?= number_format((float)$stats['approved_val']) ?> Required</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="glass-stat slide-up" style="animation-delay: 0.2s">
+                            <div class="glass-stat-icon bg-success-soft text-success">
+                                <i class="bi bi-graph-up-arrow"></i>
+                            </div>
+                            <div class="glass-stat-label">Active Portfolio</div>
+                            <div class="glass-stat-value"><?= number_format((int)$stats['active_count']) ?></div>
+                            <div class="glass-stat-trend text-success">KES <?= number_format((float)$stats['active_portfolio']) ?> Out</div>
+                        </div>
                     </div>
                 </div>
-                
-                <div class="table-responsive">
-                    <table class="table table-custom align-middle mb-0">
-                        <thead>
-                            <tr>
-                                <th class="ps-4">Beneficiary Identity</th>
-                                <th>Product Specs</th>
-                                <th>Payout Value</th>
-                                <th>Collateral</th>
-                                <th>Flow Status</th>
-                                <th class="pe-4 text-end">Pipeline Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php 
-                            $loans->data_seek(0);
-                            if ($loans->num_rows > 0): ?>
-                                <?php while ($row = $loans->fetch_assoc()): ?>
-                                <tr onclick="openLoanDrawer(<?= htmlspecialchars(json_encode($row)) ?>)" style="cursor: pointer;">
-                                    <td class="ps-4">
-                                        <div class="d-flex align-items-center gap-3">
-                                            <div class="rounded-3 bg-forest text-lime d-flex align-items-center justify-content-center fw-800 shadow-sm" style="width: 40px; height: 40px;">
-                                                <?= strtoupper(substr($row['full_name'], 0, 1)) ?>
-                                            </div>
-                                            <div>
-                                                <div class="fw-bold "><?= htmlspecialchars($row['full_name']) ?></div>
-                                                <div class="text-muted small font-monospace">ID: <?= htmlspecialchars($row['national_id']) ?></div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div class="fw-bold text-uppercase small letter-spacing-1"><?= ucfirst($row['loan_type']) ?></div>
-                                        <div class="text-muted small"><?= $row['duration_months'] ?> Mo @ <?= $row['interest_rate'] ?>%</div>
-                                    </td>
-                                    <td>
-                                        <div class="fw-800 text-forest">KES <?= number_format((float)$row['amount'], 2) ?></div>
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-white bg-opacity-10 text-white rounded-pill px-3 py-2 small fw-bold">
-                                            <i class="bi bi-people-fill me-1"></i> <?= $row['guarantor_count'] ?> / 2
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <?php 
-                                            $stClass = match($row['status']) {
-                                                'pending' => 'bg-warning bg-opacity-10 text-warning',
-                                                'approved' => 'bg-info bg-opacity-10 text-info',
-                                                'disbursed' => 'bg-success bg-opacity-10 text-success',
-                                                'rejected' => 'bg-danger bg-opacity-10 text-danger',
-                                                default => 'bg-light text-dark'
-                                            };
-                                        ?>
-                                        <span class="badge <?= $stClass ?> rounded-pill px-3 py-2 fw-bold" style="font-size: 0.65rem;">
-                                            <?= strtoupper($row['status']) ?>
-                                        </span>
-                                    </td>
-                                    <td class="pe-4 text-end" onclick="event.stopPropagation()">
-                                        <div class="d-flex justify-content-end gap-2">
-                                            <?php if ($row['status'] === 'pending' && $can_approve): ?>
-                                                <button onclick="confirmAction('approve', <?= $row['loan_id'] ?>)" class="btn btn-sm btn-outline-lime rounded-pill px-3 fw-bold">Review</button>
-                                                <button onclick="openRejectModal(<?= $row['loan_id'] ?>)" class="btn btn-sm btn-link text-danger text-decoration-none fw-bold">Reject</button>
-                                            <?php elseif ($row['status'] === 'approved' && $can_disburse): ?>
-                                                <button onclick="openDisburseModal(<?= $row['loan_id'] ?>, <?= $row['amount'] ?>)" class="btn btn-lime btn-sm px-4 rounded-pill fw-bold shadow-sm">
-                                                    Process Payout <i class="bi bi-send-fill ms-1"></i>
-                                                </button>
-                                            <?php else: ?>
-                                                <button class="btn btn-light rounded-pill btn-sm px-3 border-0 fw-bold text-muted small" disabled>Finalized</button>
-                                            <?php endif; ?>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <?php endwhile; ?>
-                            <?php else: ?>
+
+                <div class="glass-card slide-up" style="animation-delay: 0.3s">
+                    <div class="p-4 d-flex flex-wrap justify-content-between align-items-center gap-3 border-bottom border-white border-opacity-10">
+                        <h5 class="fw-bold mb-0">Payment Queue</h5>
+                        <div class="d-flex gap-2">
+                            <form class="d-flex gap-2" method="GET">
+                                <div class="position-relative">
+                                    <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted small"></i>
+                                    <input type="text" name="search" class="form-control ps-5 rounded-pill border-0 bg-white bg-opacity-5 text-dark" placeholder="Search queue..." value="<?= htmlspecialchars($_GET['search'] ?? '') ?>">
+                                </div>
+                                <select name="status" class="form-select border-0 bg-white bg-opacity-5 rounded-pill px-3 text-dark" onchange="this.form.submit()" style="backdrop-filter: blur(5px);">
+                                    <option value="">All Queues</option>
+                                    <option value="pending" <?= ($_GET['status'] ?? '') === 'pending' ? 'selected' : '' ?>>Queue: Review</option>
+                                    <option value="approved" <?= ($_GET['status'] ?? '') === 'approved' ? 'selected' : '' ?>>Queue: Payout</option>
+                                    <option value="disbursed" <?= ($_GET['status'] ?? '') === 'disbursed' ? 'selected' : '' ?>>Queue: Disbursed</option>
+                                </select>
+                            </form>
+                        </div>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-custom align-middle mb-0">
+                            <thead>
                                 <tr>
-                                    <td colspan="6" class="text-center py-5">
-                                        <div class="opacity-25 mb-4"><i class="bi bi-inbox display-2"></i></div>
-                                        <h5 class="text-muted fw-bold">Pipeline Empty</h5>
-                                        <p class="text-muted small">No loan records match the current queue.</p>
-                                    </td>
+                                    <th class="ps-4">Beneficiary Identity</th>
+                                    <th>Product Specs</th>
+                                    <th>Payout Value</th>
+                                    <th>Collateral</th>
+                                    <th>Flow Status</th>
+                                    <th class="pe-4 text-end">Pipeline Action</th>
                                 </tr>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                <?php 
+                                $loans->data_seek(0);
+                                if ($loans->num_rows > 0): ?>
+                                    <?php while ($row = $loans->fetch_assoc()): ?>
+                                    <tr onclick="openLoanDrawer(<?= htmlspecialchars(json_encode($row)) ?>)" style="cursor: pointer;">
+                                        <td class="ps-4">
+                                            <div class="d-flex align-items-center gap-3">
+                                                <div class="rounded-3 bg-forest text-lime d-flex align-items-center justify-content-center fw-800 shadow-sm" style="width: 40px; height: 40px;">
+                                                    <?= strtoupper(substr($row['full_name'], 0, 1)) ?>
+                                                </div>
+                                                <div>
+                                                    <div class="fw-bold "><?= htmlspecialchars($row['full_name']) ?></div>
+                                                    <div class="text-muted small font-monospace">ID: <?= htmlspecialchars($row['national_id']) ?></div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="fw-bold text-uppercase small letter-spacing-1"><?= ucfirst($row['loan_type']) ?></div>
+                                            <div class="text-muted small"><?= $row['duration_months'] ?> Mo @ <?= $row['interest_rate'] ?>%</div>
+                                        </td>
+                                        <td>
+                                            <div class="fw-800 text-forest">KES <?= number_format((float)$row['amount'], 2) ?></div>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-white bg-opacity-10 text-dark border rounded-pill px-3 py-2 small fw-bold">
+                                                <i class="bi bi-people-fill me-1"></i> <?= $row['guarantor_count'] ?> / 2
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <?php 
+                                                $stClass = match($row['status']) {
+                                                    'pending' => 'bg-warning bg-opacity-10 text-warning',
+                                                    'approved' => 'bg-info bg-opacity-10 text-info',
+                                                    'disbursed' => 'bg-success bg-opacity-10 text-success',
+                                                    'rejected' => 'bg-danger bg-opacity-10 text-danger',
+                                                    default => 'bg-light text-dark'
+                                                };
+                                            ?>
+                                            <span class="badge <?= $stClass ?> rounded-pill px-3 py-2 fw-bold" style="font-size: 0.65rem;">
+                                                <?= strtoupper($row['status']) ?>
+                                            </span>
+                                        </td>
+                                        <td class="pe-4 text-end" onclick="event.stopPropagation()">
+                                            <div class="d-flex justify-content-end gap-2">
+                                                <?php if ($row['status'] === 'pending' && $can_approve): ?>
+                                                    <button onclick="confirmAction('approve', <?= $row['loan_id'] ?>)" class="btn btn-sm btn-outline-lime rounded-pill px-3 fw-bold">Review</button>
+                                                    <button onclick="openRejectModal(<?= $row['loan_id'] ?>)" class="btn btn-sm btn-link text-danger text-decoration-none fw-bold">Reject</button>
+                                                <?php elseif ($row['status'] === 'approved' && $can_disburse): ?>
+                                                    <button onclick="openDisburseModal(<?= $row['loan_id'] ?>, <?= $row['amount'] ?>)" class="btn btn-lime btn-sm px-4 rounded-pill fw-bold shadow-sm text-dark">
+                                                        Process Payout <i class="bi bi-send-fill ms-1"></i>
+                                                    </button>
+                                                <?php else: ?>
+                                                    <button class="btn btn-light rounded-pill btn-sm px-3 border-0 fw-bold text-muted small" disabled>Finalized</button>
+                                                <?php endif; ?>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <?php endwhile; ?>
+                                <?php else: ?>
+                                    <tr>
+                                        <td colspan="6" class="text-center py-5">
+                                            <div class="opacity-25 mb-4"><i class="bi bi-inbox display-2"></i></div>
+                                            <h5 class="text-muted fw-bold">Pipeline Empty</h5>
+                                            <p class="text-muted small">No loan records match the current queue.</p>
+                                        </td>
+                                    </tr>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
-        <?php $layout->footer(); ?>
+
+            <?php $layout->footer(); ?>
+        </div>
     </div>
 </div>
 
@@ -402,8 +418,6 @@ $pageTitle = "Loan Management";
         <button class="btn btn-outline-dark w-100 rounded-pill fw-bold py-3 mt-3 shadow-sm" data-bs-dismiss="offcanvas">Close Analytics</button>
     </div>
 </div>
-
-<!-- Modal refinement skipped for brevity in this tool call but follows standard glass-card/modal pattern -->
 
 <div class="modal fade" id="rejectModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
@@ -460,7 +474,7 @@ $pageTitle = "Loan Management";
                 </div>
                 <div class="modal-footer border-0 p-4 pt-0 bg-white">
                     <button type="button" class="btn btn-light rounded-pill px-4 fw-bold" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-lime rounded-pill px-5 fw-bold shadow-sm flex-fill">Process Payout <i class="bi bi-check-circle-fill ms-2"></i></button>
+                    <button type="submit" class="btn btn-lime rounded-pill px-5 fw-bold shadow-sm flex-fill text-dark">Process Payout <i class="bi bi-check-circle-fill ms-2"></i></button>
                 </div>
             </form>
         </div>
@@ -506,6 +520,5 @@ $pageTitle = "Loan Management";
         new bootstrap.Offcanvas(document.getElementById('loanDrawer')).show();
     }
 </script>
-<?php $layout->footer(); ?>
 </body>
 </html>

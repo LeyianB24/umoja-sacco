@@ -155,9 +155,8 @@ $pageTitle = "Audit Logs";
 
 <div class="d-flex">
     <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper">
+    <div class="flex-fill main-content-wrapper p-0">
         <?php $layout->topbar($pageTitle ?? 'System Audit Trails'); ?>
-        
         <div class="container-fluid">
             <div class="row align-items-end mb-5">
                 <div class="col-md-7">
@@ -279,11 +278,7 @@ $pageTitle = "Audit Logs";
                     <small class="text-muted fw-bold">Showing latest 200 entries</small>
                 </div>
             </div>
-            <?php $layout->footer(); ?>
         </div>
+        <?php $layout->footer(); ?>
     </div>
 </div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>

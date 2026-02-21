@@ -209,8 +209,8 @@ $pageTitle = $member['full_name'] . " - Member Profile";
 ?>
 <?php $layout->header($pageTitle); ?>
     <style>
-        .main-content { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; }
-        @media (max-width: 991px) { .main-content { margin-left: 0; padding: 1.5rem; } }
+        .main-content-wrapper { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; }
+        @media (max-width: 991px) { .main-content-wrapper { margin-left: 0; padding: 1.5rem; } }
         
         .profile-hero {
             background: linear-gradient(135deg, var(--forest) 0%, var(--forest-mid) 100%);
@@ -247,8 +247,9 @@ $pageTitle = $member['full_name'] . " - Member Profile";
 
 <div class="d-flex">
     <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content">
-        <?php $layout->topbar($pageTitle ?? ''); ?>
+    <div class="flex-fill main-content-wrapper p-0">
+        <?php $layout->topbar($pageTitle ?? 'Member Profile'); ?>
+        <div class="container-fluid">
 
     <!-- Breadcrumb -->
     <nav aria-label="breadcrumb" class="mb-4">
@@ -580,7 +581,9 @@ $pageTitle = $member['full_name'] . " - Member Profile";
                 <?php endif; ?>
             </div>
         </div>
-    <?php $layout->footer(); ?>
+        </div>
+        <?php $layout->footer(); ?>
+    </div>
 </div>
 
 

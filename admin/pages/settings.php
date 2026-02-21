@@ -127,6 +127,9 @@ $php_v     = phpversion();
 <?php $layout->header($pageTitle); ?>
 
     <style>
+        .main-content-wrapper { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; }
+        @media (max-width: 991px) { .main-content-wrapper { margin-left: 0; padding: 1.5rem; } }
+
         /* Page-specific overrides */
         
         /* Navigation Pills */
@@ -152,12 +155,11 @@ $php_v     = phpversion();
     </style>
 
 
+<div class="d-flex">
     <?php $layout->sidebar(); ?>
-    <div class="main-wrapper">
-        <?php $layout->topbar($me['full_name']); ?>
-        <main class="main-content">
-            
-            <div class="container-fluid">
+    <div class="flex-fill main-content-wrapper p-0">
+        <?php $layout->topbar($pageTitle ?? 'System Settings'); ?>
+        <div class="container-fluid">
         
             
         <div class="hp-hero">
@@ -362,10 +364,10 @@ $php_v     = phpversion();
 
                     </div>
                 </div>
-            </div><!-- End container-fluid -->
-        </main>
+        </div>
         <?php $layout->footer(); ?>
     </div>
+</div>
 
 
 
