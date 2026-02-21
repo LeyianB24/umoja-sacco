@@ -73,9 +73,9 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
             'Time' => date("d-M-Y H:i", strtotime($row['created_at'])),
             'Actor' => $name,
             'Role' => ucfirst($row['role'] ?? 'System'),
-            'Action' => ucwords(str_replace('_', ' ', $row['action'])),
-            'Details' => $row['details'],
-            'IP' => $row['ip_address']
+            'Action' => ucwords(str_replace('_', ' ', (string)($row['action'] ?? 'Unknown'))),
+            'Details' => (string)($row['details'] ?? ''),
+            'IP' => (string)($row['ip_address'] ?? '0.0.0.0')
         ];
     }
 

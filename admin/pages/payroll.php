@@ -16,7 +16,7 @@ require_once __DIR__ . '/../../core/exports/UniversalExportEngine.php';
 // Permissions
 require_permission('payroll.php'); 
 $layout = LayoutManager::create('admin');
-$engine = new PayrollEngine($db);
+$engine = new PayrollEngine($conn);
 
 $pageTitle = "Payroll Management";
 

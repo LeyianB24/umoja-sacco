@@ -403,7 +403,7 @@ $pageTitle = "Revenue Portal";
                                         </td>
                                         <td>
                                             <span class="badge bg-transparent border px-3 py-2 rounded-pill small fw-bold">
-                                                <?= strtoupper($row['payment_method']) ?>
+                                                <?= strtoupper((string)($row['payment_method'] ?? 'N/A')) ?>
                                             </span>
                                         </td>
                                         <td class="text-end">
