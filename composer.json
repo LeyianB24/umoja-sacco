@@ -9,6 +9,9 @@
         "phpoffice/phpspreadsheet": "^1.29",
         "dompdf/dompdf": "^2.0"
     },
+    "require-dev": {
+        "phpunit/phpunit": "^9.6"
+    },
     "autoload": {
         "psr-4": {
             "USMS\\": "core/"
@@ -20,6 +23,11 @@
             "config/app_config.php",
             "inc/functions.php"
         ]
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "USMS\\Tests\\": "tests/"
+        }
     },
     "config": {
         "optimize-autoloader": true,
