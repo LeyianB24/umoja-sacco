@@ -7,11 +7,12 @@ require_once __DIR__ . '/../../config/db_connect.php';
 require_once __DIR__ . '/../../inc/Auth.php';
 require_once __DIR__ . '/../../inc/LayoutManager.php';
 
+use USMS\Services\UniversalExportEngine;
+
 $layout = LayoutManager::create('admin');
 // admin/revenue.php
 
 require_once __DIR__ . '/../../inc/TransactionHelper.php';
-require_once __DIR__ . '/../../inc/ExportHelper.php';
 require_once __DIR__ . '/../../inc/InvestmentViabilityEngine.php';
 Auth::requireAdmin();
 require_permission();
@@ -154,7 +155,6 @@ while ($row = $inv_data_res->fetch_assoc()) {
 
 // Handle Export
 if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_excel', 'print_report'])) {
-    use USMS\Services\UniversalExportEngine;
     $format = match($_GET['action']) { 'export_excel' => 'excel', 'print_report' => 'print', default => 'pdf' };
     $export_data = [];
     foreach ($revenue_data as $row) {

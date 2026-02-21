@@ -14,8 +14,7 @@ session_start();
 require_once __DIR__ . '/../../config/db_connect.php';
 require_once __DIR__ . '/../../config/app_config.php';
 
-use USMS\Reports\SystemPDF;
-use USMS\Services\FinancialExportEngine;
+// Classes autoloaded via Composer PSR-4 (USMS\Services, USMS\Reports)
 
 // 2. Authentication
 if (!isset($_SESSION['member_id'])) {
