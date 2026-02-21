@@ -1,0 +1,30 @@
+{
+    "name": "leyianb24/umoja-sacco",
+    "description": "Modern Sacco Management System",
+    "type": "project",
+    "license": "MIT",
+    "require": {
+        "php": ">=8.1",
+        "phpmailer/phpmailer": "^6.9",
+        "phpoffice/phpspreadsheet": "^1.29",
+        "dompdf/dompdf": "^2.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "USMS\\": "core/"
+        },
+        "classmap": [
+            "vendor/fpdf/fpdf.php"
+        ],
+        "files": [
+            "config/app_config.php",
+            "inc/functions.php"
+        ]
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "allow-plugins": {
+            "php-http/discovery": true
+        }
+    }
+}

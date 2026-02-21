@@ -154,7 +154,7 @@ while ($row = $inv_data_res->fetch_assoc()) {
 
 // Handle Export
 if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_excel', 'print_report'])) {
-    require_once __DIR__ . '/../../core/exports/UniversalExportEngine.php';
+    use USMS\Services\UniversalExportEngine;
     $format = match($_GET['action']) { 'export_excel' => 'excel', 'print_report' => 'print', default => 'pdf' };
     $export_data = [];
     foreach ($revenue_data as $row) {

@@ -5,7 +5,7 @@
  */
 // Refactored to use the new Systemwide Template
 
-require_once __DIR__ . '/SystemPDF.php';
+use USMS\Reports\SystemPDF;
 
 class SaccoPDF extends SystemPDF {
     // SaccoPDF now inherits all branded header/footer logic from SystemPDF

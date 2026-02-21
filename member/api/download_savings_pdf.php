@@ -13,7 +13,9 @@ set_time_limit(300);
 session_start();
 require_once __DIR__ . '/../../config/db_connect.php';
 require_once __DIR__ . '/../../config/app_config.php';
-require_once __DIR__ . '/../../inc/SystemPDF.php';
+
+use USMS\Reports\SystemPDF;
+use USMS\Services\FinancialExportEngine;
 
 // 2. Authentication
 if (!isset($_SESSION['member_id'])) {
@@ -72,7 +74,7 @@ foreach ($transactions as $t) {
 $net_savings_balance = $total_in - $total_out;
 
 // 6. Generate PDF with FinancialExportEngine
-require_once __DIR__ . '/../../core/finance/FinancialExportEngine.php';
+// Autoloaded via USMS\Services\FinancialExportEngine
 
 FinancialExportEngine::export('pdf', function($pdf) use ($member, $total_in, $total_loans, $total_out, $transactions) {
     // Member Info Section
