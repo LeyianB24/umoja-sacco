@@ -3,11 +3,15 @@
 /**
  * @deprecated Use FinancialExportEngine and PdfFinancialTemplate.
  */
-// Refactored to use the new Systemwide Template
+// Refactored to use the new Systemwide Template. 
+// SystemPDF is now in core/Reports/ and autoloaded via Composer.
+if (!class_exists('SystemPDF')) {
+    // Fallback: require directly if autoloader isn't available
+    $systemPdfPath = __DIR__ . '/../core/Reports/SystemPDF.php';
+    if (file_exists($systemPdfPath)) require_once $systemPdfPath;
+}
 
-use USMS\Reports\SystemPDF;
-
-class SaccoPDF extends SystemPDF {
+class SaccoPDF extends \USMS\Reports\SystemPDF {
     // SaccoPDF now inherits all branded header/footer logic from SystemPDF
     
     /**

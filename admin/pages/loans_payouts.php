@@ -17,6 +17,8 @@ require_once __DIR__ . '/../../inc/LayoutManager.php';
 require_once __DIR__ . '/../../inc/ExportHelper.php';
 require_once __DIR__ . '/../../inc/TransactionHelper.php';
 
+use USMS\Services\UniversalExportEngine;
+
 // Initialize Layout & Auth
 $layout = LayoutManager::create('admin');
 Auth::requireAdmin(); 
@@ -164,7 +166,6 @@ $stats = $stats_result ? $stats_result->fetch_assoc() : [
 
 // --- 5. Export Handler ---
 if (isset($_GET['export']) && in_array($_GET['export'], ['pdf', 'excel'])) {
-    require_once __DIR__ . '/../../core/exports/UniversalExportEngine.php';
     
     $export_data = [];
     $total_val = 0;
