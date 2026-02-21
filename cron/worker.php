@@ -1,42 +1,31 @@
 <?php
+declare(strict_types=1);
 /**
- * Cron Job: Background Worker
- * Processes email/SMS queues and runs automated health checks
+ * cron/worker.php — Background Worker (Multi-Job Pipeline)
+ *
+ * Runs all queue-draining jobs sequentially in one invocation.
+ * Strict CLI-only — will NOT run from a browser.
+ *
+ * Scheduled: every minute (or every 5 minutes in production)
+ * Usage: php cron/worker.php
  */
+if (php_sapi_name() !== 'cli') {
+    http_response_code(403);
+    header('Content-Type: text/plain');
+    echo '403 Forbidden — This script must be run from the command line.' . PHP_EOL;
+    exit(1);
+}
 
 require_once __DIR__ . '/../config/app_config.php';
 require_once __DIR__ . '/../config/db_connect.php';
-require_once __DIR__ . '/../inc/EmailQueueManager.php';
-require_once __DIR__ . '/../inc/TransactionMonitor.php';
-require_once __DIR__ . '/../inc/FinancialIntegrityChecker.php';
 
-// CLI ONLY check (optional but recommended)
-// if (php_sapi_name() !== 'cli') exit("This script must be run from the command line.");
+$runner = \USMS\Cron\JobRunner::class;
 
-echo "[" . date('Y-m-d H:i:s') . "] Starting Background Worker...\n";
+echo '[' . date('Y-m-d H:i:s') . "] === USMS Background Worker Starting ===\n";
 
-// 1. Process Email Queue
-echo "Processing Email Queue...\n";
-$emailManager = new EmailQueueManager($conn);
-$emailResults = $emailManager->processPendingEmails(20);
-echo "Emails: Sent {$emailResults['sent']}, Failed {$emailResults['failed']}\n";
+\USMS\Cron\JobRunner::runAll([
+    'process_email_queue',
+], $conn);
 
-// 2. Run Transaction Monitor Health Check
-echo "Running Transaction Health Check...\n";
-$monitor = new TransactionMonitor($conn);
-$alertsTriggered = $monitor->runHealthCheck();
-echo "Stuck Transaction Alerts: $alertsTriggered\n";
-
-// 3. Run Financial Integrity Audit (Once per hour or per run)
-echo "Running Financial Integrity Audit...\n";
-$checker = new FinancialIntegrityChecker($conn);
-$auditResults = $checker->runFullAudit();
-echo "Integrity: Sync Status '{$auditResults['sync']['status']}', Balance Status '{$auditResults['balance']['status']}'\n";
-
-// 4. (TBD) Process SMS Queue
-// echo "Processing SMS Queue...\n";
-// $smsManager = new SMSQueueManager($conn);
-// $smsResults = $smsManager->processPendingSMS(20);
-
-echo "[" . date('Y-m-d H:i:s') . "] Worker finished.\n";
-echo str_repeat("-", 40) . "\n";
+echo '[' . date('Y-m-d H:i:s') . "] === Worker finished ===\n";
+echo str_repeat('-', 50) . "\n";

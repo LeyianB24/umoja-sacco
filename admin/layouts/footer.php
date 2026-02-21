@@ -116,6 +116,11 @@ $memory_usage = round(memory_get_usage() / 1024 / 1024, 2);
         });
     </script>
 
-    <script src="<?= defined('ASSET_BASE') ? ASSET_BASE : '../public' ?>/assets/js/main.js"></script>
+    <script src="<?= ASSET_BASE ?>/assets/js/sidebar.js"></script>
+    <script src="<?= ASSET_BASE ?>/assets/js/darkmode.js"></script>
+    <script src="<?= ASSET_BASE ?>/assets/js/main.js"></script>
+    <?php if (isset($extraJs)): ?>
+    <?= $extraJs ?>
+    <?php endif; ?>
 </body>
 </html>
