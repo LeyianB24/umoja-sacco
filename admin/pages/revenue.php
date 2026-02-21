@@ -178,8 +178,28 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
 
 $pageTitle = "Revenue Portal";
 ?>
-<?php $layout->header($pageTitle); ?>
-<body>
+    <style>
+        .main-content { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; }
+        @media (max-width: 991px) { .main-content { margin-left: 0; padding: 1.5rem; } }
+        
+        .portal-header { 
+            background: linear-gradient(135deg, var(--forest) 0%, var(--forest-mid) 100%); 
+            border-radius: 30px; padding: 50px; color: white; margin-bottom: 40px;
+            box-shadow: 0 20px 40px rgba(15, 46, 37, 0.15);
+            position: relative; overflow: hidden;
+        }
+        .stat-card {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            transition: 0.3s;
+        }
+        .stat-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
+        .icon-circle { width: 50px; height: 50px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; margin-bottom: 1rem; }
+    </style>
+
 <div class="d-flex">
     <?php $layout->sidebar(); ?>
     <div class="main-content">

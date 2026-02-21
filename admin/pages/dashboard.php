@@ -51,47 +51,19 @@ $health = getSystemHealth($conn);
 
 $pageTitle = "System Dashboard";
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title><?= $pageTitle ?> | USMS</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<?php $layout->header($pageTitle); ?>
     <style>
-        :root { --forest: #0F2E25; --lime: #D0F35D; }
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f0f4f3; }
-        
         /* Layout Fixes */
         .main-content { margin-left: 280px; padding: 2.5rem; min-height: 100vh; transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
         @media (max-width: 991px) { .main-content { margin-left: 0; padding: 1.5rem; } }
 
         .hp-hero { 
-            background: linear-gradient(135deg, var(--forest) 0%, #1a4d3e 100%); 
+            background: linear-gradient(135deg, var(--forest) 0%, var(--forest-mid) 100%); 
             border-radius: 30px; padding: 50px; color: white; margin-bottom: 40px;
             box-shadow: 0 20px 40px rgba(15, 46, 37, 0.15);
             position: relative; overflow: hidden;
         }
-        .hp-hero::after {
-            content: ''; position: absolute; top: -50%; right: -10%; width: 500px; height: 500px;
-            background: radial-gradient(circle, rgba(208, 243, 93, 0.1) 0%, transparent 70%);
-            border-radius: 50%;
-        }
-        .glass-stat { 
-            background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px);
-            border-radius: 24px; padding: 30px; border: 1px solid rgba(255,255,255,0.5);
-            transition: 0.3s;
-        }
-        .glass-stat:hover { transform: translateY(-5px); box-shadow: 0 15px 35px rgba(0,0,0,0.05); }
-        .icon-puck { 
-            width: 56px; height: 56px; border-radius: 18px; 
-            display: flex; align-items: center; justify-content: center; font-size: 1.5rem;
-        }
-        .table-glass { background: white; border-radius: 24px; overflow: hidden; border: none; }
     </style>
-</head>
-<body>
 
 <div class="d-flex">
     <?php $layout->sidebar(); ?>

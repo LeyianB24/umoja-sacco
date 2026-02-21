@@ -38,10 +38,24 @@ $totalU = (float)$valuation['total_units'] ?: 1;
 $stmt->bind_param("d", $totalU);
 $stmt->execute();
 $topHolders = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
-<?php
-$layout->header($pageTitle);
-?>
-<body>
+<?php $layout->header($pageTitle); ?>
+    <style>
+        .main-content { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; }
+        @media (max-width: 991px) { .main-content { margin-left: 0; padding: 1.5rem; } }
+        
+        .equity-hero { 
+            background: linear-gradient(135deg, var(--forest) 0%, var(--forest-mid) 100%); 
+            border-radius: 30px; padding: 40px; color: white; margin-bottom: 30px;
+        }
+        .glass-card { 
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.02);
+        }
+    </style>
+
 <div class="d-flex">
     <?php $layout->sidebar(); ?>
     <div class="main-content">
@@ -157,9 +171,5 @@ $layout->header($pageTitle);
     </div>
 </div>
 
-    </div>
+    <?php $layout->footer(); ?>
 </div>
-<?php $layout->footer(); ?>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>

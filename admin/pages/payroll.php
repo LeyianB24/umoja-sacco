@@ -191,7 +191,23 @@ if ($active_run) {
 $history_runs = $db->query("SELECT * FROM payroll_runs ORDER BY month DESC LIMIT 12");
 ?>
 <?php $layout->header($pageTitle); ?>
-<body>
+    <style>
+        .main-content { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; }
+        @media (max-width: 991px) { .main-content { margin-left: 0; padding: 1.5rem; } }
+        
+        /* Glass Components */
+        .hd-glass { 
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.02);
+            transition: 0.3s;
+        }
+        
+        .text-gradient { background: linear-gradient(135deg, var(--forest) 0%, var(--forest-mid) 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+    </style>
+
 <div class="d-flex">
     <?php $layout->sidebar(); ?>
     <div class="main-content">
