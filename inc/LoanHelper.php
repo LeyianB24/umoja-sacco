@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 // usms/inc/LoanHelper.php
 // Enterprise Loan Logic Engine - V4
 

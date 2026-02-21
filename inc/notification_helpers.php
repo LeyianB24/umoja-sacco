@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 // inc/notification_helpers.php
 // Unified Notification System
 

@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * inc/FinancialEngine.php
  * Unified Financial Core - Golden Ledger (V28 Architecture)

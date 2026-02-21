@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * SMS Queue Manager
  * Production-grade SMS delivery with queue and tracking

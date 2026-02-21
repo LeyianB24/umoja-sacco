@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 // usms/inc/RegistrationHelper.php
 // ACID-Compliant Registration Fee Handler
 

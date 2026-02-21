@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * inc/MenuConfig.php
  * Centralized Menu Configuration for Admin and Member Portals

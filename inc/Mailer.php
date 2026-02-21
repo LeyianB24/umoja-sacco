@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 // inc/Mailer.php
 
 use PHPMailer\PHPMailer\PHPMailer;

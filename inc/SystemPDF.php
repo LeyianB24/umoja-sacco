@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * inc/SystemPDF.php
  * BACKWARDS COMPATIBILITY STUB

@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * inc/TopbarHelper.php
  * Logic for Topbar Data (Messages, Notifications)

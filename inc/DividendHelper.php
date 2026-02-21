@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 // usms/inc/DividendHelper.php
 // Enterprise Dividend Distribution Engine - V4
 

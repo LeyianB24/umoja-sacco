@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 // usms/inc/Trial_Balance_Logic.php
 // V12 Golden Ledger Trial Balance Logic
 // Fixes "Unknown column" errors by utilizing the central transactions table

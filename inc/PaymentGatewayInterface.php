@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * PaymentGatewayInterface
  * Standardizes behavior for all payment aggregators (M-Pesa, Paystack, etc.)

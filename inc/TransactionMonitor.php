@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * Transaction Monitor Service
  * Core logic for detecting and managing stuck or failed transactions
