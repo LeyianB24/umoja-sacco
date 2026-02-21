@@ -14,16 +14,24 @@ $layout = LayoutManager::create('admin');
 $pageTitle = "Transaction Monitor";
 
 // Fetch recent callback logs
-$callbacks = $conn->query("SELECT cl.*, m.full_name, m.phone 
-    FROM callback_logs cl 
-    LEFT JOIN members m ON cl.member_id = m.member_id 
-    ORDER BY cl.created_at DESC LIMIT 50")->fetch_all(MYSQLI_ASSOC);
+$callbacks = [];
+$table_check = $conn->query("SHOW TABLES LIKE 'callback_logs'");
+if ($table_check && $table_check->num_rows > 0) {
+    $callbacks = $conn->query("SELECT cl.*, m.full_name, m.phone 
+        FROM callback_logs cl 
+        LEFT JOIN members m ON cl.member_id = m.member_id 
+        ORDER BY cl.created_at DESC LIMIT 50")->fetch_all(MYSQLI_ASSOC);
+}
 
 // Fetch recent mpesa requests
-$requests = $conn->query("SELECT r.*, m.full_name, m.phone 
-    FROM mpesa_requests r 
-    JOIN members m ON r.member_id = m.member_id 
-    ORDER BY r.created_at DESC LIMIT 50")->fetch_all(MYSQLI_ASSOC);
+$requests = [];
+$table_check = $conn->query("SHOW TABLES LIKE 'mpesa_requests'");
+if ($table_check && $table_check->num_rows > 0) {
+    $requests = $conn->query("SELECT r.*, m.full_name, m.phone 
+        FROM mpesa_requests r 
+        JOIN members m ON r.member_id = m.member_id 
+        ORDER BY r.created_at DESC LIMIT 50")->fetch_all(MYSQLI_ASSOC);
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">

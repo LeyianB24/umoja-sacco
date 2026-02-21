@@ -101,7 +101,7 @@ require_permission();
                                 <option value="suspended" class="text-dark" <?= $filter === 'suspended' ? 'selected' : '' ?>>Suspended</option>
                                 <option value="inactive" class="text-dark" <?= $filter === 'inactive' ? 'selected' : '' ?>>Pending (Inactive)</option>
                             </select>
-                            <input type="hidden" name="q" value="<?= htmlspecialchars($search) ?>">
+                            <input type="hidden" name="q" value="<?= htmlspecialchars($search ?? '') ?>">
                         </form>
                     </div>
                 </div>
@@ -112,7 +112,7 @@ require_permission();
                 <div class="p-4 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 border-bottom border-white border-opacity-10">
                     <form method="GET" class="position-relative flex-grow-1" style="max-width: 500px;">
                         <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
-                        <input type="text" name="q" class="form-control ps-5 rounded-pill border-0 bg-white bg-opacity-5" placeholder="Search by name, ID or email..." value="<?= htmlspecialchars($search) ?>">
+                        <input type="text" name="q" class="form-control ps-5 rounded-pill border-0 bg-white bg-opacity-5" placeholder="Search by name, ID or email..." value="<?= htmlspecialchars($search ?? '') ?>">
                         <input type="hidden" name="status" value="<?= $filter ?>">
                     </form>
                     <div class="text-muted small fw-medium">

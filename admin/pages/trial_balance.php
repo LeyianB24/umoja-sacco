@@ -60,8 +60,8 @@ foreach ($all_accounts as $acc) {
 $revenue_total = 0;
 $expense_total = 0;
 foreach ($all_accounts as $acc) {
-    if (stripos($acc['account_name'], 'revenue') !== false) $revenue_total += (float)$acc['current_balance'];
-    if (stripos($acc['account_name'], 'expense') !== false) $expense_total += (float)$acc['current_balance'];
+    if (stripos((string)($acc['account_name'] ?? ''), 'revenue') !== false) $revenue_total += (float)$acc['current_balance'];
+    if (stripos((string)($acc['account_name'] ?? ''), 'expense') !== false) $expense_total += (float)$acc['current_balance'];
 }
 $net_income = $revenue_total - $expense_total;
 
@@ -111,7 +111,7 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
         <div class="portal-header fade-in">
             <div class="row align-items-center">
                 <div class="col-lg-8">
-                    <span class="badge bg-white bg-opacity-10 text-white rounded-pill px-3 py-2 mb-3">Audit Protocol V10.4</span>
+                    <span class="badge bg-white bg-opacity-10 text-white rounded-pill px-3 py-2 mb-3">Audit Protocol V10.5</span>
                     <h1 class="display-5 fw-800 mb-2">Trial Balance Proof</h1>
                     <p class="opacity-75 fs-5 mb-0">Mathematically verifying that Assets = Liabilities + Equity.</p>
                 </div>

@@ -117,17 +117,17 @@ $pageTitle = "Live Operations Monitor";
                                 <span class="d-block text-uppercase" style="font-size: 0.6rem;"><?= date('M d', strtotime($log['created_at'])) ?></span>
                             </td>
                             <td>
-                                <div class="fw-bold"><?= htmlspecialchars($log['action']) ?></div>
-                                <div class="text-muted" style="font-size: 0.7rem;">TYPE: <?= htmlspecialchars($log['user_type']) ?></div>
+                                <div class="fw-bold"><?= htmlspecialchars((string)($log['action'] ?? '')) ?></div>
+                                <div class="text-muted" style="font-size: 0.7rem;">TYPE: <?= htmlspecialchars((string)($log['user_type'] ?? '')) ?></div>
                             </td>
                             <td>
-                                <span class="severity-badge severity-<?= strtolower($log['severity']) ?>">
-                                    <?= htmlspecialchars($log['severity']) ?>
+                                <span class="severity-badge severity-<?= strtolower((string)($log['severity'] ?? 'info')) ?>">
+                                    <?= htmlspecialchars((string)($log['severity'] ?? 'INFO')) ?>
                                 </span>
                             </td>
-                            <td class="small"><?= htmlspecialchars($log['details']) ?></td>
+                            <td class="small"><?= htmlspecialchars((string)($log['details'] ?? '')) ?></td>
                             <td class="pe-4 text-end font-monospace small text-muted">
-                                <?= htmlspecialchars($log['ip_address']) ?>
+                                <?= htmlspecialchars((string)($log['ip_address'] ?? '')) ?>
                             </td>
                         </tr>
                         <?php endforeach; ?>
