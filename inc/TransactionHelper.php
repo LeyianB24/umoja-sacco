@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * inc/TransactionHelper.php
  * V28 Golden Ledger Bridge - Maps high-level events to the Double-Entry Engine.

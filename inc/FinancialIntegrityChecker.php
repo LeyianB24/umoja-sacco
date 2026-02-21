@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * Financial Integrity Checker
  * Validates consistency between contributions, ledger entries, and accounts

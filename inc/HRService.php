@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * HRService.php
  * Enterprise HR Management Service

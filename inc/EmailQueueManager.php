@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * Email Queue Manager
  * Production-grade email delivery with queue, retry, and tracking

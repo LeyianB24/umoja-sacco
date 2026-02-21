@@ -13,6 +13,12 @@ if (session_status() === PHP_SESSION_NONE) {
 ------------------------------------------------------------- */
 require_once __DIR__ . '/../config/app_config.php';
 
+// Seed CSRF token in session for all pages
+if (class_exists('USMS\\Middleware\\CsrfMiddleware')) {
+    \USMS\Middleware\CsrfMiddleware::token();
+}
+
+
 /* -------------------------------------------------------------
    3. Helpers
 ------------------------------------------------------------- */
@@ -45,6 +51,9 @@ if (isset($_SESSION['admin_id'])) {
     <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <?php if (class_exists('USMS\\Middleware\\CsrfMiddleware')): ?>
+    <?= \USMS\Middleware\CsrfMiddleware::metaTag() ?>
+    <?php endif; ?>
 
     <title>
         <?= isset($pageTitle) ? htmlspecialchars($pageTitle) . ' — ' : '' ?>

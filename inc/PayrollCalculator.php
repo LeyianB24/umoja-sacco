@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 // inc/PayrollCalculator.php
 
 class PayrollCalculator {

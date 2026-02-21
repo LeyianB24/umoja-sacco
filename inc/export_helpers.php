@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 // inc/export_helpers.php
 // Unified Export Functions for PDF and Excel
 

@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * InvestmentViabilityEngine.php
  * Target-Driven Investment Performance & Economic Viability Calculator

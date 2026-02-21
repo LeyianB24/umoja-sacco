@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 // inc/PayrollEngine.php
 
 require_once __DIR__ . '/FinancialEngine.php';

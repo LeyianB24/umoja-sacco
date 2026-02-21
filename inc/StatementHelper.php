@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 // usms/inc/StatementHelper.php
 // Enterprise Reporting: Running Balance Ledger Logic - V4
 

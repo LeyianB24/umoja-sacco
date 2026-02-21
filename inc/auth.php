@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * inc/auth.php
  * The Security Gatekeeper - V18 Master Build

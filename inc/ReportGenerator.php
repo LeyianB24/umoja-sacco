@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 // usms/inc/ReportGenerator.php
 require_once __DIR__ . '/../core/finance/FinancialExportEngine.php';
 

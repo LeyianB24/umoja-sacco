@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 // usms/inc/CronHelper.php
 require_once __DIR__ . '/TransactionHelper.php';
 require_once __DIR__ . '/SettingsHelper.php';
