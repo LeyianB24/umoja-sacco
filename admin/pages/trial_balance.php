@@ -101,11 +101,10 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
 <?php $layout->header($pageTitle); ?>
 <body>
 
-<div class="d-flex">
     <?php $layout->sidebar(); ?>
-
-    <div class="flex-fill main-content">
+    <div class="main-wrapper">
         <?php $layout->topbar($pageTitle); ?>
+        <main class="main-content">
 
         <!-- Layout Header -->
         <div class="portal-header fade-in">
@@ -294,7 +293,6 @@ foreach($all_cats as $cat_name):
 </div>
 <?php endforeach; ?>
 
-            <?php $layout->footer(); ?>
-        </div>
+        </main>
+        <?php $layout->footer(); ?>
     </div>
-</div>

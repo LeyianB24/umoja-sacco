@@ -179,11 +179,9 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
 $pageTitle = "Revenue Portal";
 ?>
     <style>
-        .main-content { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; }
-        @media (max-width: 991px) { .main-content { margin-left: 0; padding: 1.5rem; } }
-        
+        /* Page-specific overrides */
         .portal-header { 
-            background: linear-gradient(135deg, var(--forest) 0%, var(--forest-mid) 100%); 
+            background: linear-gradient(135deg, var(--brand-forest) 0%, var(--brand-forest-mid) 100%); 
             border-radius: 30px; padding: 50px; color: white; margin-bottom: 40px;
             box-shadow: 0 20px 40px rgba(15, 46, 37, 0.15);
             position: relative; overflow: hidden;
@@ -200,10 +198,10 @@ $pageTitle = "Revenue Portal";
         .icon-circle { width: 50px; height: 50px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; margin-bottom: 1rem; }
     </style>
 
-<div class="d-flex">
     <?php $layout->sidebar(); ?>
-    <div class="main-content">
-        <?php $layout->topbar($pageTitle ?? ''); ?>
+    <div class="main-wrapper">
+        <?php $layout->topbar($pageTitle ?? 'Revenue Ledger'); ?>
+        <main class="main-content">
         
         <!-- Header Banner -->
         <div class="portal-header slide-up">
@@ -598,5 +596,8 @@ $pageTitle = "Revenue Portal";
         });
     });
 </script>
+        </main>
+        <?php $layout->footer(); ?>
+    </div>
 </body>
 </html>

@@ -33,27 +33,18 @@ if ($table_check && $table_check->num_rows > 0) {
         ORDER BY r.created_at DESC LIMIT 50")->fetch_all(MYSQLI_ASSOC);
 }
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title><?= $pageTitle ?> | Umoja Sacco</title>
+<?php $layout->header($pageTitle); ?>
     <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg-primary); color: var(--text-main); }
-        .main-content { margin-left: 280px; padding: 2.5rem; transition: margin-left 0.3s ease; min-height: 100vh; }
-        @media (max-width: 991px) { .main-content { margin-left: 0; padding: 1.5rem; } }
+        /* Page-specific overrides */
         .table-premium { background: var(--bg-surface); border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border: 1px solid var(--border-color); }
-        .callback-status-success { color: #059669; background: #ecfdf5; padding: 4px 12px; border-radius: 99px; font-size: 12px; font-weight: 600; }
-        .callback-status-failed { color: #dc2626; background: #fef2f2; padding: 4px 12px; border-radius: 99px; font-size: 12px; font-weight: 600; }
+        .callback_status-success { color: #059669; background: #ecfdf5; padding: 4px 12px; border-radius: 99px; font-size: 12px; font-weight: 600; }
+        .callback_status-failed { color: #dc2626; background: #fef2f2; padding: 4px 12px; border-radius: 99px; font-size: 12px; font-weight: 600; }
         .raw-payload { max-width: 300px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: monospace; font-size: 11px; color: #64748b; }
     </style>
-</head>
-<body>
-    <div class="d-flex">
-        <?php $layout->sidebar(); ?>
-        <div class="flex-fill main-content">
-            <?php $layout->topbar($pageTitle); ?>
+    <?php $layout->sidebar(); ?>
+    <div class="main-wrapper">
+        <?php $layout->topbar($pageTitle); ?>
+        <main class="main-content">
 
 
             <!-- Callback Logs -->
@@ -141,23 +132,6 @@ if ($table_check && $table_check->num_rows > 0) {
                     </table>
                 </div>
             </div>
-        </div>
+        </main>
+        <?php $layout->footer(); ?>
     </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        document.getElementById('btnCallbacks').onclick = function() {
-            this.classList.add('active');
-            document.getElementById('btnRequests').classList.remove('active');
-            document.getElementById('sectionCallbacks').classList.remove('d-none');
-            document.getElementById('sectionRequests').classList.add('d-none');
-        };
-        document.getElementById('btnRequests').onclick = function() {
-            this.classList.add('active');
-            document.getElementById('btnCallbacks').classList.remove('active');
-            document.getElementById('sectionRequests').classList.remove('d-none');
-            document.getElementById('sectionCallbacks').classList.add('d-none');
-        };
-    </script>
-</body>
-</html>

@@ -150,11 +150,10 @@ $pageTitle = "Audit Logs";
         .text-emerald { color: var(--forest-mid); }
     </style>
 
-<div class="d-flex">
     <?php $layout->sidebar(); ?>
-
-    <div class="flex-fill main-content">
-        <?php $layout->topbar($pageTitle ?? ''); ?>
+    <div class="main-wrapper">
+        <?php $layout->topbar($pageTitle ?? 'System Audit Trails'); ?>
+        <main class="main-content">
 
         <div class="row align-items-end mb-5">
             <div class="col-md-7">
@@ -275,7 +274,6 @@ $pageTitle = "Audit Logs";
             <div class="px-4 py-3 border-top border-light text-center">
                 <small class="text-muted fw-bold">Showing latest 200 entries</small>
             </div>
-            <?php $layout->footer(); ?>
-        </div>
+        </main>
+        <?php $layout->footer(); ?>
     </div>
-</div>

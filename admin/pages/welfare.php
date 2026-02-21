@@ -21,6 +21,15 @@ Auth::requireAdmin();
 $layout = LayoutManager::create('admin');
 $admin_id = $_SESSION['admin_id'];
 
+$pageTitle = "Welfare Management";
+?>
+<?php $layout->header($pageTitle); ?>
+    <style>
+        /* Page-specific overrides */
+        .glass-stat-card { background: white; border-radius: 20px; border: 1px solid var(--border-color); padding: 2rem; height: 100%; transition: all 0.3s ease; }
+        .glass-stat-card:hover { transform: translateY(-5px); box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+    </style>
+<?php
 // --- Helpers ---
 function ksh($amount) { return 'KES ' . number_format((float)$amount, 2); }
 
@@ -246,9 +255,7 @@ $pageTitle = "Unified Welfare Suite";
 ?>
 <?php $layout->header($pageTitle); ?>
     <style>
-        .main-content { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; }
-        @media (max-width: 991px) { .main-content { margin-left: 0; padding: 1.5rem; } }
-        
+        /* Page-specific overrides */
         .glass-card { 
             background: rgba(255, 255, 255, 0.9);
             backdrop-filter: blur(10px);
@@ -269,10 +276,10 @@ $pageTitle = "Unified Welfare Suite";
         .badge-rejected { background: rgba(220, 38, 38, 0.1); color: #dc2626; }
     </style>
 
-<div class="d-flex">
     <?php $layout->sidebar(); ?>
-    <div class="main-content">
-        <?php $layout->topbar($pageTitle ?? ''); ?>
+    <div class="main-wrapper">
+        <?php $layout->topbar($pageTitle ?? 'Welfare Suite'); ?>
+        <main class="main-content">
 
         <div class="row g-4 mb-4">
             <div class="col-xl-3 col-md-6">
@@ -506,7 +513,6 @@ $pageTitle = "Unified Welfare Suite";
             <div class="modal-footer"><button type="submit" class="btn btn-forest w-100 fw-bold">Record Donation</button></div>
         </form>
     </div>
-</div>
-
-    <?php $layout->footer(); ?>
-</div>
+        </main>
+        <?php $layout->footer(); ?>
+    </div>

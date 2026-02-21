@@ -192,10 +192,7 @@ $history_runs = $db->query("SELECT * FROM payroll_runs ORDER BY month DESC LIMIT
 ?>
 <?php $layout->header($pageTitle); ?>
     <style>
-        .main-content { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; }
-        @media (max-width: 991px) { .main-content { margin-left: 0; padding: 1.5rem; } }
-        
-        /* Glass Components */
+        /* Page-specific overrides */
         .hd-glass { 
             background: rgba(255, 255, 255, 0.9);
             backdrop-filter: blur(10px);
@@ -208,10 +205,10 @@ $history_runs = $db->query("SELECT * FROM payroll_runs ORDER BY month DESC LIMIT
         .text-gradient { background: linear-gradient(135deg, var(--forest) 0%, var(--forest-mid) 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
     </style>
 
-<div class="d-flex">
     <?php $layout->sidebar(); ?>
-    <div class="main-content">
-        <?php $layout->topbar($pageTitle ?? ''); ?>
+    <div class="main-wrapper">
+        <?php $layout->topbar($pageTitle ?? 'Payroll Center'); ?>
+        <main class="main-content">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
                     <h3 class="fw-bold mb-1 text-gradient">Payroll Management</h3>
@@ -408,10 +405,9 @@ $history_runs = $db->query("SELECT * FROM payroll_runs ORDER BY month DESC LIMIT
                 </div>
             <?php endif; ?>
             
-            <?php $layout->footer(); ?>
-        </div>
+        </main>
+        <?php $layout->footer(); ?>
     </div>
-</div>
 
 <!-- New Run Modal -->
 <div class="modal fade" id="newRunModal" tabindex="-1">

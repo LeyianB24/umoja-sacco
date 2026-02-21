@@ -124,9 +124,7 @@ $pageTitle = "Roles & Permissions";
     --glass-border: rgba(255, 255, 255, 0.5);
 }
 
-/* Layout Overrides */
-.main-content { margin-left: 280px; padding: 2.5rem; min-height: 100vh; background: #f0f4f3; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-@media (max-width: 991px) { .main-content { margin-left: 0; padding: 1.5rem; } }
+        /* Page-specific overrides */
 
 /* Hero Section */
 .hp-hero { 
@@ -198,11 +196,10 @@ $pageTitle = "Roles & Permissions";
 .role-actions .btn-outline-danger.btn-icon:hover { background: #ef4444; color: white; }
 </style>
 
-<div class="d-flex">
     <?php $layout->sidebar(); ?>
-
-    <div class="flex-fill main-content">
+    <div class="main-wrapper">
         <?php $layout->topbar($pageTitle ?? 'Role Matrix'); ?>
+        <main class="main-content">
     <div class="hp-hero">
         <div class="row align-items-center">
             <div class="col-md-7">
@@ -512,7 +509,6 @@ function deleteRole(id, name) {
     }
 }
 </script>
-    </div><!-- End main-content -->
-</div><!-- End d-flex -->
-
-<?php $layout->footer(); ?>
+        </main>
+        <?php $layout->footer(); ?>
+    </div>

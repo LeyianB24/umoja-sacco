@@ -102,7 +102,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_system_setting
         if ($success_count > 0) {
             flash_set("System settings updated successfully.", 'success');
             if (isset($db)) {
-               $db->query("INSERT INTO audit_logs (admin_id, action, details, ip_address) VALUES (\$admin_id, 'system_update', 'Updated Global Configuration', '{\$_SERVER['REMOTE_ADDR']}')");
+               $db->query("INSERT INTO audit_logs (admin_id, action, details, ip_address) VALUES ($admin_id, 'system_update', 'Updated Global Configuration', '{$_SERVER['REMOTE_ADDR']}')");
             }
         } else {
             flash_set("No changes were saved.", 'warning');
@@ -127,8 +127,7 @@ $php_v     = phpversion();
 <?php $layout->header($pageTitle); ?>
 
     <style>
-        .main-content { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; }
-        @media (max-width: 991px) { .main-content { margin-left: 0; padding: 1.5rem; } }
+        /* Page-specific overrides */
         
         /* Navigation Pills */
         .nav-pills .nav-link { 
@@ -153,11 +152,10 @@ $php_v     = phpversion();
     </style>
 
 
-<div class="d-flex">
     <?php $layout->sidebar(); ?>
-
-    <div class="flex-fill main-content">
+    <div class="main-wrapper">
         <?php $layout->topbar($me['full_name']); ?>
+        <main class="main-content">
             
             <div class="container-fluid">
         
@@ -365,10 +363,9 @@ $php_v     = phpversion();
                     </div>
                 </div>
             </div><!-- End container-fluid -->
-    </div><!-- End main-content -->
-</div><!-- End d-flex -->
-
-<?php $layout->footer(); ?>
+        </main>
+        <?php $layout->footer(); ?>
+    </div>
 
 
 
