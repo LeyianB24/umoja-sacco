@@ -1,9 +1,10 @@
 <?php
-ob_start(); // <--- FIX 1: Add Output Buffering to prevent header errors
-require_once __DIR__ . '/../inc/functions.php'; // Includes session_start()
-require_once __DIR__ . '/../inc/Auth.php'; // RBAC Logic
+ob_start();
+// Load config FIRST — prevents 'constant already defined' errors from functions.php auto-include
 require_once __DIR__ . '/../config/app_config.php';
 require_once __DIR__ . '/../config/db_connect.php';
+require_once __DIR__ . '/../inc/functions.php';
+require_once __DIR__ . '/../inc/Auth.php';
 
 // Constants
 define('REMEMBER_SECONDS', 30 * 24 * 60 * 60);

@@ -6,7 +6,7 @@ if (session_status() === PHP_SESSION_NONE) {
 $host   = 'localhost';                 // XAMPP default server
 $user   = 'root';                      // XAMPP default username
 $pass   = '';                          // XAMPP default password is empty
-$dbname = 'umoja_drivers_sacco';       // Your database name 
+$dbname = 'umoja_drivers_sacco';       // Correct database as per user instruction
 
 $conn = new mysqli($host, $user, $pass, $dbname);
 

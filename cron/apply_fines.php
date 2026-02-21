@@ -1,16 +1,19 @@
 <?php
-// usms/cron/apply_fines.php
-// To be executed daily via system cron (e.g., 0 0 * * *)
-
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
-
+declare(strict_types=1);
+/**
+ * cron/apply_fines.php — Daily Late-Payment Fine Application
+ *
+ * Thin entry point. All business logic lives in:
+ *   core/Cron/Jobs/DailyFinesJob.php
+ *
+ * Scheduled: 0 0 * * *  (daily at midnight)
+ * Usage: php cron/apply_fines.php [--dry-run]
+ */
+require_once __DIR__ . '/../config/app_config.php';
 require_once __DIR__ . '/../config/db_connect.php';
-require_once __DIR__ . '/../inc/CronHelper.php';
 
-echo "[CRON] Starting Daily Fines processing at " . date('Y-m-d H:i:s') . "\n";
+// Rewrite argv so run.php sees the correct job name
+$argv = array_merge(['apply_fines.php', 'daily_fines'], array_slice($argv ?? [], 1));
+$argc = count($argv);
 
-$cronHelper = new CronHelper($conn);
-$count = $cronHelper->applyDailyFines();
-
-echo "[CRON] Completed. Fines applied to $count overdue loans.\n";
+require __DIR__ . '/run.php';

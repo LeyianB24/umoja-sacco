@@ -1,0 +1,126 @@
+/*
+ * darkmode.css — Umoja Sacco Dark Mode Component Overrides
+ * Load AFTER admin.css (tokens already defined in admin.css [data-bs-theme="dark"])
+ * Last updated: 2026-02-21
+ */
+
+/* ── Bootstrap Overrides ───────────────────────────────────────────────────── */
+[data-bs-theme="dark"] .card,
+[data-bs-theme="dark"] .glass-card,
+[data-bs-theme="dark"] .glass-stat {
+    background: var(--glass-bg);
+    border-color: var(--border-color);
+    color: var(--text-main);
+}
+
+[data-bs-theme="dark"] .stat-card {
+    background: var(--surface-1);
+    border-color: var(--border-color);
+}
+
+[data-bs-theme="dark"] .dropdown-menu {
+    background: var(--surface-1);
+    border-color: var(--border-color);
+}
+[data-bs-theme="dark"] .dropdown-item {
+    color: var(--text-main);
+}
+[data-bs-theme="dark"] .dropdown-item:hover,
+[data-bs-theme="dark"] .dropdown-item:focus {
+    background: var(--surface-2);
+    color: var(--text-main);
+}
+
+[data-bs-theme="dark"] .modal-content {
+    background: var(--surface-1);
+    color: var(--text-main);
+}
+[data-bs-theme="dark"] .modal-footer,
+[data-bs-theme="dark"] .modal-body {
+    background: var(--surface-1);
+}
+
+[data-bs-theme="dark"] .form-control,
+[data-bs-theme="dark"] .form-select {
+    background: var(--surface-2);
+    border-color: var(--border-color);
+    color: var(--text-main);
+}
+[data-bs-theme="dark"] .form-control:focus,
+[data-bs-theme="dark"] .form-select:focus {
+    border-color: var(--brand-lime);
+    box-shadow: 0 0 0 3px rgba(208, 247, 100, 0.15);
+    background: var(--surface-2);
+}
+[data-bs-theme="dark"] .form-control::placeholder { color: var(--text-muted); }
+
+/* ── Tables ────────────────────────────────────────────────────────────────── */
+[data-bs-theme="dark"] .table-custom,
+[data-bs-theme="dark"] .table-sacco,
+[data-bs-theme="dark"] .table {
+    --bs-table-bg: var(--surface-1);
+    --bs-table-striped-bg: var(--surface-2);
+    --bs-table-hover-bg: var(--surface-2);
+    --bs-table-border-color: var(--border-color);
+    color: var(--text-main);
+}
+[data-bs-theme="dark"] .table-custom tbody td,
+[data-bs-theme="dark"] .table-sacco tbody td {
+    border-color: var(--border-color);
+    color: var(--text-main);
+}
+[data-bs-theme="dark"] .table-custom tbody tr:hover,
+[data-bs-theme="dark"] .table-sacco tbody tr:hover {
+    background: var(--surface-2);
+}
+
+/* ── Sidebar ───────────────────────────────────────────────────────────────── */
+[data-bs-theme="dark"] .admin-sidebar {
+    background: #0a1f18;
+    border-right-color: var(--border-color);
+}
+[data-bs-theme="dark"] .sidebar-nav-item:hover,
+[data-bs-theme="dark"] .sidebar-nav-item.active {
+    background: rgba(208, 247, 100, 0.08);
+}
+
+/* ── Topbar ────────────────────────────────────────────────────────────────── */
+[data-bs-theme="dark"] .admin-topbar {
+    background: var(--surface-1);
+    border-bottom-color: var(--border-color);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+/* ── Badges ────────────────────────────────────────────────────────────────── */
+[data-bs-theme="dark"] .badge-status-active   { background: rgba(5,150,105,0.2);  color: #6ee7b7; }
+[data-bs-theme="dark"] .badge-status-pending  { background: rgba(245,158,11,0.2); color: #fde68a; }
+[data-bs-theme="dark"] .badge-status-inactive { background: rgba(107,114,128,0.2);color: #9ca3af; }
+[data-bs-theme="dark"] .badge-status-danger   { background: rgba(239,68,68,0.2);  color: #fca5a5; }
+
+/* ── Page header ───────────────────────────────────────────────────────────── */
+[data-bs-theme="dark"] .page-header h1,
+[data-bs-theme="dark"] .page-header .page-title {
+    color: var(--brand-lime);
+}
+
+/* ── Borders & backgrounds ─────────────────────────────────────────────────── */
+[data-bs-theme="dark"] .border,
+[data-bs-theme="dark"] .border-bottom,
+[data-bs-theme="dark"] .border-top {
+    border-color: var(--border-color) !important;
+}
+[data-bs-theme="dark"] .bg-white,
+[data-bs-theme="dark"] .bg-light {
+    background: var(--surface-1) !important;
+    color: var(--text-main) !important;
+}
+[data-bs-theme="dark"] hr { border-color: var(--border-color); }
+
+/* ── Scrollbar ─────────────────────────────────────────────────────────────── */
+[data-bs-theme="dark"] ::-webkit-scrollbar { width: 6px; }
+[data-bs-theme="dark"] ::-webkit-scrollbar-track { background: var(--bg-primary); }
+[data-bs-theme="dark"] ::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 3px;
+}
+[data-bs-theme="dark"] ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
