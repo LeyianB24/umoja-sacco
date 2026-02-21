@@ -406,6 +406,7 @@ $pageTitle = "Unified Welfare Suite";
                     </tbody>
                 </table>
             </div>
+            <?php $layout->footer(); ?>
         </div>
     </div>
 </div>
@@ -514,5 +515,5 @@ $pageTitle = "Unified Welfare Suite";
         </form>
     </div>
         </main>
-        <?php $layout->footer(); ?>
+        
     </div>
