@@ -27,13 +27,14 @@ $db         = $conn;
 
 // 1. Fetch DB Stats
 $stats_q = $conn->query("SELECT 
-    COUNT(*) as tables, 
-    SUM(TABLE_ROWS) as rows, 
-    SUM(DATA_LENGTH + INDEX_LENGTH) / 1024 / 1024 as size_mb 
+    COUNT(TABLE_NAME) as tables, 
+    SUM(TABLE_ROWS) as total_rows, 
+    SUM(DATA_LENGTH + INDEX_LENGTH) as total_bytes 
     FROM information_schema.TABLES 
     WHERE TABLE_SCHEMA = DATABASE()");
 $stats = $stats_q->fetch_assoc();
-$stats['size_mb'] = number_format((float)$stats['size_mb'], 2);
+$total_bytes = (float)($stats['total_bytes'] ?? 0);
+$stats['size_mb'] = number_format($total_bytes / 1024 / 1024, 2);
 
 // 2. Fetch Backup Logs
 $backup_logs = $conn->query("SELECT a.*, admin_id as username FROM audit_logs a WHERE action LIKE '%backup%' ORDER BY created_at DESC LIMIT 8");
@@ -134,7 +135,7 @@ $pageTitle = "System Maintenance Hub";
                                 <i class="bi bi-hdd-stack"></i>
                             </div>
                             <div>
-                                <h4 class="fw-bold mb-0"><?= number_format((float)($stats['rows'] ?? 0)) ?></h4>
+                                <h4 class="fw-bold mb-0"><?= number_format((float)($stats['total_rows'] ?? 0)) ?></h4>
                                 <small class="text-muted">Database Records</small>
                             </div>
                         </div>

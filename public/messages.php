@@ -35,6 +35,7 @@ if (empty($_SESSION['csrf_token'])) {
 }
 
 // Dashboard Return Link
+// Dashboard Return Link - Support return_to URL
 $dashboard_url = match($my_role) {
     'superadmin' => '../superadmin/dashboard.php',
     'manager'    => '../manager/dashboard.php',
@@ -43,6 +44,10 @@ $dashboard_url = match($my_role) {
     'member'     => '../member/pages/dashboard.php',
     default      => 'login.php'
 };
+
+if (!empty($_GET['return_to'])) {
+    $dashboard_url = urldecode($_GET['return_to']);
+}
 
 // ============================================================================
 //  2. HELPER FUNCTIONS
@@ -162,7 +167,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_message'])) {
         $stmt->bind_param("iisss", $my_id, $target_id, $subject, $body, $attachment);
         $stmt->execute();
         
-        header("Location: messages.php?chat_with=$target_id&role=$recipient_role");
+        $return_param = !empty($_POST['return_to']) ? '&return_to=' . urlencode($_POST['return_to']) : '';
+        header("Location: messages.php?chat_with=$target_id&role=$recipient_role" . $return_param);
         exit;
     }
 }
@@ -618,8 +624,11 @@ function renderImg($blob, $name, $size = '56px', $fontSize = '1.3rem') {
                 </div>
             <?php endif; ?>
 
-            <?php foreach($threads as $key => $t): ?>
-            <a href="?chat_with=<?= $t['id'] ?>&role=<?= $t['role'] ?>" class="thread-item <?= ($active_id == $t['id'] && $active_role == $t['role']) ? 'active' : '' ?>">
+            <?php foreach($threads as $key => $t): 
+                $thread_link = "?chat_with=" . $t['id'] . "&role=" . $t['role'];
+                if (!empty($_GET['return_to'])) $thread_link .= "&return_to=" . urlencode($_GET['return_to']);
+            ?>
+            <a href="<?= $thread_link ?>" class="thread-item <?= ($active_id == $t['id'] && $active_role == $t['role']) ? 'active' : '' ?>">
                 <div class="me-3">
                     <?= renderImg($t['pic'], $t['name']) ?>
                 </div>
@@ -732,6 +741,9 @@ function renderImg($blob, $name, $size = '56px', $fontSize = '1.3rem') {
                     <input type="hidden" name="send_message" value="1">
                     <input type="hidden" name="recipient_role" value="<?= htmlspecialchars($active_role) ?>">
                     <input type="hidden" name="target_id" value="<?= $active_id ?>">
+                    <?php if (!empty($_GET['return_to'])): ?>
+                    <input type="hidden" name="return_to" value="<?= htmlspecialchars($_GET['return_to']) ?>">
+                    <?php endif; ?>
 
                     <div class="input-wrapper shadow-lg">
                         <label class="btn btn-light rounded-circle shadow-sm me-1" style="width:44px;height:44px; display: flex; align-items:center; justify-content:center" title="Attach File">

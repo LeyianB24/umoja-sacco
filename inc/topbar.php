@@ -125,7 +125,9 @@ $default_avatar = strtolower($user_gender ?? 'male')==='female'?'female.jpg':'ma
 $pic_src = !empty($profile_pic_db)
     ? "data:image/jpeg;base64,".base64_encode($profile_pic_db)
     : "{$base}/public/assets/uploads/{$default_avatar}";
-$msgs_link   = "{$base}/public/messages.php";
+// Ensure return_to captures the current page for context-aware back navigation
+$current_url = urlencode($_SERVER['REQUEST_URI'] ?? '');
+$msgs_link   = "{$base}/public/messages.php?return_to={$current_url}";
 $notif_link  = ($user_role==='member') ? "{$base}/member/pages/notifications.php" : "#";
 
 // Unified Profile Link Logic
@@ -392,7 +394,7 @@ $profile_link = ($user_role === 'member') ? "{$base}/member/pages/profile.php" :
             $avatar_html = "<div class='msg-avatar bg-primary text-white d-flex align-items-center justify-content-center fw-bold'>{$initial}</div>";
         ?>
             <a href="javascript:void(0);" 
-               onclick="markReadAndRedirect('message', <?= $msg['message_id'] ?>, '<?= $msgs_link ?>?chat_with=<?= $chat_id ?>')" 
+               onclick="markReadAndRedirect('message', <?= $msg['message_id'] ?>, '<?= $msgs_link ?>&chat_with=<?= $chat_id ?>')" 
                class="list-item-custom <?= $msg['is_read']==0?'unread':'' ?>">
                 <div class="d-flex align-items-center gap-3">
                     <?= $avatar_html ?>

@@ -107,8 +107,10 @@ $stmt->execute();
 $logs = $stmt->get_result();
 
 // HELPERS
-function getInitials($name) {
-    return strtoupper(substr($name ?? 'S', 0, 1));
+if (!function_exists('getInitials')) {
+    function getInitials($name) {
+        return strtoupper(substr($name ?? 'S', 0, 1));
+    }
 }
 
 function getActionStyle($action) {

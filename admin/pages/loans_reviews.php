@@ -387,6 +387,7 @@ $stats = $db->query("SELECT
                             <?php endwhile; endif; ?>
                         </tbody>
                     </table>
+                     <?php $layout->footer(); ?>
                 </div>
             </div>
 
@@ -495,7 +496,7 @@ if($loans->num_rows > 0):
 <?php endwhile; endif; ?>
 
         </div>
-        <?php $layout->footer(); ?>
+       
     </div>
 </div>
 

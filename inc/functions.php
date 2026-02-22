@@ -26,11 +26,13 @@ if (!defined('ASSET_BASE')) {
  * @param string $date The date string to validate.
  * @return bool True if the date is in the future, false otherwise.
  */
-function is_future_date($date) {
-    $d = new DateTime($date);
-    $now = new DateTime();
-    // Compare the date with the end of the current day to consider today as not future.
-    return $d > $now->setTime(23, 59, 59);
+if (!function_exists('is_future_date')) {
+    function is_future_date($date) {
+        $d = new DateTime($date);
+        $now = new DateTime();
+        // Compare the date with the end of the current day to consider today as not future.
+        return $d > $now->setTime(23, 59, 59);
+    }
 }
 
 /**
@@ -38,10 +40,12 @@ function is_future_date($date) {
  * @param string $date The date string to validate.
  * @param string $redirect_url The URL to redirect to if the date is in the future.
  */
-function validate_not_future($date, $redirect_url) {
-    if (is_future_date($date)) {
-        flash_set("Invalid Date: Transactions cannot be recorded for future dates.", "danger");
-        redirect_to($redirect_url);
+if (!function_exists('validate_not_future')) {
+    function validate_not_future($date, $redirect_url) {
+        if (is_future_date($date)) {
+            flash_set("Invalid Date: Transactions cannot be recorded for future dates.", "danger");
+            redirect_to($redirect_url);
+        }
     }
 }
 
@@ -50,9 +54,11 @@ function validate_not_future($date, $redirect_url) {
  * @param string|null $str
  * @return string
  */
-function esc(?string $str): string
-{
-    return htmlspecialchars((string)$str, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+if (!function_exists('esc')) {
+    function esc(?string $str): string
+    {
+        return htmlspecialchars((string)$str, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    }
 }
 
 /**
@@ -246,22 +252,26 @@ function generate_member_no($conn) {
 /**
  * Format Currency (KSH) - Shorthand
  */
-function ksh($v, $d = 2) { 
-    return number_format((float)($v ?? 0), $d); 
+if (!function_exists('ksh')) {
+    function ksh($v, $d = 2) { 
+        return number_format((float)($v ?? 0), $d); 
+    }
 }
 
 /**
  * Get Initials from name
  */
-function getInitials($name) {
-    if (empty($name)) return "S";
-    $words = explode(" ", $name);
-    $initials = "";
-    foreach ($words as $w) {
-        $initials .= strtoupper(substr($w, 0, 1));
-        if (strlen($initials) >= 2) break;
+if (!function_exists('getInitials')) {
+    function getInitials($name) {
+        if (empty($name)) return "S";
+        $words = explode(" ", $name);
+        $initials = "";
+        foreach ($words as $w) {
+            $initials .= strtoupper(substr($w, 0, 1));
+            if (strlen($initials) >= 2) break;
+        }
+        return $initials ?: "S";
     }
-    return $initials ?: "S";
 }
 
 /**

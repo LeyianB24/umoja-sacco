@@ -168,7 +168,9 @@ usort($conversation, function($a, $b) {
     return strtotime($a['created_at']) <=> strtotime($b['created_at']);
 });
 
-function getInitials($name) { return strtoupper(substr($name ?? 'U', 0, 1)); }
+if (!function_exists('getInitials')) {
+    function getInitials($name) { return strtoupper(substr($name ?? 'U', 0, 1)); }
+}
 
 $pageTitle = "Ticket View";
 ?>

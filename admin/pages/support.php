@@ -75,7 +75,9 @@ $res = $db->query($sql);
 $tickets = [];
 while ($row = $res->fetch_assoc()) { $tickets[] = $row; }
 
-function getInitials($name) { return strtoupper(substr($name ?? 'U', 0, 1)); }
+if (!function_exists('getInitials')) {
+    function getInitials($name) { return strtoupper(substr($name ?? 'U', 0, 1)); }
+}
 
 $pageTitle = "Helpdesk Support";
 $layout->header($pageTitle);

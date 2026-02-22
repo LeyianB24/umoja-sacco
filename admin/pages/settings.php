@@ -114,12 +114,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_system_setting
 $sys_settings = SettingsHelper::all();
 
 // Initials helper
-function getInitials($name) {
-    if (!$name) return '??';
-    $words = explode(" ", $name);
-    $acronym = "";
-    foreach ($words as $w) if(!empty($w)) $acronym .= mb_substr($w, 0, 1);
-    return strtoupper(substr($acronym, 0, 2)) ?: '??';
+if (!function_exists('getInitials')) {
+    function getInitials($name) {
+        if (!$name) return '??';
+        $words = explode(" ", $name);
+        $acronym = "";
+        foreach ($words as $w) if(!empty($w)) $acronym .= mb_substr($w, 0, 1);
+        return strtoupper(substr($acronym, 0, 2)) ?: '??';
+    }
 }
 $server_ip = $_SERVER['SERVER_ADDR'] ?? '127.0.0.1';
 $php_v     = phpversion();

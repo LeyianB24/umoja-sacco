@@ -17,6 +17,7 @@ require_once __DIR__ . '/../../core/exports/UniversalExportEngine.php';
 require_permission('payroll.php'); 
 $layout = LayoutManager::create('admin');
 $engine = new PayrollEngine($conn);
+$db = $conn;
 
 $pageTitle = "Payroll Management";
 
@@ -245,7 +246,7 @@ $history_runs = $db->query("SELECT * FROM payroll_runs ORDER BY month DESC LIMIT
                             </div>
                             <div class="mt-2">
                                 <div class="small fw-bold text-muted text-uppercase letter-spacing-1">Current Period</div>
-                                <div class="h1 fw-bold mb-0 "><?= date('F Y', strtotime($active_run['month'])) ?></div>
+                                <div class="h1 fw-bold mb-0 "><?= date('F Y', strtotime($active_run['month'] ?? 'now')) ?></div>
                             </div>
                         </div>
                     </div>
@@ -271,7 +272,7 @@ $history_runs = $db->query("SELECT * FROM payroll_runs ORDER BY month DESC LIMIT
                 <div class="hd-glass p-3 mb-4">
                     <div class="d-flex justify-content-between align-items-center">
                         <div class="text-muted small">
-                            Actions for <strong><?= date('F Y', strtotime($active_run['month'])) ?></strong>
+                            Actions for <strong><?= date('F Y', strtotime($active_run['month'] ?? 'now')) ?></strong>
                         </div>
                         <div class="d-flex gap-2">
                             <?php if ($active_run['status'] === 'draft'): ?>
@@ -343,9 +344,9 @@ $history_runs = $db->query("SELECT * FROM payroll_runs ORDER BY month DESC LIMIT
                                     <td class="text-end font-monospace fw-medium"><?= ksh((float)$item['gross_pay']) ?></td>
                                     
                                     <td class="text-end font-monospace text-danger" style="font-size: 0.9em;">
-                                        <div data-bs-toggle="tooltip" title="PAYE: <?= ksh($item['tax_paye']) ?>, HSG: <?= ksh($item['tax_housing']) ?>, NSSF/NHIF: <?= ksh($item['tax_nssf'] + $item['tax_nhif']) ?>">
+                                        <div data-bs-toggle="tooltip" title="PAYE: <?= ksh($item['tax_paye'] ?? 0) ?>, HSG: <?= ksh($item['tax_housing'] ?? 0) ?>, NSSF/NHIF: <?= ksh(($item['tax_nssf'] ?? 0) + ($item['tax_nhif'] ?? $item['tax_sha'] ?? 0)) ?>">
                                             <?php 
-                                            $total_ded = $item['tax_paye'] + $item['tax_housing'] + $item['tax_nssf'] + $item['tax_nhif'];
+                                            $total_ded = ($item['tax_paye'] ?? 0) + ($item['tax_housing'] ?? 0) + ($item['tax_nssf'] ?? 0) + ($item['tax_nhif'] ?? $item['tax_sha'] ?? 0);
                                             echo ksh($total_ded); 
                                             ?>
                                         </div>
@@ -408,9 +409,9 @@ $history_runs = $db->query("SELECT * FROM payroll_runs ORDER BY month DESC LIMIT
                     </button>
                 </div>
             <?php endif; ?>
-            
+            <?php $layout->footer(); ?>
         </div>
-        <?php $layout->footer(); ?>
+        
     </div>
 </div>
 
