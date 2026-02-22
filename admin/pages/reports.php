@@ -30,12 +30,6 @@ Auth::requireAdmin();
 $layout = LayoutManager::create('admin');
 
 // --- Helpers ---
-if (!function_exists('ksh')) {
-    function ksh($amount, $decimals = 2) {
-        return 'KES ' . number_format((float)$amount, $decimals);
-    }
-}
-
 if (!function_exists('calc_growth')) {
     function calc_growth($current, $previous) {
         if ($previous == 0) return $current > 0 ? 100 : 0;

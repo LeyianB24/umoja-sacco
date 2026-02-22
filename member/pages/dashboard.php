@@ -66,6 +66,8 @@ for ($i = 5; $i >= 0; $i--) {
 }
 
 // Recent Transactions
+
+// Recent Transactions
 $recent_txn = [];
 $stmt = $conn->prepare("SELECT transaction_type, amount, created_at, reference_no FROM transactions WHERE member_id = ? ORDER BY created_at DESC LIMIT 5");
 $stmt->bind_param("i", $member_id);
@@ -74,7 +76,6 @@ $res = $stmt->get_result();
 while($row = $res->fetch_assoc()) $recent_txn[] = $row;
 $stmt->close();
 
-function ksh($v) { return number_format((float)($v ?? 0), 2); }
 ?>
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="light">
