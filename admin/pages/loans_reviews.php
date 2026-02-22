@@ -243,7 +243,6 @@ $stats = $db->query("SELECT
     COUNT(CASE WHEN status='disbursed' OR status='active' THEN 1 END) as active
     FROM loans")->fetch_assoc();
 
-function ksh($v, $d = 2) { return number_format((float)($v ?? 0), $d); }
 ?>
 <?php $layout->header($pageTitle ?? 'Loan Management'); ?>
     <style>

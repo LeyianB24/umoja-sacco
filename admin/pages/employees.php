@@ -50,9 +50,6 @@ if (!function_exists('getInitials')) {
         return strtoupper(substr($acronym, 0, 2)); 
     }
 }
-if (!function_exists('ksh')) {
-    function ksh($v, $d = 2) { return number_format((float)($v ?? 0), $d); }
-}
 if (!function_exists('time_ago')) {
     function time_ago($datetime) {
         if(!$datetime) return 'Never';
