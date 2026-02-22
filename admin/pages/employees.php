@@ -269,7 +269,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['action']) && $_POST['action'] === 'download_payslip') {
         $pid = intval($_POST['payroll_id']);
         $pq = $db->query("SELECT p.*, e.full_name, e.employee_no, e.company_email, e.personal_email, 
-                          e.job_title, e.kra_pin, e.nssf_no, e.nhif_no, e.bank_name, e.bank_account, sg.grade_name 
+                          e.job_title, e.kra_pin, e.nssf_no, e.sha_no, e.bank_name, e.bank_account, sg.grade_name 
                           FROM payroll p 
                           JOIN employees e ON p.employee_id = e.employee_id 
                           LEFT JOIN salary_grades sg ON e.grade_id = sg.id
@@ -277,9 +277,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($pq->num_rows > 0) {
             $row = $pq->fetch_assoc();
             $data = ['employee' => $row, 'payroll' => $row];
-            UniversalExportEngine::handle('pdf', function($pdf) use ($data) {
+            require_once __DIR__ . '/../../inc/ExportHelper.php';
+            ExportHelper::pdf("Payslip - " . $row['month'], [], function($pdf) use ($data) {
                 PayslipGenerator::render($pdf, $data);
-            }, ['title' => "Payslip - " . $row['month'], 'module' => 'Payroll', 'output_mode' => 'D']);
+            }, "payslip.pdf", 'D');
             exit;
         }
     }
@@ -625,17 +626,20 @@ $pageTitle = "People & Access";
                                 <div class="d-flex gap-2">
                                     <?php if ($active_run['status'] === 'draft'): ?>
                                         <form method="POST" class="d-inline">
+                                            <?= csrf_field() ?>
                                             <input type="hidden" name="action" value="calculate_batch">
                                             <input type="hidden" name="run_id" value="<?= $active_run['id'] ?>">
                                             <button type="submit" class="btn btn-sm btn-dark rounded-pill px-3">Calculate</button>
                                         </form>
                                         <form method="POST" class="d-inline">
+                                            <?= csrf_field() ?>
                                             <input type="hidden" name="action" value="approve_run">
                                             <input type="hidden" name="run_id" value="<?= $active_run['id'] ?>">
                                             <button type="submit" class="btn btn-sm btn-primary rounded-pill px-3">Approve</button>
                                         </form>
                                     <?php elseif ($active_run['status'] === 'approved'): ?>
                                         <form method="POST" class="d-inline">
+                                            <?= csrf_field() ?>
                                             <input type="hidden" name="action" value="disburse_run">
                                             <input type="hidden" name="run_id" value="<?= $active_run['id'] ?>">
                                             <button type="submit" class="btn btn-sm btn-success rounded-pill px-3">Disburse Funds</button>
@@ -675,6 +679,7 @@ $pageTitle = "People & Access";
                                                     <?php if($item['status'] === 'paid'): ?>
                                                         <li>
                                                             <form method="POST" class="d-inline">
+                                                                <?= csrf_field() ?>
                                                                 <input type="hidden" name="action" value="download_payslip">
                                                                 <input type="hidden" name="payroll_id" value="<?= $item['id'] ?>">
                                                                 <button type="submit" class="dropdown-item"><i class="bi bi-file-earmark-pdf me-2 text-danger"></i>Download Slip</button>
@@ -761,6 +766,7 @@ $pageTitle = "People & Access";
             </div>
             <div class="modal-body p-4">
                 <form method="POST" class="needs-validation" novalidate>
+                    <?= csrf_field() ?>
                     <input type="hidden" name="action" value="add_employee">
                     
                     <!-- Section 1: Identity -->
@@ -864,6 +870,7 @@ $pageTitle = "People & Access";
             <div class="modal-header border-0 pb-0"><h5 class="fw-bold">Register Admin</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
             <div class="modal-body">
                 <form method="POST">
+                    <?= csrf_field() ?>
                     <input type="hidden" name="action" value="add_admin">
                     <div class="mb-3"><input type="text" name="full_name" class="form-control" placeholder="Full Name" required></div>
                     <div class="row g-2 mb-3">
@@ -888,6 +895,7 @@ $pageTitle = "People & Access";
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content hd-glass border-0 shadow-lg">
             <form method="POST">
+                <?= csrf_field() ?>
                 <input type="hidden" name="action" value="start_run">
                 <div class="modal-header border-bottom-0 pb-0">
                     <div>
@@ -943,6 +951,7 @@ $pageTitle = "People & Access";
             </div>
             <div class="modal-body">
                 <form method="POST">
+                    <?= csrf_field() ?>
                     <input type="hidden" name="action" value="update_employee">
                     <input type="hidden" name="employee_id" id="edit_emp_id">
                     <div class="mb-3">
@@ -1003,6 +1012,7 @@ $pageTitle = "People & Access";
             </div>
             <div class="modal-body">
                 <form method="POST">
+                    <?= csrf_field() ?>
                     <input type="hidden" name="action" value="update_admin">
                     <input type="hidden" name="admin_id" id="edit_admin_id">
                     <div class="mb-3">

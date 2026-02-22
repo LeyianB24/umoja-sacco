@@ -79,7 +79,11 @@ if ($end_date) {
 
 // 4. Handle Export
 if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_excel', 'print_report'])) {
-    require_once __DIR__ . '/../../core/exports/UniversalExportEngine.php';
+    if ($_GET['action'] === 'export_pdf' || $_GET['action'] === 'export_excel') {
+        require_once __DIR__ . '/../../inc/ExportHelper.php';
+    } else {
+        require_once __DIR__ . '/../../core/exports/UniversalExportEngine.php';
+    }
     
     $format = 'pdf';
     if ($_GET['action'] === 'export_excel') $format = 'excel';
@@ -109,17 +113,26 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
         ];
     }
 
-    UniversalExportEngine::handle($format, $data, [
-        'title' => 'Golden Ledger Export',
-        'module' => 'Central Treasury',
-        'headers' => ['Date', 'Reference', 'Entity', 'Type', 'Amount', 'Notes'],
-        'total_value' => $total_val,
-        'filters' => [
-            'Search' => $search_query ?: 'None',
-            'Type' => $filter_type ?: 'All',
-            'Range' => ($start_date && $end_date) ? "$start_date to $end_date" : 'Historical'
-        ]
-    ]);
+    $title = 'Golden_Ledger_Export_' . date('Ymd_His');
+    $headers = ['Date', 'Reference', 'Entity', 'Type', 'Amount', 'Notes'];
+
+    if ($format === 'pdf') {
+        ExportHelper::pdf('Golden Ledger Export', $headers, $data, $title . '.pdf');
+    } elseif ($format === 'excel') {
+        ExportHelper::csv($title . '.csv', $headers, $data);
+    } else {
+        UniversalExportEngine::handle($format, $data, [
+            'title' => 'Golden Ledger Export',
+            'module' => 'Central Treasury',
+            'headers' => $headers,
+            'total_value' => $total_val,
+            'filters' => [
+                'Search' => $search_query ?: 'None',
+                'Type' => $filter_type ?: 'All',
+                'Range' => ($start_date && $end_date) ? "$start_date to $end_date" : 'Historical'
+            ]
+        ]);
+    }
     exit;
 }
 

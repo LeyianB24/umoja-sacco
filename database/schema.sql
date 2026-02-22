@@ -242,6 +242,22 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     INDEX idx_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE IF NOT EXISTS transaction_alerts (
+    alert_id        INT AUTO_INCREMENT PRIMARY KEY,
+    alert_type      VARCHAR(50) NOT NULL,
+    severity        ENUM('info','warning','critical') DEFAULT 'warning',
+    contribution_id INT NOT NULL,
+    member_id       INT NULL,
+    message         TEXT NOT NULL,
+    acknowledged    TINYINT(1) DEFAULT 0,
+    acknowledged_at TIMESTAMP NULL,
+    acknowledged_by INT NULL,
+    created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_contribution (contribution_id),
+    INDEX idx_acknowledged (acknowledged),
+    INDEX idx_created_at (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE IF NOT EXISTS callback_logs (
     log_id                INT AUTO_INCREMENT PRIMARY KEY,
     callback_type         VARCHAR(50) NOT NULL,

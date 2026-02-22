@@ -133,7 +133,7 @@ $layout->header("Transaction Monitor"); ?>
                                                     </div>
                                                 </td>
                                                 <td><?php echo ucfirst($s['contribution_type']); ?></td>
-                                                <td>KES <?php echo number_format($s['amount'], 2); ?></td>
+                                                <td>KES <?php echo number_format((float)$s['amount'], 2); ?></td>
                                                 <td><code><?php echo $s['reference_no']; ?></code></td>
                                                 <td>
                                                     <form method="POST" style="display:inline;">
@@ -188,6 +188,7 @@ $layout->header("Transaction Monitor"); ?>
                     </div>
                 </div>
             </div>
+            <?php $layout->footer(); ?>
         </div>
     </div>
 </div>
@@ -204,6 +205,6 @@ function viewCallbackLog(checkoutId) {
 </script>
 
         </div>
-        <?php $layout->footer(); ?>
+        
     </div>
 </div>

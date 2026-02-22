@@ -155,6 +155,12 @@ while ($row = $inv_data_res->fetch_assoc()) {
 
 // Handle Export
 if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_excel', 'print_report'])) {
+    if ($_GET['action'] === 'export_pdf' || $_GET['action'] === 'export_excel') {
+        require_once __DIR__ . '/../../inc/ExportHelper.php';
+    } else {
+        require_once __DIR__ . '/../../core/exports/UniversalExportEngine.php';
+    }
+
     $format = match($_GET['action']) { 'export_excel' => 'excel', 'print_report' => 'print', default => 'pdf' };
     $export_data = [];
     foreach ($revenue_data as $row) {
@@ -167,12 +173,22 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
             'Details' => $row['notes']
         ];
     }
-    UniversalExportEngine::handle($format, $export_data, [
-        'title' => 'Revenue Ledger',
-        'module' => 'Revenue Analysis',
-        'headers' => ['Date', 'Ref', 'Source', 'Method', 'Amount', 'Details'],
-        'total_value' => $total_period_rev
-    ]);
+    
+    $title = 'Revenue_Ledger_' . date('Ymd_His');
+    $headers = ['Date', 'Ref', 'Source', 'Method', 'Amount', 'Details'];
+
+    if ($format === 'pdf') {
+        ExportHelper::pdf('Revenue Ledger', $headers, $export_data, $title . '.pdf');
+    } elseif ($format === 'excel') {
+        ExportHelper::csv($title . '.csv', $headers, $export_data);
+    } else {
+        UniversalExportEngine::handle($format, $export_data, [
+            'title' => 'Revenue Ledger',
+            'module' => 'Revenue Analysis',
+            'headers' => $headers,
+            'total_value' => $total_period_rev
+        ]);
+    }
     exit;
 }
 

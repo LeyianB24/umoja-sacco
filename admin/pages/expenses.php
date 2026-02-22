@@ -124,7 +124,12 @@ if ($result) {
 
 // Handle Export
 if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_excel', 'print_report'])) {
-    require_once __DIR__ . '/../../core/exports/UniversalExportEngine.php';
+    if ($_GET['action'] === 'export_pdf' || $_GET['action'] === 'export_excel') {
+        require_once __DIR__ . '/../../inc/ExportHelper.php';
+    } else {
+        require_once __DIR__ . '/../../core/exports/UniversalExportEngine.php';
+    }
+    
     $format = match($_GET['action']) { 'export_excel' => 'excel', 'print_report' => 'print', default => 'pdf' };
     $export_data = [];
     foreach ($expenses as $ex) {
@@ -139,12 +144,22 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
             'Status' => (stripos($ex['notes'], 'pending') !== false) ? 'Pending' : 'Paid'
         ];
     }
-    UniversalExportEngine::handle($format, $export_data, [
-        'title' => 'Expense Ledger',
-        'module' => 'Expense Management',
-        'headers' => ['Date', 'Reference', 'Payee/Details', 'Category', 'Amount', 'Status'],
-        'total_value' => $total_period_expense
-    ]);
+    
+    $title = 'Expense_Ledger_' . date('Ymd_His');
+    $headers = ['Date', 'Reference', 'Payee/Details', 'Category', 'Amount', 'Status'];
+
+    if ($format === 'pdf') {
+        ExportHelper::pdf('Expense Ledger', $headers, $export_data, $title . '.pdf');
+    } elseif ($format === 'excel') {
+        ExportHelper::csv($title . '.csv', $headers, $export_data);
+    } else {
+        UniversalExportEngine::handle($format, $export_data, [
+            'title' => 'Expense Ledger',
+            'module' => 'Expense Management',
+            'headers' => $headers,
+            'total_value' => $total_period_expense
+        ]);
+    }
     exit;
 }
 

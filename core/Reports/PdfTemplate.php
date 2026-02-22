@@ -177,39 +177,44 @@ class PdfTemplate extends FPDF {
     }
 
     /**
-     * Draw a row with MultiCell support
+     * Draw a row with MultiCell support and Pagination
      */
     public function Row($data, $widths, $aligns, $lineHeight=5, $fill=false) {
         // Calculate the height of the row
         $nb = 0;
-        for($i=0;$i<count($data);$i++) {
-            $nb = max($nb, $this->NbLines($widths[$i], $data[$i]));
+        for($i=0; $i<count($data); $i++) {
+            $nb = max($nb, $this->NbLines($widths[$i], (string)$data[$i]));
         }
         $h = $lineHeight * $nb;
 
         // Issue a page break first if needed
         $this->CheckPageBreak($h, $widths, $aligns);
 
+        // Save the current position
+        $x = $this->GetX();
+        $y = $this->GetY();
+
         // Draw the cells of the row
-        for($i=0;$i<count($data);$i++) {
+        for($i=0; $i<count($data); $i++) {
             $w = $widths[$i];
             $a = isset($aligns[$i]) ? $aligns[$i] : 'L';
             
-            // Save the current position
-            $x = $this->GetX();
-            $y = $this->GetY();
-            
-            // Draw the border
-            $this->Rect($x, $y, $w, $h, $fill ? 'DF' : 'D');
+            // Output the cell border and background
+            if ($fill) {
+                $this->Rect($x, $y, $w, $h, 'DF');
+            } else {
+                $this->Rect($x, $y, $w, $h, 'D');
+            }
             
             // Print the text
-            $this->MultiCell($w, $lineHeight, $data[$i], 0, $a);
+            $this->SetXY($x, $y);
+            $this->MultiCell($w, $lineHeight, (string)$data[$i], 0, $a);
             
-            // Put the position to the right of the cell
-            $this->SetXY($x + $w, $y);
+            // Advance x position
+            $x += $w;
         }
         // Go to the next line
-        $this->Ln($h);
+        $this->SetXY($this->lMargin, $y + $h);
     }
 
     /**
@@ -219,8 +224,6 @@ class PdfTemplate extends FPDF {
         // If the height h would cause an overflow, add a new page immediately
         if($this->GetY() + $h > $this->PageBreakTrigger) {
             $this->AddPage($this->CurOrientation);
-            
-            // Optional: Reprint headers if we had them passed (simplified here)
         }
     }
 
@@ -232,7 +235,7 @@ class PdfTemplate extends FPDF {
         if($w == 0)
             $w = $this->w - $this->rMargin - $this->x;
         $wmax = ($w - 2 * $this->cMargin) * 1000 / $this->FontSize;
-        $s = str_replace("\r", '', (string)$txt);
+        $s = str_replace("\r", '', (string)$txt); // Explicitly cast to string here
         $nb = strlen($s);
         if($nb > 0 && $s[$nb - 1] == "\n")
             $nb--;
@@ -253,7 +256,7 @@ class PdfTemplate extends FPDF {
             }
             if($c == ' ')
                 $sep = $i;
-            $l += $cw[$c];
+            $l += $cw[$c] ?? 0;
             if($l > $wmax) {
                 if($sep == -1) {
                     if($i == $j)

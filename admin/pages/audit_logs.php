@@ -60,7 +60,11 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
     $stmt_e->execute();
     $export_logs = $stmt_e->get_result();
 
-    require_once __DIR__ . '/../../core/exports/UniversalExportEngine.php';
+    if ($_GET['action'] === 'export_pdf' || $_GET['action'] === 'export_excel') {
+        require_once __DIR__ . '/../../inc/ExportHelper.php';
+    } else {
+        require_once __DIR__ . '/../../core/exports/UniversalExportEngine.php';
+    }
     
     $format = 'pdf';
     if ($_GET['action'] === 'export_excel') $format = 'excel';
@@ -79,12 +83,21 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
         ];
     }
 
-    UniversalExportEngine::handle($format, $data, [
-        'title' => 'System Audit Logs',
-        'module' => 'Security Audit',
-        'headers' => ['Time', 'Actor', 'Role', 'Action', 'Details', 'IP'],
-        'orientation' => 'L' // Landscape for audit logs due to details length
-    ]);
+    $title = 'System_Audit_Logs_' . date('Ymd_His');
+    $headers = ['Time', 'Actor', 'Role', 'Action', 'Details', 'IP'];
+
+    if ($format === 'pdf') {
+        ExportHelper::pdf('System Audit Logs', $headers, $data, $title . '.pdf', 'D', ['orientation' => 'L']);
+    } elseif ($format === 'excel') {
+        ExportHelper::csv($title . '.csv', $headers, $data);
+    } else {
+        UniversalExportEngine::handle($format, $data, [
+            'title' => 'System Audit Logs',
+            'module' => 'Security Audit',
+            'headers' => $headers,
+            'orientation' => 'L' // Landscape for audit logs due to details length
+        ]);
+    }
     exit;
 }
 

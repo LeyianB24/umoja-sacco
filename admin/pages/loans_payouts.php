@@ -181,12 +181,16 @@ if (isset($_GET['export']) && in_array($_GET['export'], ['pdf', 'excel'])) {
         ];
     }
     
-    UniversalExportEngine::handle($_GET['export'], $export_data, [
-        'title' => 'Loan Management Report',
-        'module' => 'Loan Portfolio',
-        'headers' => ['ID', 'Member', 'ID No', 'Amount', 'Status', 'Applied'],
-        'total_value' => $total_val
-    ]);
+    require_once __DIR__ . '/../../inc/ExportHelper.php';
+    
+    $title = 'Loan_Management_Report_' . date('Ymd_His');
+    $headers = ['ID', 'Member', 'ID No', 'Amount', 'Status', 'Applied'];
+
+    if ($_GET['export'] === 'pdf') {
+        ExportHelper::pdf('Loan Management Report', $headers, $export_data, $title . '.pdf');
+    } elseif ($_GET['export'] === 'excel') {
+        ExportHelper::csv($title . '.csv', $headers, $export_data);
+    }
     exit;
 }
 

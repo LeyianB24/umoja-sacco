@@ -12,13 +12,14 @@ class ExportHelper {
      * Generate Branded PDF from Data Array
      * Delegates to the central ExportManager.
      */
-    public static function pdf($title, $headers, $data, $filename = 'report.pdf') {
+    public static function pdf($title, $headers, $data, $filename = 'report.pdf', $outputMode = 'D', $options = []) {
         // Map to ExportManager
-        ExportManager::export('pdf', $data, [
+        return ExportManager::export('pdf', $data, array_merge([
             'title' => $title,
             'module' => 'Standard Export',
-            'headers' => $headers
-        ]);
+            'headers' => $headers,
+            'output_mode' => $outputMode
+        ], $options));
     }
     
     /**

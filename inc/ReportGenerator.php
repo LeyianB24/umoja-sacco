@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 // usms/inc/ReportGenerator.php
-require_once __DIR__ . '/../core/finance/FinancialExportEngine.php';
+require_once __DIR__ . '/ExportHelper.php';
 
 class ReportGenerator {
     private $db;
@@ -142,12 +142,12 @@ class ReportGenerator {
     }
 
     /**
-     * PDF Generation via FinancialExportEngine
+     * PDF Generation via ExportHelper
      */
     public function generatePDF($title, $data, $returnString = false) {
         $outputMode = $returnString ? 'S' : 'D';
         
-        return FinancialExportEngine::export('pdf', function($pdf) use ($data) {
+        return ExportHelper::pdf($title, [], function($pdf) use ($data) {
             // Header
             $pdf->SetFont('Arial', 'B', 16);
             $pdf->SetTextColor(20, 61, 48); // Forest Green
@@ -223,16 +223,11 @@ class ReportGenerator {
             $pdf->SetTextColor(150);
             $pdf->Cell(190, 5, 'This is a system-generated report and remains a true representation of the Sacco\'s financial position.', 0, 1, 'C');
             $pdf->Cell(190, 5, 'Certification Hash: ' . md5(time() . rand()), 0, 1, 'C');
-        }, [
-            'title' => $title,
-            'module' => 'Finance Module',
-            'output_mode' => $outputMode,
-            'total_value' => $data['totals']['assets'] // Log the asset total as the value
-        ]);
+        }, 'report.pdf', $outputMode);
     }
 
     /**
-     * Excel Export via FinancialExportEngine
+     * Excel Export via ExportHelper
      */
     public function generateExcel($data) {
         $exportData = [];
@@ -252,19 +247,14 @@ class ReportGenerator {
         }
         $exportData[] = ['TOTAL EQUITIES & LIABILITIES', $data['totals']['liability']];
 
-        FinancialExportEngine::export('excel', $exportData, [
-            'title' => 'Statement of Financial Position',
-            'module' => 'Finance Module',
-            'headers' => ['Description', 'Amount (KES)'],
-            'total_value' => $data['totals']['assets']
-        ]);
+        ExportHelper::csv('Statement_of_Financial_Position.csv', ['Description', 'Amount (KES)'], $exportData);
     }
 
     /**
      * Certified Member Statement Export
      */
     public function generateMemberStatement($memberData, $transactions) {
-        FinancialExportEngine::export('pdf', function($pdf) use ($memberData, $transactions) {
+        ExportHelper::pdf('Member Statement', [], function($pdf) use ($memberData, $transactions) {
             $pdf->Ln(5);
 
             // Member Info
@@ -339,11 +329,6 @@ class ReportGenerator {
             $pdf->Cell(70, 5, '', 0, 0);
             $pdf->Cell(60, 5, 'Date of Issue', 0, 1, 'C');
 
-        }, [
-            'title' => 'Member Statement',
-            'module' => 'Members Module',
-            'account_ref' => $memberData['member_reg_no'] ?? $memberData['member_id'],
-            'total_value' => $memberData['total_savings'] // Log savings as significant value
-        ]);
+        });
     }
 }

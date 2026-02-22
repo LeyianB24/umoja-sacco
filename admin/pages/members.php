@@ -47,6 +47,47 @@ $members = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 $pageTitle = "Registry Control Center";
 // admin/members.php
 
+// HANDLE EXPORT ACTIONS
+if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_excel', 'print_report'])) {
+    if ($_GET['action'] === 'export_pdf' || $_GET['action'] === 'export_excel') {
+        require_once __DIR__ . '/../../inc/ExportHelper.php';
+    } else {
+        require_once __DIR__ . '/../../core/exports/UniversalExportEngine.php';
+    }
+    
+    $format = 'pdf';
+    if ($_GET['action'] === 'export_excel') $format = 'excel';
+    if ($_GET['action'] === 'print_report') $format = 'print';
+
+    $data = [];
+    foreach($members as $m) {
+        $data[] = [
+            'ID' => $m['national_id'],
+            'Name' => $m['full_name'],
+            'Email' => $m['email'],
+            'Phone' => $m['phone'],
+            'Status' => strtoupper($m['status']),
+            'Joined' => date('d-M-Y', strtotime($m['join_date']))
+        ];
+    }
+
+    $title = 'Member_Directory_' . date('Ymd_His');
+    $headers = ['ID', 'Name', 'Email', 'Phone', 'Status', 'Joined'];
+
+    if ($format === 'pdf') {
+        ExportHelper::pdf('Member Directory', $headers, $data, $title . '.pdf');
+    } elseif ($format === 'excel') {
+        ExportHelper::csv($title . '.csv', $headers, $data);
+    } else {
+        UniversalExportEngine::handle($format, $data, [
+            'title' => 'Member Directory',
+            'module' => 'Registry Control',
+            'headers' => $headers
+        ]);
+    }
+    exit;
+}
+
 require_permission();
 ?>
 <?php $layout->header($pageTitle); ?>

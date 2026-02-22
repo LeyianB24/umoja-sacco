@@ -248,9 +248,9 @@ $pageTitle = "My Notifications";
 
                 </div>
             </div>
-
+<?php $layout->footer(); ?>
             </div>
-            <?php $layout->footer(); ?>
+            
         </div>
 </div>
 
