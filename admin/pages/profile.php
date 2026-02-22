@@ -77,7 +77,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // 3. Fetch Data
-$stmt = $conn->prepare("SELECT a.*, r.department, r.role_name FROM admins a LEFT JOIN roles r ON a.role_id = r.role_id WHERE a.admin_id = ?");
+$stmt = $conn->prepare("SELECT a.*, r.name as role_name FROM admins a LEFT JOIN roles r ON a.role_id = r.id WHERE a.admin_id = ?");
 $stmt->bind_param("i", $admin_id);
 $stmt->execute();
 $admin = $stmt->get_result()->fetch_assoc();
@@ -451,18 +451,17 @@ $pageTitle = "My Profile";
                         </div>
                     </div>
                 </div>
-
             </div>
             
-            </div>
-            <?php $layout->footer(); ?>
         </div>
+        <!-- End container-fluid -->
         
+        <?php $layout->footer(); ?>
     </div>
-     
+    <!-- End main-content-wrapper -->
 </div>
+<!-- End d-flex wrapper -->
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     // Image Preview Logic
     function previewImage(event) {
@@ -479,5 +478,4 @@ $pageTitle = "My Profile";
         }
     }
 </script>
-</body>
-</html>
+

@@ -125,6 +125,7 @@ if (!function_exists('getInitials')) {
 }
 $server_ip = $_SERVER['SERVER_ADDR'] ?? '127.0.0.1';
 $php_v     = phpversion();
+$pageTitle = 'System Settings';
 ?>
 <?php $layout->header($pageTitle); ?>
 

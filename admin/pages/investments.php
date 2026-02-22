@@ -656,6 +656,7 @@ $global = $conn->query("SELECT
                     <button type="submit" class="btn btn-lime rounded-pill px-5 shadow-lg">Confirm & Register Asset</button>
                 </div>
             </form>
+              <?php $layout->footer(); ?>
         </div>
     </div>
 </div>

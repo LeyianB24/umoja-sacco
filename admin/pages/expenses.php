@@ -300,8 +300,12 @@ $investments_all = $investments_list->fetch_all(MYSQLI_ASSOC);
                         </tbody>
                     </table>
                 </div>
+                  <?php $layout->footer(); ?>
                 </div>
             </div>
+            
+        </div>
+        <!-- END container-fluid -->
 
 <!-- Classic Record Expenditure Modal -->
 <div class="modal fade" id="addExpenseModal" tabindex="-1">
@@ -383,6 +387,8 @@ $investments_all = $investments_list->fetch_all(MYSQLI_ASSOC);
     </div>
 </div>
 
-        <?php $layout->footer(); ?>
+      
     </div>
+    <!-- END main-content-wrapper -->
 </div>
+<!-- END d-flex -->

@@ -294,7 +294,8 @@ $pageTitle = "System Dashboard";
                     <?php endif; ?>
                 </div>
             </div>
+            <?php $layout->footer(); ?>
         </div>
-        <?php $layout->footer(); ?>
+        
     </div>
 </div>
