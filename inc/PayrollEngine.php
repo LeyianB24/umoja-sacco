@@ -117,7 +117,7 @@ class PayrollEngine {
         if ($run['status'] !== 'draft') throw new Exception("Run must be in draft to approve.");
 
         // Move to Approved
-        $this->db->query("UPDATE payroll_runs SET status = 'approved', processed_by = $approverId WHERE id = $run_id");
+        $this->db->query("UPDATE payroll_runs SET status = 'approved', approved_by = " . intval($approverId) . ", approved_at = NOW() WHERE id = " . intval($run_id));
         return true;
     }
 

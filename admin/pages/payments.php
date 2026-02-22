@@ -129,6 +129,12 @@ if (!empty($_GET['search'])) {
 
 // HANDLE EXPORT
 if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_excel', 'print_report'])) {
+    if ($_GET['action'] === 'export_pdf' || $_GET['action'] === 'export_excel') {
+        require_once __DIR__ . '/../../inc/ExportHelper.php';
+    } else {
+        require_once __DIR__ . '/../../core/exports/UniversalExportEngine.php';
+    }
+
     $sql_export = "SELECT t.*, m.full_name, m.national_id 
                    FROM transactions t 
                    LEFT JOIN members m ON t.member_id = m.member_id 
@@ -139,8 +145,6 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
     $stmt_e->execute();
     $export_data_raw = $stmt_e->get_result()->fetch_all(MYSQLI_ASSOC);
 
-    require_once __DIR__ . '/../../core/exports/UniversalExportEngine.php';
-    
     $format = 'pdf';
     if ($_GET['action'] === 'export_excel') $format = 'excel';
     if ($_GET['action'] === 'print_report') $format = 'print';
@@ -159,12 +163,21 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
         ];
     }
 
-    UniversalExportEngine::handle($format, $data, [
-        'title' => 'Payments Ledger',
-        'module' => 'Finance Management',
-        'headers' => ['Date', 'Reference', 'Member/Entity', 'Type', 'Amount', 'Notes'],
-        'total_value' => $total_val
-    ]);
+    $title = 'Payments_Ledger_' . date('Ymd_His');
+    $headers = ['Date', 'Reference', 'Member/Entity', 'Type', 'Amount', 'Notes'];
+
+    if ($format === 'pdf') {
+        ExportHelper::pdf('Payments Ledger', $headers, $data, $title . '.pdf');
+    } elseif ($format === 'excel') {
+        ExportHelper::csv($title . '.csv', $headers, $data);
+    } else {
+        UniversalExportEngine::handle($format, $data, [
+            'title' => 'Payments Ledger',
+            'module' => 'Finance Management',
+            'headers' => $headers,
+            'total_value' => $total_val
+        ]);
+    }
     exit;
 }
 

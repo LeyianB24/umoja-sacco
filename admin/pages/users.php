@@ -177,8 +177,9 @@ $pageTitle = "Staff Management";
                         </tbody>
                     </table>
                 </div>
+                <?php $layout->footer(); ?>
         </div>
-        <?php $layout->footer(); ?>
+        
     </div>
 </div>
 
@@ -274,4 +275,4 @@ function openEditModal(data) {
     new bootstrap.Modal(document.getElementById('editUserModal')).show();
 }
 </script>
-<?php $layout->footer(); ?>
+

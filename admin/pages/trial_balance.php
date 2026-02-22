@@ -74,15 +74,17 @@ $is_balanced = abs($balance_check) < 0.01;
 
 // 4. Handle Export Actions
 if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_excel', 'print_report'])) {
-    require_once __DIR__ . '/../../core/exports/UniversalExportEngine.php';
+    if ($_GET['action'] === 'export_pdf' || $_GET['action'] === 'export_excel') {
+        require_once __DIR__ . '/../../inc/ExportHelper.php';
+    } else {
+        require_once __DIR__ . '/../../core/exports/UniversalExportEngine.php';
+    }
     
     $format = 'pdf';
     if ($_GET['action'] === 'export_excel') $format = 'excel';
     if ($_GET['action'] === 'print_report') $format = 'print';
 
     $export_data = [];
-    $export_data[] = ['Category', 'Account', 'Amount (Dr)', 'Amount (Cr)'];
-    
     foreach ($assets as $a) $export_data[] = ['ASSET', $a['account_name'], number_format((float)$a['current_balance'], 2), ''];
     $export_data[] = ['ASSET', 'TOTAL ASSETS', number_format((float)$total_assets, 2), ''];
     $export_data[] = ['', '', '', ''];
@@ -92,12 +94,22 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
     $export_data[] = ['EQUITY', 'Net Income (P&L)', '', number_format((float)$net_income, 2)];
     $export_data[] = ['', 'TOTAL LIAB + EQUITY', '', number_format((float)($total_liabilities + $total_equity), 2)];
     
-    UniversalExportEngine::handle($format, $export_data, [
-        'title' => 'Trial Balance Audit Proof',
-        'module' => 'Internal Audit',
-        'is_balanced' => $is_balanced,
-        'difference' => $balance_check
-    ]);
+    $title = 'Trial_Balance_Audit_Proof_' . date('Ymd_His');
+    $headers = ['Category', 'Account', 'Amount (Dr)', 'Amount (Cr)'];
+
+    if ($format === 'pdf') {
+        ExportHelper::pdf('Trial Balance Audit Proof', $headers, $export_data, $title . '.pdf');
+    } elseif ($format === 'excel') {
+        ExportHelper::csv($title . '.csv', $headers, $export_data);
+    } else {
+        array_unshift($export_data, $headers);
+        UniversalExportEngine::handle($format, $export_data, [
+            'title' => 'Trial Balance Audit Proof',
+            'module' => 'Internal Audit',
+            'is_balanced' => $is_balanced,
+            'difference' => $balance_check
+        ]);
+    }
     exit;
 }
 ?>

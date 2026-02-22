@@ -31,6 +31,7 @@ $recent_logs = $recent_logs_q->fetch_all(MYSQLI_ASSOC);
 
 $pageTitle = "System Health & Integrity";
 ?>
+<?php $layout->header($pageTitle); ?>
     <style>
         .main-content-wrapper { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; }
         @media (max-width: 991px) { .main-content-wrapper { margin-left: 0; padding: 1.5rem; } }
@@ -154,8 +155,8 @@ $pageTitle = "System Health & Integrity";
                 </div>
             </div>
         </div>
-
+<?php $layout->footer(); ?>
         </div>
-        <?php $layout->footer(); ?>
+        
     </div>
 </div>

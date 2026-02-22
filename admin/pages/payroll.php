@@ -79,7 +79,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['action']) && $_POST['action'] === 'download_payslip') {
         $pid = intval($_POST['payroll_id']);
         $pq = $db->query("SELECT p.*, e.full_name, e.employee_no, e.organization_email, e.personal_email, 
-                          e.job_title, e.kra_pin, e.nssf_no, e.nhif_no, e.bank_name, e.bank_account, sg.grade_name 
+                          e.job_title, e.kra_pin, e.nssf_no, e.sha_no, e.bank_name, e.bank_account, sg.grade_name 
                           FROM payroll p 
                           JOIN employees e ON p.employee_id = e.employee_id 
                           LEFT JOIN salary_grades sg ON e.grade_id = sg.id
@@ -87,9 +87,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($pq->num_rows > 0) {
             $row = $pq->fetch_assoc();
             $data = ['employee' => $row, 'payroll' => $row];
-            UniversalExportEngine::handle('pdf', function($pdf) use ($data) {
+            require_once __DIR__ . '/../../inc/ExportHelper.php';
+            ExportHelper::pdf("Payslip - " . $row['month'], [], function($pdf) use ($data) {
                 PayslipGenerator::render($pdf, $data);
-            }, ['title' => "Payslip - " . $row['month'], 'module' => 'Payroll', 'output_mode' => 'D']);
+            }, "payslip.pdf", 'D');
             exit;
         }
         flash_set("Record not found.", "danger"); 
@@ -100,7 +101,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['action']) && $_POST['action'] === 'email_payslip') {
         $pid = intval($_POST['payroll_id']);
         $pq = $db->query("SELECT p.*, e.full_name, e.employee_no, e.company_email, e.personal_email, 
-                          e.job_title, e.kra_pin, e.nssf_no, e.nhif_no, e.bank_name, e.bank_account, sg.grade_name 
+                          e.job_title, e.kra_pin, e.nssf_no, e.sha_no, e.bank_name, e.bank_account, sg.grade_name 
                           FROM payroll p 
                           JOIN employees e ON p.employee_id = e.employee_id 
                           LEFT JOIN salary_grades sg ON e.grade_id = sg.id
@@ -112,11 +113,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             if ($email) {
                 $data = ['employee' => $row, 'payroll' => $row];
-                $pdfContent = UniversalExportEngine::handle('pdf', function($pdf) use ($data) {
+                require_once __DIR__ . '/../../inc/ExportHelper.php';
+                $pdfContent = ExportHelper::pdf("Payslip", [], function($pdf) use ($data) {
                     PayslipGenerator::render($pdf, $data);
-                }, ['title' => "Payslip", 'module' => 'Payroll', 'output_mode' => 'S']);
+                }, "payslip.pdf", 'S');
                 
-                $monthName = date('F Y', strtotime($row['month']));
+                $monthName = $row['month'] ? date('F Y', strtotime($row['month'])) : 'Unknown';
                 $subject = "Payslip for $monthName - " . SITE_NAME;
                 $body = "Dear {$row['full_name']},<br><br>Please find attached your payslip for <b>$monthName</b>.";
                 
@@ -136,7 +138,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['action']) && $_POST['action'] === 'email_batch') {
         $run_id = intval($_POST['run_id']);
         $sent_count = 0;
-        $pq = $db->query("SELECT p.*, e.full_name, e.company_email, e.personal_email, e.job_title, e.kra_pin, e.nssf_no, e.nhif_no, e.bank_name, e.bank_account, sg.grade_name 
+        $pq = $db->query("SELECT p.*, e.full_name, e.company_email, e.personal_email, e.job_title, e.kra_pin, e.nssf_no, e.sha_no, e.bank_name, e.bank_account, sg.grade_name 
                           FROM payroll p 
                           JOIN employees e ON p.employee_id = e.employee_id 
                           LEFT JOIN salary_grades sg ON e.grade_id = sg.id
@@ -147,11 +149,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!$email) continue;
             
             $data = ['employee' => $row, 'payroll' => $row];
-            $pdfContent = UniversalExportEngine::handle('pdf', function($pdf) use ($data) {
+            require_once __DIR__ . '/../../inc/ExportHelper.php';
+            $pdfContent = ExportHelper::pdf("Payslip", [], function($pdf) use ($data) {
                 PayslipGenerator::render($pdf, $data);
-            }, ['title' => "Payslip", 'module' => 'Payroll', 'output_mode' => 'S']);
+            }, "payslip.pdf", 'S');
             
-            $monthName = date('F Y', strtotime($row['month']));
+            $monthName = $row['month'] ? date('F Y', strtotime($row['month'])) : 'Unknown';
             $subject = "Payslip for $monthName";
             $body = "Dear {$row['full_name']},<br><br>Please find attached your payslip for <b>$monthName</b>.";
             
@@ -453,7 +456,7 @@ $history_runs = $db->query("SELECT * FROM payroll_runs ORDER BY month DESC LIMIT
                     <?php while($h = $history_runs->fetch_assoc()): ?>
                         <a href="payroll.php?run_id=<?= $h['id'] ?>" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center px-4 py-3 bg-transparent border-bottom">
                             <div>
-                                <div class="fw-bold "><?= date('F Y', strtotime($h['month'])) ?></div>
+                                <div class="fw-bold "><?= $h['month'] ? date('F Y', strtotime($h['month'])) : 'Unknown Period' ?></div>
                                 <div class="small text-muted text-uppercase"><?= $h['status'] ?></div>
                             </div>
                             <span class="badge bg-light  border fw-normal font-monospace"><?= ksh((float)$h['total_net']) ?></span>

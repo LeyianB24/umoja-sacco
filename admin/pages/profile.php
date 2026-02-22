@@ -452,11 +452,11 @@ $pageTitle = "My Profile";
                     </div>
                 </div>
             </div>
-            
+<?php $layout->footer(); ?>            
         </div>
         <!-- End container-fluid -->
         
-        <?php $layout->footer(); ?>
+        
     </div>
     <!-- End main-content-wrapper -->
 </div>

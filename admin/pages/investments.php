@@ -183,6 +183,12 @@ if ($search) {
 
 // Global Export Handler
 if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_excel', 'print_report'])) {
+    if ($_GET['action'] === 'export_pdf' || $_GET['action'] === 'export_excel') {
+        require_once __DIR__ . '/../../inc/ExportHelper.php';
+    } else {
+        require_once __DIR__ . '/../../core/exports/UniversalExportEngine.php';
+    }
+
     $where_investments_e = count($where) > 0 ? "WHERE " . implode(" AND ", $where) : "";
     $search_only_where_e = [];
     foreach($where as $w) if(strpos($w, 'LIKE') !== false) $search_only_where_e[] = $w;
@@ -197,8 +203,6 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
     $stmt_e->execute();
     $raw_data = $stmt_e->get_result();
 
-    require_once __DIR__ . '/../../core/exports/UniversalExportEngine.php';
-    
     $format = 'pdf';
     if ($_GET['action'] === 'export_excel') $format = 'excel';
     if ($_GET['action'] === 'print_report') $format = 'print';
@@ -218,12 +222,21 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
         ];
     }
 
-    UniversalExportEngine::handle($format, $data, [
-        'title' => 'Investment Portfolio',
-        'module' => 'Asset Management',
-        'headers' => ['Asset', 'Category', 'Reg No', 'Cost', 'Valuation', 'Status', 'Purchased'],
-        'total_value' => $total_val
-    ]);
+    $title = 'Investment_Portfolio_' . date('Ymd_His');
+    $headers = ['Asset', 'Category', 'Reg No', 'Cost', 'Valuation', 'Status', 'Purchased'];
+
+    if ($format === 'pdf') {
+        ExportHelper::pdf('Investment Portfolio', $headers, $data, $title . '.pdf');
+    } elseif ($format === 'excel') {
+        ExportHelper::csv($title . '.csv', $headers, $data);
+    } else {
+        UniversalExportEngine::handle($format, $data, [
+            'title' => 'Investment Portfolio',
+            'module' => 'Asset Management',
+            'headers' => $headers,
+            'total_value' => $total_val
+        ]);
+    }
     exit;
 }
 

@@ -23,7 +23,7 @@ class FinancialIntegrityChecker {
                    (SELECT SUM(le.credit - le.debit) 
                     FROM ledger_entries le 
                     JOIN ledger_transactions lt ON le.transaction_id = lt.transaction_id
-                    WHERE lt.reference_no = c.reference_no OR lt.notes LIKE CONCAT('%', c.contribution_id, '%')) as ledger_amount
+                    WHERE lt.reference_no = c.reference_no) as ledger_amount
             FROM contributions c
             $where
             HAVING amount != IFNULL(ledger_amount, 0)

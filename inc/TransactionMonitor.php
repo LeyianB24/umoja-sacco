@@ -17,10 +17,10 @@ class TransactionMonitor {
      */
     public function getStuckPending($minutes = 5) {
         $stmt = $this->conn->prepare("
-            SELECT c.*, m.full_name, m.phone, m.email, r.checkout_request_id, r.merchant_request_id
+            SELECT c.*, m.full_name, m.phone, m.email, r.checkout_request_id
             FROM contributions c
             JOIN members m ON c.member_id = m.member_id
-            LEFT JOIN mpesa_requests r ON c.reference_no = r.reference_no
+            LEFT JOIN mpesa_requests r ON c.member_id = r.member_id
             WHERE c.status = 'pending'
             AND c.created_at < DATE_SUB(NOW(), INTERVAL ? MINUTE)
             ORDER BY c.created_at DESC
