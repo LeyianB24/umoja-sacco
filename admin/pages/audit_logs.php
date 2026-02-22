@@ -280,7 +280,8 @@ $pageTitle = "Audit Logs";
                     <small class="text-muted fw-bold">Showing latest 200 entries</small>
                 </div>
             </div>
+            <?php $layout->footer(); ?>
         </div>
-        <?php $layout->footer(); ?>
+        
     </div>
 </div>

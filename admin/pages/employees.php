@@ -852,6 +852,7 @@ $pageTitle = "People & Access";
                     </div>
                 </form>
             </div>
+            <?php $layout->footer(); ?>
         </div>
     </div>
 </div>
@@ -1030,6 +1031,10 @@ $pageTitle = "People & Access";
 </div>
 
         </div>
-        <?php $layout->footer(); ?>
+        <!-- END container-fluid -->
+        
+        
     </div>
+    <!-- END main-content-wrapper -->
 </div>
+<!-- END d-flex -->

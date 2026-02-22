@@ -581,8 +581,9 @@ $pageTitle = $member['full_name'] . " - Member Profile";
                 <?php endif; ?>
             </div>
         </div>
-        </div>
         <?php $layout->footer(); ?>
+        </div>
+        
     </div>
 </div>
 

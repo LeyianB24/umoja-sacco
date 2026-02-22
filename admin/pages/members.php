@@ -249,10 +249,14 @@ require_permission();
                         </tbody>
                     </table>
                 </div>
+                </div>
             </div>
-            
-        <?php $layout->footer(); ?>
+            <?php $layout->footer(); ?>
+        </div>
+        <!-- END container-fluid -->
+        
+        
     </div>
+    <!-- END main-content-wrapper -->
 </div>
-</body>
-</html>
+<!-- END d-flex -->

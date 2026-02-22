@@ -1,4 +1,12 @@
-require_once '../../inc/LayoutManager.php';
+<?php
+declare(strict_types=1);
+if (session_status() === PHP_SESSION_NONE) session_start();
+
+require_once __DIR__ . '/../../config/app_config.php';
+require_once __DIR__ . '/../../config/db_connect.php';
+require_once __DIR__ . '/../../inc/Auth.php';
+require_once __DIR__ . '/../../inc/LayoutManager.php';
+require_once __DIR__ . '/../../inc/ShareValuationEngine.php';
 
 Auth::requireAdmin();
 $layout = LayoutManager::create('admin');
@@ -38,6 +46,7 @@ $totalU = (float)$valuation['total_units'] ?: 1;
 $stmt->bind_param("d", $totalU);
 $stmt->execute();
 $topHolders = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+?>
 <?php $layout->header($pageTitle); ?>
     <style>
         .main-content-wrapper { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; }
@@ -69,7 +78,7 @@ $topHolders = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
                     <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
                         <div class="card-body p-4 bg-primary text-white">
                             <h6 class="text-uppercase small fw-bold opacity-75">Sacco Net Asset Value (NAV)</h6>
-                            <h2 class="fw-bold mb-0">KES <?= number_format($valuation['equity'], 2) ?></h2>
+                            <h2 class="fw-bold mb-0">KES <?= number_format((float)$valuation['equity'], 2) ?></h2>
                             <hr class="opacity-10 my-3">
                             <div class="d-flex justify-content-between">
                                 <span>Corporate Net Worth</span>
@@ -84,8 +93,8 @@ $topHolders = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
                     <div class="card border-0 shadow-sm rounded-4 h-100">
                         <div class="card-body p-4">
                             <h6 class="text-uppercase text-muted small fw-bold mb-3">Current Unit Price</h6>
-                            <h2 class="fw-bold mb-1" style="color: var(--accent-green);">KES <?= number_format($valuation['price'], 2) ?></h2>
-                            <p class="text-muted small mb-0">Calculated based on <?= number_format($valuation['total_units'], 2) ?> issued units.</p>
+                             <h2 class="fw-bold mb-1" style="color: var(--accent-green);">KES <?= number_format((float)$valuation['price'], 2) ?></h2>
+                            <p class="text-muted small mb-0">Calculated based on <?= number_format((float)$valuation['total_units'], 2) ?> issued units.</p>
                         </div>
                     </div>
                 </div>
@@ -132,10 +141,10 @@ $topHolders = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
                                             <td class="ps-4">
                                                 <div class="fw-bold"><?= htmlspecialchars($holder['full_name']) ?></div>
                                             </td>
-                                            <td><?= number_format($holder['units_owned'], 4) ?></td>
-                                            <td>KES <?= number_format($holder['units_owned'] * $valuation['price'], 2) ?></td>
+                                            <td><?= number_format((float)$holder['units_owned'], 4) ?></td>
+                                            <td>KES <?= number_format((float)$holder['units_owned'] * (float)$valuation['price'], 2) ?></td>
                                             <td class="text-end pe-4">
-                                                <span class="badge bg-primary-subtle text-primary border-0"><?= number_format($holder['ownership_pct'], 2) ?>%</span>
+                                                <span class="badge bg-primary-subtle text-primary border-0"><?= number_format((float)$holder['ownership_pct'], 2) ?>%</span>
                                             </td>
                                         </tr>
                                         <?php endforeach; ?>
@@ -154,21 +163,22 @@ $topHolders = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
                         <div class="card-body">
                             <div class="d-flex justify-content-between mb-3 pb-2 border-bottom">
                                 <span class="text-muted">Total Assets</span>
-                                <span class="fw-bold text-success">KES <?= number_format($valuation['total_assets'], 2) ?></span>
+                                <span class="fw-bold text-success">KES <?= number_format((float)$valuation['total_assets'], 2) ?></span>
                             </div>
                             <div class="d-flex justify-content-between mb-3 pb-2 border-bottom">
                                 <span class="text-muted">Member Liabilities</span>
-                                <span class="fw-bold text-danger">KES <?= number_format($valuation['liabilities'], 2) ?></span>
+                                <span class="fw-bold text-danger">KES <?= number_format((float)$valuation['liabilities'], 2) ?></span>
                             </div>
                             <div class="d-flex justify-content-between mt-4">
                                 <span class="fw-bold h5">Corporate Equity</span>
-                                <span class="fw-bold h5 text-primary">KES <?= number_format($valuation['equity'], 2) ?></span>
+                                <span class="fw-bold h5 text-primary">KES <?= number_format((float)$valuation['equity'], 2) ?></span>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+            <?php $layout->footer(); ?>
         </div>
-        <?php $layout->footer(); ?>
+        
     </div>
 </div>

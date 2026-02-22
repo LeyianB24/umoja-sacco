@@ -348,6 +348,8 @@ $pageTitle = "Golden Ledger Vault";
                 </tbody>
             </table>
         </div>
+        </div>
+        
         <?php $layout->footer(); ?>
     </div>
 </div>

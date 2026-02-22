@@ -70,7 +70,7 @@ if (!function_exists('is_active')) {
             <div class="hd-nav-header">People & Access</div>
             <?php if (has_permission('employees.php')): ?>
                 <a href="<?= $base ?>/admin/pages/employees.php" class="hd-nav-item <?= is_active('employees.php') ?>">
-                    <i class="bi bi-people-fill"></i> <span class="hd-nav-text">Employees</span>
+                    <i class="bi bi-person-vcard"></i> <span class="hd-nav-text">Employees</span>
                 </a>
             <?php endif; ?>
             <?php if (has_permission('users.php') || $role === 'superadmin'): ?>
@@ -120,7 +120,7 @@ if (!function_exists('is_active')) {
             <?php endif; ?>
             <?php if (has_permission('trial_balance.php')): ?>
                 <a href="<?= $base ?>/admin/pages/trial_balance.php" class="hd-nav-item <?= is_active('trial_balance.php') ?>">
-                    <i class="bi bi-balance-scale"></i> <span class="hd-nav-text">Trial Balance</span>
+                    <i class="bi bi-clipboard-data"></i> <span class="hd-nav-text">Trial Balance</span>
                 </a>
             <?php endif; ?>
         <?php endif; ?>
@@ -139,8 +139,8 @@ if (!function_exists('is_active')) {
             <?php endif; ?>
         <?php endif; ?>
 
-        <div class="hd-nav-header">Welfare Module</div>
         <?php if (has_permission('welfare.php') || $role === 'superadmin'): ?>
+            <div class="hd-nav-header">Welfare Module</div>
             <a href="<?= $base ?>/admin/pages/welfare.php" class="hd-nav-item <?= is_active('welfare.php', ['welfare_cases.php', 'welfare_support.php']) ?>">
                 <i class="bi bi-heart-pulse"></i> <span class="hd-nav-text">Welfare Management</span>
             </a>
@@ -164,7 +164,7 @@ if (!function_exists('is_active')) {
             <div class="hd-nav-header">Reports & Exports</div>
             <?php if (has_permission('reports.php')): ?>
                 <a href="<?= $base ?>/admin/pages/reports.php" class="hd-nav-item <?= is_active('reports.php') ?>">
-                    <i class="bi bi-pie-chart"></i> <span class="hd-nav-text">Analytical Reports</span>
+                    <i class="bi bi-bar-chart-fill"></i> <span class="hd-nav-text">Analytical Reports</span>
                 </a>
             <?php endif; ?>
             <?php if (has_permission('statements.php')): ?>
@@ -188,7 +188,7 @@ if (!function_exists('is_active')) {
             <?php endif; ?>
             <?php if (has_permission('system_health.php')): ?>
                 <a href="<?= $base ?>/admin/pages/system_health.php" class="hd-nav-item <?= is_active('system_health.php') ?>">
-                    <i class="bi bi-heart-pulse"></i> <span class="hd-nav-text">System Health</span>
+                    <i class="bi bi-cpu"></i> <span class="hd-nav-text">System Health</span>
                 </a>
             <?php endif; ?>
             <?php if (has_permission('backups.php')): ?>
@@ -198,7 +198,7 @@ if (!function_exists('is_active')) {
             <?php endif; ?>
             <?php if (has_permission('audit_logs.php')): ?>
                 <a href="<?= $base ?>/admin/pages/audit_logs.php" class="hd-nav-item <?= is_active('audit_logs.php') ?>">
-                    <i class="bi bi-activity"></i> <span class="hd-nav-text">Activity Logs</span>
+                    <i class="bi bi-journal-code"></i> <span class="hd-nav-text">Activity Logs</span>
                 </a>
             <?php endif; ?>
             <?php if (has_permission('support.php')): ?>
@@ -209,6 +209,20 @@ if (!function_exists('is_active')) {
             <?php if (has_permission('settings.php')): ?>
                 <a href="<?= $base ?>/admin/pages/settings.php" class="hd-nav-item <?= is_active('settings.php') ?>">
                     <i class="bi bi-sliders"></i> <span class="hd-nav-text">Global Settings</span>
+                </a>
+            <?php endif; ?>
+        <?php endif; ?>
+
+        <?php if (has_permission('profile.php') || has_permission('notifications.php') || $role === 'superadmin'): ?>
+            <div class="hd-nav-header">My Account</div>
+            <?php if (has_permission('profile.php') || $role === 'superadmin'): ?>
+                <a href="<?= $base ?>/admin/pages/profile.php" class="hd-nav-item <?= is_active('profile.php') ?>">
+                    <i class="bi bi-person-circle"></i> <span class="hd-nav-text">My Profile</span>
+                </a>
+            <?php endif; ?>
+            <?php if (has_permission('notifications.php') || $role === 'superadmin'): ?>
+                <a href="<?= $base ?>/admin/pages/notifications.php" class="hd-nav-item <?= is_active('notifications.php') ?>">
+                    <i class="bi bi-bell"></i> <span class="hd-nav-text">Notifications</span>
                 </a>
             <?php endif; ?>
         <?php endif; ?>
