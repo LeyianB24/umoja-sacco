@@ -159,6 +159,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt_g->close();
 
         $conn->commit();
+        
+        // Notify Admins
+        require_once __DIR__ . '/../../inc/notification_helpers.php';
+        add_admin_notification(
+            "New Loan Application",
+            "A member has applied for a KES " . number_format($amount, 2) . " loan.",
+            "manager", // Target role or 'all'
+            "admin/pages/loans.php"
+        );
+        
         $_SESSION['success'] = "Loan application submitted successfully! It is now pending guarantor and admin review.";
     } catch (Exception $e) {
         $conn->rollback();

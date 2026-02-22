@@ -240,3 +240,33 @@ function add_notification($member_id, $title, $message, $type = 'info', $link = 
     
     return false;
 }
+
+
+/**
+ * Add a persistence notification to the database for Admins
+ */
+function add_admin_notification($title, $message, $to_role = 'all', $link = null, $user_id = null) {
+    global $conn;
+    
+    $user_type = 'admin';
+    
+    // Add link to message if provided
+    if ($link) {
+        $full_link = BASE_URL . '/' . ltrim($link, '/');
+        $message .= "<br><br><a href='$full_link' style='background:#D0F35D; padding:5px 10px; border-radius:10px; color:#0F392B; text-decoration:none; font-weight:bold; font-size:0.8rem; display:inline-block;'>View Action</a>";
+    }
+
+    $sql = "INSERT INTO notifications 
+            (user_id, user_type, to_role, title, message, status, is_read, created_at)
+            VALUES (?, ?, ?, ?, ?, 'unread', 0, NOW())";
+
+    if ($stmt = $conn->prepare($sql)) {
+        $uid = $user_id ? (int)$user_id : 0; // 0 or null represents all admins if to_role is not specific to an ID
+        $stmt->bind_param("issss", $uid, $user_type, $to_role, $title, $message);
+        $result = $stmt->execute();
+        $stmt->close();
+        return $result;
+    }
+    
+    return false;
+}

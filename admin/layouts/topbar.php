@@ -41,21 +41,35 @@ if (isset($conn) && isset($_SESSION['admin_id'])) {
 
     // NOTIFICATIONS
     if($conn->query("SHOW TABLES LIKE 'notifications'")->num_rows > 0) {
-        $sql = "SELECT * FROM notifications WHERE user_type = 'admin' AND user_id = ? ORDER BY created_at DESC LIMIT 5";
+        $sql = "SELECT * FROM notifications 
+                WHERE user_type = 'admin' 
+                AND (user_id = ? OR to_role = ? OR to_role = 'all') 
+                ORDER BY created_at DESC LIMIT 5";
         if($stmt=$conn->prepare($sql)){
-            $stmt->bind_param("i",$admin_id);
+            $stmt->bind_param("is", $admin_id, $user_role);
             $stmt->execute();
             $res=$stmt->get_result();
             while($n=$res->fetch_assoc()) $recent_notifs[]=$n;
             $stmt->close();
         }
 
-        $res = $conn->query("SELECT COUNT(*) as cnt FROM notifications WHERE user_type = 'admin' AND user_id = $admin_id AND status = 'unread'");
-        if ($row = $res->fetch_assoc()) $unread_notif_count = $row['cnt'];
+        $sql_cnt = "SELECT COUNT(*) as cnt FROM notifications 
+                    WHERE user_type = 'admin' 
+                    AND (user_id = ? OR to_role = ? OR to_role = 'all') 
+                    AND status = 'unread'";
+        if($stmt=$conn->prepare($sql_cnt)){
+            $stmt->bind_param("is", $admin_id, $user_role);
+            $stmt->execute();
+            $res=$stmt->get_result();
+            if ($row = $res->fetch_assoc()) $unread_notif_count = $row['cnt'];
+            $stmt->close();
+        }
     }
 }
 
-$msgs_link  = "{$base}/public/messages.php";
+// Ensure return_to captures the current page for context-aware back navigation
+$current_url = urlencode($_SERVER['REQUEST_URI'] ?? '');
+$msgs_link  = "{$base}/public/messages.php?return_to={$current_url}";
 $notif_link = "#"; // Admin notifications hub if exists
 $profile_link = "{$base}/public/admin_settings.php";
 $pic_src = "{$base}/public/assets/uploads/male.jpg"; // Admin default
@@ -101,7 +115,7 @@ $pic_src = "{$base}/public/assets/uploads/male.jpg"; // Admin default
                 
                 <div style="max-height: 350px; overflow-y: auto;">
                 <?php if(!empty($recent_messages)): foreach($recent_messages as $msg): ?>
-                    <a href="<?= $msgs_link ?>?chat_with=<?= $msg['from_member_id'] ?>" class="list-item-custom <?= $msg['is_read']==0?'unread':'' ?>">
+                    <a href="<?= $msgs_link ?>&chat_with=<?= $msg['from_member_id'] ?>" class="list-item-custom <?= $msg['is_read']==0?'unread':'' ?>">
                         <div class="d-flex align-items-center gap-3">
                             <div class="msg-avatar bg-primary text-white d-flex align-items-center justify-content-center fw-bold">
                                 <?= strtoupper(substr($msg['sender_name'] ?? 'M', 0, 1)) ?>

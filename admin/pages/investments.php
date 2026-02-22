@@ -9,6 +9,10 @@ require_once __DIR__ . '/../../inc/LayoutManager.php';
 require_once __DIR__ . '/../../inc/functions.php';
 
 $pageTitle = "Investment Management";
+
+require_permission();
+Auth::requireAdmin();
+$layout = LayoutManager::create('admin');
 ?>
 <?php $layout->header($pageTitle); ?>
     <style>

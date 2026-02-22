@@ -544,8 +544,8 @@ $pageTitle = "People & Access";
                                     <div class="d-flex align-items-center gap-3">
                                         <div class="avatar-circle"><?= getInitials($row['full_name']) ?></div>
                                         <div>
-                                            <div class="fw-bold "><?= htmlspecialchars($row['full_name']) ?></div>
-                                            <div class="small text-muted font-monospace"><?= htmlspecialchars($row['employee_no']) ?></div>
+                                            <div class="fw-bold "><?= htmlspecialchars($row['full_name'] ?? '') ?></div>
+                                            <div class="small text-muted font-monospace"><?= htmlspecialchars($row['employee_no'] ?? '') ?></div>
                                         </div>
                                     </div>
                                 </td>
@@ -555,12 +555,12 @@ $pageTitle = "People & Access";
                                     $bt = $is_admin ? 'info' : 'light';
                                     $tc = $is_admin ? 'info' : 'dark';
                                     ?>
-                                    <div class="badge bg-<?= $bt ?> bg-opacity-10 text-<?= $tc ?> border fw-normal"><?= htmlspecialchars($row['job_title']) ?></div>
+                                    <div class="badge bg-<?= $bt ?> bg-opacity-10 text-<?= $tc ?> border fw-normal"><?= htmlspecialchars($row['job_title'] ?? '') ?></div>
                                     <div class="small text-muted mt-1"><?= $row['grade_name'] ?? '-' ?></div>
                                 </td>
                                 <td class="small">
-                                    <div><?= htmlspecialchars($row['phone']) ?></div>
-                                    <span class="text-muted"><?= htmlspecialchars($row['company_email']) ?></span>
+                                    <div><?= htmlspecialchars($row['phone'] ?? '') ?></div>
+                                    <span class="text-muted"><?= htmlspecialchars($row['company_email'] ?? '') ?></span>
                                 </td>
                                 <td class="font-monospace fw-medium"><?= ksh($row['salary']) ?></td>
                                 <td><span class="badge rounded-pill <?= $badge_cls ?>"><?= ucfirst($row['status']) ?></span></td>
@@ -582,8 +582,8 @@ $pageTitle = "People & Access";
                                     <div class="d-flex align-items-center gap-3">
                                         <div class="avatar-circle bg-dark text-white"><?= getInitials($row['full_name']) ?></div>
                                         <div>
-                                            <div class="fw-bold "><?= htmlspecialchars($row['full_name']) ?></div>
-                                            <div class="small text-muted">@<?= htmlspecialchars($row['username']) ?></div>
+                                            <div class="fw-bold "><?= htmlspecialchars($row['full_name'] ?? '') ?></div>
+                                            <div class="small text-muted">@<?= htmlspecialchars($row['username'] ?? '') ?></div>
                                         </div>
                                     </div>
                                 </td>
@@ -591,7 +591,7 @@ $pageTitle = "People & Access";
                                     <?php $rid = $row['role_id']; $rname = $defined_roles[$rid]['label'] ?? 'Unknown'; ?>
                                     <span class="badge bg-info bg-opacity-10 text-info border-0"><?= $rname ?></span>
                                 </td>
-                                <td><?= htmlspecialchars($row['email']) ?></td>
+                                <td><?= htmlspecialchars($row['email'] ?? '') ?></td>
                                 <td class="small text-muted"><?= time_ago($row['created_at']) ?></td>
                                  <td class="text-end pe-4">
                                     <div class="dropdown">
@@ -660,8 +660,8 @@ $pageTitle = "People & Access";
                                     <?php foreach ($payroll_items as $item): ?>
                                      <tr>
                                         <td class="ps-4">
-                                            <div class="fw-bold"><?= htmlspecialchars($item['full_name']) ?></div>
-                                            <div class="small text-muted"><?= htmlspecialchars($item['employee_no']) ?></div>
+                                            <div class="fw-bold"><?= htmlspecialchars($item['full_name'] ?? '') ?></div>
+                                            <div class="small text-muted"><?= htmlspecialchars($item['employee_no'] ?? '') ?></div>
                                         </td>
                                         <td class="text-end font-monospace"><?= ksh($item['basic_salary']) ?></td>
                                         <td class="text-end font-monospace fw-bold"><?= ksh($item['gross_pay']) ?></td>
@@ -720,13 +720,13 @@ $pageTitle = "People & Access";
                                     <div class="d-flex align-items-center gap-3">
                                         <div class="avatar-circle"><?= getInitials($row['full_name']) ?></div>
                                         <div>
-                                            <div class="fw-bold "><?= htmlspecialchars($row['full_name']) ?></div>
-                                            <div class="small text-muted"><?= htmlspecialchars($row['employee_no']) ?></div>
+                                            <div class="fw-bold "><?= htmlspecialchars($row['full_name'] ?? '') ?></div>
+                                            <div class="small text-muted"><?= htmlspecialchars($row['employee_no'] ?? '') ?></div>
                                         </div>
                                     </div>
                                 </td>
                                 <td><span class="badge rounded-pill <?= $st_cls ?> bg-opacity-10 text-<?= str_replace('bg-', '', $st_cls) ?>"><?= ucfirst(str_replace('_', ' ', $row['status'])) ?></span></td>
-                                <td class="small text-muted"><?= htmlspecialchars($row['job_title']) ?></td>
+                                <td class="small text-muted"><?= htmlspecialchars($row['job_title'] ?? '') ?></td>
                                 <td class="fw-medium">21 Days <span class="small text-muted fw-normal">(Standard)</span></td>
                                 <td class="text-end pe-4">
                                     <div class="dropdown">
