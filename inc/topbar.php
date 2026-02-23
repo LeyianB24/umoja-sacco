@@ -47,7 +47,7 @@ if ($my_user_id > 0 && isset($conn)) {
     // PROFILE
     $stmt = ($user_role==='member')
         ? $conn->prepare("SELECT full_name, profile_pic, gender FROM members WHERE member_id=?")
-        : $conn->prepare("SELECT full_name, NULL AS profile_pic, 'male' AS gender FROM admins WHERE admin_id=?");
+        : $conn->prepare("SELECT full_name, profile_pic, 'male' AS gender FROM admins WHERE admin_id=?");
 
     if($stmt){
         $stmt->bind_param("i",$my_user_id);

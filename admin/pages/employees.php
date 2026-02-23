@@ -750,6 +750,7 @@ $pageTitle = "People & Access";
                     </table>
                 </div>
                 <?php endif; ?>
+                <?php $layout->footer(); ?>
             </div>
             
 
@@ -858,7 +859,7 @@ $pageTitle = "People & Access";
                     </div>
                 </form>
             </div>
-            <?php $layout->footer(); ?>
+            
         </div>
     </div>
 </div>

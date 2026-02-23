@@ -65,6 +65,19 @@ if (isset($conn) && isset($_SESSION['admin_id'])) {
             $stmt->close();
         }
     }
+
+    // PROFILE PIC
+    $profile_pic_db = null;
+    $stmt = $conn->prepare("SELECT profile_pic FROM admins WHERE admin_id=?");
+    if($stmt){
+        $stmt->bind_param("i", $admin_id);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        if($u = $res->fetch_assoc()){
+            $profile_pic_db = $u['profile_pic'];
+        }
+        $stmt->close();
+    }
 }
 
 // Ensure return_to captures the current page for context-aware back navigation
@@ -72,7 +85,7 @@ $current_url = urlencode($_SERVER['REQUEST_URI'] ?? '');
 $msgs_link  = "{$base}/public/messages.php?return_to={$current_url}";
 $notif_link = "#"; // Admin notifications hub if exists
 $profile_link = "{$base}/public/admin_settings.php";
-$pic_src = "{$base}/public/assets/uploads/male.jpg"; // Admin default
+$pic_src = !empty($profile_pic_db) ? "data:image/jpeg;base64,".base64_encode($profile_pic_db) : "{$base}/public/assets/uploads/male.jpg";
 ?>
 
 <div class="top-navbar d-flex align-items-center justify-content-between px-3 px-lg-4">
@@ -179,9 +192,7 @@ $pic_src = "{$base}/public/assets/uploads/male.jpg"; // Admin default
                     <div class="fw-bold" style="font-size: 0.85rem; color: var(--nav-text-dark);"><?= htmlspecialchars($user_name) ?></div>
                     <span class="role-badge"><?= strtoupper($user_role) ?></span>
                 </div>
-                <div class="msg-avatar bg-success text-white d-flex align-items-center justify-content-center fw-bold" style="width: 38px; height: 38px;">
-                    <?= strtoupper(substr($user_name, 0, 1)) ?>
-                </div>
+                <img src="<?= $pic_src ?>" alt="Admin" class="profile-avatar shadow-sm" style="width: 38px; height: 38px; border-radius: 50%; object-fit: cover;">
             </div>
 
             <ul class="dropdown-menu dropdown-menu-end custom-dropdown" style="min-width: 200px;">
