@@ -295,8 +295,6 @@ require_permission();
             <?php $layout->footer(); ?>
         </div>
         <!-- END container-fluid -->
-        
-        
     </div>
     <!-- END main-content-wrapper -->
 </div>

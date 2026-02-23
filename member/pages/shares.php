@@ -313,6 +313,9 @@ $pageTitle = "My Share Portfolio";
                     <li><a class="dropdown-item" href="?<?= http_build_query(array_merge($_GET, ['action' => 'print_report'])) ?>" target="_blank"><i class="bi bi-printer text-primary me-2"></i>Print Report</a></li>
                 </ul>
             </div>
+                <a href="<?= BASE_URL ?>/member/pages/withdraw.php?type=wallet&source=shares" class="btn btn-white border shadow-sm rounded-pill px-4 fw-medium">
+                    <i class="bi bi-cash-stack text-success me-2"></i> Withdraw Dividends
+                </a>
                 <a href="<?= BASE_URL ?>/member/pages/withdraw.php?type=shares&source=shares" class="btn btn-white border shadow-sm rounded-pill px-4 fw-medium text-danger">
                     <i class="bi bi-door-open me-2"></i> Quit SACCO
                 </a>
