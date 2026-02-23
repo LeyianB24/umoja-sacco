@@ -78,11 +78,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // DOWNLOAD PAYSLIP
     if (isset($_POST['action']) && $_POST['action'] === 'download_payslip') {
         $pid = intval($_POST['payroll_id']);
-        $pq = $db->query("SELECT p.*, e.full_name, e.employee_no, e.organization_email, e.personal_email, 
-                          e.job_title, e.kra_pin, e.nssf_no, e.sha_no, e.bank_name, e.bank_account, sg.grade_name 
+        $pq = $db->query("SELECT p.*, e.full_name, e.employee_no, e.company_email, e.personal_email, e.email, 
+                          e.job_title, e.kra_pin, e.nssf_no, e.sha_no, e.bank_name, e.bank_account, sg.grade_name,
+                          a.email as admin_email
                           FROM payroll p 
                           JOIN employees e ON p.employee_id = e.employee_id 
                           LEFT JOIN salary_grades sg ON e.grade_id = sg.id
+                          LEFT JOIN admins a ON e.admin_id = a.admin_id
                           WHERE p.id = $pid");
         if ($pq->num_rows > 0) {
             $row = $pq->fetch_assoc();
@@ -100,7 +102,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // EMAIL INDIVIDUAL PAYSLIP
     if (isset($_POST['action']) && $_POST['action'] === 'email_payslip') {
         $pid = intval($_POST['payroll_id']);
-        $pq = $db->query("SELECT p.*, e.full_name, e.employee_no, e.company_email, e.personal_email, 
+        $pq = $db->query("SELECT p.*, e.full_name, e.employee_no, e.company_email, e.personal_email, e.email, 
                           e.job_title, e.kra_pin, e.nssf_no, e.sha_no, e.bank_name, e.bank_account, sg.grade_name 
                           FROM payroll p 
                           JOIN employees e ON p.employee_id = e.employee_id 
@@ -109,7 +111,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($pq->num_rows > 0) {
             $row = $pq->fetch_assoc();
-            $email = !empty($row['company_email']) ? $row['company_email'] : $row['personal_email'];
+            $email = !empty($row['company_email']) ? $row['company_email'] : 
+                    (!empty($row['personal_email']) ? $row['personal_email'] : 
+                    (!empty($row['email']) ? $row['email'] : $row['admin_email']));
             
             if ($email) {
                 $data = ['employee' => $row, 'payroll' => $row];
@@ -138,15 +142,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['action']) && $_POST['action'] === 'email_batch') {
         $run_id = intval($_POST['run_id']);
         $sent_count = 0;
-        $pq = $db->query("SELECT p.*, e.full_name, e.company_email, e.personal_email, e.job_title, e.kra_pin, e.nssf_no, e.sha_no, e.bank_name, e.bank_account, sg.grade_name 
+        $failed_count = 0;
+        $missing_email_count = 0;
+
+        $pq = $db->query("SELECT p.*, e.full_name, e.company_email, e.personal_email, e.email, e.job_title, e.kra_pin, e.nssf_no, e.sha_no, e.bank_name, e.bank_account, sg.grade_name,
+                          a.email as admin_email
                           FROM payroll p 
                           JOIN employees e ON p.employee_id = e.employee_id 
                           LEFT JOIN salary_grades sg ON e.grade_id = sg.id
+                          LEFT JOIN admins a ON e.admin_id = a.admin_id
                           WHERE p.payroll_run_id = $run_id");
 
         while($row = $pq->fetch_assoc()) {
-            $email = !empty($row['company_email']) ? $row['company_email'] : $row['personal_email'];
-            if (!$email) continue;
+            $email = !empty($row['company_email']) ? $row['company_email'] : 
+                    (!empty($row['personal_email']) ? $row['personal_email'] : 
+                    (!empty($row['email']) ? $row['email'] : $row['admin_email']));
+            
+            if (!$email) {
+                $missing_email_count++;
+                continue;
+            }
             
             $data = ['employee' => $row, 'payroll' => $row];
             require_once __DIR__ . '/../../inc/ExportHelper.php';
@@ -160,9 +175,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             if (Mailer::send($email, $subject, $body, [['content' => $pdfContent, 'name' => "Payslip.pdf"]])) {
                 $sent_count++;
+            } else {
+                $failed_count++;
             }
         }
-        flash_set("Batch Complete. Sent $sent_count payslips.", "success");
+        
+        $msg = "Batch Complete. Sent: $sent_count";
+        $type = "success";
+        if ($failed_count > 0 || $missing_email_count > 0) {
+            $msg .= ", Failed: $failed_count, Missing Email: $missing_email_count";
+            $type = "warning";
+        }
+        
+        flash_set($msg, $type);
         header("Location: payroll.php?run_id=$run_id");
         exit;
     }

@@ -60,7 +60,16 @@ class Mailer {
             $mail->send();
             return true;
         } catch (Exception $e) {
-            error_log("Mailer Error ({$to}): {$mail->ErrorInfo}");
+            $error = "Mailer Error ({$to}): " . $mail->ErrorInfo . " | Exception: " . $e->getMessage();
+            error_log($error);
+            // If in development/sandbox, we might want to see this in the browser or a specific log
+            if (defined('APP_ENV') && APP_ENV === 'sandbox') {
+                $logDir = __DIR__ . '/../logs';
+                if (!is_dir($logDir)) {
+                    mkdir($logDir, 0777, true);
+                }
+                file_put_contents($logDir . '/mailer_errors.log', "[" . date('Y-m-d H:i:s') . "] " . $error . "\n", FILE_APPEND);
+            }
             return false;
         }
     }
