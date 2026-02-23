@@ -4,7 +4,7 @@
 // Logic: 100% Preserved
 
 if (session_status() === PHP_SESSION_NONE) session_start();
-require_once __DIR__ . '/Auth.php';
+require_once __DIR__ . '/../../inc/Auth.php';
 
 /* -----------------------------------------------------------
    1. USER SESSION VARIABLES (UNTOUCHED)

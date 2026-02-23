@@ -52,7 +52,7 @@ class LayoutManager {
         if (file_exists($path)) {
             require $path;
         } else {
-             require $this->baseDir . '/inc/topbar.php';
+             require $this->baseDir . '/member/layouts/topbar.php';
         }
     }
 
