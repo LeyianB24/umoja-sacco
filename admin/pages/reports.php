@@ -169,6 +169,12 @@ while($row = $res_dist->fetch_assoc()){
 $reportGen = new ReportGenerator($conn);
 $balanceData = $reportGen->getBalanceSheetData($start_date, $end_date);
 
+if (isset($_GET['action']) || (isset($_POST['send_to_all']))) {
+    // Increase script execution time immediately to handle slow PDF generation or large reports
+    set_time_limit(0);
+    ignore_user_abort(true);
+}
+
 if (isset($_GET['action'])) {
     // Clean any prior output (whitespace, notices, HTML) to ensure valid file generation
     if (ob_get_length()) ob_clean();
@@ -183,33 +189,70 @@ if (isset($_GET['action'])) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_to_all'])) {
-    // [Keep existing mail logic, ensuring error handling is robust]
+    
     $members = $conn->query("SELECT email, full_name FROM members WHERE status='active' AND email LIKE '%@%'");
     $sentCount = 0; $errCount = 0;
     
     // Generate PDF once
     $pdfContent = $reportGen->generatePDF("Performance Report", $balanceData, true);
 
+    // Instantiate PHPMailer once outside the loop
+    $mail = new PHPMailer(true);
+    try {
+        $mail->isSMTP();
+        $mail->Host = 'smtp.gmail.com'; 
+        $mail->SMTPAuth = true;
+        $mail->SMTPKeepAlive = true; // Keeps the SMTP connection open after each message
+        $mail->Username = 'leyianbeza24@gmail.com'; 
+        $mail->Password = 'duzb mbqt fnsz ipkg'; 
+        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS; 
+        $mail->Port = 587; 
+        $mail->Timeout = 60; // Increase SMTP connection timeout for local testing
+        // Bypass SSL certificate verification for local XAMPP environments
+        $mail->SMTPOptions = array(
+            'ssl' => array(
+                'verify_peer' => false,
+                'verify_peer_name' => false,
+                'allow_self_signed' => true
+            )
+        );
+        $mail->setFrom('leyianbeza24@gmail.com', 'Umoja Drivers Sacco');
+        $mail->Subject = 'Executive Performance Report - ' . date('F Y');
+    } catch (Exception $e) { 
+        $errCount++; 
+    }
+
+    $errStrings = [];
     while ($m = $members->fetch_assoc()) {
-        $mail = new PHPMailer(true);
         try {
-            $mail->isSMTP();
-            $mail->Host = 'smtp.gmail.com'; 
-            $mail->SMTPAuth = true;
-            $mail->Username = 'leyianbeza24@gmail.com'; 
-            $mail->Password = 'duzb mbqt fnsz ipkg'; 
-            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-            $mail->Port = 587;
-            $mail->setFrom('leyianbeza24@gmail.com', 'Umoja Drivers Sacco');
+            // Clear previous recipients and attachments for each loop
+            $mail->clearAllRecipients();
+            $mail->clearAttachments();
+
             $mail->addAddress($m['email'], $m['full_name']);
-            $mail->Subject = 'Executive Performance Report - ' . date('F Y');
             $mail->Body = "Dear {$m['full_name']},\n\nAttached is the latest financial performance report.\n\nRegards,\nUmoja Sacco Admin";
+            
+            // Re-attach the PDF for this email
             $mail->addStringAttachment($pdfContent, 'Financial_Report.pdf');
             $mail->send();
+            
             $sentCount++;
-        } catch (Exception $e) { $errCount++; }
+        } catch (Exception $e) { 
+            $errCount++; 
+            if (count($errStrings) < 3) { // limit to 3 errors to prevent huge messages
+                $errStrings[] = "{$m['email']}: {$mail->ErrorInfo}";
+            }
+        }
     }
-    flash_set("Report sent to $sentCount members. Failed: $errCount", $errCount > 0 ? "warning" : "success");
+    
+    // Close the connection explicitly
+    $mail->smtpClose();
+
+    $flashMsg = "Report sent to $sentCount members. Failed: $errCount.";
+    if ($errCount > 0 && !empty($errStrings)) {
+        $flashMsg .= " Errors: " . implode(" | ", $errStrings);
+    }
+    flash_set($flashMsg, $errCount > 0 ? "warning" : "success");
     header("Location: reports.php");
     exit;
 }
@@ -451,8 +494,9 @@ $pageTitle = "Executive Reports";
             <div class="text-center mt-5 mb-4 text-muted small no-print">
                 &copy; <?= date('Y') ?> Umoja Sacco Management System. All rights reserved.
             </div>
+            <?php $layout->footer(); ?>
         </div>
-        <?php $layout->footer(); ?>
+        
     </div>
 </div>
 
