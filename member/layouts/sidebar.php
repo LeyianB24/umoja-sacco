@@ -4,7 +4,7 @@
 // Logic: 100% Preserved, Links Preserved, Enhanced Toggling
 
 if (session_status() === PHP_SESSION_NONE) session_start();
-require_once __DIR__ . '/auth.php';
+require_once __DIR__ . '/../../inc/Auth.php';
 
 // 1. Role & Path Logic
 $role = 'guest';

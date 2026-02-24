@@ -1,200 +1,86 @@
 <?php
 declare(strict_types=1);
-/**
- * core/Middleware/AuthMiddleware.php
- * USMS\Middleware\AuthMiddleware — Formal middleware-pattern auth guards.
- *
- * This wraps the existing Auth class logic from inc/auth.php in a
- * composable, PSR-style middleware that can be stacked and tested.
- *
- * Usage:
- *   // At the top of any admin page or API handler:
- *   AuthMiddleware::admin();                   // must be logged in as admin
- *   AuthMiddleware::permission('manage_loans'); // must have slug permission
- *   AuthMiddleware::superAdmin();              // role_id = 1 only
- *   AuthMiddleware::member();                  // member session
- */
 
 namespace USMS\Middleware;
 
-use RuntimeException;
+use USMS\Database\Database;
+use USMS\Http\ErrorHandler;
 
-class AuthMiddleware
-{
-    // ── Admin Guards ──────────────────────────────────────────────────────────
+/**
+ * USMS\Middleware\AuthMiddleware
+ * Modern RBAC Layer utilizing system_modules and admin_module_permissions.
+ */
+class AuthMiddleware {
 
     /**
-     * Require an active admin session.
-     * Redirects to login on failure.
+     * Ensure user is logged in as an admin/staff.
      */
-    public static function admin(): void
-    {
-        self::startSession();
+    public static function requireAdmin(): void {
+        if (session_status() === PHP_SESSION_NONE) session_start();
 
         if (!isset($_SESSION['admin_id'])) {
-            self::failAdmin('unauthorized');
-        }
-    }
-
-    /**
-     * Require a specific RBAC permission slug.
-     * Always implies admin() guard first.
-     */
-    public static function permission(string $slug): void
-    {
-        self::admin();
-
-        if (!self::can($slug)) {
-            self::log("Permission denied: [{$slug}] for admin=" . ($_SESSION['admin_id'] ?? '?'));
-
-            if (self::isAjax()) {
-                self::jsonForbidden("You do not have the '{$slug}' permission.");
+            if (self::isAjaxRequest()) {
+                ErrorHandler::jsonError('Unauthorized: Admin session required', 401);
             }
-
-            $base = defined('BASE_URL') ? BASE_URL : '';
-            header("Location: {$base}/admin/pages/dashboard.php?error=no_permission&perm=" . urlencode($slug));
+            header("Location: " . BASE_URL . "/public/login.php?error=unauthorized");
             exit;
         }
     }
 
     /**
-     * Require Superadmin (role_id = 1).
+     * Ensure user has a specific role.
      */
-    public static function superAdmin(): void
-    {
-        self::admin();
-
-        if (!isset($_SESSION['role_id']) || (int)$_SESSION['role_id'] !== 1) {
-            self::log("Superadmin access denied for admin=" . ($_SESSION['admin_id'] ?? '?'));
-            \USMS\Http\ErrorHandler::abort(403, 'Restricted Area: Superadmin Access Only.');
+    public static function requireRole(string $role_slug): void {
+        self::requireAdmin();
+        
+        $current_role = $_SESSION['role_slug'] ?? '';
+        if ($current_role !== $role_slug && $current_role !== 'superadmin') {
+            ErrorHandler::abort(403, "Access Denied: Required role [$role_slug] missing.");
         }
     }
 
-    // ── Member Guards ─────────────────────────────────────────────────────────
-
     /**
-     * Require an active member session.
+     * Check permission for a specific module.
+     * @param string $module_slug The slug of the module (e.g. 'loans', 'finance')
+     * @param string $action 'view', 'create', 'edit', 'delete'
      */
-    public static function member(): void
-    {
-        self::startSession();
+    public static function requireModulePermission(string $module_slug, string $action = 'view'): void {
+        self::requireAdmin();
 
-        if (!isset($_SESSION['member_id'])) {
-            $base = defined('BASE_URL') ? BASE_URL : '';
-            header("Location: {$base}/public/login.php?error=member_only");
-            exit;
-        }
-    }
-
-    // ── RBAC Check (no redirect) ──────────────────────────────────────────────
-
-    /**
-     * Return true/false whether the current admin has a permission slug.
-     * Matches the can() / has_permission() helpers in inc/auth.php.
-     */
-    public static function can(string $slug): bool
-    {
-        $permissions = $_SESSION['permissions'] ?? [];
-
-        // Superadmin always passes
+        // Superadmin bypass
         if (isset($_SESSION['role_id']) && (int)$_SESSION['role_id'] === 1) {
-            return true;
+            return;
         }
 
-        return in_array($slug, $permissions, true);
-    }
+        $role_id = (int)$_SESSION['role_id'];
+        $db = Database::getInstance()->getPdo();
 
-    // ── Rate Limiting ─────────────────────────────────────────────────────────
+        $action_col = match($action) {
+            'create' => 'can_create',
+            'edit'   => 'can_edit',
+            'delete' => 'can_delete',
+            default  => 'can_view'
+        };
+
+        $sql = "SELECT m.module_id, p.$action_col 
+                FROM system_modules m
+                JOIN admin_module_permissions p ON m.module_id = p.module_id
+                WHERE m.module_slug = ? AND p.role_id = ? AND m.is_active = 1";
+        
+        $stmt = $db->prepare($sql);
+        $stmt->execute([$module_slug, $role_id]);
+        $permission = $stmt->fetch();
+
+        if (!$permission || !$permission[$action_col]) {
+            ErrorHandler::abort(403, "Access Denied: You do not have permission to $action the $module_slug module.");
+        }
+    }
 
     /**
-     * Simple session-based rate limiter.
-     * Useful for login forms, OTP endpoints, etc.
-     *
-     * @param string   $key      Unique action identifier (e.g. 'login_attempt')
-     * @param int      $maxHits  Max attempts allowed in the window
-     * @param int      $windowSec Time window in seconds
-     * @throws RuntimeException when rate limit is exceeded
+     * Helper to detect AJAX for better error reporting.
      */
-    public static function rateLimit(string $key, int $maxHits = 5, int $windowSec = 60): void
-    {
-        self::startSession();
-
-        $sessionKey = "_rl_{$key}";
-        $now        = time();
-
-        if (!isset($_SESSION[$sessionKey])) {
-            $_SESSION[$sessionKey] = ['count' => 0, 'reset_at' => $now + $windowSec];
-        }
-
-        // Reset window if expired
-        if ($now >= $_SESSION[$sessionKey]['reset_at']) {
-            $_SESSION[$sessionKey] = ['count' => 0, 'reset_at' => $now + $windowSec];
-        }
-
-        $_SESSION[$sessionKey]['count']++;
-
-        if ($_SESSION[$sessionKey]['count'] > $maxHits) {
-            $retryAfter = $_SESSION[$sessionKey]['reset_at'] - $now;
-            self::log("Rate limit exceeded: key={$key}, ip=" . ($_SERVER['REMOTE_ADDR'] ?? '?'));
-
-            if (self::isAjax()) {
-                http_response_code(429);
-                header("Retry-After: {$retryAfter}");
-                header('Content-Type: application/json');
-                echo json_encode([
-                    'status'      => 'error',
-                    'message'     => 'Too many requests. Please wait and try again.',
-                    'retry_after' => $retryAfter,
-                ]);
-                exit;
-            }
-
-            \USMS\Http\ErrorHandler::abort(429, "Please wait {$retryAfter} seconds before trying again.");
-        }
-    }
-
-    // ── Internals ─────────────────────────────────────────────────────────────
-
-    private static function startSession(): void
-    {
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
-    }
-
-    private static function isAjax(): bool
-    {
-        return (
-            isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
-            strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest'
-        ) || (
-            !empty($_SERVER['HTTP_ACCEPT']) &&
-            str_contains($_SERVER['HTTP_ACCEPT'], 'application/json')
-        );
-    }
-
-    private static function failAdmin(string $reason): never
-    {
-        if (self::isAjax()) {
-            self::jsonForbidden('Authentication required.');
-        }
-        $base = defined('BASE_URL') ? BASE_URL : '';
-        header("Location: {$base}/public/login.php?error=" . urlencode($reason));
-        exit;
-    }
-
-    private static function jsonForbidden(string $message): never
-    {
-        http_response_code(403);
-        header('Content-Type: application/json');
-        echo json_encode(['status' => 'error', 'message' => $message]);
-        exit;
-    }
-
-    private static function log(string $msg): void
-    {
-        $ip  = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
-        $uri = $_SERVER['REQUEST_URI'] ?? 'unknown';
-        error_log("[AuthMiddleware] {$msg} | ip={$ip} | uri={$uri}");
+    private static function isAjaxRequest(): bool {
+        return (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest')
+            || (isset($_SERVER['CONTENT_TYPE']) && str_contains($_SERVER['CONTENT_TYPE'], 'application/json'));
     }
 }

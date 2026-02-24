@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 // usms/public/register.php
 session_start();
 
@@ -6,10 +7,8 @@ session_start();
 require_once __DIR__ . '/../config/app.php';
 require_once __DIR__ . '/../inc/functions.php';
 
-// 1. Generate CSRF Token if not exists
-if (empty($_SESSION['csrf_token'])) {
-    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-}
+// 1. Initialize Security
+\USMS\Middleware\CsrfMiddleware::boot();
 
 // 2. Initialize ALL variables to empty strings to prevent "Undefined variable" errors
 $errors = [];
@@ -41,9 +40,7 @@ function normalize_phone($raw) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     // CSRF Check
-    if (!hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'] ?? '')) {
-        die('Invalid security token. Please reload the page.');
-    }
+    verify_csrf_token();
 
     // Collect & Sanitize
     $full_name   = trim($_POST['full_name'] ?? '');
@@ -61,19 +58,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $phone = normalize_phone($phone_raw);
 
-    // Validation
-    if ($full_name === '') $errors[] = "Full name is required.";
-    if ($national_id === '') $errors[] = "National ID / Passport is required.";
-    if ($phone === '') $errors[] = "Phone number is required.";
-    if ($email === '') $errors[] = "Email is required.";
-    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) $errors[] = "Enter a valid email address.";
-    if ($password === '') $errors[] = "Password is required.";
-    if ($password !== $confirm) $errors[] = "Passwords do not match.";
-    if (strlen($password) < 6) $errors[] = "Password must be at least 6 characters.";
-    if ($dob === '') $errors[] = "Date of birth is required.";
-    if ($address === '') $errors[] = "Home address is required.";
-    if ($nok_name === '') $errors[] = "Next of kin name is required.";
-    if ($nok_phone === '') $errors[] = "Next of kin phone is required.";
+    // Validation using centralized Service
+    $validator = new \USMS\Services\Validator($_POST);
+    $validator->required('full_name')
+              ->required('national_id')
+              ->required('phone')
+              ->required('email')->email('email')
+              ->required('password')->min('password', 6)
+              ->required('dob')
+              ->required('address')
+              ->required('nok_name')
+              ->required('nok_phone');
+
+    if (!$validator->passes()) {
+        $errors = array_values($validator->getFirstErrors());
+    }
+
+    if ($password !== $confirm) {
+        $errors[] = "Passwords do not match.";
+    }
 
     // Uniqueness Checks
     if (empty($errors)) {
@@ -382,7 +385,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <?php endif; ?>
 
             <form method="POST" action="" id="regForm">
-                <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+                <?php csrf_field(); ?>
 
                 <div class="row g-3">
                     <div class="col-12">

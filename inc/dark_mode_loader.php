@@ -5,7 +5,10 @@
  */
 if (!defined('BASE_URL')) {
     // Attempt to load config if not defined
-    $config_path = __DIR__ . '/../config/app_config.php';
+    $config_path = __DIR__ . '/../config/app.php';
+    if (!file_exists($config_path)) {
+        $config_path = __DIR__ . '/../config/app_config.php';
+    }
     if (file_exists($config_path)) require_once $config_path;
 }
 
@@ -64,12 +67,5 @@ $baseUrl = defined('BASE_URL') ? BASE_URL : '';
         window.addEventListener('storage', (e) => {
             if (e.key === 'theme') applyTheme(e.newValue);
         });
-
-        // Intercept Chart creation to ensure defaults are applied
-        const originalInit = window.Chart ? window.Chart.prototype.construct : null;
-        if (originalInit) {
-            // This is a bit advanced, but ensures that even charts created later 
-            // inherit the current theme colors if not explicitly overridden.
-        }
     })();
 </script>

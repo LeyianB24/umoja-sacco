@@ -14,14 +14,27 @@ class SettingsService {
     private static array $cache = [];
     private PDO $db;
 
+    private static ?SettingsService $instance = null;
+
+    private static function getInstance(): self {
+        if (self::$instance === null) {
+            self::$instance = new self();
+        }
+        return self::$instance;
+    }
+
     public function __construct() {
         $this->db = Database::getInstance()->getPdo();
     }
 
     /**
-     * Fetch a setting value by key
+     * Static gateway for convenience
      */
-    public function get(string $key, $default = null) {
+    public static function get(string $key, $default = null) {
+        return self::getInstance()->fetch($key, $default);
+    }
+
+    private function fetch(string $key, $default = null) {
         // Return from cache if already fetched
         if (isset(self::$cache[$key])) {
             return self::$cache[$key];
@@ -69,10 +82,18 @@ class SettingsService {
         return $settings;
     }
 
+    public static function staticSet(string $key, string $value, ?int $admin_id = null): bool {
+        return self::getInstance()->set($key, $value, $admin_id);
+    }
+
+    public static function staticAll(): array {
+        return self::getInstance()->all();
+    }
+
     /**
-     * Static gateway for convenience
+     * @deprecated Use SettingsService::get()
      */
     public static function quickGet(string $key, $default = null) {
-        return (new self())->get($key, $default);
+        return self::get($key, $default);
     }
 }

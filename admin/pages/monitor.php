@@ -135,7 +135,8 @@ if ($table_check && $table_check->num_rows > 0) {
                     </table>
                 </div>
             </div>
+            <?php $layout->footer(); ?>
         </div>
-        <?php $layout->footer(); ?>
+        
     </div>
 </div>

@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 // public/messages.php
 // Enhanced Chat System: CSRF Security, Date Separators, Broadcast Modal, and Advanced Theming
 
@@ -95,7 +96,7 @@ function formatChatDate($datetime) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_message'])) {
     
     if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
-        die("Security violation: Invalid CSRF token.");
+        \USMS\Http\ErrorHandler::abort(403, "Security violation: Invalid CSRF token.");
     }
 
     $recipient_role = $_POST['recipient_role'] ?? 'member';

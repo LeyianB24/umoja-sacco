@@ -3,16 +3,13 @@ declare(strict_types=1);
 if (session_status() === PHP_SESSION_NONE) session_start();
 
 require_once __DIR__ . '/../../config/app.php';
-require_once __DIR__ . '/../../inc/Auth.php';
+require_once __DIR__ . '/../../inc/auth.php';
 require_once __DIR__ . '/../../inc/LayoutManager.php';
-
-$layout = LayoutManager::create('member');
 
 // member/support.php
 // HOPE UI Support Portal - Forest Deep Premium Style
 // V15 Unified Logic & Design
 
-if (session_status() === PHP_SESSION_NONE) session_start();
 // Validate Member Login
 require_member();
 

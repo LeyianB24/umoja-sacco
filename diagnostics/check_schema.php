@@ -1,6 +1,6 @@
- if (!defined('DIAG_MODE')) die('Forbidden'); ?>
-
-include 'c:/xampp/htdocs/usms/config/app.php';
+<?php
+define('DIAG_MODE', true);
+require_once __DIR__ . '/../config/app.php';
 
 function checkTable($conn, $table) {
     echo "--- Table: $table ---\n";
@@ -11,12 +11,12 @@ function checkTable($conn, $table) {
     }
     while($row = $res->fetch_assoc()) {
         echo sprintf("%-20s | %-15s | %-5s | %-3s | %-10s\n", 
-            $row['Field'], $row['Type'], $row['Null'], $row['Key'], $row['Default']);
+            $row['Field'], $row['Type'], $row['Null'], $row['Key'], $row['Default'] ?? 'NULL');
     }
     echo "\n";
 }
 
-checkTable($conn, 'loans');
-checkTable($conn, 'members');
+checkTable($conn, 'support_tickets');
+checkTable($conn, 'support_replies');
 ?>
 

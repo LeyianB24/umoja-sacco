@@ -321,6 +321,35 @@ class FinancialService {
         return $bal;
     }
 
+    /**
+     * Legacy support: Sum of all credits for a member in a category
+     */
+    public function getLifetimeCredits(int $member_id, string $category): float {
+        $acc_id = $this->getMemberAccount($member_id, $category);
+        $stmt = $this->db->prepare("SELECT SUM(credit) as total FROM ledger_entries WHERE account_id = ?");
+        $stmt->execute([$acc_id]);
+        $row = $stmt->fetch();
+        return (float)($row['total'] ?? 0);
+    }
+
+    /**
+     * Legacy support: Sum of all debits for a member in a category (withdrawals)
+     */
+    public function getCategoryWithdrawals(int $member_id, string $category): float {
+        $acc_id = $this->getMemberAccount($member_id, $category);
+        $stmt = $this->db->prepare("SELECT SUM(debit) as total FROM ledger_entries WHERE account_id = ?");
+        $stmt->execute([$acc_id]);
+        $row = $stmt->fetch();
+        return (float)($row['total'] ?? 0);
+    }
+
+    /**
+     * Legacy support: Welfare specific lifetime contribution
+     */
+    public function getMemberWelfareLifetime(int $member_id): float {
+        return $this->getLifetimeCredits($member_id, self::CAT_WELFARE);
+    }
+
     private function triggerNotification(?int $mid, string $message, int $txn_id): void {
         if (function_exists('add_notification')) {
             add_notification($mid, "Transaction Update", $message, 'info', "member/pages/transactions.php?id=$txn_id");

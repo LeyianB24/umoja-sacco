@@ -33,7 +33,7 @@ $db = $conn;
 // Initialize Services
 $hrService = new HRService($db);
 $systemUserService = new SystemUserService($db);
-$payrollService = new PayrollService($db);
+$payrollService = new PayrollService();
 $payrollEngine = new PayrollEngine($db);
 
 $current_view = $_GET['view'] ?? 'hr'; // 'hr', 'sys', 'payroll', 'leave'

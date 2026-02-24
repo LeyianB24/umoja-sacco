@@ -70,8 +70,7 @@ class Auth {
      */
     public static function requireAdmin() {
         if (!isset($_SESSION['admin_id'])) {
-            header("Location: " . BASE_URL . "/public/login.php?error=unauthorized");
-            exit;
+            \USMS\Http\ErrorHandler::abort(401, "Unauthorized: Admin session required.");
         }
     }
 
@@ -81,14 +80,7 @@ class Auth {
         }
         self::requireAdmin();
         if (!self::can($slug)) {
-            if ($slug === 'dashboard.php') {
-                // If they can't even see the dashboard, send them to login with a clear error
-                // to prevent infinite redirect loops.
-                header("Location: " . BASE_URL . "/public/login.php?error=no_dashboard_access");
-                exit;
-            }
-            header("Location: " . BASE_URL . "/admin/pages/dashboard.php?error=no_permission&perm=$slug");
-            exit;
+            \USMS\Http\ErrorHandler::abort(403, "Access Denied: You do not have permission to access [$slug].");
         }
     }
 
@@ -129,38 +121,6 @@ class Auth {
 
         // Redirect
         header("Location: " . $redirect_url);
-        exit;
-    }
-}
-
-/**
- * Procedural Helpers for ease of use
- */
-function can($slug) {
-    return Auth::can($slug);
-}
-
-function has_permission($slug) {
-    return Auth::can($slug);
-}
-
-function require_admin() {
-    Auth::requireAdmin();
-}
-
-function require_permission($slug = null) {
-    Auth::requirePermission($slug);
-}
-
-function require_superadmin() {
-    Auth::requireSuperAdmin();
-}
-
-function require_member() {
-    if (session_status() === PHP_SESSION_NONE) session_start();
-    
-    if (!isset($_SESSION['member_id'])) {
-        header("Location: " . BASE_URL . "/public/login.php?error=member_only");
         exit;
     }
 }

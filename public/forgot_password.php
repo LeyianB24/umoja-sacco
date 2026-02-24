@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 // public/forgot_password.php
 // Secure Password Reset Request (Token-based)
 

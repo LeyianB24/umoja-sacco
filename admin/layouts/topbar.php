@@ -3,7 +3,7 @@
 // Canonical Admin Topbar - Sync with inc/topbar.php
 
 if (session_status() === PHP_SESSION_NONE) session_start();
-require_once __DIR__ . '/../../inc/Auth.php';
+require_once __DIR__ . '/../../inc/auth.php';
 require_once __DIR__ . '/../../inc/topbar_styles.php';
 
 $user_name = $member_name ?? $_SESSION['full_name'] ?? 'Admin';
