@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 namespace USMS\Reports;
 
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -174,3 +175,4 @@ class ExcelTemplate {
         exit;
     }
 }
+

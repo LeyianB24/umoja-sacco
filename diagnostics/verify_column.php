@@ -1,4 +1,5 @@
-<?php
+ if (!defined('DIAG_MODE')) die('Forbidden'); ?>
+
 $conn = new mysqli('localhost', 'root', '', 'umoja_drivers_sacco');
 $res = $conn->query("SHOW COLUMNS FROM support_tickets LIKE 'assigned_role_id'");
 if ($res->num_rows > 0) {
@@ -6,3 +7,4 @@ if ($res->num_rows > 0) {
 } else {
     echo "COLUMN_MISSING: assigned_role_id\n";
 }
+

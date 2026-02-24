@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/../config/db_connect.php';
+require_once __DIR__ . '/../config/app.php';
 
 $sql_file = __DIR__ . '/migrations/member_kyc_sync.sql';
 $sql = file_get_contents($sql_file);

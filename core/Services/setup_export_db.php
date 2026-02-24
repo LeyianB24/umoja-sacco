@@ -1,6 +1,7 @@
 <?php
+declare(strict_types=1);
 // core/exports/setup_export_db.php
-require_once __DIR__ . '/../../config/db_connect.php';
+require_once __DIR__ . '/../../config/app.php';
 
 $sql = "CREATE TABLE IF NOT EXISTS export_logs (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -25,3 +26,4 @@ if ($conn->query($sql) === TRUE) {
     echo "Error creating table: " . $conn->error;
 }
 ?>
+

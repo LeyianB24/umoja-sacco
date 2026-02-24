@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * core/exports/UniversalExportEngine.php
  * BACKWARDS COMPATIBILITY STUB
@@ -12,3 +13,4 @@
 if (!class_exists('UniversalExportEngine')) {
     class_alias(\USMS\Services\UniversalExportEngine::class, 'UniversalExportEngine');
 }
+

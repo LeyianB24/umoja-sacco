@@ -1,5 +1,5 @@
 <?php
-include('../config/db_connect.php');
+include('../config/app.php');
 session_start();
 
 if (!isset($_SESSION['member_id'])) {

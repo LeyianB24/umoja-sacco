@@ -1,4 +1,5 @@
-<?php
+ if (!defined('DIAG_MODE')) die('Forbidden'); ?>
+
 $conn = new mysqli('localhost', 'root', '', 'umoja_drivers_sacco');
 if ($conn->connect_error) die("Failed: " . $conn->connect_error);
 
@@ -9,3 +10,4 @@ while ($row = $res->fetch_assoc()) echo "ID: {$row['id']} | Name: {$row['name']}
 echo "\n--- PERMISSIONS ---\n";
 $res = $conn->query("SELECT id, name, slug FROM permissions WHERE slug LIKE 'support_%'");
 while ($row = $res->fetch_assoc()) echo "ID: {$row['id']} | Name: {$row['name']} | Slug: {$row['slug']}\n";
+

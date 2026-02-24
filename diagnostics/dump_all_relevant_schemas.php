@@ -1,6 +1,6 @@
-<?php
-require_once __DIR__ . '/../config/app_config.php';
-require_once __DIR__ . '/../config/db_connect.php';
+ if (!defined('DIAG_MODE')) die('Forbidden'); ?>
+
+require_once __DIR__ . '/../config/app.php';
 
 function dumpTable($conn, $table) {
     echo "--- $table ---\n";
@@ -13,3 +13,4 @@ function dumpTable($conn, $table) {
 dumpTable($conn, 'employees');
 dumpTable($conn, 'admins');
 dumpTable($conn, 'roles');
+

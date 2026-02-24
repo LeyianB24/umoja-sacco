@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 // inc/email.php
 // Unified email + notification handler for Umoja Sacco System
 
@@ -15,7 +16,7 @@ if (file_exists(__DIR__ . '/../vendor/phpmailer/src/Exception.php')) {
     require_once __DIR__ . '/../vendor/phpmailer/src/SMTP.php';
 }
 
-require_once __DIR__ . '/../config/db_connect.php';
+require_once __DIR__ . '/../config/app.php';
 
 function sendEmailWithNotification($to_email, $subject, $body_content, $member_id = null, $admin_id = null, $metadata = [])
 {
@@ -125,3 +126,4 @@ function sendEmail($to_email, $subject, $body_html, $member_id = null, $admin_id
 {
     return sendEmailWithNotification($to_email, $subject, $body_html, $member_id, $admin_id);
 }
+

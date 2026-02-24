@@ -1,5 +1,5 @@
 <?php
-require 'config/db_connect.php';
+require 'config/app.php';
 
 echo "\n--- All Tables ---\n";
 $res = $conn->query("SHOW TABLES");

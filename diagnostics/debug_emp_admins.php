@@ -1,6 +1,6 @@
-<?php
-require_once __DIR__ . '/../config/app_config.php';
-require_once __DIR__ . '/../config/db_connect.php';
+ if (!defined('DIAG_MODE')) die('Forbidden'); ?>
+
+require_once __DIR__ . '/../config/app.php';
 
 echo "--- EMPLOYEES ---\n";
 $res = $conn->query("DESCRIBE employees");
@@ -13,3 +13,4 @@ $res = $conn->query("DESCRIBE admins");
 while ($row = $res->fetch_assoc()) {
     echo str_pad($row['Field'], 20) . " | " . $row['Type'] . "\n";
 }
+

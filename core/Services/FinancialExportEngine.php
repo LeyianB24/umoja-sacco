@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 namespace USMS\Services;
 
 class FinancialExportEngine {
@@ -49,3 +50,4 @@ class FinancialExportEngine {
         return UniversalExportEngine::handle($format, $data, $options);
     }
 }
+

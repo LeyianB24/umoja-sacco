@@ -1,8 +1,7 @@
 <?php
 ob_start();
 // Load config FIRST — prevents 'constant already defined' errors from functions.php auto-include
-require_once __DIR__ . '/../config/app_config.php';
-require_once __DIR__ . '/../config/db_connect.php';
+require_once __DIR__ . '/../config/app.php';
 require_once __DIR__ . '/../inc/functions.php';
 require_once __DIR__ . '/../inc/Auth.php';
 

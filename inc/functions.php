@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 // usms/inc/functions.php
 
 // Prevent direct access
@@ -13,7 +14,7 @@ if (session_status() === PHP_SESSION_NONE) {
 
 // If config not loaded, attempt to include
 if (!defined('ASSET_BASE')) {
-    @include_once __DIR__ . '/../config/app_config.php';
+    @include_once __DIR__ . '/../config/app.php';
 }
 
 /* ==========================================================================
@@ -371,3 +372,4 @@ if (!function_exists('getMemberSavings')) {
     }
 }
 ?>
+

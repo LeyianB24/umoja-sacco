@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 namespace USMS\Reports;
 
 use FPDF;
@@ -255,3 +256,4 @@ class PdfFinancialTemplate extends FPDF {
     }
 }
 ?>
+

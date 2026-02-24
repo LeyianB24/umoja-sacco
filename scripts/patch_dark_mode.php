@@ -5,7 +5,7 @@
  * that have their own <head> tags but missing the darkmode.css link.
  */
 
-require_once __DIR__ . '/../config/app_config.php';
+require_once __DIR__ . '/../config/app.php';
 
 $directories = [
     __DIR__ . '/../admin/pages',

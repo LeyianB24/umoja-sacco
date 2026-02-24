@@ -1,6 +1,6 @@
-<?php
-require_once __DIR__ . '/../config/app_config.php';
-require_once __DIR__ . '/../config/db_connect.php';
+ if (!defined('DIAG_MODE')) die('Forbidden'); ?>
+
+require_once __DIR__ . '/../config/app.php';
 
 function fetch_sql($conn, $sql) {
     echo "SQL: $sql\n";
@@ -18,3 +18,4 @@ function fetch_sql($conn, $sql) {
 fetch_sql($conn, "SELECT * FROM roles");
 fetch_sql($conn, "SELECT * FROM permissions");
 fetch_sql($conn, "SELECT r.name as role, p.slug FROM roles r JOIN role_permissions rp ON r.id = rp.role_id JOIN permissions p ON rp.permission_id = p.id");
+

@@ -1,6 +1,6 @@
-<?php
-require_once __DIR__ . '/../config/app_config.php';
-require_once __DIR__ . '/../config/db_connect.php';
+ if (!defined('DIAG_MODE')) die('Forbidden'); ?>
+
+require_once __DIR__ . '/../config/app.php';
 
 $res = $conn->query("SELECT r.name as role, p.slug FROM roles r JOIN role_permissions rp ON r.id = rp.role_id JOIN permissions p ON rp.permission_id = p.id ORDER BY r.name");
 $roles = [];
@@ -14,3 +14,4 @@ foreach ($roles as $role => $perms) {
         echo "  - $p\n";
     }
 }
+

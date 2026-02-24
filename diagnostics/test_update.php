@@ -1,5 +1,6 @@
-<?php
-include 'c:/xampp/htdocs/usms/config/db_connect.php';
+ if (!defined('DIAG_MODE')) die('Forbidden'); ?>
+
+include 'c:/xampp/htdocs/usms/config/app.php';
 $member_id = 2; // From diagnostic
 $email = 'alice' . time() . '@example.com';
 $phone = '+254700000000';
@@ -19,3 +20,4 @@ $stmt->close();
 $q = $conn->query("SELECT email, phone, address FROM members WHERE member_id = $member_id");
 print_r($q->fetch_assoc());
 ?>
+

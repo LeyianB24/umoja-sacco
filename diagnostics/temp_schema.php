@@ -1,5 +1,6 @@
-<?php
-require_once __DIR__ . '/../config/db_connect.php';
+ if (!defined('DIAG_MODE')) die('Forbidden'); ?>
+
+require_once __DIR__ . '/../config/app.php';
 $table = 'support_tickets';
 $res = $conn->query("DESCRIBE $table");
 while ($row = $res->fetch_assoc()) {
@@ -7,3 +8,4 @@ while ($row = $res->fetch_assoc()) {
         print_r($row);
     }
 }
+

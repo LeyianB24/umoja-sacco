@@ -1,4 +1,5 @@
-<?php
+ if (!defined('DIAG_MODE')) die('Forbidden'); ?>
+
 $dir = 'c:/xampp/htdocs/usms/admin/pages';
 $files = glob("$dir/*.php");
 
@@ -57,3 +58,4 @@ foreach ($results as $res) {
 
 file_put_contents(__DIR__ . '/audit_results.txt', $out);
 echo "Audited " . count($results) . " files.\n";
+

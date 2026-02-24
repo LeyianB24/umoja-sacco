@@ -1,8 +1,9 @@
-<?php
+ if (!defined('DIAG_MODE')) die('Forbidden'); ?>
+
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-require_once __DIR__ . '/../config/db_connect.php';
+require_once __DIR__ . '/../config/app.php';
 
 if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
@@ -27,3 +28,4 @@ if ($res) {
 } else {
     echo "Error: " . $conn->error . "\n";
 }
+

@@ -1,5 +1,5 @@
 <?php
-require 'config/db_connect.php';
+require 'config/app.php';
 $res = $conn->query("DESCRIBE contributions");
 $out = "--- contributions table ---\n";
 while($row = $res->fetch_assoc()) {

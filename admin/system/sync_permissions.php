@@ -4,7 +4,7 @@
  * Scans admin/pages/ and auto-registers them as permissions.
  */
 
-require_once __DIR__ . '/../../config/db_connect.php';
+require_once __DIR__ . '/../../config/app.php';
 
 echo "Scanning for permissions...\n";
 

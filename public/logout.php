@@ -1,7 +1,6 @@
 <?php
 // usms/public/logout.php
-require_once __DIR__ . '/../config/app_config.php';
-require_once __DIR__ . '/../config/db_connect.php';
+require_once __DIR__ . '/../config/app.php';
 require_once __DIR__ . '/../inc/Auth.php';
 
 // If we are using the new Auth engine

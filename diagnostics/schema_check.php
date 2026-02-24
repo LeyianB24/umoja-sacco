@@ -1,6 +1,6 @@
-<?php
-require_once __DIR__ . '/../config/app_config.php';
-require_once __DIR__ . '/../config/db_connect.php';
+ if (!defined('DIAG_MODE')) die('Forbidden'); ?>
+
+require_once __DIR__ . '/../config/app.php';
 
 function get_columns($conn, $table) {
     echo "TABLE: $table\n";
@@ -18,3 +18,4 @@ function get_columns($conn, $table) {
 get_columns($conn, 'support_tickets');
 get_columns($conn, 'admins');
 get_columns($conn, 'roles'); // if exists
+

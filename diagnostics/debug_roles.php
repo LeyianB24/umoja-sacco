@@ -1,6 +1,6 @@
-<?php
-require_once __DIR__ . '/../config/app_config.php';
-require_once __DIR__ . '/../config/db_connect.php';
+ if (!defined('DIAG_MODE')) die('Forbidden'); ?>
+
+require_once __DIR__ . '/../config/app.php';
 
 $res = $conn->query("DESCRIBE roles");
 while ($row = $res->fetch_assoc()) {
@@ -12,3 +12,4 @@ $res = $conn->query("SELECT * FROM roles");
 while ($row = $res->fetch_assoc()) {
     echo json_encode($row) . "\n";
 }
+

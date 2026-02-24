@@ -1,5 +1,5 @@
 <?php
-require 'config/db_connect.php';
+require 'config/app.php';
 $res = $conn->query("DESCRIBE roles");
 echo "--- roles table structure ---\n";
 while($row = $res->fetch_assoc()) {

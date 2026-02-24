@@ -4,7 +4,7 @@
  * Run this ONCE to initialize the Perfect Mirror RBAC system
  */
 
-require_once __DIR__ . '/../../config/db_connect.php';
+require_once __DIR__ . '/../../config/app.php';
 session_start();
 
 // Security: Only Superadmin can run this

@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 // usms/inc/sms.php
 // PRODUCTION READY SMS CONFIGURATION
 
@@ -111,3 +112,4 @@ function send_sms($phone, $message) {
     return $response;
 }
 ?>
+

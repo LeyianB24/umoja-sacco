@@ -13,7 +13,7 @@ if (!defined('APP_ENV')) {
 
 // 3. Try to get connection from GLOBALS first (if already loaded)
 if (!isset($GLOBALS['conn']) || !($GLOBALS['conn'] instanceof \mysqli)) {
-    // 4. Force load db_connect.php in global scope
+    // 4. Force load app.php in global scope
     $host   = 'localhost';
     $user   = 'root';
     $pass   = '';

@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 namespace USMS\Reports;
 
 class FinancialExportLogger {
@@ -57,3 +58,4 @@ class FinancialExportLogger {
     }
 }
 ?>
+

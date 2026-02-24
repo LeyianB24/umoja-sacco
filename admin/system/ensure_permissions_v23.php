@@ -5,7 +5,7 @@
  * Run this once to prepare the system for granular sidebar visibility
  */
 
-require_once __DIR__ . '/../../config/db_connect.php';
+require_once __DIR__ . '/../../config/app.php';
 require_once __DIR__ . '/../../inc/Auth.php';
 require_permission();
 

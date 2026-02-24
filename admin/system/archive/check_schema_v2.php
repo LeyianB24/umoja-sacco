@@ -1,5 +1,5 @@
 <?php
-require 'config/db_connect.php';
+require 'config/app.php';
 
 $tables = ['savings', 'shares'];
 foreach($tables as $t) {

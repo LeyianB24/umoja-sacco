@@ -4,7 +4,7 @@
  * Supports sandbox and production environments
  */
 
-// APP_ENV is defined in app_config.php. 
+// APP_ENV is defined in app.php. 
 // If not defined (e.g. standalone script), check env or default to sandbox.
 if (!defined('APP_ENV')) {
     define('APP_ENV', getenv('APP_ENV') ?: 'sandbox');

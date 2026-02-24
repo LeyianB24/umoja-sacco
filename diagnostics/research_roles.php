@@ -1,5 +1,6 @@
-<?php
-require_once __DIR__ . '/../config/db_connect.php';
+ if (!defined('DIAG_MODE')) die('Forbidden'); ?>
+
+require_once __DIR__ . '/../config/app.php';
 
 echo "--- ROLES ---\n";
 $res = $conn->query("SELECT id, name, slug FROM roles");
@@ -12,3 +13,4 @@ $res = $conn->query("SELECT id, name, slug FROM permissions WHERE slug LIKE 'sup
 while ($row = $res->fetch_row()) {
     echo implode(" | ", $row) . "\n";
 }
+

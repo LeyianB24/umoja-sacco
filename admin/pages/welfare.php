@@ -9,8 +9,7 @@ declare(strict_types=1);
 if (session_status() === PHP_SESSION_NONE) session_start();
 
 // --- Dependencies ---
-require_once __DIR__ . '/../../config/app_config.php';
-require_once __DIR__ . '/../../config/db_connect.php';
+require_once __DIR__ . '/../../config/app.php';
 require_once __DIR__ . '/../../inc/Auth.php';
 require_once __DIR__ . '/../../inc/LayoutManager.php';
 require_once __DIR__ . '/../../inc/FinancialEngine.php';

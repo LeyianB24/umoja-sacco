@@ -3,8 +3,7 @@
 session_start();
 
 // Includes
-require_once __DIR__ . '/../config/app_config.php';
-require_once __DIR__ . '/../config/db_connect.php';
+require_once __DIR__ . '/../config/app.php';
 require_once __DIR__ . '/../inc/functions.php';
 
 // 1. Generate CSRF Token if not exists

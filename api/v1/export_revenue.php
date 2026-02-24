@@ -1,8 +1,7 @@
 <?php
 // api/v1/export_revenue.php
 if (session_status() === PHP_SESSION_NONE) session_start();
-require_once __DIR__ . '/../../config/app_config.php';
-require_once __DIR__ . '/../../config/db_connect.php';
+require_once __DIR__ . '/../../config/app.php';
 require_once __DIR__ . '/../../inc/auth.php';
 
 use USMS\Services\UniversalExportEngine;

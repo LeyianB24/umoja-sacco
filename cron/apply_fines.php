@@ -9,8 +9,7 @@ declare(strict_types=1);
  * Scheduled: 0 0 * * *  (daily at midnight)
  * Usage: php cron/apply_fines.php [--dry-run]
  */
-require_once __DIR__ . '/../config/app_config.php';
-require_once __DIR__ . '/../config/db_connect.php';
+require_once __DIR__ . '/../config/app.php';
 
 // Rewrite argv so run.php sees the correct job name
 $argv = array_merge(['apply_fines.php', 'daily_fines'], array_slice($argv ?? [], 1));

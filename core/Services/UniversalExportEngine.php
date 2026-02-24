@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 namespace USMS\Services;
 
 use Exception;
@@ -152,3 +153,4 @@ class UniversalExportEngine {
         $excel->download($filename);
     }
 }
+

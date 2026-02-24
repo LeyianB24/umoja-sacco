@@ -1,40 +1,13 @@
 <?php
-declare(strict_types=1);
 /**
- * PaymentGatewayInterface
- * Standardizes behavior for all payment aggregators (M-Pesa, Paystack, etc.)
+ * inc/PaymentGatewayInterface.php (LEGACY STUB)
+ * Redirects to the namespaced USMS\Services\Gateways\PaymentGatewayInterface interface.
  */
-interface PaymentGatewayInterface {
-    /**
-     * Initiate an Outward Payment (B2C / Withdrawal)
-     * 
-     * @param string $phone Customer Phone Number
-     * @param float $amount Amount to send
-     * @param string $reference Internal reference for tracking
-     * @param string $remarks Description of payment
-     * @return array ['success' => bool, 'message' => string, 'data' => mixed, 'reference' => string]
-     */
-    public function initiateWithdrawal($phone, $amount, $reference, $remarks = 'Withdrawal');
+require_once __DIR__ . '/../config/app.php';
 
-    /**
-     * Initiate an Inward Payment (C2B / STK Push)
-     * 
-     * @param string $phone Customer Phone Number
-     * @param float $amount Amount to request
-     * @param string $reference Internal reference for tracking
-     * @param $account_ref Account reference (e.g. Member ID or Purpose)
-     * @return array ['success' => bool, 'message' => string, 'data' => mixed, 'checkout_id' => string]
-     */
-    public function initiateDeposit($phone, $amount, $reference, $account_ref = 'USMS Payment');
-
-    /**
-     * Get the environment (sandbox or production)
-     */
-    public function getEnvironment();
-
-    /**
-     * Get the descriptive name of the provider
-     * @return string
-     */
-    public function getProviderName();
+// Interfaces cannot be aliased with class_alias in some versions of PHP if strict,
+// but for backward compatibility, we can define it if not exists.
+// However, class_alias works for interfaces too.
+if (!interface_exists('PaymentGatewayInterface')) {
+    class_alias(\USMS\Services\Gateways\PaymentGatewayInterface::class, 'PaymentGatewayInterface');
 }

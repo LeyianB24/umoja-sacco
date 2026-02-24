@@ -1,9 +1,9 @@
-<?php
+ if (!defined('DIAG_MODE')) die('Forbidden'); ?>
+
 /**
  * Backfill: Re-assign existing support tickets based on corrected SUPPORT_ROUTING_MAP
  */
-require_once __DIR__ . '/../config/app_config.php';
-require_once __DIR__ . '/../config/db_connect.php';
+require_once __DIR__ . '/../config/app.php';
 
 echo "=== Backfilling Support Ticket Role Assignments ===\n\n";
 
@@ -44,3 +44,4 @@ while ($t = $tickets->fetch_assoc()) {
 }
 
 echo "\n=== Done. Updated: $updated | Errors: $errors ===\n";
+

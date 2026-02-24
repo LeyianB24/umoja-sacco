@@ -5,7 +5,7 @@ declare(strict_types=1);
  * Logic for Topbar Data (Messages, Notifications)
  */
 
-require_once __DIR__ . '/../config/db_connect.php';
+require_once __DIR__ . '/../config/app.php';
 
 class TopbarHelper {
     public static function getData($user_id, $role) {

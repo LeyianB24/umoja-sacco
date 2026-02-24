@@ -3,7 +3,7 @@ declare(strict_types=1);
 // inc/notification_helpers.php
 // Unified Notification System
 
-require_once __DIR__ . '/../config/app_config.php';
+require_once __DIR__ . '/../config/app.php';
 require_once __DIR__ . '/email.php';
 require_once __DIR__ . '/sms.php';
 

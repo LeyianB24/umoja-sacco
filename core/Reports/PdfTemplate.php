@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 namespace USMS\Reports;
 
 use FPDF;
@@ -278,3 +279,4 @@ class PdfTemplate extends FPDF {
         $this->UniversalTable($headers, $data);
     }
 }
+

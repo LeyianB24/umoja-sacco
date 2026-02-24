@@ -1,5 +1,5 @@
 <?php
-require_once 'config/db_connect.php';
+require_once 'config/app.php';
 $q = $conn->query("SELECT * FROM ledger_accounts");
 printf("%-5s | %-25s | %-10s | %-10s | %-15s\n", "ID", "Name", "Type", "Category", "Balance");
 echo str_repeat("-", 75) . "\n";

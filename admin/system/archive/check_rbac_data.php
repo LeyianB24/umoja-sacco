@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/config/db_connect.php';
+require_once __DIR__ . '/config/app.php';
 echo "--- ROLES ---\n";
 $res = $conn->query("SELECT * FROM roles");
 while($row = $res->fetch_assoc()) print_r($row);

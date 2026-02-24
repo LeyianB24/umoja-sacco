@@ -20,8 +20,9 @@
             "vendor/fpdf/fpdf.php"
         ],
         "files": [
-            "config/app_config.php",
-            "inc/functions.php"
+            "config/app.php",
+            "inc/functions.php",
+            "core/Middleware/Auth.php"
         ]
     },
     "autoload-dev": {

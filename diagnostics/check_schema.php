@@ -1,5 +1,6 @@
-<?php
-include 'c:/xampp/htdocs/usms/config/db_connect.php';
+ if (!defined('DIAG_MODE')) die('Forbidden'); ?>
+
+include 'c:/xampp/htdocs/usms/config/app.php';
 
 function checkTable($conn, $table) {
     echo "--- Table: $table ---\n";
@@ -18,3 +19,4 @@ function checkTable($conn, $table) {
 checkTable($conn, 'loans');
 checkTable($conn, 'members');
 ?>
+

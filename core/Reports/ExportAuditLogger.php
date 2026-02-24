@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 namespace USMS\Reports;
 
 class ExportAuditLogger {
@@ -38,3 +39,4 @@ class ExportAuditLogger {
         }
     }
 }
+

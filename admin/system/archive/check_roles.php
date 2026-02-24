@@ -1,5 +1,5 @@
 <?php
-require 'config/db_connect.php';
+require 'config/app.php';
 $res = $conn->query("SELECT * FROM roles");
 echo "--- roles table ---\n";
 while($row = $res->fetch_assoc()) {

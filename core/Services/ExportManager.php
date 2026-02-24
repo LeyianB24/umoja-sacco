@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 namespace USMS\Services;
 
 use USMS\Reports\PdfTemplate;
@@ -101,3 +102,4 @@ class ExportManager {
     }
 }
 ?>
+

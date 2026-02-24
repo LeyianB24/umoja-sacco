@@ -1,77 +1,10 @@
 <?php
-declare(strict_types=1);
-// inc/Mailer.php
+/**
+ * inc/Mailer.php (LEGACY STUB)
+ * Redirects to the namespaced USMS\Services\EmailService class.
+ */
+require_once __DIR__ . '/../config/app.php';
 
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\Exception;
-
-require_once __DIR__ . '/../vendor/autoload.php';
-
-class Mailer {
-    
-    /**
-     * Send an email with optional attachments.
-     * 
-     * @param string $to Recipient email
-     * @param string $subject Subject line
-     * @param string $body HTML body content
-     * @param array $attachments Array of ['content' => binaryString, 'name' => 'filename.pdf']
-     * @param string|null $altBody Plain text alternative
-     * @return bool True on success, False on failure
-     */
-    public static function send($to, $subject, $body, $attachments = [], $altBody = null) {
-        // Load Config
-        $config = require __DIR__ . '/../config/environment.php';
-        $mailConf = $config['email'];
-
-        $mail = new PHPMailer(true);
-
-        try {
-            // Server settings
-            $mail->isSMTP();
-            $mail->Host       = $mailConf['smtp_host'];
-            $mail->SMTPAuth   = true;
-            $mail->Username   = $mailConf['smtp_username'];
-            $mail->Password   = $mailConf['smtp_password'];
-            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-            $mail->Port       = $mailConf['smtp_port'];
-
-            // Recipients
-            $mail->setFrom($mailConf['from_email'], $mailConf['from_name']);
-            $mail->addAddress($to);
-
-            // Attachments
-            if (!empty($attachments)) {
-                foreach ($attachments as $att) {
-                    if (isset($att['path'])) {
-                        $mail->addAttachment($att['path'], $att['name'] ?? ''); 
-                    } elseif (isset($att['content'])) {
-                        $mail->addStringAttachment($att['content'], $att['name']);
-                    }
-                }
-            }
-
-            // Content
-            $mail->isHTML(true);
-            $mail->Subject = $subject;
-            $mail->Body    = $body;
-            $mail->AltBody = $altBody ?: strip_tags($body);
-
-            $mail->send();
-            return true;
-        } catch (Exception $e) {
-            $error = "Mailer Error ({$to}): " . $mail->ErrorInfo . " | Exception: " . $e->getMessage();
-            error_log($error);
-            // If in development/sandbox, we might want to see this in the browser or a specific log
-            if (defined('APP_ENV') && APP_ENV === 'sandbox') {
-                $logDir = __DIR__ . '/../logs';
-                if (!is_dir($logDir)) {
-                    mkdir($logDir, 0777, true);
-                }
-                file_put_contents($logDir . '/mailer_errors.log', "[" . date('Y-m-d H:i:s') . "] " . $error . "\n", FILE_APPEND);
-            }
-            return false;
-        }
-    }
+if (!class_exists('Mailer')) {
+    class_alias(\USMS\Services\EmailService::class, 'Mailer');
 }
-?>

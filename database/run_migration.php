@@ -22,7 +22,7 @@ if (php_sapi_name() !== 'cli') {
 }
 
 // ─── Bootstrap ───────────────────────────────────────────────────────────────
-require_once __DIR__ . '/../config/db_connect.php';
+require_once __DIR__ . '/../config/app.php';
 
 $args      = $argv ?? [];
 $runSeeds  = in_array('--seeds', $args) || in_array('--all', $args);

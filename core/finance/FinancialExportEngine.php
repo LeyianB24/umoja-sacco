@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * core/finance/FinancialExportEngine.php
  * BACKWARDS COMPATIBILITY STUB
@@ -12,3 +13,4 @@
 if (!class_exists('FinancialExportEngine')) {
     class_alias(\USMS\Services\FinancialExportEngine::class, 'FinancialExportEngine');
 }
+

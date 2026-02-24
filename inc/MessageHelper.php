@@ -1,13 +1,10 @@
 <?php
-declare(strict_types=1);
-// inc/MessageHelper.php
+/**
+ * inc/MessageHelper.php (LEGACY STUB)
+ * Redirects to the namespaced USMS\Services\MessageService class.
+ */
+require_once __DIR__ . '/../config/app.php';
 
-class MessageHelper {
-    public static function markRead($conn, $msg_id, $user_id, $role = 'member') {
-        // Validation: Ensure the message belongs to the user
-        $stmt = $conn->prepare("UPDATE messages SET is_read = 1 WHERE message_id = ? AND (to_member_id = ? OR to_admin_id = ?)");
-        $stmt->bind_param("iii", $msg_id, $user_id, $user_id);
-        return $stmt->execute();
-    }
+if (!class_exists('MessageHelper')) {
+    class_alias(\USMS\Services\MessageService::class, 'MessageHelper');
 }
-?>

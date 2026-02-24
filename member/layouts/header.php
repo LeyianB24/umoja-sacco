@@ -1,7 +1,7 @@
 <?php
 // member/layouts/header.php
 if (session_status() === PHP_SESSION_NONE) session_start();
-require_once __DIR__ . '/../../config/app_config.php';
+require_once __DIR__ . '/../../config/app.php';
 
 // Force Member Login Check if not already handled
 if (!isset($_SESSION['member_id'])) {

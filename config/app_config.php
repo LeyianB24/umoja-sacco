@@ -1,5 +1,5 @@
 <?php
-// config/app_config.php
+// config/app.php
 // MASTER Configuration - Single Source of Truth
 // All defines are guarded with !defined() so this file is safe to include multiple
 // times from any path without triggering "Constant already defined" warnings.

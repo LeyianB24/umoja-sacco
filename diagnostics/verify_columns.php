@@ -1,5 +1,6 @@
-<?php
-include 'c:/xampp/htdocs/usms/config/db_connect.php';
+ if (!defined('DIAG_MODE')) die('Forbidden'); ?>
+
+include 'c:/xampp/htdocs/usms/config/app.php';
 
 function checkColumn($conn, $table, $column) {
     $res = $conn->query("SHOW COLUMNS FROM $table LIKE '$column'");
@@ -19,3 +20,4 @@ checkColumn($conn, 'loans', 'disbursed_amount');
 checkColumn($conn, 'loans', 'disbursed_date');
 checkColumn($conn, 'members', 'profile_pic');
 ?>
+

@@ -1,5 +1,5 @@
 <?php
-require 'config/db_connect.php';
+require 'config/app.php';
 $res = $conn->query("DESCRIBE notifications");
 $out = "";
 if($res) {

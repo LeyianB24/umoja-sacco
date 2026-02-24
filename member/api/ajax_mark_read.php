@@ -1,7 +1,7 @@
 <?php
 // member/api/ajax_mark_read.php
 if (session_status() === PHP_SESSION_NONE) session_start();
-require_once __DIR__ . '/../../config/db_connect.php';
+require_once __DIR__ . '/../../config/app.php';
 require_once __DIR__ . '/../../inc/notification_helpers.php';
 require_once __DIR__ . '/../../inc/MessageHelper.php';
 

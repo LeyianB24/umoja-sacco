@@ -5,8 +5,7 @@ header("Content-Type: application/json");
 // ---------------------------------------------------
 // 1. Load Config & DB
 // ---------------------------------------------------
-require_once __DIR__ . '/../../config/db_connect.php';
-require_once __DIR__ . '/../../config/app_config.php';
+require_once __DIR__ . '/../../config/app.php';
 $env_config = require_once __DIR__ . '/../../config/environment.php';
 require_once __DIR__ . '/../../inc/email.php';
 require_once __DIR__ . '/../../inc/TransactionHelper.php';

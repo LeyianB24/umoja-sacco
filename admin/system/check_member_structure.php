@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/../../config/db_connect.php';
+require_once __DIR__ . '/../../config/app.php';
 
 echo "Members table columns:\n";
 $result = $conn->query("SHOW COLUMNS FROM members");

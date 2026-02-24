@@ -1,6 +1,6 @@
-<?php
-require_once __DIR__ . '/../config/app_config.php';
-require_once __DIR__ . '/../config/db_connect.php';
+ if (!defined('DIAG_MODE')) die('Forbidden'); ?>
+
+require_once __DIR__ . '/../config/app.php';
 
 echo "Starting backfill of support ticket role assignments...\n";
 
@@ -42,3 +42,4 @@ while ($t = $tickets_res->fetch_assoc()) {
 
 echo "Successfully updated $updated_count tickets.\n";
 echo "Backfill complete.\n";
+

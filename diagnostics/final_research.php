@@ -1,4 +1,5 @@
-<?php
+ if (!defined('DIAG_MODE')) die('Forbidden'); ?>
+
 $conn = new mysqli('localhost', 'root', '', 'umoja_drivers_sacco');
 if ($conn->connect_error) die("Connection failed: " . $conn->connect_error);
 
@@ -22,3 +23,4 @@ if ($row = $res->fetch_assoc()) {
 
 file_put_contents(__DIR__ . '/research_results.txt', $results);
 echo "Results saved to research_results.txt\n";
+

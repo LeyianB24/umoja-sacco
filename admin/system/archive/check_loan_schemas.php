@@ -1,5 +1,5 @@
 <?php
-require 'config/db_connect.php';
+require 'config/app.php';
 $out = "";
 foreach(['loans', 'loan_guarantors', 'loan_repayments', 'members', 'transactions'] as $t) {
     $out .= "Table: $t\n";

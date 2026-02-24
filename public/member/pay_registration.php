@@ -1,8 +1,7 @@
 <?php
 // usms/public/pay_registration.php
 session_start();
-require_once __DIR__ . '/../../config/app_config.php';
-require_once __DIR__ . '/../../config/db_connect.php';
+require_once __DIR__ . '/../../config/app.php';
 require_once __DIR__ . '/../../inc/functions.php';
 require_once __DIR__ . '/../../inc/GatewayFactory.php';
 

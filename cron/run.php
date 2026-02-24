@@ -29,8 +29,7 @@ if (php_sapi_name() !== 'cli') {
 }
 
 // Bootstrap
-require_once __DIR__ . '/../config/app_config.php';
-require_once __DIR__ . '/../config/db_connect.php';
+require_once __DIR__ . '/../config/app.php';
 
 // Composer autoloader registers USMS\Cron namespace
 if (!class_exists(\USMS\Cron\JobRunner::class)) {

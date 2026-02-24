@@ -11,8 +11,7 @@ ini_set('memory_limit', '512M');
 set_time_limit(300);
 
 session_start();
-require_once __DIR__ . '/../../config/db_connect.php';
-require_once __DIR__ . '/../../config/app_config.php';
+require_once __DIR__ . '/../../config/app.php';
 
 // Classes autoloaded via Composer PSR-4 (USMS\Services, USMS\Reports)
 

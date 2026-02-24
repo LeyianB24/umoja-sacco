@@ -2,7 +2,7 @@
 session_start();
 
 // Create admin session
-require_once __DIR__ . '/../config/db_connect.php';
+require_once __DIR__ . '/../config/app.php';
 
 // Get superadmin user
 $result = $conn->query("SELECT admin_id, username, full_name, role_id FROM admins WHERE admin_id = 1");

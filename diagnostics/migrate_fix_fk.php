@@ -1,5 +1,6 @@
-<?php
-require_once __DIR__ . '/../config/db_connect.php';
+ if (!defined('DIAG_MODE')) die('Forbidden'); ?>
+
+require_once __DIR__ . '/../config/app.php';
 
 $sql = "ALTER TABLE support_tickets MODIFY admin_id INT(11) NULL";
 echo "Executing: $sql ... ";
@@ -17,3 +18,4 @@ while ($row = $res->fetch_assoc()) {
         print_r($row);
     }
 }
+

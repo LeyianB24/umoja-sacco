@@ -3,7 +3,7 @@ declare(strict_types=1);
 // inc/export_helpers.php
 // Unified Export Functions for PDF and Excel
 
-require_once __DIR__ . '/../config/app_config.php';
+require_once __DIR__ . '/../config/app.php';
 
 /**
  * Export data to PDF

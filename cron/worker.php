@@ -16,8 +16,7 @@ if (php_sapi_name() !== 'cli') {
     exit(1);
 }
 
-require_once __DIR__ . '/../config/app_config.php';
-require_once __DIR__ . '/../config/db_connect.php';
+require_once __DIR__ . '/../config/app.php';
 
 $runner = \USMS\Cron\JobRunner::class;
 
