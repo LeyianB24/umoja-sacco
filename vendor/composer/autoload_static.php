@@ -2062,6 +2062,7 @@ class ComposerStaticInitac2d307f4ed514763a8119f3523066bb
         'USMS\\Cron\\Jobs\\ReconcileLedgerJob' => __DIR__ . '/../..' . '/core/Cron/Jobs/ReconcileLedgerJob.php',
         'USMS\\Database\\Connection' => __DIR__ . '/../..' . '/core/Database/Connection.php',
         'USMS\\Database\\Database' => __DIR__ . '/../..' . '/core/Database/Database.php',
+        'USMS\\Http\\ErrorHandler' => __DIR__ . '/../..' . '/core/Http/ErrorHandler.php',
         'USMS\\Http\\LayoutManager' => __DIR__ . '/../..' . '/core/Http/LayoutManager.php',
         'USMS\\Middleware\\Auth' => __DIR__ . '/../..' . '/core/Middleware/Auth.php',
         'USMS\\Middleware\\AuthMiddleware' => __DIR__ . '/../..' . '/core/Middleware/AuthMiddleware.php',

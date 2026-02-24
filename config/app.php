@@ -48,11 +48,12 @@ $db_config = [
 
 $conn = new mysqli($db_config['host'], $db_config['user'], $db_config['pass'], $db_config['dbname']);
 if ($conn->connect_error) {
-    if (APP_ENV === 'development') {
-        die("Database connection failed: " . $conn->connect_error);
-    } else {
-        die("Error connecting to system database. Please try again later.");
-    }
+    error_log("[USMS] MySQL connection failed: " . $conn->connect_error);
+    \USMS\Http\ErrorHandler::abort(500,
+        APP_ENV === 'development'
+            ? "Database connection failed: " . $conn->connect_error
+            : "Error connecting to system database. Please try again later."
+    );
 }
 $conn->set_charset($db_config['charset']);
 

@@ -76,11 +76,11 @@ class UniversalExportEngine {
                     self::generateExcel($data, $options, $metadata);
                     break;
                 default:
-                    die("Invalid Export Format: $format");
+                    \USMS\Http\ErrorHandler::abort(400, "Invalid Export Format: {$format}");
             }
         } catch (Exception $e) {
             error_log("Export Generation Error: " . $e->getMessage());
-            die("An error occurred while generating the export. Please contact support.");
+            \USMS\Http\ErrorHandler::abort(500, "An error occurred while generating the export. Please contact support.");
         }
     }
 
@@ -133,7 +133,7 @@ class UniversalExportEngine {
 
     private static function generateExcel($data, $options, $metadata) {
         if (is_callable($data)) {
-             die("Excel export does not support custom layouts (closures). Please provide a data array.");
+             \USMS\Http\ErrorHandler::abort(400, "Excel export does not support custom layouts (closures). Please provide a data array.");
         }
 
         $excel = new ExcelTemplate($options['title'] ?? 'Export', $options['module'] ?? 'System', $metadata);

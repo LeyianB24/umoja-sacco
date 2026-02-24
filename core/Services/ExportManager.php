@@ -36,7 +36,7 @@ class ExportManager {
         } elseif ($type === 'excel') {
             return self::generateExcel($data, $headers, $title, $module, $outputMode);
         } else {
-            die("Error: Invalid export type '$type'. Supported types: pdf, excel.");
+            \USMS\Http\ErrorHandler::abort(400, "Invalid export type '{$type}'. Supported types: pdf, excel.");
         }
     }
 

@@ -66,8 +66,7 @@ class AuthMiddleware
 
         if (!isset($_SESSION['role_id']) || (int)$_SESSION['role_id'] !== 1) {
             self::log("Superadmin access denied for admin=" . ($_SESSION['admin_id'] ?? '?'));
-            http_response_code(403);
-            die('<h1>403 Forbidden</h1><p>Restricted Area: Superadmin Access Only.</p>');
+            \USMS\Http\ErrorHandler::abort(403, 'Restricted Area: Superadmin Access Only.');
         }
     }
 
@@ -150,8 +149,7 @@ class AuthMiddleware
                 exit;
             }
 
-            http_response_code(429);
-            die("<h1>429 Too Many Requests</h1><p>Please wait {$retryAfter} seconds before trying again.</p>");
+            \USMS\Http\ErrorHandler::abort(429, "Please wait {$retryAfter} seconds before trying again.");
         }
     }
 

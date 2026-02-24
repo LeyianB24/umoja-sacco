@@ -198,13 +198,11 @@ class SecureUpload
 
         // Path traversal guard
         if ($realPath === false || $root === false || !str_starts_with($realPath, $root)) {
-            http_response_code(403);
-            die('Access denied.');
+            \USMS\Http\ErrorHandler::abort(403, 'Access denied.');
         }
 
         if (!file_exists($realPath)) {
-            http_response_code(404);
-            die('File not found.');
+            \USMS\Http\ErrorHandler::abort(404, 'File not found.');
         }
 
         $ext  = strtolower(pathinfo($realPath, PATHINFO_EXTENSION));

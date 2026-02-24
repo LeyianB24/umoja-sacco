@@ -100,8 +100,7 @@ class Auth {
         if (!isset($_SESSION['role_id']) || $_SESSION['role_id'] != 1) {
             // Log the attempt
             error_log("Unauthorized access attempt to System Files by Admin ID: " . ($_SESSION['admin_id'] ?? 'Unknown'));
-            http_response_code(403);
-            die("<h1>403 Forbidden</h1><p>Restricted Area: Superadmin Access Only.</p>");
+            \USMS\Http\ErrorHandler::abort(403, "Restricted Area: Superadmin Access Only.");
         }
     }
 

@@ -36,10 +36,11 @@ class Database {
         try {
             $this->pdo = new PDO($dsn, $user, $pass, $options);
         } catch (PDOException $e) {
+            error_log("[USMS] PDO connection failed: " . $e->getMessage());
             if (defined('APP_ENV') && APP_ENV === 'development') {
                 throw new PDOException($e->getMessage(), (int)$e->getCode());
             } else {
-                die("Critical: Database connection failed.");
+                \USMS\Http\ErrorHandler::abort(500, "Critical: Database connection failed.");
             }
         }
     }

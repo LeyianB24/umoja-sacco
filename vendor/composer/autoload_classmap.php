@@ -1927,6 +1927,7 @@ return array(
     'USMS\\Cron\\Jobs\\ReconcileLedgerJob' => $baseDir . '/core/Cron/Jobs/ReconcileLedgerJob.php',
     'USMS\\Database\\Connection' => $baseDir . '/core/Database/Connection.php',
     'USMS\\Database\\Database' => $baseDir . '/core/Database/Database.php',
+    'USMS\\Http\\ErrorHandler' => $baseDir . '/core/Http/ErrorHandler.php',
     'USMS\\Http\\LayoutManager' => $baseDir . '/core/Http/LayoutManager.php',
     'USMS\\Middleware\\Auth' => $baseDir . '/core/Middleware/Auth.php',
     'USMS\\Middleware\\AuthMiddleware' => $baseDir . '/core/Middleware/AuthMiddleware.php',

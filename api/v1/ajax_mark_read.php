@@ -17,7 +17,7 @@ $id = $_POST['id'] ?? 0;
 $action = $_POST['action'] ?? 'read';
 
 if ($type === 'message' && intval($id) > 0) {
-    echo json_encode(['success' => MessageHelper::markRead($conn, intval($id), $user_id, 'admin')]);
+    echo json_encode(['success' => \USMS\Services\MessageService::quickMarkRead(intval($id), (int)$user_id)]);
 } 
 elseif ($type === 'notification') {
     $notif_id = ($action === 'clear_all' || $id === 'all') ? 'all' : intval($id);

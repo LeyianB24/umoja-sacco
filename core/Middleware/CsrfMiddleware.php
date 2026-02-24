@@ -96,8 +96,7 @@ class CsrfMiddleware
                 exit;
             }
 
-            http_response_code(403);
-            die('<h1>403 Forbidden</h1><p>CSRF token validation failed. Please go back and try again.</p>');
+            \USMS\Http\ErrorHandler::abort(403, 'CSRF token validation failed. Please go back and try again.');
         }
     }
 
