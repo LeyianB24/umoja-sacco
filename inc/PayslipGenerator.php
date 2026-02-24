@@ -75,7 +75,7 @@ class PayslipGenerator {
         
         self::row($pdf, "PAYE Tax", $pay['tax_paye'], 110);
         self::row($pdf, "NSSF", $pay['tax_nssf'], 110);
-        self::row($pdf, "SHA", $pay['tax_nhif'], 110);
+        self::row($pdf, "SHA", $pay['tax_sha'], 110);
         self::row($pdf, "Housing Levy", $pay['tax_housing'], 110);
         // Add other deductions if present in future
         

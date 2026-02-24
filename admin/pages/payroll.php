@@ -144,7 +144,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $failed_count = 0;
         $missing_email_count = 0;
 
-        $pq = $db->query("SELECT p.*, e.full_name, e.company_email, e.personal_email, e.email, e.job_title, e.kra_pin, e.nssf_no, e.sha_no, e.bank_name, e.bank_account, sg.grade_name,
+        $pq = $db->query("SELECT p.*, e.full_name, e.employee_no, e.company_email, e.personal_email, e.email, e.job_title, e.kra_pin, e.nssf_no, e.sha_no, e.bank_name, e.bank_account, sg.grade_name,
                           a.email as admin_email
                           FROM payroll p 
                           JOIN employees e ON p.employee_id = e.employee_id 
