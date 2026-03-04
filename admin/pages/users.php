@@ -21,8 +21,8 @@ require_superadmin();
 <?php $layout->header($pageTitle); ?>
 <?php flash_render(); ?>
     <style>
-        .main-content-wrapper { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; }
-        @media (max-width: 991px) { .main-content-wrapper { margin-left: 0; padding: 1.5rem; } }
+        .main-content-wrapper { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; width: calc(100% - 280px); }
+        @media (max-width: 991px) { .main-content-wrapper { margin-left: 0; padding: 1.5rem; width: 100%; } }
 
         /* Page-specific overrides */
         .avatar-box { width: 45px; height: 45px; border-radius: 14px; background: rgba(15, 46, 37, 0.05); color: var(--forest); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.2rem; }
@@ -104,7 +104,7 @@ $pageTitle = "Staff Management";
 ?>
 <div class="d-flex">
     <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper p-0 w-100">
+    <div class="flex-fill main-content-wrapper p-0">
         <?php $layout->topbar($pageTitle ?? 'Staff Management'); ?>
         <div class="container-fluid py-3 px-4">
             <?php flash_render(); ?>

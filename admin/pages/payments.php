@@ -195,8 +195,8 @@ $pageTitle = "Payments Ledger";
 ?>
 <?php $layout->header($pageTitle); ?>
     <style>
-        .main-content-wrapper { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; }
-        @media (max-width: 991px) { .main-content-wrapper { margin-left: 0; padding: 1.5rem; } }
+        .main-content-wrapper { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; width: calc(100% - 280px); }
+        @media (max-width: 991px) { .main-content-wrapper { margin-left: 0; padding: 1.5rem; width: 100%; } }
         
         /* Custom Cards */
         .card-custom { 
@@ -219,7 +219,7 @@ $pageTitle = "Payments Ledger";
 
 <div class="d-flex">
     <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper p-0 w-100">
+    <div class="flex-fill main-content-wrapper p-0">
         <?php $layout->topbar($pageTitle ?? 'Payments Portfolio'); ?>
         <div class="container-fluid py-3 px-4">
             
