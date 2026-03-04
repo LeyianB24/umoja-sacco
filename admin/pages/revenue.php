@@ -215,9 +215,9 @@ $pageTitle = "Revenue Portal";
 
 <div class="d-flex">
     <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper p-0">
+    <div class="flex-fill main-content-wrapper p-0 w-100">
         <?php $layout->topbar($pageTitle ?? 'Revenue Portal'); ?>
-        <div class="container-fluid">
+        <div class="container-fluid py-3 px-4">
             <!-- Header Banner -->
             <div class="portal-header slide-up shadow-lg">
                 <div class="row align-items-center">

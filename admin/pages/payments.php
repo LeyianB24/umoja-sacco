@@ -219,9 +219,9 @@ $pageTitle = "Payments Ledger";
 
 <div class="d-flex">
     <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper p-0">
+    <div class="flex-fill main-content-wrapper p-0 w-100">
         <?php $layout->topbar($pageTitle ?? 'Payments Portfolio'); ?>
-        <div class="container-fluid">
+        <div class="container-fluid py-3 px-4">
             
             <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-5 gap-3">
                 <div>
