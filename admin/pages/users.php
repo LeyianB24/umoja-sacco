@@ -102,12 +102,11 @@ $users_res = $conn->query("SELECT a.*, r.name as role_name FROM admins a LEFT JO
 
 $pageTitle = "Staff Management";
 ?>
-<div class="d-flex">
-    <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper p-0">
-        <?php $layout->topbar($pageTitle ?? 'Staff Management'); ?>
-        <div class="container-fluid py-3 px-4">
-            <?php flash_render(); ?>
+<?php $layout->sidebar(); ?>
+<div class="main-wrapper">
+    <?php $layout->topbar($pageTitle ?? 'Staff Management'); ?>
+    <div class="main-content">
+        <?php flash_render(); ?>
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
                     <h2 class="fw-bold mb-1">Administrative Staff</h2>
@@ -176,8 +175,8 @@ $pageTitle = "Staff Management";
                         </tbody>
                     </table>
                 </div>
-            </div> <!-- Close iq-card properly here -->
-            
+            </div> <!-- Close main-content -->
+</div> <!-- Close main-wrapper -->        
             <!-- Add User Modal -->
             <div class="modal fade" id="addUserModal" tabindex="-1">
                 <div class="modal-dialog modal-dialog-centered">

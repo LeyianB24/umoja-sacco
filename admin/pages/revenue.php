@@ -195,29 +195,38 @@ $pageTitle = "Revenue Portal";
     $layout->header($pageTitle);
 ?>
     <style>
-        .main-content-wrapper { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; width: calc(100% - 280px); }
-        @media (max-width: 991px) { .main-content-wrapper { margin-left: 0; padding: 1.5rem; width: 100%; } }
-
         .portal-header { 
             background: linear-gradient(135deg, var(--forest) 0%, var(--forest-mid) 100%); 
-            border-radius: 2rem; padding: 3.5rem; color: white; margin-bottom: 2.5rem;
-            box-shadow: 0 20px 40px rgba(15, 46, 37, 0.15);
-            position: relative; overflow: hidden;
+            border-radius: 2rem; padding: 4rem 3rem; color: white; margin-bottom: 3rem;
+            position: relative; overflow: hidden; box-shadow: 0 20px 40px rgba(15, 46, 37, 0.15);
         }
+        .portal-header::before {
+            content: ''; position: absolute; top: -50%; right: -10%; width: 500px; height: 500px;
+            background: radial-gradient(circle, rgba(190, 242, 100, 0.05) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        /* Stat Cards */
         .stat-card {
-            background: white; border-radius: 1.5rem; padding: 2rem;
-            border: 1px solid var(--border-color); box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-            transition: 0.3s;
+            background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px);
+            border-radius: 1.5rem; padding: 2rem; border: 1px solid var(--border-color);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.02); height: 100%;
         }
-        .stat-card:hover { transform: translateY(-5px); box-shadow: 0 15px 40px rgba(0,0,0,0.1); }
-        .icon-circle { width: 50px; height: 50px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; margin-bottom: 1rem; }
+        
+        /* Table Override */
+        .table-custom { width: 100%; border-collapse: separate; border-spacing: 0 0.5rem; }
+        .table-custom th { color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; padding: 1rem; border: none; }
+        .table-custom td { padding: 1.25rem 1rem; background: white; vertical-align: middle; border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); }
+        .table-custom td:first-child { border-left: 1px solid var(--border-color); border-radius: 1rem 0 0 1rem; }
+        .table-custom td:last-child { border-right: 1px solid var(--border-color); border-radius: 0 1rem 1rem 0; }
+        .table-custom tr { transition: transform 0.2s, box-shadow 0.2s; }
+        .table-custom tr:hover td { background: #f8fafc; cursor: pointer; }
     </style>
 
-<div class="d-flex">
-    <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper p-0">
-        <?php $layout->topbar($pageTitle ?? 'Revenue Portal'); ?>
-        <div class="container-fluid py-3 px-4">
+<?php $layout->sidebar(); ?>
+<div class="main-wrapper">
+    <?php $layout->topbar($pageTitle ?? 'Revenue Portal'); ?>
+    <div class="main-content">
             <!-- Header Banner -->
             <div class="portal-header slide-up shadow-lg">
                 <div class="row align-items-center">

@@ -195,33 +195,50 @@ $pageTitle = "Payments Ledger";
 ?>
 <?php $layout->header($pageTitle); ?>
     <style>
-        .main-content-wrapper { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; width: calc(100% - 280px); }
-        @media (max-width: 991px) { .main-content-wrapper { margin-left: 0; padding: 1.5rem; width: 100%; } }
-        
-        /* Custom Cards */
-        .card-custom { 
-            background: rgba(255, 255, 255, 0.9);
+        .stat-card {
+            background: rgba(255, 255, 255, 0.8);
             backdrop-filter: blur(10px);
-            border-radius: 24px;
-            border: 1px solid rgba(255, 255, 255, 0.4);
+            border: 1px solid rgba(255,255,255,0.4);
+            border-radius: 1.5rem;
+            padding: 2rem;
             box-shadow: 0 10px 30px rgba(0,0,0,0.02);
+            transition: transform 0.3s ease;
         }
-        
-        .badge-type { padding: 6px 12px; font-weight: 700; border-radius: 10px; font-size: 0.7rem; letter-spacing: 0.5px; }
-        .badge-in { background: rgba(208, 243, 93, 0.1); color: var(--forest-mid); }
-        .badge-out { background: rgba(239, 68, 68, 0.1); color: #dc2626; }
-        
+
+        .hero-banner {
+            background: linear-gradient(135deg, var(--forest-dark) 0%, var(--forest) 100%);
+            border-radius: 2rem;
+            padding: 3rem;
+            color: white;
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 2.5rem;
+            box-shadow: 0 20px 40px rgba(15, 46, 37, 0.15);
+        }
+
         .avatar-initials {
-            width: 42px; height: 42px; border-radius: 14px; background: rgba(15, 46, 37, 0.05); color: var(--forest);
-            display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.9rem;
+            width: 45px; height: 45px;
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 800; font-size: 1.1rem;
         }
+
+        .badge-type {
+            padding: 0.5rem 1rem;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            font-size: 0.75rem;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+        .badge-in { background: var(--lime-dim); color: var(--forest-dark); border: 1px solid rgba(208, 247, 100, 0.3); }
+        .badge-out { background: #fce7f3; color: #be185d; border: 1px solid rgba(251, 207, 232, 0.5); }
     </style>
 
-<div class="d-flex">
-    <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper p-0">
-        <?php $layout->topbar($pageTitle ?? 'Payments Portfolio'); ?>
-        <div class="container-fluid py-3 px-4">
+<?php $layout->sidebar(); ?>
+<div class="main-wrapper">
+    <?php $layout->topbar($pageTitle ?? 'Cashier & Payments'); ?>
+    <div class="main-content">
             
             <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-5 gap-3">
                 <div>

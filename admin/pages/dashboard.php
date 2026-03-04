@@ -52,9 +52,6 @@ $pageTitle = "System Dashboard";
 ?>
 <?php $layout->header($pageTitle); ?>
     <style>
-        .main-content-wrapper { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; }
-        @media (max-width: 991px) { .main-content-wrapper { margin-left: 0; padding: 1.5rem; } }
-
         .hp-hero { 
             background: linear-gradient(135deg, var(--forest) 0%, var(--forest-mid) 100%); 
             border-radius: 30px; padding: 50px; color: white; margin-bottom: 40px;
@@ -63,11 +60,10 @@ $pageTitle = "System Dashboard";
         }
     </style>
 
-<div class="d-flex">
-    <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper p-0">
-        <?php $layout->topbar($pageTitle ?? 'System Dashboard'); ?>
-        <div class="container-fluid">
+<?php $layout->sidebar(); ?>
+<div class="main-wrapper">
+    <?php $layout->topbar($pageTitle ?? 'System Dashboard'); ?>
+    <div class="main-content">
             <div class="hp-hero">
                 <div class="row align-items-center">
                     <div class="col-md-7">

@@ -29,9 +29,6 @@ $pageTitle = "Statement Portal";
     <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
 
     <style>
-        .main-content-wrapper { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; width: calc(100% - 280px); }
-        @media (max-width: 991px) { .main-content-wrapper { margin-left: 0; padding: 1.5rem; width: 100%; } }
-
         .portal-header {
             position: relative; overflow: hidden;
             border-radius: 2rem; padding: 3rem; margin-bottom: 2.5rem;
@@ -88,11 +85,10 @@ $pageTitle = "Statement Portal";
         .select2-container--bootstrap-5 .select2-selection { border-radius: 0.85rem; height: auto; padding: 0.5rem 0.75rem; }
     </style>
 
-<div class="d-flex">
-    <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper p-0">
-        <?php $layout->topbar($pageTitle ?? 'Statement Portal'); ?>
-        <div class="container-fluid py-3 px-4">
+<?php $layout->sidebar(); ?>
+<div class="main-wrapper">
+    <?php $layout->topbar($pageTitle ?? 'Statement Portal'); ?>
+    <div class="main-content">
             <!-- Portal Header -->
             <div class="portal-header shadow-lg">
                 <div class="row align-items-center">
