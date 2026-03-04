@@ -222,7 +222,7 @@ $pageTitle = "Revenue Portal";
             <div class="portal-header slide-up shadow-lg">
                 <div class="row align-items-center">
                     <div class="col-lg-7">
-                        <span class="badge bg-white bg-opacity-10 text-white rounded-pill px-3 py-2 mb-3">Treasury V4</span>
+                        <span class="badge bg-white bg-opacity-10 text-white rounded-pill px-3 py-2 mb-3">Treasury</span>
                         <h1 class="display-5 fw-800 mb-2">Revenue Dashboard</h1>
                         <p class="opacity-75 fs-5 mb-0">Monitor SACCO inflows and asset performance metrics.</p>
                     </div>

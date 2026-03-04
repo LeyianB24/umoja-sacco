@@ -71,7 +71,7 @@ $pageTitle = "System Dashboard";
             <div class="hp-hero">
                 <div class="row align-items-center">
                     <div class="col-md-7">
-                        <span class="badge bg-white bg-opacity-10 text-white rounded-pill px-3 py-2 mb-3">V28 System Online</span>
+                        <span class="badge bg-white bg-opacity-10 text-white rounded-pill px-3 py-2 mb-3">System Online</span>
                         <h1 class="display-4 fw-800 mb-2">Hello, <?= explode(' ', $admin_name)[0] ?>.</h1>
                         <p class="opacity-75 fs-5">Everything is running smoothly. The Sacco's financial heart is beating at <span class="text-lime fw-bold">100% precision</span>.</p>
                         <a href="<?= BASE_URL ?>/admin/pages/loans_reviews.php" class="btn btn-lime rounded-pill px-4 py-2 fw-bold shadow-sm">
