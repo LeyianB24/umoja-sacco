@@ -324,7 +324,15 @@ class FinancialService {
     /**
      * Legacy support: Sum of all credits for a member in a category
      */
-    public function getLifetimeCredits(int $member_id, string $category): float {
+    public function getLifetimeCredits(int $member_id, string|array $category): float {
+        if (is_array($category)) {
+            $total = 0;
+            foreach ($category as $cat) {
+                $total += $this->getLifetimeCredits($member_id, $cat);
+            }
+            return (float)$total;
+        }
+
         $acc_id = $this->getMemberAccount($member_id, $category);
         $stmt = $this->db->prepare("SELECT SUM(credit) as total FROM ledger_entries WHERE account_id = ?");
         $stmt->execute([$acc_id]);
