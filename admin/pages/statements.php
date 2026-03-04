@@ -251,12 +251,12 @@ $pageTitle = "Statement Portal";
                     </div>
                 </div>
             </div>
-<?php $layout->footer(); ?>
         </div>
-        
     </div>
 </div>
-
+<?php 
+ob_start(); 
+?>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
@@ -264,8 +264,12 @@ $pageTitle = "Statement Portal";
     $(document).ready(function() {
         $('.select2-member').select2({
             theme: 'bootstrap-5',
-            placeholder: "Search by Name, Reg No or National ID...",
-            width: '100%'
+            placeholder: "Search member...",
+            allowClear: true
         });
     });
 </script>
+<?php 
+$extraJs = ob_get_clean();
+$layout->footer(); 
+?>

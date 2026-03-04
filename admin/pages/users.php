@@ -177,95 +177,92 @@ $pageTitle = "Staff Management";
                     </table>
                 </div>
             </div> <!-- Close iq-card properly here -->
-            <?php $layout->footer(); ?>
-        </div> <!-- Close container-fluid -->
-        
-    </div> <!-- Close flex-fill main-content-wrapper -->
-</div> <!-- Close d-flex -->
+            
+            <!-- Add User Modal -->
+            <div class="modal fade" id="addUserModal" tabindex="-1">
+                <div class="modal-dialog modal-dialog-centered">
+                    <form class="modal-content border-0 shadow" method="POST">
+                        <?= csrf_field() ?>
+                        <input type="hidden" name="action" value="add_user">
+                        <div class="modal-header">
+                            <h5 class="modal-title fw-bold">Register New Staff</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body p-4">
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold">Full Name</label>
+                                <input type="text" name="full_name" class="form-control" required>
+                            </div>
+                            <div class="row g-3 mb-3">
+                                <div class="col-6">
+                                    <label class="form-label small fw-bold">Email</label>
+                                    <input type="email" name="email" class="form-control" required>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small fw-bold">Username</label>
+                                    <input type="text" name="username" class="form-control" required>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold">Assign Role</label>
+                                <select name="role_id" class="form-select" required>
+                                    <option value="">Select a role...</option>
+                                    <?php foreach($roles_list as $r): ?>
+                                        <option value="<?= $r['id'] ?>"><?= htmlspecialchars($r['name']) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold">Temp Password</label>
+                                <input type="password" name="password" class="form-control" required minlength="6">
+                            </div>
+                            <button type="submit" class="btn btn-forest w-100 py-2 fw-bold shadow-sm">Initialize Account</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
 
-<!-- Add User Modal -->
-<div class="modal fade" id="addUserModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <form class="modal-content border-0 shadow" method="POST">
-            <?= csrf_field() ?>
-            <input type="hidden" name="action" value="add_user">
-            <div class="modal-header">
-                <h5 class="modal-title fw-bold">Register New Staff</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            <!-- Edit User Modal -->
+            <div class="modal fade" id="editUserModal" tabindex="-1">
+                <div class="modal-dialog modal-dialog-centered">
+                    <form class="modal-content border-0 shadow" method="POST">
+                        <?= csrf_field() ?>
+                        <input type="hidden" name="action" value="edit_user">
+                        <input type="hidden" name="admin_id" id="edit_admin_id">
+                        <div class="modal-header">
+                            <h5 class="modal-title fw-bold">Modify Staff Member</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body p-4">
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold">Full Name</label>
+                                <input type="text" name="full_name" id="edit_full_name" class="form-control" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold">Email</label>
+                                <input type="email" name="email" id="edit_email" class="form-control" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold">Role Assignment</label>
+                                <select name="role_id" id="edit_role_id" class="form-select" required>
+                                    <?php foreach($roles_list as $r): ?>
+                                        <option value="<?= $r['id'] ?>"><?= htmlspecialchars($r['name']) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold">Force New Password (Empty to skip)</label>
+                                <input type="password" name="password" class="form-control" minlength="6">
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100 py-2 fw-bold shadow-sm">Save Changes</button>
+                        </div>
+                    </form>
+                </div>
             </div>
-            <div class="modal-body p-4">
-                <div class="mb-3">
-                    <label class="form-label small fw-bold">Full Name</label>
-                    <input type="text" name="full_name" class="form-control" required>
-                </div>
-                <div class="row g-3 mb-3">
-                    <div class="col-6">
-                        <label class="form-label small fw-bold">Email</label>
-                        <input type="email" name="email" class="form-control" required>
-                    </div>
-                    <div class="col-6">
-                        <label class="form-label small fw-bold">Username</label>
-                        <input type="text" name="username" class="form-control" required>
-                    </div>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label small fw-bold">Assign Role</label>
-                    <select name="role_id" class="form-select" required>
-                        <option value="">Select a role...</option>
-                        <?php foreach($roles_list as $r): ?>
-                            <option value="<?= $r['id'] ?>"><?= htmlspecialchars($r['name']) ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label small fw-bold">Temp Password</label>
-                    <input type="password" name="password" class="form-control" required minlength="6">
-                </div>
-                <button type="submit" class="btn btn-forest w-100 py-2 fw-bold shadow-sm">Initialize Account</button>
-            </div>
-        </form>
-    </div>
-</div>
 
-<!-- Edit User Modal -->
-<div class="modal fade" id="editUserModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <form class="modal-content border-0 shadow" method="POST">
-            <?= csrf_field() ?>
-            <input type="hidden" name="action" value="edit_user">
-            <input type="hidden" name="admin_id" id="edit_admin_id">
-            <div class="modal-header">
-                <h5 class="modal-title fw-bold">Modify Staff Member</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body p-4">
-                <div class="mb-3">
-                    <label class="form-label small fw-bold">Full Name</label>
-                    <input type="text" name="full_name" id="edit_full_name" class="form-control" required>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label small fw-bold">Email</label>
-                    <input type="email" name="email" id="edit_email" class="form-control" required>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label small fw-bold">Role Assignment</label>
-                    <select name="role_id" id="edit_role_id" class="form-select" required>
-                        <?php foreach($roles_list as $r): ?>
-                            <option value="<?= $r['id'] ?>"><?= htmlspecialchars($r['name']) ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label small fw-bold">Force New Password (Empty to skip)</label>
-                    <input type="password" name="password" class="form-control" minlength="6">
-                </div>
-                <button type="submit" class="btn btn-primary w-100 py-2 fw-bold shadow-sm">Save Changes</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<?php 
+ob_start(); 
+?>
 <script>
 function openEditModal(data) {
     document.getElementById('edit_admin_id').value = data.admin_id;
@@ -275,4 +272,8 @@ function openEditModal(data) {
     new bootstrap.Modal(document.getElementById('editUserModal')).show();
 }
 </script>
+<?php 
+$extraJs = ob_get_clean();
+$layout->footer(); 
+?>
 

@@ -604,6 +604,10 @@ $pageTitle = "Revenue Portal";
         }
     });
 
+<?php 
+ob_start(); 
+?>
+<script>
     // Search
     document.getElementById('revenueSearch')?.addEventListener('keyup', function() {
         const q = this.value.toLowerCase();
@@ -612,9 +616,7 @@ $pageTitle = "Revenue Portal";
         });
     });
 </script>
-</body>
-</html>
-        
-    </div>
-</body>
-</html>
+<?php 
+$extraJs = ob_get_clean();
+$layout->footer(); 
+?>

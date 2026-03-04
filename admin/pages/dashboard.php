@@ -294,7 +294,3 @@ $pageTitle = "System Dashboard";
                 </div>
             </div>
             <?php $layout->footer(); ?>
-        </div>
-        
-    </div>
-</div>

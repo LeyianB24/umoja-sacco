@@ -472,7 +472,9 @@ $pageTitle = "Payments Ledger";
         </div>
     </div>
 </div>
-
+<?php 
+ob_start(); 
+?>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     function toggleMemberField() {
@@ -489,5 +491,7 @@ $pageTitle = "Payments Ledger";
         }
     }
 </script>
-</body>
-</html>
+<?php 
+$extraJs = ob_get_clean();
+$layout->footer(); 
+?>

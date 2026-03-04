@@ -311,10 +311,7 @@ $investments_all = $investments_list->fetch_all(MYSQLI_ASSOC);
                                     </td>
                                 </tr>
                             <?php endforeach; endif; ?>
-                        </tbody>
                     </table>
-                </div>
-                  <?php $layout->footer(); ?>
                 </div>
             </div>
             
@@ -401,8 +398,6 @@ $investments_all = $investments_list->fetch_all(MYSQLI_ASSOC);
     </div>
 </div>
 
-      
-    </div>
-    <!-- END main-content-wrapper -->
-</div>
-<!-- END d-flex -->
+<?php 
+$layout->footer(); 
+?>
