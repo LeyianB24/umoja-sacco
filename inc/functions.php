@@ -36,6 +36,10 @@ if (!function_exists('is_future_date')) {
     }
 }
 
+/* ==========================================================================
+   SECURITY & SANITIZATION
+   ========================================================================== */
+
 /**
  * Validates that a date is not in the future and redirects if it is.
  * @param string $date The date string to validate.
