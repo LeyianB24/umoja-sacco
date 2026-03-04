@@ -176,11 +176,12 @@ $pageTitle = "Staff Management";
                         </tbody>
                     </table>
                 </div>
-                <?php $layout->footer(); ?>
-        </div>
+            </div> <!-- Close iq-card properly here -->
+            <?php $layout->footer(); ?>
+        </div> <!-- Close container-fluid -->
         
-    </div>
-</div>
+    </div> <!-- Close flex-fill main-content-wrapper -->
+</div> <!-- Close d-flex -->
 
 <!-- Add User Modal -->
 <div class="modal fade" id="addUserModal" tabindex="-1">
