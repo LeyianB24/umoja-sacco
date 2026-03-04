@@ -251,9 +251,9 @@ $pageTitle = "Statement Portal";
                     </div>
                 </div>
             </div>
-
+<?php $layout->footer(); ?>
         </div>
-        <?php $layout->footer(); ?>
+        
     </div>
 </div>
 
