@@ -52,6 +52,9 @@ class ExportManager {
             return $pdf->Output('S');
         } else {
             $filename = strtolower(str_replace(' ', '_', $title)) . '_' . date('Ymd') . '.pdf';
+            if (ob_get_length()) {
+                ob_clean();
+            }
             $pdf->Output('D', $filename);
             exit;
         }
@@ -81,6 +84,9 @@ class ExportManager {
             return $pdf->Output('S');
         } else {
             $filename = strtolower(str_replace(' ', '_', $title)) . '_' . date('Ymd') . '.pdf';
+            if (ob_get_length()) {
+                ob_clean();
+            }
             $pdf->Output('D', $filename);
             exit;
         }
