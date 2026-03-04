@@ -40,16 +40,16 @@ class AuthMiddleware {
     }
 
     /**
-     * Check permission for a specific module.
-     * @param string $module_slug The slug of the module (e.g. 'loans', 'finance')
-     * @param string $action 'view', 'create', 'edit', 'delete'
+     * Check boolean permission for a specific module without aborting.
      */
-    public static function requireModulePermission(string $module_slug, string $action = 'view'): void {
-        self::requireAdmin();
+    public static function hasModulePermission(string $module_slug, string $action = 'view'): bool {
+        if (!isset($_SESSION['admin_id'])) {
+            return false;
+        }
 
         // Superadmin bypass
         if (isset($_SESSION['role_id']) && (int)$_SESSION['role_id'] === 1) {
-            return;
+            return true;
         }
 
         $role_id = (int)$_SESSION['role_id'];
@@ -71,7 +71,18 @@ class AuthMiddleware {
         $stmt->execute([$module_slug, $role_id]);
         $permission = $stmt->fetch();
 
-        if (!$permission || !$permission[$action_col]) {
+        return $permission && $permission[$action_col];
+    }
+
+    /**
+     * Check permission for a specific module and abort on failure.
+     * @param string $module_slug The slug of the module (e.g. 'loans', 'finance')
+     * @param string $action 'view', 'create', 'edit', 'delete'
+     */
+    public static function requireModulePermission(string $module_slug, string $action = 'view'): void {
+        self::requireAdmin();
+
+        if (!self::hasModulePermission($module_slug, $action)) {
             ErrorHandler::abort(403, "Access Denied: You do not have permission to $action the $module_slug module.");
         }
     }

@@ -15,8 +15,7 @@ require_once __DIR__ . '/../../inc/FinancialEngine.php';
 require_once __DIR__ . '/../../inc/TransactionHelper.php';
 
 // 1. Auth Check - Using the more secure standard
-require_admin();
-require_permission();
+\USMS\Middleware\AuthMiddleware::requireModulePermission('finance');
 
 // 2. Handle Form Submission (Record New Transaction)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'record_txn') {

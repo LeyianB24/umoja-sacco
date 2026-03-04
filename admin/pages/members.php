@@ -87,7 +87,7 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
     exit;
 }
 
-require_permission();
+\USMS\Middleware\AuthMiddleware::requireModulePermission('members');
 ?>
 <?php $layout->header($pageTitle); ?>
     <style>

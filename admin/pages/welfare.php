@@ -15,8 +15,7 @@ require_once __DIR__ . '/../../inc/LayoutManager.php';
 require_once __DIR__ . '/../../inc/FinancialEngine.php';
 
 // --- Security ---
-require_permission();
-Auth::requireAdmin();
+\USMS\Middleware\AuthMiddleware::requireModulePermission('savings');
 $layout = LayoutManager::create('admin');
 $admin_id = $_SESSION['admin_id'];
 
