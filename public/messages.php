@@ -243,15 +243,23 @@ if ($active_id && $active_role) {
 
     if (!$partner) {
         if ($active_role === 'admin') {
-            $info = $conn->query("SELECT full_name FROM admins WHERE admin_id=$active_id")->fetch_assoc() ?? [];
+            $info = $conn->query("SELECT full_name FROM admins WHERE admin_id=$active_id")->fetch_assoc();
             $partner = ['name' => $info['full_name'] ?? 'Unknown Admin', 'pic' => null];
         } else {
-            $info = $conn->query("SELECT full_name, profile_pic FROM members WHERE member_id=$active_id")->fetch_assoc() ?? [];
-            $partner = ['name' => $info['full_name'] ?? 'Unknown Member', 'pic' => $info['profile_pic'] ?? null];
+            $info = $conn->query("SELECT full_name, profile_pic FROM members WHERE member_id=$active_id")->fetch_assoc();
+            $partner = [
+                'name' => $info['full_name'] ?? 'Unknown Member', 
+                'pic'  => $info['profile_pic'] ?? null
+            ];
         }
     }
-    $partner = $partner ?? ['name' => 'Unknown', 'pic' => null];
-    $partner['name'] = $partner['name'] ?? 'Unknown';
+    
+    // Ensure $partner is absolutely an array with the required keys
+    if (!is_array($partner)) {
+        $partner = ['name' => 'Unknown User', 'pic' => null];
+    }
+    $partner['name'] = $partner['name'] ?? 'Unknown User';
+    $partner['pic']  = $partner['pic'] ?? null;
 
     $markSQL = match($my_role) {
         'member' => ($active_role === 'admin') 
