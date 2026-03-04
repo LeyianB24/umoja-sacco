@@ -7,9 +7,8 @@ require_once __DIR__ . '/../../inc/Auth.php';
 require_once __DIR__ . '/../../inc/LayoutManager.php';
 require_once __DIR__ . '/../../inc/ShareValuationEngine.php';
 
-Auth::requireAdmin();
+\USMS\Middleware\AuthMiddleware::requireModulePermission('shares');
 $layout = LayoutManager::create('admin');
-require_permission();
 
 $pageTitle = "Equity & Share Management";
 $svEngine = new ShareValuationEngine($conn);
