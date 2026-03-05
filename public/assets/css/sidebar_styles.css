@@ -64,7 +64,7 @@
 
     /* --- TOGGLE BUTTON (3 Dashes) --- */
     .hd-toggle-btn {
-        position: fixed; top: 24px; left: 260px; z-index: 1045;
+        position: fixed; top: 24px; left: 260px; z-index: 1060;
         width: 36px; height: 36px; border-radius: 8px; background: #FFFFFF; 
         border: 1px solid var(--sb-border); color: var(--sb-text);
         display: flex; align-items: center; justify-content: center;
@@ -109,5 +109,5 @@
     }
     .sidebar-backdrop.show { opacity: 1; visibility: visible; }
 
-    .main-content, .hp-main-wrapper { margin-left: var(--sb-width); transition: margin-left 0.3s; }
+    .main-content, .main-content-wrapper, .hp-main-wrapper { margin-left: var(--sb-width); transition: margin-left 0.3s; }
 </style>

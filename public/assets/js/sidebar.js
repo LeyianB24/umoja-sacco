@@ -11,11 +11,14 @@
     let sidebar, overlay, mainWrapper;
 
     function init() {
-        sidebar     = document.querySelector('.admin-sidebar');
-        overlay     = document.querySelector('.sidebar-overlay');
-        mainWrapper = document.querySelector('.main-wrapper');
+        sidebar     = document.querySelector('.hd-sidebar') || document.querySelector('.admin-sidebar');
+        overlay     = document.querySelector('.sidebar-overlay') || document.querySelector('.sidebar-backdrop');
+        mainWrapper = document.querySelector('.main-content-wrapper') || document.querySelector('.main-wrapper');
 
-        if (!sidebar) return;
+        if (!sidebar) {
+            console.warn("Sidebar elements not found. Initialization skipped.");
+            return;
+        }
 
         // Restore desktop collapsed state
         if (localStorage.getItem(STORAGE_KEY) === 'true') {
@@ -55,13 +58,17 @@
     }
 
     function toggleMobile() {
-        const isOpen = sidebar.classList.toggle('sidebar-open');
+        const isOpen = sidebar.classList.contains('hd-sidebar') 
+            ? sidebar.classList.toggle('show') 
+            : sidebar.classList.toggle('sidebar-open');
+
         if (overlay) overlay.classList.toggle('show', isOpen);
         document.body.style.overflow = isOpen ? 'hidden' : '';
     }
 
     function closeOnMobile() {
         sidebar.classList.remove('sidebar-open');
+        sidebar.classList.remove('show');
         if (overlay) overlay.classList.remove('show');
         document.body.style.overflow = '';
     }
