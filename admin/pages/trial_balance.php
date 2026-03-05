@@ -11,10 +11,7 @@ require_admin();
 require_permission();
 $layout = LayoutManager::create('admin');
 ?>
-    <style>
-        .main-content-wrapper { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; }
-        @media (max-width: 991px) { .main-content-wrapper { margin-left: 0; padding: 1.5rem; } }
-    </style>
+    
 <?php
 /**
  * admin/pages/trial_balance.php
@@ -113,11 +110,10 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
 }
 ?>
 <?php $layout->header($pageTitle); ?>
-<div class="d-flex">
-    <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper p-0">
-        <?php $layout->topbar($pageTitle ?? 'Accounting Ledger'); ?>
-        <div class="container-fluid">
+<?php $layout->sidebar(); ?>
+<div class="main-wrapper">
+    <?php $layout->topbar($pageTitle ?? 'Accounting Ledger'); ?>
+    <div class="main-content">
 
         <!-- Layout Header -->
         <div class="portal-header fade-in">
@@ -338,11 +334,6 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
         </div>
         
         <?php $layout->footer(); ?>
-    </div>
-    
-</div>
-
-<!-- Dynamic Modals for Drill-Down -->
 <?php 
 $all_cats = array_unique(array_column($all_accounts, 'category'));
 foreach($all_cats as $cat_name): 

@@ -14,25 +14,7 @@ Auth::requireAdmin();
 $layout = LayoutManager::create('admin');
 ?>
 <?php $layout->header($pageTitle); ?>
-    <style>
-        .main-content-wrapper { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; }
-        @media (max-width: 991px) { .main-content-wrapper { margin-left: 0; padding: 1.5rem; } }
-
-        /* Page-specific overrides */
-        .asset-card { 
-            background: white; border-radius: 24px; padding: 1.5rem; 
-            border: 1px solid var(--glass-border); transition: 0.3s;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.02);
-        }
-        .asset-card:hover { transform: translateY(-5px); box-shadow: 0 15px 35px rgba(0,0,0,0.05); }
-        .asset-icon-box { 
-            width: 50px; height: 50px; border-radius: 16px; 
-            background: rgba(15, 46, 37, 0.05); color: var(--forest);
-            display: flex; align-items: center; justify-content: center; font-size: 1.5rem;
-        }
-        .stat-card-dark { background: linear-gradient(135deg, var(--forest) 0%, var(--forest-mid) 100%); color: white; }
-        .stat-card-accent { background: var(--lime); color: var(--forest); }
-    </style>
+    
 
 <?php
 $admin_id = $_SESSION['admin_id'];
@@ -330,11 +312,10 @@ $global = $conn->query("SELECT
     FROM investments")->fetch_assoc();
 ?>
 
-<div class="d-flex">
-    <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper p-0">
-        <?php $layout->topbar($pageTitle ?? 'Investment Portfolio'); ?>
-        <div class="container-fluid">
+<?php $layout->sidebar(); ?>
+<div class="main-wrapper">
+    <?php $layout->topbar($pageTitle ?? 'Investment Portfolio'); ?>
+    <div class="main-content">
         
         <!-- Header -->
         <div class="hp-hero">
@@ -669,11 +650,6 @@ $global = $conn->query("SELECT
                 </div>
             </form>
               <?php $layout->footer(); ?>
-        </div>
-    </div>
-</div>
-
-<!-- Valuation Modal -->
 <div class="modal fade" id="valuationModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content shadow-2xl">

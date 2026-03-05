@@ -90,24 +90,12 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
 \USMS\Middleware\AuthMiddleware::requireModulePermission('members');
 ?>
 <?php $layout->header($pageTitle); ?>
-    <style>
-        .main-content-wrapper { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; }
-        @media (max-width: 991px) { .main-content-wrapper { margin-left: 0; padding: 1.5rem; } }
+    
 
-        /* Page-specific overrides if any */
-        .member-row { transition: 0.2s; }
-        .member-row:hover { background: rgba(208, 243, 93, 0.05); }
-        .glass-stat-icon { width: 50px; height: 50px; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; margin-bottom: 1rem; }
-        .bg-lime-soft { background: rgba(208, 243, 93, 0.1); color: var(--forest-mid); }
-        .bg-red-soft { background: rgba(239, 68, 68, 0.1); color: #dc2626; }
-        .bg-forest-soft { background: rgba(15, 46, 37, 0.05); color: var(--forest); }
-    </style>
-
-<div class="d-flex">
-    <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper p-0">
-        <?php $layout->topbar($pageTitle ?? 'Member Registry'); ?>
-        <div class="container-fluid">
+<?php $layout->sidebar(); ?>
+<div class="main-wrapper">
+    <?php $layout->topbar($pageTitle ?? 'Member Registry'); ?>
+    <div class="main-content">
         
         <!-- Header -->
         <div class="hp-hero fade-in">
@@ -292,9 +280,3 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
                 </div>
             </div>
             <?php $layout->footer(); ?>
-        </div>
-        <!-- END container-fluid -->
-    </div>
-    <!-- END main-content-wrapper -->
-</div>
-<!-- END d-flex -->

@@ -9,16 +9,14 @@ $execution_time = round($time_end - $time_start, 3);
 $memory_usage = round(memory_get_usage() / 1024 / 1024, 2);
 ?>
 
-        </div> <!-- /container-fluid -->
-    </div> <!-- /main-content-wrapper -->
-</div> <!-- /d-flex -->
+    </div> <!-- /main-content -->
 
     <button type="button" class="btn btn-primary rounded-circle shadow-lg" id="btn-back-to-top" 
             style="position: fixed; bottom: 80px; right: 20px; display: none; z-index: 999; width: 45px; height: 45px;">
         <i class="bi bi-arrow-up"></i>
     </button>
 
-    <footer class="footer mt-auto py-3 border-top" style="background: var(--nav-bg); backdrop-filter: blur(10px); border-top: 1px solid var(--border-color);">
+    <footer class="footer mt-auto py-3 border-top" style="background: var(--surface-1); backdrop-filter: blur(10px); border-top: 1px solid var(--border-color);">
         <div class="container-fluid px-4">
             <div class="row align-items-center gy-2">
                 
@@ -79,6 +77,7 @@ $memory_usage = round(memory_get_usage() / 1024 / 1024, 2);
             </div>
         </div>
     </footer>
+</div> <!-- /main-wrapper -->
 
     <style>
         @keyframes ping {

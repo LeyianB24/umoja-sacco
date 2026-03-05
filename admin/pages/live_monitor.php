@@ -21,50 +21,12 @@ $recent_logs = $recent_logs_q->fetch_all(MYSQLI_ASSOC);
 $pageTitle = "Live Operations Monitor";
 ?>
 <?php $layout->header($pageTitle); ?>
-    <style>
-        .main-content-wrapper { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; }
-        @media (max-width: 991px) { .main-content-wrapper { margin-left: 0; padding: 1.5rem; } }
+    
 
-        .monitor-hero {
-            position: relative; overflow: hidden;
-            border-radius: 2rem; padding: 3rem; margin-bottom: 2.5rem;
-            background: linear-gradient(135deg, var(--forest) 0%, var(--forest-mid) 100%);
-            color: white;
-        }
-        .live-dot {
-            height: 10px; width: 10px; background-color: var(--lime);
-            border-radius: 50%; display: inline-block; margin-right: 8px;
-            box-shadow: 0 0 0 0 rgba(190, 242, 100, 1);
-            animation: pulse-lime 2s infinite;
-        }
-        @keyframes pulse-lime {
-            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(190, 242, 100, 0.7); }
-            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(190, 242, 100, 0); }
-            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(190, 242, 100, 0); }
-        }
-        .stat-card {
-            background: white; border-radius: 1.5rem; padding: 2rem;
-            border: 1px solid var(--border-color); box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-        }
-        .log-table-card {
-            background: white; border-radius: 1.5rem; overflow: hidden;
-            border: 1px solid var(--border-color); box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-        }
-        .severity-badge {
-            padding: 4px 12px; border-radius: 2rem; font-size: 0.7rem; font-weight: 800; text-transform: uppercase;
-        }
-        .severity-info { background: #e0f2fe; color: #0369a1; }
-        .severity-warning { background: #ffedd5; color: #9a3412; }
-        .severity-danger { background: #fee2e2; color: #991b1b; }
-        .severity-success { background: #dcfce7; color: #166534; }
-    </style>
-
-<div class="d-flex">
-    <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper p-0">
-        <?php $layout->topbar($pageTitle ?? 'Live Command'); ?>
-        
-        <div class="container-fluid">
+<?php $layout->sidebar(); ?>
+<div class="main-wrapper">
+    <?php $layout->topbar($pageTitle ?? 'Live Command'); ?>
+    <div class="main-content">
             <!-- Hero Section -->
             <div class="monitor-hero">
                 <div class="row align-items-center">
@@ -175,9 +137,6 @@ $pageTitle = "Live Operations Monitor";
             </div>
 
             <?php $layout->footer(); ?>
-        </div>
-    </div>
-</div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

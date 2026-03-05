@@ -151,27 +151,12 @@ function getActionStyle($action) {
 $pageTitle = "Audit Logs";
 ?>
 <?php $layout->header($pageTitle); ?>
-<style>
-        .main-content-wrapper { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; }
-        @media (max-width: 991px) { .main-content-wrapper { margin-left: 0; padding: 1.5rem; } }
 
-        .avatar-box { width: 42px; height: 42px; border-radius: 14px; background-color: var(--bg-primary); color: var(--forest); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.9rem; }
-        .badge-pill { padding: 8px 14px; border-radius: 30px; font-weight: 700; font-size: 0.75rem; display: inline-flex; align-items: center; gap: 8px; }
-        .badge-soft-lime { background-color: rgba(208, 243, 93, 0.1); color: var(--forest-mid); }
-        .badge-soft-emerald { background-color: rgba(15, 46, 37, 0.05); color: var(--forest); }
-        .badge-soft-danger { background-color: #fee2e2; color: #991b1b; }
-        .badge-soft-warning { background-color: #fef3c7; color: #92400e; }
-        .badge-soft-secondary { background-color: var(--bg-primary); color: #64748b; }
 
-        .text-forest { color: var(--forest); }
-        .text-emerald { color: var(--forest-mid); }
-    </style>
-
-<div class="d-flex">
-    <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper p-0">
-        <?php $layout->topbar($pageTitle ?? 'System Audit Trails'); ?>
-        <div class="container-fluid">
+<?php $layout->sidebar(); ?>
+<div class="main-wrapper">
+    <?php $layout->topbar($pageTitle ?? 'System Audit Trails'); ?>
+    <div class="main-content">
             <div class="row align-items-end mb-5">
                 <div class="col-md-7">
                     <h2 class="fw-bold mb-1 display-6" style="letter-spacing: -0.03em;">System Audit Trails</h2>
@@ -293,7 +278,3 @@ $pageTitle = "Audit Logs";
                 </div>
             </div>
             <?php $layout->footer(); ?>
-        </div>
-        
-    </div>
-</div>

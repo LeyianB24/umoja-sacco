@@ -207,48 +207,12 @@ $member_docs = $q_docs->get_result()->fetch_all(MYSQLI_ASSOC);
 $pageTitle = $member['full_name'] . " - Member Profile";
 ?>
 <?php $layout->header($pageTitle); ?>
-    <style>
-        .main-content-wrapper { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; }
-        @media (max-width: 991px) { .main-content-wrapper { margin-left: 0; padding: 1.5rem; } }
-        
-        .profile-hero {
-            background: linear-gradient(135deg, var(--forest) 0%, var(--forest-mid) 100%);
-            border-radius: 30px; padding: 40px; margin-bottom: 30px; color: white;
-            position: relative; overflow: hidden;
-        }
-        .profile-avatar {
-            width: 120px; height: 120px; border-radius: 24px;
-            object-fit: cover; border: 4px solid rgba(255,255,255,0.2);
-            background: var(--lime); color: var(--forest);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 3rem; font-weight: 800;
-        }
-        
-        .stat-card {
-            background: rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 1.5rem;
-            border: 1px solid rgba(255, 255, 255, 0.4);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.02);
-        }
-        
-        .nav-tabs-custom { border: none; margin-bottom: 25px; gap: 10px; background: rgba(255,255,255,0.5); padding: 10px; border-radius: 20px; }
-        .nav-tabs-custom .nav-link {
-            border: none; border-radius: 12px; padding: 10px 20px;
-            font-weight: 700; color: var(--forest); transition: 0.3s;
-        }
-        .nav-tabs-custom .nav-link.active { background: var(--forest); color: var(--lime); }
+    
 
-        .info-label { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 5px; }
-        .badge-status { padding: 6px 12px; border-radius: 10px; font-weight: 700; font-size: 0.7rem; }
-    </style>
-
-<div class="d-flex">
-    <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper p-0">
-        <?php $layout->topbar($pageTitle ?? 'Member Profile'); ?>
-        <div class="container-fluid">
+<?php $layout->sidebar(); ?>
+<div class="main-wrapper">
+    <?php $layout->topbar($pageTitle ?? 'Member Profile'); ?>
+    <div class="main-content">
 
     <!-- Breadcrumb -->
     <nav aria-label="breadcrumb" class="mb-4">
@@ -581,14 +545,3 @@ $pageTitle = $member['full_name'] . " - Member Profile";
             </div>
         </div>
         <?php $layout->footer(); ?>
-        </div>
-        
-    </div>
-</div>
-
-
-
-
-
-
-

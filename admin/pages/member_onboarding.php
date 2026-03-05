@@ -137,15 +137,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $pageTitle = "Register Member";
 ?>
 <?php $layout->header($pageTitle); ?>
-    <style>
-        .main-content-wrapper { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; }
-        @media (max-width: 991px) { .main-content-wrapper { margin-left: 0; padding: 1.5rem; } }
-    </style>
-<div class="d-flex">
-    <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper p-0">
-        <?php $layout->topbar($pageTitle ?? 'Register Member'); ?>
-        <div class="container-fluid">
+    
+<?php $layout->sidebar(); ?>
+<div class="main-wrapper">
+    <?php $layout->topbar($pageTitle ?? 'Register Member'); ?>
+    <div class="main-content">
         
         
         <div class="container-fluid py-4">
@@ -269,9 +265,6 @@ $pageTitle = "Register Member";
             
         </div>
         <?php $layout->footer(); ?>
-    </div>
-</div>
-
 <script>
     function togglePayment(checked) {
         document.getElementById('paymentDetails').style.display = checked ? 'block' : 'none';

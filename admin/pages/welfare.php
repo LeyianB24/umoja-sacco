@@ -38,36 +38,12 @@ $engine = new FinancialEngine($conn);
 $pool_balance = $engine->getWelfarePoolBalance();
 ?>
 <?php $layout->header($pageTitle); ?>
-    <style>
-        .main-content-wrapper { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; }
-        @media (max-width: 991px) { .main-content-wrapper { margin-left: 0; padding: 1.5rem; } }
+    
 
-        .glass-card { 
-            background: white; border-radius: 20px;
-            border: 1px solid var(--border-color);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.02);
-            overflow: hidden;
-            padding: 1.5rem;
-            margin-bottom: 2rem;
-        }
-        
-        .icon-box { width: 50px; height: 50px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
-        .nav-tabs-custom { border: none; display: flex; gap: 10px; padding: 0.5rem 0.5rem 0 0.5rem; }
-        .nav-tabs-custom .nav-link { border: none; border-radius: 10px; padding: 8px 16px; font-weight: 700; color: var(--forest); }
-        .nav-tabs-custom .nav-link.active { background: var(--forest); color: white; }
-
-        .badge-pending { background: rgba(217, 119, 6, 0.1); color: #d97706; }
-        .badge-active { background: rgba(15, 46, 37, 0.05); color: var(--forest); }
-        .badge-approved { background: rgba(208, 243, 93, 0.1); color: var(--forest-mid); }
-        .badge-rejected { background: rgba(220, 38, 38, 0.1); color: #dc2626; }
-    </style>
-
-<div class="d-flex">
-    <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper p-0">
-        <?php $layout->topbar($pageTitle ?? 'Benevolence Fund'); ?>
-        
-        <div class="container-fluid">
+<?php $layout->sidebar(); ?>
+<div class="main-wrapper">
+    <?php $layout->topbar($pageTitle ?? 'Benevolence Fund'); ?>
+    <div class="main-content">
             <div class="row g-4 mb-4">
                 <div class="col-xl-3 col-md-6">
                     <div class="glass-card p-3 h-100 bg-forest text-white overflow-hidden position-relative mb-0 border-0 shadow-lg">
@@ -195,11 +171,6 @@ $pool_balance = $engine->getWelfarePoolBalance();
                 </div>
             </div>
             <?php $layout->footer(); ?>
-        </div>
-    </div>
-</div>
-
-<!-- Modal: New Case -->
 <div class="modal fade" id="newCaseModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <form method="POST" class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">

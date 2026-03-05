@@ -80,28 +80,12 @@ if (!function_exists('getInitials')) {
 $pageTitle = "Helpdesk Support";
 $layout->header($pageTitle);
 ?>
-    <style>
-        .main-content-wrapper { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; }
-        @media (max-width: 991px) { .main-content-wrapper { margin-left: 0; padding: 1.5rem; } }
-        
-        .badge-hope { padding: 8px 16px; border-radius: 12px; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; }
-        .bg-pending { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
-        .bg-open { background: rgba(37, 99, 235, 0.1); color: #2563eb; }
-        .bg-closed { background: rgba(16, 185, 129, 0.1); color: #10b981; }
-
-        .avatar-initial { 
-            width: 32px; height: 32px; border-radius: 10px; 
-            background: var(--forest-light); color: var(--lime);
-            display: flex; align-items: center; justify-content: center;
-            font-weight: 800; font-size: 0.75rem;
-        }
-    </style>
+    
 </head>
-<div class="d-flex">
-    <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper p-0">
-        <?php $layout->topbar($pageTitle ?? 'Helpdesk Support'); ?>
-        <div class="container-fluid">
+<?php $layout->sidebar(); ?>
+<div class="main-wrapper">
+    <?php $layout->topbar($pageTitle ?? 'Helpdesk Support'); ?>
+    <div class="main-content">
         
         <div class="hp-hero mb-4">
             <div class="row align-items-center">
@@ -272,10 +256,6 @@ $layout->header($pageTitle);
                 </div>
             </div>
             <?php $layout->footer(); ?>
-        </div>
-    </div>
-</div>
-
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
         </div>
         

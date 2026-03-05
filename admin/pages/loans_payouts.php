@@ -196,29 +196,12 @@ if (isset($_GET['export']) && in_array($_GET['export'], ['pdf', 'excel'])) {
 $pageTitle = "Loan Management";
 ?>
 <?php $layout->header($pageTitle ?? 'Disbursement Console'); ?>
-    <style>
-        .main-content-wrapper { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; }
-        @media (max-width: 991px) { .main-content-wrapper { margin-left: 0; padding: 1.5rem; } }
+    
 
-        .glass-stat-icon { width: 50px; height: 50px; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; margin-bottom: 1rem; }
-        .bg-warning-soft { background: rgba(217, 119, 6, 0.1); color: #d97706; }
-        .bg-primary-soft { background: rgba(15, 46, 37, 0.05); color: var(--forest); }
-        .bg-success-soft { background: rgba(208, 243, 93, 0.1); color: var(--forest-mid); }
-        
-        .hp-hero {
-            position: relative; overflow: hidden;
-            border-radius: 2rem; padding: 3rem; margin-bottom: 2.5rem;
-            background: linear-gradient(135deg, var(--forest) 0%, var(--forest-mid) 100%);
-            color: white;
-        }
-    </style>
-
-<div class="d-flex">
-    <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper p-0">
-        <?php $layout->topbar($pageTitle ?? 'Loan Disbursements'); ?>
-        
-        <div class="container-fluid">
+<?php $layout->sidebar(); ?>
+<div class="main-wrapper">
+    <?php $layout->topbar($pageTitle ?? 'Loan Disbursements'); ?>
+    <div class="main-content">
             <!-- Header -->
             <div class="hp-hero fade-in shadow-lg">
                 <div class="row align-items-center">
@@ -384,10 +367,6 @@ $pageTitle = "Loan Management";
             </div>
 
             <?php $layout->footer(); ?>
-        </div>
-    </div>
-</div>
-
 <div class="offcanvas offcanvas-end border-0 shadow-lg" tabindex="-1" id="loanDrawer" style="background: rgba(255,255,255,0.9); backdrop-filter: blur(20px);">
     <div class="offcanvas-header bg-forest text-white p-4">
         <h5 class="offcanvas-title fw-800">Loan Deep Analytics</h5>

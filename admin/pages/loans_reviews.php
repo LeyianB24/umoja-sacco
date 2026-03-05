@@ -256,35 +256,12 @@ $stats = $db->query("SELECT
 
 ?>
 <?php $layout->header($pageTitle ?? 'Loan Management'); ?>
-    <style>
-        .main-content-wrapper { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; }
-        @media (max-width: 991px) { .main-content-wrapper { margin-left: 0; padding: 1.5rem; } }
-        
-        /* Glass Components */
-        .glass-card { border: 1px solid var(--border-color); border-radius: 16px; background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(10px); }
+    
 
-        /* Avatar */
-        .avatar-circle { width: 42px; height: 42px; object-fit: cover; border: 2px solid var(--border-color); }
-
-        /* Custom Badges */
-        .badge-status { padding: 6px 12px; font-weight: 500; border-radius: 6px; letter-spacing: 0.3px; }
-        .st-pending { background: rgba(217, 119, 6, 0.1); color: #d97706; border: 1px solid rgba(217, 119, 6, 0.2); }
-        .st-approved { background: rgba(16, 163, 74, 0.1); color: #16a34a; border: 1px solid rgba(16, 163, 74, 0.2); }
-        .st-disbursed { background: rgba(59, 130, 246, 0.1); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.2); }
-        .st-rejected { background: rgba(220, 38, 38, 0.1); color: #dc2626; border: 1px solid rgba(220, 38, 38, 0.2); }
-
-        /* Filter Buttons */
-        .btn-filter { border: 1px solid transparent; }
-        .btn-filter.active { background-color: var(--lime); color: #000000; border-color: var(--lime); }
-        .btn-filter:hover:not(.active) { background-color: rgba(255,255,255,0.05); }
-    </style>
-
-<div class="d-flex">
-    <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper p-0">
-        <?php $layout->topbar($pageTitle ?? 'Loan Approval Matrix'); ?>
-        
-        <div class="container-fluid">
+<?php $layout->sidebar(); ?>
+<div class="main-wrapper">
+    <?php $layout->topbar($pageTitle ?? 'Loan Approval Matrix'); ?>
+    <div class="main-content">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
                     <h4 class="fw-bold mb-1" style="color: var(--dark-green);">Loan Portfolio</h4>
@@ -399,9 +376,6 @@ $stats = $db->query("SELECT
                         </tbody>
                     </table>
                      <?php $layout->footer(); ?>
-                </div>
-            </div>
-
 <?php 
 if($loans->num_rows > 0): 
     $loans->data_seek(0); 

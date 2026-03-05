@@ -486,11 +486,6 @@ $pageTitle = "Revenue Portal";
             </div>
 
             <?php $layout->footer(); ?>
-        </div>
-    </div>
-</div>
-
-<!-- Modal -->
 <div class="modal fade" id="recordRevenueModal" tabindex="-1">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content shadow-2xl rounded-4 overflow-hidden border-0">

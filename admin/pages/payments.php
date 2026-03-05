@@ -396,13 +396,6 @@ $pageTitle = "Payments Ledger";
                     </table>
                 </div>
                 <?php $layout->footer(); ?>
-            </div>
-
-        </div>
-        
-    </div>
-</div>
-
 <div class="modal fade" id="recordTxnModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content shadow-lg">

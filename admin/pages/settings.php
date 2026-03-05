@@ -128,40 +128,13 @@ $pageTitle = 'System Settings';
 ?>
 <?php $layout->header($pageTitle); ?>
 
-    <style>
-        .main-content-wrapper { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; }
-        @media (max-width: 991px) { .main-content-wrapper { margin-left: 0; padding: 1.5rem; } }
-
-        /* Page-specific overrides */
-        
-        /* Navigation Pills */
-        .nav-pills .nav-link { 
-            font-weight: 700; border-radius: 16px; padding: 15px 25px; 
-            margin-bottom: 10px; transition: 0.3s; color: var(--forest);
-            border: 1px solid transparent; background: white;
-        }
-        .nav-pills .nav-link:hover { background-color: rgba(208, 243, 93, 0.1); }
-        .nav-pills .nav-link.active { background-color: var(--forest); color: var(--lime); border-color: var(--forest); }
-        
-        .avatar-hero { 
-            width: 90px; height: 90px; border-radius: 20px; 
-            background: var(--lime); color: var(--forest);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 2rem; font-weight: 800; border: 4px solid rgba(255,255,255,0.2);
-        }
-
-        .section-title { font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-muted); margin: 40px 0 20px 0; display: flex; align-items: center; gap: 15px; }
-        .section-title::after { content: ""; flex: 1; height: 1px; background: rgba(0,0,0,0.05); }
-
-        .hp-badge { background: rgba(208, 243, 93, 0.15); color: var(--forest-mid); font-weight: 700; padding: 6px 12px; border-radius: 10px; font-size: 0.7rem; }
-    </style>
+    
 
 
-<div class="d-flex">
-    <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper p-0">
-        <?php $layout->topbar($pageTitle ?? 'System Settings'); ?>
-        <div class="container-fluid">
+<?php $layout->sidebar(); ?>
+<div class="main-wrapper">
+    <?php $layout->topbar($pageTitle ?? 'System Settings'); ?>
+    <div class="main-content">
         
             
         <div class="hp-hero">
@@ -368,11 +341,3 @@ $pageTitle = 'System Settings';
                 </div>
         </div>
         <?php $layout->footer(); ?>
-    </div>
-</div>
-
-
-
-
-
-

@@ -174,31 +174,12 @@ $can_disburse = $is_super || in_array('disburse_loans', $permissions);
 $pageTitle = "Loan #$loan_id Detail";
 ?>
 <?php $layout->header($pageTitle); ?>
-<style>
-    .main-content-wrapper { margin-left: 280px; transition: .3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; }
-    @media (max-width: 991px) { .main-content-wrapper { margin-left: 0; padding: 1.5rem; } }
-    .loan-hero { background: linear-gradient(135deg, var(--forest) 0%, var(--forest-mid) 100%); border-radius: 24px; padding: 2.5rem; color: #fff; margin-bottom: 2rem; }
-    .detail-card { background: rgba(255,255,255,.9); backdrop-filter: blur(10px); border-radius: 18px; border: 1px solid rgba(255,255,255,.6); padding: 1.75rem; margin-bottom: 1.5rem; }
-    .info-row { display: flex; justify-content: space-between; align-items: center; padding: .65rem 0; border-bottom: 1px solid rgba(0,0,0,.05); }
-    .info-row:last-child { border-bottom: none; }
-    .info-label { font-size: .72rem; font-weight: 800; text-transform: uppercase; letter-spacing: .8px; color: #6c757d; }
-    .info-val { font-weight: 700; }
-    .progress-track { background: rgba(0,0,0,.07); border-radius: 99px; height: 10px; overflow: hidden; }
-    .progress-fill  { height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--lime, #d0f35d), #5dccb0); transition: width .6s ease; }
-    .guarantor-pill { background: rgba(15,46,37,.05); border: 1px solid rgba(15,46,37,.1); border-radius: 12px; padding: .75rem 1rem; }
-    .st-badge { padding: 6px 14px; border-radius: 8px; font-weight: 700; font-size: .72rem; letter-spacing: .4px; }
-    .st-pending  { background: rgba(217,119,6,.1);  color: #d97706; border: 1px solid rgba(217,119,6,.2); }
-    .st-approved { background: rgba(14,165,233,.1); color: #0ea5e9; border: 1px solid rgba(14,165,233,.2); }
-    .st-disbursed,.st-active { background: rgba(16,163,74,.1); color: #16a34a; border: 1px solid rgba(16,163,74,.2); }
-    .st-rejected  { background: rgba(220,38,38,.1);  color: #dc2626; border: 1px solid rgba(220,38,38,.2); }
-    .st-completed { background: rgba(59,130,246,.1); color: #3b82f6; border: 1px solid rgba(59,130,246,.2); }
-</style>
 
-<div class="d-flex">
-    <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper p-0">
-        <?php $layout->topbar($pageTitle); ?>
-        <div class="container-fluid">
+
+<?php $layout->sidebar(); ?>
+<div class="main-wrapper">
+    <?php $layout->topbar($pageTitle); ?>
+    <div class="main-content">
 
             <!-- Breadcrumb -->
             <nav class="mb-4"><ol class="breadcrumb">
@@ -371,11 +352,6 @@ $pageTitle = "Loan #$loan_id Detail";
             </div>
 
         <?php $layout->footer(); ?>
-        </div>
-    </div>
-</div>
-
-<!-- APPROVE MODAL -->
 <div class="modal fade" id="approveModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">

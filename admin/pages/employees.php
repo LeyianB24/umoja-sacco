@@ -390,24 +390,12 @@ $pageTitle = "People & Access";
 ?>
 <?php $layout->header($pageTitle); ?>
     
-    <style>
-        .main-content-wrapper { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; }
-        @media (max-width: 991px) { .main-content-wrapper { margin-left: 0; padding: 1.5rem; } }
-        
-        /* Tab Refinement */
-        .nav-tabs-custom .nav-link { border: 0; color: var(--text-muted); font-weight: 700; padding: 1.25rem 2rem; background: transparent; border-bottom: 3px solid transparent; transition: 0.3s; }
-        .nav-tabs-custom .nav-link.active { color: var(--forest); border-bottom-color: var(--lime); background: transparent; }
-        .nav-tabs-custom .nav-link:hover:not(.active) { color: var(--forest); background: rgba(208, 243, 93, 0.05); }
-        
-        .table-custom tr:hover td { background-color: rgba(208, 243, 93, 0.05); }
-        .avatar-circle { width: 40px; height: 40px; border-radius: 12px; background: var(--bg-surface); color: var(--forest); display: flex; align-items: center; justify-content: center; font-weight: 800; }
-    </style>
+    
 
-<div class="d-flex">
-    <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper p-0">
-        <?php $layout->topbar($pageTitle ?? 'Staff Command Center'); ?>
-        <div class="container-fluid">
+<?php $layout->sidebar(); ?>
+<div class="main-wrapper">
+    <?php $layout->topbar($pageTitle ?? 'Staff Command Center'); ?>
+    <div class="main-content">
             <div class="hp-hero">
                 <div class="row align-items-center">
                     <div class="col-md-7">
@@ -750,10 +738,6 @@ $pageTitle = "People & Access";
                 </div>
                 <?php endif; ?>
                 <?php $layout->footer(); ?>
-            </div>
-            
-
-<!-- MODAL: HIRE EMPLOYEE (Modern Onboarding) -->
 <div class="modal fade" id="addStaffModal" tabindex="-1">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content hd-glass border-0 shadow-2xl">

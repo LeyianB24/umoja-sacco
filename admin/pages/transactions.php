@@ -165,46 +165,12 @@ $gl_stats = $stmt_s->get_result()->fetch_assoc();
 $pageTitle = "Golden Ledger Vault";
 ?>
 <?php $layout->header($pageTitle); ?>
-    <style>
-        .main-content-wrapper { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; }
-        @media (max-width: 991px) { .main-content-wrapper { margin-left: 0; padding: 1.5rem; } }
+    
 
-        /* Page-specific overrides */
-        .ledger-glass {
-            background: rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(10px);
-            border-radius: 28px;
-            border: 1px solid rgba(255, 255, 255, 0.4);
-            overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.02);
-        }
-
-        .table-premium { width: 100%; border-collapse: separate; border-spacing: 0; }
-        .table-premium thead th {
-            color: var(--text-muted); font-weight: 800;
-            text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.1em;
-            padding: 20px 25px; border-bottom: 2px solid rgba(0,0,0,0.05);
-            background: rgba(240, 244, 243, 0.5);
-        }
-        .table-premium tbody td {
-            padding: 20px 25px; border-bottom: 1px solid rgba(0,0,0,0.05);
-            vertical-align: middle; transition: 0.2s;
-        }
-        .table-premium tr:hover td { background: rgba(15, 46, 37, 0.02); }
-
-        .type-pill {
-            padding: 8px 16px; border-radius: 12px; font-size: 0.75rem; font-weight: 800;
-            text-transform: uppercase; letter-spacing: 0.05em; display: inline-flex; align-items: center; gap: 6px;
-        }
-        .type-in { background: rgba(208, 243, 93, 0.1); color: var(--forest-mid); }
-        .type-out { background: rgba(239, 68, 68, 0.1); color: #dc2626; }
-    </style>
-
-<div class="d-flex">
-    <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper p-0">
-        <?php $layout->topbar($pageTitle ?? 'Financial Ledger'); ?>
-        <div class="container-fluid">
+<?php $layout->sidebar(); ?>
+<div class="main-wrapper">
+    <?php $layout->topbar($pageTitle ?? 'Financial Ledger'); ?>
+    <div class="main-content">
         <div class="hp-hero mb-4">
             <div class="row align-items-center">
                 <div class="col-lg-7">
@@ -363,5 +329,3 @@ $pageTitle = "Golden Ledger Vault";
         </div>
         
         <?php $layout->footer(); ?>
-    </div>
-</div>

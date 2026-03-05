@@ -20,15 +20,7 @@ require_superadmin();
 ?>
 <?php $layout->header($pageTitle); ?>
 <?php flash_render(); ?>
-    <style>
-        .main-content-wrapper { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; width: calc(100% - 280px); }
-        @media (max-width: 991px) { .main-content-wrapper { margin-left: 0; padding: 1.5rem; width: 100%; } }
-
-        /* Page-specific overrides */
-        .avatar-box { width: 45px; height: 45px; border-radius: 14px; background: rgba(15, 46, 37, 0.05); color: var(--forest); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.2rem; }
-        .role-badge { background: rgba(208, 243, 93, 0.15); color: var(--forest-mid); font-weight: 700; padding: 6px 12px; border-radius: 10px; font-size: 0.75rem; }
-        .iq-card { background: white; border-radius: 20px; border: 1px solid var(--border-color); overflow: hidden; }
-    </style>
+    
 <?php
 // 1. Handle POST Actions
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
@@ -175,8 +167,7 @@ $pageTitle = "Staff Management";
                         </tbody>
                     </table>
                 </div>
-            </div> <!-- Close main-content -->
-</div> <!-- Close main-wrapper -->        
+                    
             <!-- Add User Modal -->
             <div class="modal fade" id="addUserModal" tabindex="-1">
                 <div class="modal-dialog modal-dialog-centered">

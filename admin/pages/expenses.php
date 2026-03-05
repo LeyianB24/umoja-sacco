@@ -15,13 +15,7 @@ require_permission();
 $pageTitle = "Expenditure Portal";
 ?>
 <?php $layout->header($pageTitle); ?>
-    <style>
-        .main-content-wrapper { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; }
-        @media (max-width: 991px) { .main-content-wrapper { margin-left: 0; padding: 1.5rem; } }
-
-        /* Page-specific overrides */
-        .stat-icon { width: 48px; height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; }
-    </style>
+    
 
 <?php
 // 2. Handle Form Submission (Add Expense)
@@ -166,11 +160,10 @@ $investments_list = $conn->query("SELECT investment_id, title FROM investments W
 $investments_all = $investments_list->fetch_all(MYSQLI_ASSOC);
 ?>
 
-<div class="d-flex">
-    <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper p-0">
-        <?php $layout->topbar($pageTitle ?? 'Expense Management'); ?>
-        <div class="container-fluid">
+<?php $layout->sidebar(); ?>
+<div class="main-wrapper">
+    <?php $layout->topbar($pageTitle ?? 'Expense Management'); ?>
+    <div class="main-content">
             <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-5 gap-3">
                 <div>
                     <h2 class="fw-bold mb-1" style="color: var(--forest-dark);">Expenditure Portal</h2>

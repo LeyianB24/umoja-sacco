@@ -259,35 +259,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_to_all'])) {
 $pageTitle = "Executive Reports";
 ?>
 <?php $layout->header($pageTitle); ?>
-    <style>
-        .main-content-wrapper { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; }
-        @media (max-width: 991px) { .main-content-wrapper { margin-left: 0; padding: 1.5rem; } }
-        
-        /* Filter Bar Refinement */
-        .filter-bar { border-radius: 20px; padding: 20px; border: 1px solid var(--glass-border); background: white; margin-bottom: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.02); }
-        
-        /* Trend Badges */
-        .hp-trend { font-size: 0.75rem; font-weight: 800; padding: 6px 12px; border-radius: 50px; display: inline-flex; align-items: center; gap: 4px; }
-        .hp-trend-up { background: rgba(25, 135, 84, 0.1); color: #198754; }
-        .hp-trend-down { background: rgba(220, 53, 69, 0.1); color: #dc3545; }
+    
 
-        .stat-card-dark { background: linear-gradient(135deg, var(--forest) 0%, var(--forest-mid) 100%); color: white; }
-        .stat-card-accent { background: var(--lime); color: var(--forest); }
-        
-        .chart-container { position: relative; height: 350px; width: 100%; }
-        
-        @media print {
-            .sidebar, .no-print, .btn, .filter-bar, .hp-hero { display: none !important; }
-            .main-content-wrapper { margin: 0; padding: 0; }
-            .glass-card { border: 1px solid #ddd; box-shadow: none; background: white !important; }
-        }
-    </style>
-
-<div class="d-flex">
-    <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper p-0">
-        <?php $layout->topbar($pageTitle ?? 'Financial Analytics'); ?>
-        <div class="container-fluid">
+<?php $layout->sidebar(); ?>
+<div class="main-wrapper">
+    <?php $layout->topbar($pageTitle ?? 'Financial Analytics'); ?>
+    <div class="main-content">
         <div class="hp-hero">
             <div class="row align-items-center">
                 <div class="col-md-7">
@@ -494,11 +471,6 @@ $pageTitle = "Executive Reports";
                 &copy; <?= date('Y') ?> Umoja Sacco Management System. All rights reserved.
             </div>
             <?php $layout->footer(); ?>
-        </div>
-        
-    </div>
-</div>
-
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 

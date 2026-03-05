@@ -41,60 +41,12 @@ $backup_logs = $conn->query("SELECT a.*, admin_id as username FROM audit_logs a 
 $pageTitle = "System Maintenance Hub";
 ?>
 <?php $layout->header($pageTitle ?? 'Database Backups'); ?>
-    <style>
-        .main-content-wrapper { margin-left: 280px; transition: 0.3s; min-height: 100vh; padding: 2.5rem; background: #f0f4f3; }
-        @media (max-width: 991px) { .main-content-wrapper { margin-left: 0; padding: 1.5rem; } }
-        
-        .glass-table-card { 
-            background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); 
-            border-radius: 24px; border: 1px solid rgba(255,255,255,0.4); 
-            overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.03);
-        }
+    
 
-        .card-custom { border-radius: 24px; border: 1px solid var(--border-color); }
-
-        /* --- Table Styling --- */
-        .table-custom thead th {
-            text-transform: uppercase;
-            font-size: 0.75rem;
-            letter-spacing: 0.05em;
-            border-top: none;
-            padding: 16px;
-        }
-        .table-custom tbody td {
-            padding: 16px;
-            vertical-align: middle;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        /* --- Buttons --- */
-        .btn-lime {
-            background-color: var(--lime);
-            color: var(--forest);
-            font-weight: 700;
-            border-radius: 12px;
-            padding: 12px 24px;
-            border: none;
-            transition: all 0.3s ease;
-        }
-        .btn-lime:hover { 
-            background-color: var(--lime-hover);
-            transform: translateY(-2px); 
-            box-shadow: 0 10px 20px rgba(208, 243, 93, 0.2);
-        }
-
-        .avatar-circle {
-            width: 44px; height: 44px; border-radius: 12px;
-            display: flex; align-items: center; justify-content: center;
-            font-weight: 700; font-size: 0.85rem;
-        }
-    </style>
-
-<div class="d-flex">
-    <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper p-0">
-        <?php $layout->topbar($pageTitle ?? 'Database Backups'); ?>
-        <div class="container-fluid">
+<?php $layout->sidebar(); ?>
+<div class="main-wrapper">
+    <?php $layout->topbar($pageTitle ?? 'Database Backups'); ?>
+    <div class="main-content">
             <div class="d-flex justify-content-between align-items-center mb-5">
                 <div>
                     <h2 class="fw-bold mb-1" style="color: var(--forest);">Database Backups</h2>
@@ -206,13 +158,3 @@ $pageTitle = "System Maintenance Hub";
                 </div>
             </div>
             <?php $layout->footer(); ?>
-        </div>
-        
-    </div>
-</div>
-
-
-
-
-
-
