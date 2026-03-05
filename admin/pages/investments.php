@@ -14,6 +14,10 @@ Auth::requireAdmin();
 $layout = LayoutManager::create('admin');
 ?>
 <?php $layout->header($pageTitle); ?>
+<?php $layout->sidebar(); ?>
+<div class="main-content-wrapper">
+    <?php $layout->topbar($pageTitle ?? ""); ?>
+    <div class="container-fluid px-4 py-4">
 <div class="d-flex">
     <?php $layout->sidebar(); ?>
     <div class="flex-fill main-content-wrapper">

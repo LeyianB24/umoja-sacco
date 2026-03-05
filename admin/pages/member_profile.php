@@ -207,6 +207,10 @@ $member_docs = $q_docs->get_result()->fetch_all(MYSQLI_ASSOC);
 $pageTitle = $member['full_name'] . " - Member Profile";
 ?>
 <?php $layout->header($pageTitle); ?>
+<?php $layout->sidebar(); ?>
+<div class="main-content-wrapper">
+    <?php $layout->topbar($pageTitle ?? ""); ?>
+    <div class="container-fluid px-4 py-4">
 <div class="d-flex">
     <?php $layout->sidebar(); ?>
     <div class="flex-fill main-content-wrapper">

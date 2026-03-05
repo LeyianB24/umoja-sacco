@@ -24,7 +24,7 @@ def refactor_page(content):
     
     # 2. Re-inject the clean structure after the header call
     header_pattern = r'(<\?php \$layout->header\([^)]*\);\s*\?>)'
-    replacement_start = r'\1\n<div class="d-flex">\n    <?php $layout->sidebar(); ?>\n    <div class="flex-fill main-content-wrapper">\n        <?php $layout->topbar($pageTitle ?? ""); ?>\n        <div class="container-fluid px-4 py-4">'
+    replacement_start = r'\1\n<?php $layout->sidebar(); ?>\n<div class="main-content-wrapper">\n    <?php $layout->topbar($pageTitle ?? ""); ?>\n    <div class="container-fluid px-4 py-4">'
     
     if re.search(header_pattern, content):
         content = re.sub(header_pattern, replacement_start, content)
@@ -34,14 +34,13 @@ def refactor_page(content):
     #         </div> <!-- /container-fluid -->
     #         <?php $layout->footer(); ?>
     #     </div> <!-- /main-content-wrapper -->
-    # </div> <!-- /d-flex -->
 
     # Clean up any existing closing fragments
     content = re.sub(r'<\?php \$layout->footer\(\);\s*\?>\s*(</div>\s*){1,4}', '', content, flags=re.DOTALL)
     
     # Replace the footer call with the structured version
     footer_pattern = r'<\?php \$layout->footer\(\);\s*\?>'
-    replacement_end = r'        </div>\n        <?php $layout->footer(); ?>\n    </div>\n</div>'
+    replacement_end = r'        </div>\n        <?php $layout->footer(); ?>\n    </div>'
     
     content = re.sub(footer_pattern, replacement_end, content)
 

@@ -155,6 +155,10 @@ $jsData   = json_encode($chartData);
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css">
 <?php $layout->header($pageTitle); ?>
+<?php $layout->sidebar(); ?>
+<div class="main-content-wrapper">
+    <?php $layout->topbar($pageTitle ?? ""); ?>
+    <div class="container-fluid px-4 py-4">
 <div class="d-flex">
     <?php $layout->sidebar(); ?>
     <div class="flex-fill main-content-wrapper">

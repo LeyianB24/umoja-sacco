@@ -196,6 +196,10 @@ if (isset($_GET['export']) && in_array($_GET['export'], ['pdf', 'excel'])) {
 $pageTitle = "Loan Management";
 ?>
 <?php $layout->header($pageTitle ?? 'Disbursement Console'); ?>
+<?php $layout->sidebar(); ?>
+<div class="main-content-wrapper">
+    <?php $layout->topbar($pageTitle ?? ""); ?>
+    <div class="container-fluid px-4 py-4">
 <div class="d-flex">
     <?php $layout->sidebar(); ?>
     <div class="flex-fill main-content-wrapper">

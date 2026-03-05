@@ -219,6 +219,10 @@ if ($active_run) {
 $history_runs = $db->query("SELECT * FROM payroll_runs ORDER BY month DESC LIMIT 12");
 ?>
 <?php $layout->header($pageTitle); ?>
+<?php $layout->sidebar(); ?>
+<div class="main-content-wrapper">
+    <?php $layout->topbar($pageTitle ?? ""); ?>
+    <div class="container-fluid px-4 py-4">
 <div class="d-flex">
     <?php $layout->sidebar(); ?>
     <div class="flex-fill main-content-wrapper">

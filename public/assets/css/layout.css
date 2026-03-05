@@ -6,10 +6,11 @@
 
 /* ── Admin Shell ─────────────────────────────────────────────────────────── */
 .admin-body {
-    display: flex;
     min-height: 100vh;
     background: var(--bg-primary);
     overflow-x: hidden;
+    margin: 0;
+    padding: 0;
 }
 
 /* ── Sidebar ─────────────────────────────────────────────────────────────── */
@@ -137,6 +138,7 @@
     min-height: 100vh;
     display: flex;
     flex-direction: column;
+    width: auto;
 }
 @media (max-width: 991px) { .main-content-wrapper { margin-left: 0; } }
 
