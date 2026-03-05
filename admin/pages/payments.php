@@ -522,9 +522,7 @@ ob_start();
 </script>
 <?php 
 $extraJs = ob_get_clean();
-$layout->footer();
+?>
     </div> <!-- /container-fluid -->
     <?php $layout->footer(); ?>
 </div> <!-- /main-content-wrapper -->
-</body>
-</html>

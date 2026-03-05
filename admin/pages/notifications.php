@@ -254,8 +254,7 @@ if ($result->num_rows > 0) {
         $stmt2->execute();
     }
 }
+?>
     </div> <!-- /container-fluid -->
     <?php $layout->footer(); ?>
 </div> <!-- /main-content-wrapper -->
-</body>
-</html>
