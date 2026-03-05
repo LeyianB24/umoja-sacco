@@ -60,10 +60,11 @@ $pageTitle = "System Dashboard";
         }
     </style>
 
-<?php $layout->sidebar(); ?>
-<div class="main-wrapper">
-    <?php $layout->topbar($pageTitle ?? 'System Dashboard'); ?>
-    <div class="main-content">
+<div class="d-flex">
+    <?php $layout->sidebar(); ?>
+    <div class="flex-fill main-content-wrapper p-0">
+        <?php $layout->topbar($pageTitle ?? 'System Dashboard'); ?>
+        <div class="container-fluid px-4">
             <div class="hp-hero">
                 <div class="row align-items-center">
                     <div class="col-md-7">
@@ -290,3 +291,6 @@ $pageTitle = "System Dashboard";
                 </div>
             </div>
             <?php $layout->footer(); ?>
+        </div>
+    </div>
+</div>

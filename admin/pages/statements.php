@@ -85,10 +85,11 @@ $pageTitle = "Statement Portal";
         .select2-container--bootstrap-5 .select2-selection { border-radius: 0.85rem; height: auto; padding: 0.5rem 0.75rem; }
     </style>
 
-<?php $layout->sidebar(); ?>
-<div class="main-wrapper">
-    <?php $layout->topbar($pageTitle ?? 'Statement Portal'); ?>
-    <div class="main-content">
+<div class="d-flex">
+    <?php $layout->sidebar(); ?>
+    <div class="flex-fill main-content-wrapper p-0">
+        <?php $layout->topbar($pageTitle ?? 'Statement Portal'); ?>
+        <div class="container-fluid px-4">
             <!-- Portal Header -->
             <div class="portal-header shadow-lg">
                 <div class="row align-items-center">

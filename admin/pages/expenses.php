@@ -160,10 +160,11 @@ $investments_list = $conn->query("SELECT investment_id, title FROM investments W
 $investments_all = $investments_list->fetch_all(MYSQLI_ASSOC);
 ?>
 
-<?php $layout->sidebar(); ?>
-<div class="main-wrapper">
-    <?php $layout->topbar($pageTitle ?? 'Expense Management'); ?>
-    <div class="main-content">
+<div class="d-flex">
+    <?php $layout->sidebar(); ?>
+    <div class="flex-fill main-content-wrapper p-0">
+        <?php $layout->topbar($pageTitle ?? 'Expense Management'); ?>
+        <div class="container-fluid px-4">
             <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-5 gap-3">
                 <div>
                     <h2 class="fw-bold mb-1" style="color: var(--forest-dark);">Expenditure Portal</h2>
@@ -394,3 +395,6 @@ $investments_all = $investments_list->fetch_all(MYSQLI_ASSOC);
 <?php 
 $layout->footer(); 
 ?>
+        </div>
+    </div>
+</div>

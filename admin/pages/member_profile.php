@@ -209,10 +209,11 @@ $pageTitle = $member['full_name'] . " - Member Profile";
 <?php $layout->header($pageTitle); ?>
     
 
-<?php $layout->sidebar(); ?>
-<div class="main-wrapper">
-    <?php $layout->topbar($pageTitle ?? 'Member Profile'); ?>
-    <div class="main-content">
+<div class="d-flex">
+    <?php $layout->sidebar(); ?>
+    <div class="flex-fill main-content-wrapper p-0">
+        <?php $layout->topbar($pageTitle ?? 'Member Profile'); ?>
+        <div class="container-fluid px-4">
 
     <!-- Breadcrumb -->
     <nav aria-label="breadcrumb" class="mb-4">
@@ -545,3 +546,6 @@ $pageTitle = $member['full_name'] . " - Member Profile";
             </div>
         </div>
         <?php $layout->footer(); ?>
+        </div>
+    </div>
+</div>

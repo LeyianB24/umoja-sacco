@@ -258,10 +258,11 @@ $stats = $db->query("SELECT
 <?php $layout->header($pageTitle ?? 'Loan Management'); ?>
     
 
-<?php $layout->sidebar(); ?>
-<div class="main-wrapper">
-    <?php $layout->topbar($pageTitle ?? 'Loan Approval Matrix'); ?>
-    <div class="main-content">
+<div class="d-flex">
+    <?php $layout->sidebar(); ?>
+    <div class="flex-fill main-content-wrapper p-0">
+        <?php $layout->topbar($pageTitle ?? 'Loan Approval Matrix'); ?>
+        <div class="container-fluid px-4">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
                     <h4 class="fw-bold mb-1" style="color: var(--dark-green);">Loan Portfolio</h4>
@@ -376,6 +377,9 @@ $stats = $db->query("SELECT
                         </tbody>
                     </table>
                      <?php $layout->footer(); ?>
+        </div>
+    </div>
+</div>
 <?php 
 if($loans->num_rows > 0): 
     $loans->data_seek(0); 

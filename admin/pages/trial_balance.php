@@ -110,10 +110,11 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
 }
 ?>
 <?php $layout->header($pageTitle); ?>
-<?php $layout->sidebar(); ?>
-<div class="main-wrapper">
-    <?php $layout->topbar($pageTitle ?? 'Accounting Ledger'); ?>
-    <div class="main-content">
+<div class="d-flex">
+    <?php $layout->sidebar(); ?>
+    <div class="flex-fill main-content-wrapper p-0">
+        <?php $layout->topbar($pageTitle ?? 'Accounting Ledger'); ?>
+        <div class="container-fluid px-4">
 
         <!-- Layout Header -->
         <div class="portal-header fade-in">
@@ -334,6 +335,9 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
         </div>
         
         <?php $layout->footer(); ?>
+        </div>
+    </div>
+</div>
 <?php 
 $all_cats = array_unique(array_column($all_accounts, 'category'));
 foreach($all_cats as $cat_name): 

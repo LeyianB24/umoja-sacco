@@ -312,10 +312,11 @@ $global = $conn->query("SELECT
     FROM investments")->fetch_assoc();
 ?>
 
-<?php $layout->sidebar(); ?>
-<div class="main-wrapper">
-    <?php $layout->topbar($pageTitle ?? 'Investment Portfolio'); ?>
-    <div class="main-content">
+<div class="d-flex">
+    <?php $layout->sidebar(); ?>
+    <div class="flex-fill main-content-wrapper p-0">
+        <?php $layout->topbar($pageTitle ?? 'Investment Portfolio'); ?>
+        <div class="container-fluid px-4">
         
         <!-- Header -->
         <div class="hp-hero">
@@ -650,6 +651,9 @@ $global = $conn->query("SELECT
                 </div>
             </form>
               <?php $layout->footer(); ?>
+        </div>
+    </div>
+</div>
 <div class="modal fade" id="valuationModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content shadow-2xl">
@@ -773,9 +777,5 @@ $global = $conn->query("SELECT
                 </div>
             </form>
         </div>
-    </div>
 </div>
-        </div>
-        
-    </div>
 </div>

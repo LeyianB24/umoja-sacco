@@ -68,10 +68,11 @@ $alerts = $monitor->getActiveAlerts();
 $layout->header("Transaction Monitor"); ?>
     
 
-<?php $layout->sidebar(); ?>
-<div class="main-wrapper">
-    <?php $layout->topbar($pageTitle ?? 'Watchdog Console'); ?>
-    <div class="main-content">
+<div class="d-flex">
+    <?php $layout->sidebar(); ?>
+    <div class="flex-fill main-content-wrapper p-0">
+        <?php $layout->topbar($pageTitle ?? 'Watchdog Console'); ?>
+        <div class="container-fluid px-4">
     <div class="row">
         <div class="col-12">
             <div class="card card-flush">
@@ -184,6 +185,9 @@ $layout->header("Transaction Monitor"); ?>
                 </div>
             </div>
             <?php $layout->footer(); ?>
+        </div>
+    </div>
+</div>
 <script>
 function viewCallbackLog(checkoutId) {
     if (!checkoutId) {

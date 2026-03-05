@@ -138,10 +138,11 @@ $pageTitle = "Register Member";
 ?>
 <?php $layout->header($pageTitle); ?>
     
-<?php $layout->sidebar(); ?>
-<div class="main-wrapper">
-    <?php $layout->topbar($pageTitle ?? 'Register Member'); ?>
-    <div class="main-content">
+<div class="d-flex">
+    <?php $layout->sidebar(); ?>
+    <div class="flex-fill main-content-wrapper p-0">
+        <?php $layout->topbar($pageTitle ?? 'Register Member'); ?>
+        <div class="container-fluid px-4">
         
         
         <div class="container-fluid py-4">
@@ -265,6 +266,9 @@ $pageTitle = "Register Member";
             
         </div>
         <?php $layout->footer(); ?>
+        </div>
+    </div>
+</div>
 <script>
     function togglePayment(checked) {
         document.getElementById('paymentDetails').style.display = checked ? 'block' : 'none';

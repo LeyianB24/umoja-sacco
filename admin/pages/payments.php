@@ -235,10 +235,11 @@ $pageTitle = "Payments Ledger";
         .badge-out { background: #fce7f3; color: #be185d; border: 1px solid rgba(251, 207, 232, 0.5); }
     </style>
 
-<?php $layout->sidebar(); ?>
-<div class="main-wrapper">
-    <?php $layout->topbar($pageTitle ?? 'Cashier & Payments'); ?>
-    <div class="main-content">
+<div class="d-flex">
+    <?php $layout->sidebar(); ?>
+    <div class="flex-fill main-content-wrapper p-0">
+        <?php $layout->topbar($pageTitle ?? 'Cashier & Payments'); ?>
+        <div class="container-fluid px-4">
             
             <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-5 gap-3">
                 <div>
@@ -396,6 +397,9 @@ $pageTitle = "Payments Ledger";
                     </table>
                 </div>
                 <?php $layout->footer(); ?>
+        </div>
+    </div>
+</div>
 <div class="modal fade" id="recordTxnModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content shadow-lg">

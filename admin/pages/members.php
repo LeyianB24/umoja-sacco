@@ -92,10 +92,11 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
 <?php $layout->header($pageTitle); ?>
     
 
-<?php $layout->sidebar(); ?>
-<div class="main-wrapper">
-    <?php $layout->topbar($pageTitle ?? 'Member Registry'); ?>
-    <div class="main-content">
+<div class="d-flex">
+    <?php $layout->sidebar(); ?>
+    <div class="flex-fill main-content-wrapper p-0">
+        <?php $layout->topbar($pageTitle ?? 'Member Registry'); ?>
+        <div class="container-fluid px-4">
         
         <!-- Header -->
         <div class="hp-hero fade-in">
@@ -280,3 +281,6 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
                 </div>
             </div>
             <?php $layout->footer(); ?>
+        </div>
+    </div>
+</div>

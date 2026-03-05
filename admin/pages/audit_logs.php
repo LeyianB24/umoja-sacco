@@ -153,10 +153,11 @@ $pageTitle = "Audit Logs";
 <?php $layout->header($pageTitle); ?>
 
 
-<?php $layout->sidebar(); ?>
-<div class="main-wrapper">
-    <?php $layout->topbar($pageTitle ?? 'System Audit Trails'); ?>
-    <div class="main-content">
+<div class="d-flex">
+    <?php $layout->sidebar(); ?>
+    <div class="flex-fill main-content-wrapper p-0">
+        <?php $layout->topbar($pageTitle ?? 'System Audit Trails'); ?>
+        <div class="container-fluid px-4">
             <div class="row align-items-end mb-5">
                 <div class="col-md-7">
                     <h2 class="fw-bold mb-1 display-6" style="letter-spacing: -0.03em;">System Audit Trails</h2>
@@ -278,3 +279,6 @@ $pageTitle = "Audit Logs";
                 </div>
             </div>
             <?php $layout->footer(); ?>
+        </div>
+    </div>
+</div>

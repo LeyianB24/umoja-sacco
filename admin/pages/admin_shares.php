@@ -270,10 +270,11 @@ $jsData   = json_encode($chartData);
 </head>
 <body>
 
-<?php $layout->sidebar(); ?>
-<div class="main-wrapper">
-    <?php $layout->topbar($pageTitle ?? 'Equity & Share Management'); ?>
-    <div class="main-content">
+<div class="d-flex">
+    <?php $layout->sidebar(); ?>
+    <div class="flex-fill main-content-wrapper p-0">
+        <?php $layout->topbar($pageTitle ?? 'Equity & Share Management'); ?>
+        <div class="container-fluid px-4">
             
             <?php if (!empty($msg)): ?>
                 <div class="mb-4"><?= $msg ?></div>
@@ -488,6 +489,9 @@ $jsData   = json_encode($chartData);
                 </div>
             </div>
              <?php $layout->footer(); ?>
+        </div>
+    </div>
+</div>
 <div class="modal fade" id="exitModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 rounded-4 shadow-lg">

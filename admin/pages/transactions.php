@@ -167,10 +167,11 @@ $pageTitle = "Golden Ledger Vault";
 <?php $layout->header($pageTitle); ?>
     
 
-<?php $layout->sidebar(); ?>
-<div class="main-wrapper">
-    <?php $layout->topbar($pageTitle ?? 'Financial Ledger'); ?>
-    <div class="main-content">
+<div class="d-flex">
+    <?php $layout->sidebar(); ?>
+    <div class="flex-fill main-content-wrapper p-0">
+        <?php $layout->topbar($pageTitle ?? 'Financial Ledger'); ?>
+        <div class="container-fluid px-4">
         <div class="hp-hero mb-4">
             <div class="row align-items-center">
                 <div class="col-lg-7">
@@ -329,3 +330,6 @@ $pageTitle = "Golden Ledger Vault";
         </div>
         
         <?php $layout->footer(); ?>
+        </div>
+    </div>
+</div>

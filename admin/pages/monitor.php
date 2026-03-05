@@ -34,10 +34,11 @@ if ($table_check && $table_check->num_rows > 0) {
 ?>
 <?php $layout->header($pageTitle); ?>
     
-<?php $layout->sidebar(); ?>
-<div class="main-wrapper">
-    <?php $layout->topbar($pageTitle ?? 'Digital Monitor'); ?>
-    <div class="main-content">
+<div class="d-flex">
+    <?php $layout->sidebar(); ?>
+    <div class="flex-fill main-content-wrapper p-0">
+        <?php $layout->topbar($pageTitle ?? 'Digital Monitor'); ?>
+        <div class="container-fluid px-4">
 
 
             <!-- Callback Logs -->
@@ -126,3 +127,6 @@ if ($table_check && $table_check->num_rows > 0) {
                 </div>
             </div>
             <?php $layout->footer(); ?>
+        </div>
+    </div>
+</div>

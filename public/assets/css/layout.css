@@ -131,14 +131,14 @@
 .sidebar-user-role  { font-size: 0.72rem; color: var(--brand-lime); font-weight: 500; }
 
 /* ── Main Content ─────────────────────────────────────────────────────────── */
-.main-wrapper {
-    margin-left: var(--sidebar-width);
-    flex: 1;
+.main-content-wrapper { 
+    margin-left: var(--sidebar-width); 
+    transition: margin-left 0.3s ease; 
+    min-height: 100vh;
     display: flex;
     flex-direction: column;
-    min-height: 100vh;
-    transition: margin-left 0.3s ease;
 }
+@media (max-width: 991px) { .main-content-wrapper { margin-left: 0; } }
 
 .main-content {
     flex: 1;

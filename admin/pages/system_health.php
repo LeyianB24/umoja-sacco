@@ -33,10 +33,11 @@ $pageTitle = "System Health & Integrity";
 <?php $layout->header($pageTitle); ?>
     
 
-<?php $layout->sidebar(); ?>
-<div class="main-wrapper">
-    <?php $layout->topbar($pageTitle ?? 'Pulse Monitor'); ?>
-    <div class="main-content">
+<div class="d-flex">
+    <?php $layout->sidebar(); ?>
+    <div class="flex-fill main-content-wrapper p-0">
+        <?php $layout->topbar($pageTitle ?? 'Pulse Monitor'); ?>
+        <div class="container-fluid px-4">
         <!-- Hero Section -->
         <div class="hp-hero">
             <div class="row align-items-center">
@@ -151,3 +152,6 @@ $pageTitle = "System Health & Integrity";
             </div>
         </div>
 <?php $layout->footer(); ?>
+        </div>
+    </div>
+</div>

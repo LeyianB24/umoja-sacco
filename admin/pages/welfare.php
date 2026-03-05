@@ -40,10 +40,11 @@ $pool_balance = $engine->getWelfarePoolBalance();
 <?php $layout->header($pageTitle); ?>
     
 
-<?php $layout->sidebar(); ?>
-<div class="main-wrapper">
-    <?php $layout->topbar($pageTitle ?? 'Benevolence Fund'); ?>
-    <div class="main-content">
+<div class="d-flex">
+    <?php $layout->sidebar(); ?>
+    <div class="flex-fill main-content-wrapper p-0">
+        <?php $layout->topbar($pageTitle ?? 'Benevolence Fund'); ?>
+        <div class="container-fluid px-4">
             <div class="row g-4 mb-4">
                 <div class="col-xl-3 col-md-6">
                     <div class="glass-card p-3 h-100 bg-forest text-white overflow-hidden position-relative mb-0 border-0 shadow-lg">
@@ -171,6 +172,9 @@ $pool_balance = $engine->getWelfarePoolBalance();
                 </div>
             </div>
             <?php $layout->footer(); ?>
+        </div>
+    </div>
+</div>
 <div class="modal fade" id="newCaseModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <form method="POST" class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">

@@ -176,10 +176,11 @@ $pageTitle = "Loan #$loan_id Detail";
 <?php $layout->header($pageTitle); ?>
 
 
-<?php $layout->sidebar(); ?>
-<div class="main-wrapper">
-    <?php $layout->topbar($pageTitle); ?>
-    <div class="main-content">
+<div class="d-flex">
+    <?php $layout->sidebar(); ?>
+    <div class="flex-fill main-content-wrapper p-0">
+        <?php $layout->topbar($pageTitle); ?>
+        <div class="container-fluid px-4">
 
             <!-- Breadcrumb -->
             <nav class="mb-4"><ol class="breadcrumb">
@@ -352,6 +353,9 @@ $pageTitle = "Loan #$loan_id Detail";
             </div>
 
         <?php $layout->footer(); ?>
+        </div>
+    </div>
+</div>
 <div class="modal fade" id="approveModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">

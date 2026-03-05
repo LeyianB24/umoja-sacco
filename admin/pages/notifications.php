@@ -167,10 +167,11 @@ $pageTitle = "My Notifications";
 </head>
 <body>
 
- <?php $layout->sidebar(); ?>
-<div class="main-wrapper">
-    <?php $layout->topbar($pageTitle ?? ''); ?>
-    <div class="main-content">
+ <div class="d-flex">
+    <?php $layout->sidebar(); ?>
+    <div class="flex-fill main-content-wrapper p-0">
+        <?php $layout->topbar($pageTitle ?? ''); ?>
+        <div class="container-fluid px-4">
                
             <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-5 page-header">
                 <div>
@@ -244,6 +245,9 @@ $pageTitle = "My Notifications";
                 </div>
             </div>
 <?php $layout->footer(); ?>
+        </div>
+    </div>
+</div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     const savedTheme = localStorage.getItem('theme') || 'light';

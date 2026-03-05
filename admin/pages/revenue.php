@@ -223,10 +223,11 @@ $pageTitle = "Revenue Portal";
         .table-custom tr:hover td { background: #f8fafc; cursor: pointer; }
     </style>
 
-<?php $layout->sidebar(); ?>
-<div class="main-wrapper">
-    <?php $layout->topbar($pageTitle ?? 'Revenue Portal'); ?>
-    <div class="main-content">
+<div class="d-flex">
+    <?php $layout->sidebar(); ?>
+    <div class="flex-fill main-content-wrapper p-0">
+        <?php $layout->topbar($pageTitle ?? 'Revenue Portal'); ?>
+        <div class="container-fluid px-4">
             <!-- Header Banner -->
             <div class="portal-header slide-up shadow-lg">
                 <div class="row align-items-center">
@@ -486,6 +487,9 @@ $pageTitle = "Revenue Portal";
             </div>
 
             <?php $layout->footer(); ?>
+        </div>
+    </div>
+</div>
 <div class="modal fade" id="recordRevenueModal" tabindex="-1">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content shadow-2xl rounded-4 overflow-hidden border-0">
