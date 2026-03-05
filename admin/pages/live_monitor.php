@@ -26,6 +26,14 @@ $pageTitle = "Live Operations Monitor";
     <?php $layout->topbar($pageTitle ?? ""); ?>
     <div class="container-fluid px-4 py-4">
 
+    
+    
+
+    
+    
+
+    
+    
 
     
     
@@ -35,7 +43,6 @@ $pageTitle = "Live Operations Monitor";
         
         
     
-
 
             <!-- Hero Section -->
             <div class="monitor-hero">
@@ -140,7 +147,11 @@ $pageTitle = "Live Operations Monitor";
                             <?php endforeach; ?>
                             <?php if (empty($recent_logs)): ?>
                             <tr><td colspan="5" class="text-center py-5 text-muted">No operational logs streaming yet.</td></tr>
-                            <?php endif; ?>
+                            <?php endif; 
+    
+    
+
+?>
                         </tbody>
                     </table>
                 </div>
@@ -149,3 +160,7 @@ $pageTitle = "Live Operations Monitor";
             <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
+    </div> <!-- /container-fluid -->
+    <?php $layout->footer(); ?>
+</div> <!-- /main-content-wrapper -->
+?>

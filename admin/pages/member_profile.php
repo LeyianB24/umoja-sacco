@@ -212,6 +212,14 @@ $pageTitle = $member['full_name'] . " - Member Profile";
     <?php $layout->topbar($pageTitle ?? ""); ?>
     <div class="container-fluid px-4 py-4">
 
+    
+    
+
+    
+    
+
+    
+    
 
     
     
@@ -221,8 +229,6 @@ $pageTitle = $member['full_name'] . " - Member Profile";
         
         
     
-
-
 
     <!-- Breadcrumb -->
     <nav aria-label="breadcrumb" class="mb-4">
@@ -551,7 +557,14 @@ $pageTitle = $member['full_name'] . " - Member Profile";
                         <p class="text-secondary small">The member hasn't uploaded any verification documents yet.</p>
                     </div>
                 </div>
-                <?php endif; ?>
+                <?php endif; 
+    
+    
+
+?>
             </div>
         </div>
-        
+    </div> <!-- /container-fluid -->
+    <?php $layout->footer(); ?>
+</div> <!-- /main-content-wrapper -->
+?>

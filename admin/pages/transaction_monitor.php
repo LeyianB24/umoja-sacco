@@ -68,7 +68,6 @@ $alerts = $monitor->getActiveAlerts();
 $layout->header("Transaction Monitor"); ?>
     
 
-
     <div class="row">
         <div class="col-12">
             <div class="card card-flush">
@@ -172,7 +171,11 @@ $layout->header("Transaction Monitor"); ?>
                                                     <button class="btn btn-sm btn-light">Acknowledge</button>
                                                 </td>
                                             </tr>
-                                        <?php endforeach; endif; ?>
+                                        <?php endforeach; endif; 
+    
+    
+
+?>
                                     </tbody>
                                 </table>
                             </div>
@@ -195,3 +198,7 @@ function viewCallbackLog(checkoutId) {
         
     </div>
 </div>
+    </div> <!-- /container-fluid -->
+    <?php $layout->footer(); ?>
+</div> <!-- /main-content-wrapper -->
+?>

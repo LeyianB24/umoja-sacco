@@ -44,7 +44,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                     'reference' => $ref,
                     'notes' => "Exit Request Approved: " . $admin_notes
                 ]);
-                $conn->query("UPDATE withdrawal_requests SET status = 'completed', notes = CONCAT(IFNULL(notes, ''), '\nAdmin: ', '$admin_notes'), updated_at = NOW() WHERE withdrawal_id = $req_id");
+                $conn->query("UPDATE withdrawal_requests SET status = 'completed', notes = CONCAT(IFNULL(notes, ''), '
+Admin: ', '$admin_notes'), updated_at = NOW() WHERE withdrawal_id = $req_id");
                 $conn->query("UPDATE members SET status = 'inactive' WHERE member_id = $mem_id");
                 
                 $msg = "<div class='alert alert-success'>Exit request approved. Member has been successfully deactivated and payout processed.</div>";
@@ -57,7 +58,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                     'reference' => $ref."-REV",
                     'notes' => "Exit Request Rejected: " . $admin_notes
                 ]);
-                $conn->query("UPDATE withdrawal_requests SET status = 'rejected', notes = CONCAT(IFNULL(notes, ''), '\nAdmin: ', '$admin_notes'), updated_at = NOW() WHERE withdrawal_id = $req_id");
+                $conn->query("UPDATE withdrawal_requests SET status = 'rejected', notes = CONCAT(IFNULL(notes, ''), '
+Admin: ', '$admin_notes'), updated_at = NOW() WHERE withdrawal_id = $req_id");
                 $msg = "<div class='alert alert-warning'>Exit request rejected and shares reinstated to the member.</div>";
             }
         } catch (Exception $e) {
@@ -160,6 +162,14 @@ $jsData   = json_encode($chartData);
     <?php $layout->topbar($pageTitle ?? ""); ?>
     <div class="container-fluid px-4 py-4">
 
+    
+    
+
+    
+    
+
+    
+    
 
     
     
@@ -282,7 +292,6 @@ $jsData   = json_encode($chartData);
     <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
 </head>
 <body>
-
 
             
             <?php if (!empty($msg)): ?>
@@ -620,7 +629,11 @@ $jsData   = json_encode($chartData);
         data: {
             labels: <?= $jsLabels ?>,
             datasets: [{
-                data: <?= $jsData ?>,
+                data: <?= $jsData 
+    
+    
+
+?>,
                 borderColor: '#65a30d',
                 backgroundColor: gradient,
                 fill: true,
@@ -637,3 +650,7 @@ $jsData   = json_encode($chartData);
 </script>
 </body>
 </html>
+    </div> <!-- /container-fluid -->
+    <?php $layout->footer(); ?>
+</div> <!-- /main-content-wrapper -->
+?>

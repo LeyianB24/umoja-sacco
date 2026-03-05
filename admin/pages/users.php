@@ -28,6 +28,14 @@ require_superadmin();
     
     
 
+
+    
+    
+
+
+    
+    
+
     
     
         
@@ -274,6 +282,9 @@ function openEditModal(data) {
 </script>
 <?php 
 $extraJs = ob_get_clean();
-$layout->footer(); 
+$layout->footer();
 ?>
-
+    </div> <!-- /container-fluid -->
+</div> <!-- /main-content-wrapper -->
+</body>
+</html>

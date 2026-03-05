@@ -95,6 +95,14 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
     <?php $layout->topbar($pageTitle ?? ""); ?>
     <div class="container-fluid px-4 py-4">
 
+    
+    
+
+    
+    
+
+    
+    
 
     
     
@@ -104,7 +112,6 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
         
         
     
-
 
         
         <!-- Header -->
@@ -283,10 +290,17 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
                                         </div>
                                     </td>
                                 </tr>
-                            <?php endforeach; endif; ?>
+                            <?php endforeach; endif; 
+    
+    
+
+?>
                         </tbody>
                     </table>
                 </div>
                 </div>
             </div>
-            
+    </div> <!-- /container-fluid -->
+    <?php $layout->footer(); ?>
+</div> <!-- /main-content-wrapper -->
+?>

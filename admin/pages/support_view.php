@@ -179,6 +179,14 @@ $pageTitle = "Ticket View";
     <?php $layout->topbar($pageTitle ?? ""); ?>
     <div class="container-fluid px-4 py-4">
 
+    
+    
+
+    
+    
+
+    
+    
 
     
     
@@ -189,7 +197,6 @@ $pageTitle = "Ticket View";
         
 
     
-
 
         
         <div class="hp-hero mb-4">
@@ -305,10 +312,17 @@ $pageTitle = "Ticket View";
                         </div>
                         
                             <span class="text-muted small">Ticket Reference</span>
-                            <span class="fw-800 text-forest small">#US-<?= $support_id ?></span>
+                            <span class="fw-800 text-forest small">#US-<?= $support_id 
+    
+    
+
+?></span>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        
+    </div> <!-- /container-fluid -->
+    <?php $layout->footer(); ?>
+</div> <!-- /main-content-wrapper -->
+?>

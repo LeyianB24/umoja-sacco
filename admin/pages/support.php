@@ -247,7 +247,11 @@ $layout->header($pageTitle);
                                     </a>
                                 </td>
                             </tr>
-                            <?php endforeach; endif; ?>
+                            <?php endforeach; endif; 
+    
+    
+
+?>
                         </tbody>
                     </table>
                 </div>
@@ -257,3 +261,7 @@ $layout->header($pageTitle);
         
     </div>
 </div>
+    </div> <!-- /container-fluid -->
+    <?php $layout->footer(); ?>
+</div> <!-- /main-content-wrapper -->
+?>

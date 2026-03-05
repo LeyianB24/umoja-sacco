@@ -56,14 +56,6 @@ $pageTitle = "System Dashboard";
     <?php $layout->topbar($pageTitle ?? ""); ?>
     <div class="container-fluid px-4 py-4">
 
-
-    
-    
-
-    
-    
-        
-        
     <style>
         .hp-hero { 
             background: linear-gradient(135deg, var(--forest) 0%, var(--forest-mid) 100%); 
@@ -72,7 +64,6 @@ $pageTitle = "System Dashboard";
             position: relative; overflow: hidden;
         }
     </style>
-
 
             <div class="hp-hero">
                 <div class="row align-items-center">
@@ -97,65 +88,45 @@ $pageTitle = "System Dashboard";
                 <div class="col-md-3">
                     <a href="<?= BASE_URL ?>/admin/pages/support.php" class="text-decoration-none">
                         <div class="glass-stat">
-                            
                                 <div class="icon-puck bg-primary bg-opacity-10 text-primary"><i class="bi bi-ticket-perforated"></i></div>
                                 <div class="text-end">
                                     <div class="small text-muted fw-bold">TICKETS</div>
                                     <div class="h3 fw-800 mb-0"><?= $open_tickets ?></div>
                                 </div>
                             </div>
-                            <div class="progress" style="height: 6px; border-radius: 10px;">
-                                <div class="progress-bar bg-primary" style="width: 45%"></div>
-                            </div>
-                        </div>
                     </a>
                 </div>
                 <div class="col-md-3">
                     <a href="<?= BASE_URL ?>/admin/pages/audit_logs.php" class="text-decoration-none">
                         <div class="glass-stat">
-                            
                                 <div class="icon-puck bg-success bg-opacity-10 text-success"><i class="bi bi-activity"></i></div>
                                 <div class="text-end">
                                     <div class="small text-muted fw-bold">LOGS</div>
                                     <div class="h3 fw-800 mb-0"><?= $today_logs ?></div>
                                 </div>
                             </div>
-                            <div class="progress" style="height: 6px; border-radius: 10px;">
-                                <div class="progress-bar bg-success" style="width: 70%"></div>
-                            </div>
-                        </div>
                     </a>
                 </div>
                 <div class="col-md-3">
                     <a href="<?= BASE_URL ?>/admin/pages/revenue.php" class="text-decoration-none">
                         <div class="glass-stat">
-                            
                                 <div class="icon-puck bg-dark text-lime"><i class="bi bi-bank"></i></div>
                                 <div class="text-end">
                                     <div class="small text-muted fw-bold">CASH</div>
                                     <div class="h3 fw-800 mb-0"><?= number_format((float)($cash_position / 1000), 1) ?>K</div>
                                 </div>
                             </div>
-                            <div class="progress" style="height: 6px; border-radius: 10px;">
-                                <div class="progress-bar bg-dark" style="width: 85%"></div>
-                            </div>
-                        </div>
                     </a>
                 </div>
                 <div class="col-md-3">
                     <a href="<?= BASE_URL ?>/admin/pages/system_health.php" class="text-decoration-none">
                         <div class="glass-stat">
-                            
                                 <div class="icon-puck bg-warning bg-opacity-10 text-warning"><i class="bi bi-database"></i></div>
                                 <div class="text-end">
                                     <div class="small text-muted fw-bold">STORAGE</div>
                                     <div class="h3 fw-800 mb-0"><?= $db_size ?> <small class="fs-6">MB</small></div>
                                 </div>
                             </div>
-                            <div class="progress" style="height: 6px; border-radius: 10px;">
-                                <div class="progress-bar bg-warning" style="width: 30%"></div>
-                            </div>
-                        </div>
                     </a>
                 </div>
             </div>
@@ -164,7 +135,7 @@ $pageTitle = "System Dashboard";
                 <div class="col-12">
                     <a href="<?= BASE_URL ?>/admin/pages/live_monitor.php" class="text-decoration-none">
                         <div class="glass-stat border-0 shadow-sm">
-                            
+                            <div class="d-flex justify-content-between align-items-center mb-4">
                                 <div>
                                     <h5 class="fw-bold mb-1"><i class="bi bi-broadcast text-danger me-2"></i>Live Operations Monitor</h5>
                                     <p class="small text-muted mb-0">Real-time status of payment gateways and notification engines.</p>
@@ -209,7 +180,7 @@ $pageTitle = "System Dashboard";
             <div class="row g-4">
                 <div class="col-lg-8">
                     <div class="table-glass shadow-sm p-4">
-                        
+                        <div class="d-flex justify-content-between align-items-center mb-4">
                             <h5 class="fw-bold mb-0">Active Support Inbox</h5>
                             <a href="<?= BASE_URL ?>/admin/pages/support.php" class="btn btn-light rounded-pill px-4 btn-sm border fw-bold text-forest">Open Support Center</a>
                         </div>
@@ -299,4 +270,9 @@ $pageTitle = "System Dashboard";
                     <?php endif; ?>
                 </div>
             </div>
-            
+
+    </div> <!-- /container-fluid -->
+    <?php $layout->footer(); ?>
+</div> <!-- /main-content-wrapper -->
+</body>
+</html>

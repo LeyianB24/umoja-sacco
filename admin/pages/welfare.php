@@ -43,6 +43,14 @@ $pool_balance = $engine->getWelfarePoolBalance();
     <?php $layout->topbar($pageTitle ?? ""); ?>
     <div class="container-fluid px-4 py-4">
 
+    
+    
+
+    
+    
+
+    
+    
 
     
     
@@ -52,7 +60,6 @@ $pool_balance = $engine->getWelfarePoolBalance();
         
         
     
-
 
             <div class="row g-4 mb-4">
                 <div class="col-xl-3 col-md-6">
@@ -284,7 +291,11 @@ $pool_balance = $engine->getWelfarePoolBalance();
                         $mems2 = $conn->query("SELECT member_id, full_name FROM members WHERE status='active'");
                         while($m = $mems2->fetch_assoc()): ?>
                             <option value="<?= $m['member_id'] ?>"><?= $m['full_name'] ?></option>
-                        <?php endwhile; ?>
+                        <?php endwhile; 
+    
+    
+
+?>
                     </select>
                 </div>
                 <div class="mb-3"><label class="form-label small fw-bold">Amount</label><div class="input-group input-group-lg"><span class="input-group-text bg-light border-end-0">KES</span><input type="number" name="amount" class="form-control border-start-0" required></div></div>
@@ -320,3 +331,7 @@ $pool_balance = $engine->getWelfarePoolBalance();
 </script>
 </body>
 </html>
+    </div> <!-- /container-fluid -->
+    <?php $layout->footer(); ?>
+</div> <!-- /main-content-wrapper -->
+?>

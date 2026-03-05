@@ -115,6 +115,14 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
     <?php $layout->topbar($pageTitle ?? ""); ?>
     <div class="container-fluid px-4 py-4">
 
+    
+    
+
+    
+    
+
+    
+    
 
     
     
@@ -123,7 +131,6 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
     
         
         
-
 
         <!-- Layout Header -->
         <div class="portal-header fade-in">
@@ -401,7 +408,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // Data passed from PHP
     const totalAssets = <?= (float)$total_assets ?>;
     const totalLiabEq = <?= (float)($total_liabilities + $total_equity) ?>;
-    const isBalanced = <?= $is_balanced ? 'true' : 'false' ?>;
+    const isBalanced = <?= $is_balanced ? 'true' : 'false' 
+    
+    
+
+?>;
 
     new Chart(ctx, {
         type: 'doughnut',
@@ -459,3 +470,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
+    </div> <!-- /container-fluid -->
+    <?php $layout->footer(); ?>
+</div> <!-- /main-content-wrapper -->
+?>

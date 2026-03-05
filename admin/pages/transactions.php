@@ -170,6 +170,14 @@ $pageTitle = "Golden Ledger Vault";
     <?php $layout->topbar($pageTitle ?? ""); ?>
     <div class="container-fluid px-4 py-4">
 
+    
+    
+
+    
+    
+
+    
+    
 
     
     
@@ -179,7 +187,6 @@ $pageTitle = "Golden Ledger Vault";
         
         
     
-
 
         <div class="hp-hero mb-4">
             <div class="row align-items-center">
@@ -332,10 +339,16 @@ $pageTitle = "Golden Ledger Vault";
                             <p class="text-muted small">Try adjusting your filters or search terms.</p>
                         </td>
                     </tr>
-                    <?php endif; ?>
+                    <?php endif; 
+    
+    
+
+?>
                 </tbody>
             </table>
         </div>
         </div>
-        
-        
+    </div> <!-- /container-fluid -->
+    <?php $layout->footer(); ?>
+</div> <!-- /main-content-wrapper -->
+?>

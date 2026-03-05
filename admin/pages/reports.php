@@ -229,7 +229,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_to_all'])) {
             $mail->clearAttachments();
 
             $mail->addAddress($m['email'], $m['full_name']);
-            $mail->Body = "Dear {$m['full_name']},\n\nAttached is the latest financial performance report.\n\nRegards,\nUmoja Sacco Admin";
+            $mail->Body = "Dear {$m['full_name']},
+
+Attached is the latest financial performance report.
+
+Regards,
+Umoja Sacco Admin";
             
             // Re-attach the PDF for this email
             $mail->addStringAttachment($pdfContent, 'Financial_Report.pdf');
@@ -264,6 +269,14 @@ $pageTitle = "Executive Reports";
     <?php $layout->topbar($pageTitle ?? ""); ?>
     <div class="container-fluid px-4 py-4">
 
+    
+    
+
+    
+    
+
+    
+    
 
     
     
@@ -273,7 +286,6 @@ $pageTitle = "Executive Reports";
         
         
     
-
 
         <div class="hp-hero">
             <div class="row align-items-center">
@@ -575,7 +587,11 @@ $pageTitle = "Executive Reports";
         data: {
             labels: ['Deposits', 'Repayments', 'Shares', 'Welfare', 'Revenue', 'Wallet', 'Investments', 'Other'],
             datasets: [{
-                data: [<?= $inflow_dist['Deposits'] ?>, <?= $inflow_dist['Repayments'] ?>, <?= $inflow_dist['Shares'] ?>, <?= $inflow_dist['Welfare'] ?>, <?= $inflow_dist['Revenue'] ?>, <?= $inflow_dist['Wallet'] ?>, <?= $inflow_dist['Investments'] ?>, <?= $inflow_dist['Other'] ?>],
+                data: [<?= $inflow_dist['Deposits'] ?>, <?= $inflow_dist['Repayments'] ?>, <?= $inflow_dist['Shares'] ?>, <?= $inflow_dist['Welfare'] ?>, <?= $inflow_dist['Revenue'] ?>, <?= $inflow_dist['Wallet'] ?>, <?= $inflow_dist['Investments'] ?>, <?= $inflow_dist['Other'] 
+    
+    
+
+?>],
                 backgroundColor: ['#0f3d32', '#d1fa59', '#f59e0b', '#06b6d4', '#3b82f6', '#8b5cf6', '#ec4899', '#cbd5e1'],
                 borderWidth: 0,
                 hoverOffset: 10
@@ -589,3 +605,7 @@ $pageTitle = "Executive Reports";
         }
     });
 </script>
+    </div> <!-- /container-fluid -->
+    <?php $layout->footer(); ?>
+</div> <!-- /main-content-wrapper -->
+?>

@@ -179,6 +179,14 @@ $pageTitle = "Loan #$loan_id Detail";
     <?php $layout->topbar($pageTitle ?? ""); ?>
     <div class="container-fluid px-4 py-4">
 
+    
+    
+
+    
+    
+
+    
+    
 
     
     
@@ -187,9 +195,6 @@ $pageTitle = "Loan #$loan_id Detail";
     
         
         
-
-
-
 
             <!-- Breadcrumb -->
             <nav class="mb-4"><ol class="breadcrumb">
@@ -460,7 +465,11 @@ $pageTitle = "Loan #$loan_id Detail";
                     <p class="text-muted small mb-4">Outstanding Balance: <strong class="text-danger">KES <?= number_format($balance, 2) ?></strong></p>
                     <div class="mb-3">
                         <label class="form-label fw-bold small">Amount Paid <span class="text-danger">*</span></label>
-                        <input type="number" name="repayment_amount" class="form-control" step="0.01" min="1" max="<?= $balance ?>" required placeholder="e.g. 5000">
+                        <input type="number" name="repayment_amount" class="form-control" step="0.01" min="1" max="<?= $balance 
+    
+    
+
+?>" required placeholder="e.g. 5000">
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-bold small">Payment Method</label>
@@ -484,3 +493,7 @@ $pageTitle = "Loan #$loan_id Detail";
         </div>
     </div>
 </div>
+    </div> <!-- /container-fluid -->
+    <?php $layout->footer(); ?>
+</div> <!-- /main-content-wrapper -->
+?>

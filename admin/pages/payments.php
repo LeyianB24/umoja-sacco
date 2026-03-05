@@ -199,6 +199,14 @@ $pageTitle = "Payments Ledger";
     <?php $layout->topbar($pageTitle ?? ""); ?>
     <div class="container-fluid px-4 py-4">
 
+    
+    
+
+    
+    
+
+    
+    
 
     
     
@@ -247,7 +255,6 @@ $pageTitle = "Payments Ledger";
         .badge-in { background: var(--lime-dim); color: var(--forest-dark); border: 1px solid rgba(208, 247, 100, 0.3); }
         .badge-out { background: #fce7f3; color: #be185d; border: 1px solid rgba(251, 207, 232, 0.5); }
     </style>
-
 
             
             
@@ -512,5 +519,8 @@ ob_start();
 </script>
 <?php 
 $extraJs = ob_get_clean();
-$layout->footer(); 
+$layout->footer();
+    </div> <!-- /container-fluid -->
+    <?php $layout->footer(); ?>
+</div> <!-- /main-content-wrapper -->
 ?>

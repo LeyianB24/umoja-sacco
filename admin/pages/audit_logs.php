@@ -156,6 +156,14 @@ $pageTitle = "Audit Logs";
     <?php $layout->topbar($pageTitle ?? ""); ?>
     <div class="container-fluid px-4 py-4">
 
+    
+    
+
+    
+    
+
+    
+    
 
     
     
@@ -164,8 +172,6 @@ $pageTitle = "Audit Logs";
     
         
         
-
-
 
             <div class="row align-items-end mb-5">
                 <div class="col-md-7">
@@ -278,7 +284,11 @@ $pageTitle = "Audit Logs";
                                         </span>
                                     </td>
                                 </tr>
-                            <?php endwhile; endif; ?>
+                            <?php endwhile; endif; 
+    
+    
+
+?>
                         </tbody>
                     </table>
                 </div>
@@ -287,4 +297,7 @@ $pageTitle = "Audit Logs";
                     <small class="text-muted fw-bold">Showing latest 200 entries</small>
                 </div>
             </div>
-            
+    </div> <!-- /container-fluid -->
+    <?php $layout->footer(); ?>
+</div> <!-- /main-content-wrapper -->
+?>

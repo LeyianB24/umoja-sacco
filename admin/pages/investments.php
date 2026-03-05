@@ -19,6 +19,14 @@ $layout = LayoutManager::create('admin');
     <?php $layout->topbar($pageTitle ?? ""); ?>
     <div class="container-fluid px-4 py-4">
 
+    
+    
+
+    
+    
+
+    
+    
 
     
     
@@ -324,7 +332,6 @@ $global = $conn->query("SELECT
     SUM(CASE WHEN status='sold' THEN sale_price ELSE 0 END) as total_exit_value
     FROM investments")->fetch_assoc();
 ?>
-
 
         
         <!-- Header -->
@@ -769,7 +776,11 @@ $global = $conn->query("SELECT
                     </div>
                     <div class="mb-3">
                         <label class="form-label small fw-bold text-muted">Sale Date</label>
-                        <input type="date" name="sale_date" class="form-control rounded-3" value="<?= date('Y-m-d') ?>" required>
+                        <input type="date" name="sale_date" class="form-control rounded-3" value="<?= date('Y-m-d') 
+    
+    
+
+?>" required>
                     </div>
                     <div class="mb-0">
                         <label class="form-label small fw-bold text-muted">Reason for Sale</label>
@@ -784,3 +795,7 @@ $global = $conn->query("SELECT
         </div>
 </div>
 </div>
+    </div> <!-- /container-fluid -->
+    <?php $layout->footer(); ?>
+</div> <!-- /main-content-wrapper -->
+?>

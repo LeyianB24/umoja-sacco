@@ -36,6 +36,14 @@ $pageTitle = "System Health & Integrity";
     <?php $layout->topbar($pageTitle ?? ""); ?>
     <div class="container-fluid px-4 py-4">
 
+    
+    
+
+    
+    
+
+    
+    
 
     
     
@@ -45,7 +53,6 @@ $pageTitle = "System Health & Integrity";
         
         
     
-
 
         <!-- Hero Section -->
         <div class="hp-hero">
@@ -119,7 +126,11 @@ $pageTitle = "System Health & Integrity";
                     </div>
                     <p class="small text-muted">Current size of the SACCO's central data repository.</p>
                     <div class="mt-auto pt-3 border-top d-flex justify-content-between align-items-center">
-                        <div class="h5 fw-bold mb-0"><?= $health['db_size'] ?? 'N/A' ?> MB</div>
+                        <div class="h5 fw-bold mb-0"><?= $health['db_size'] ?? 'N/A' 
+    
+    
+
+?> MB</div>
                         <span class="badge rounded-pill bg-light  border">Optimized</span>
                     </div>
                 </div>
@@ -160,3 +171,7 @@ $pageTitle = "System Health & Integrity";
                 </div>
             </div>
         </div>
+    </div> <!-- /container-fluid -->
+    <?php $layout->footer(); ?>
+</div> <!-- /main-content-wrapper -->
+?>

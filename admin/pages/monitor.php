@@ -38,6 +38,14 @@ if ($table_check && $table_check->num_rows > 0) {
     <?php $layout->topbar($pageTitle ?? ""); ?>
     <div class="container-fluid px-4 py-4">
 
+    
+    
+
+    
+    
+
+    
+    
 
     
     
@@ -47,8 +55,6 @@ if ($table_check && $table_check->num_rows > 0) {
         
         
     
-
-
 
             <!-- Callback Logs -->
             <div id="sectionCallbacks" class="table-premium">
@@ -130,9 +136,16 @@ if ($table_check && $table_check->num_rows > 0) {
                                     <?php endif; ?>
                                 </td>
                             </tr>
-                            <?php endforeach; ?>
+                            <?php endforeach; 
+    
+    
+
+?>
                         </tbody>
                     </table>
                 </div>
             </div>
-            
+    </div> <!-- /container-fluid -->
+    <?php $layout->footer(); ?>
+</div> <!-- /main-content-wrapper -->
+?>

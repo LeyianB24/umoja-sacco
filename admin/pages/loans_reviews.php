@@ -261,6 +261,14 @@ $stats = $db->query("SELECT
     <?php $layout->topbar($pageTitle ?? ""); ?>
     <div class="container-fluid px-4 py-4">
 
+    
+    
+
+    
+    
+
+    
+    
 
     
     
@@ -270,7 +278,6 @@ $stats = $db->query("SELECT
         
         
     
-
 
             
                 <div>
@@ -487,15 +494,17 @@ if($loans->num_rows > 0):
         </div>
     </div>
 </div>
-<?php endwhile; endif; ?>
+<?php endwhile; endif; 
+    
+    
+
+?>
 
         </div>
        
     </div>
 </div>
-
-
-
-
-
-
+    </div> <!-- /container-fluid -->
+    <?php $layout->footer(); ?>
+</div> <!-- /main-content-wrapper -->
+?>

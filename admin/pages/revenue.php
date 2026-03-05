@@ -223,7 +223,6 @@ $pageTitle = "Revenue Portal";
         .table-custom tr:hover td { background: #f8fafc; cursor: pointer; }
     </style>
 
-
             <!-- Header Banner -->
             <div class="portal-header slide-up shadow-lg">
                 <div class="row align-items-center">
@@ -618,5 +617,8 @@ ob_start();
 </script>
 <?php 
 $extraJs = ob_get_clean();
-$layout->footer(); 
+$layout->footer();
+    </div> <!-- /container-fluid -->
+    <?php $layout->footer(); ?>
+</div> <!-- /main-content-wrapper -->
 ?>

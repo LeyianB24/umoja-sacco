@@ -5,7 +5,6 @@ ini_set('log_errors', 1);
 
 if (session_status() === PHP_SESSION_NONE) session_start();
 
-
 require_once __DIR__ . '/../../config/app.php';
 require_once __DIR__ . '/../../inc/Auth.php';
 require_once __DIR__ . '/../../inc/LayoutManager.php';
@@ -394,6 +393,14 @@ $pageTitle = "People & Access";
     <?php $layout->topbar($pageTitle ?? ""); ?>
     <div class="container-fluid px-4 py-4">
 
+    
+    
+
+    
+    
+
+    
+    
 
     
     
@@ -404,7 +411,6 @@ $pageTitle = "People & Access";
         
     
     
-
 
             <div class="hp-hero">
                 <div class="row align-items-center">
@@ -1019,7 +1025,11 @@ $pageTitle = "People & Access";
                     <div class="mb-3">
                         <label class="form-label small fw-bold">Role</label>
                         <select name="role_id" id="edit_admin_role" class="form-select" required>
-                            <?php foreach($defined_roles as $id => $val) echo "<option value='$id'>{$val['label']}</option>"; ?>
+                            <?php foreach($defined_roles as $id => $val) echo "<option value='$id'>{$val['label']}</option>"; 
+    
+    
+
+?>
                         </select>
                     </div>
                     <div class="mb-3">
@@ -1041,3 +1051,7 @@ $pageTitle = "People & Access";
     <!-- END main-content-wrapper -->
 </div>
 <!-- END d-flex -->
+    </div> <!-- /container-fluid -->
+    <?php $layout->footer(); ?>
+</div> <!-- /main-content-wrapper -->
+?>

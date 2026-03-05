@@ -142,6 +142,14 @@ $pageTitle = "Register Member";
     <?php $layout->topbar($pageTitle ?? ""); ?>
     <div class="container-fluid px-4 py-4">
 
+    
+    
+
+    
+    
+
+    
+    
 
     
     
@@ -221,7 +229,11 @@ $pageTitle = "Register Member";
                                 </div>
                                 <div class="col-md-6">
                                     <label for="nok_phone" class="form-label">Next of Kin Phone</label>
-                                    <input type="text" class="form-control" id="nok_phone" name="nok_phone" value="<?= htmlspecialchars($_POST['nok_phone'] ?? '') ?>">
+                                    <input type="text" class="form-control" id="nok_phone" name="nok_phone" value="<?= htmlspecialchars($_POST['nok_phone'] ?? '') 
+    
+    
+
+?>">
                                 </div>
                                 <div class="col-md-12">
                                     <label for="password" class="form-label">Temporary Password (Default: 'password123')</label>
@@ -279,3 +291,7 @@ $pageTitle = "Register Member";
         document.getElementById('paymentDetails').style.display = checked ? 'block' : 'none';
     }
 </script>
+    </div> <!-- /container-fluid -->
+    <?php $layout->footer(); ?>
+</div> <!-- /main-content-wrapper -->
+?>

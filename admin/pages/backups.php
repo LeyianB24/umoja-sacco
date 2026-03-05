@@ -46,6 +46,14 @@ $pageTitle = "System Maintenance Hub";
     <?php $layout->topbar($pageTitle ?? ""); ?>
     <div class="container-fluid px-4 py-4">
 
+    
+    
+
+    
+    
+
+    
+    
 
     
     
@@ -55,7 +63,6 @@ $pageTitle = "System Maintenance Hub";
         
         
     
-
 
             
                 <div>
@@ -157,7 +164,11 @@ $pageTitle = "System Maintenance Hub";
                                                 </td>
                                             </tr>
                                         <?php endwhile; ?>
-                                    <?php endif; ?>
+                                    <?php endif; 
+    
+    
+
+?>
                                 </tbody>
                             </table>
                         </div>
@@ -167,4 +178,7 @@ $pageTitle = "System Maintenance Hub";
                     </div>
                 </div>
             </div>
-            
+    </div> <!-- /container-fluid -->
+    <?php $layout->footer(); ?>
+</div> <!-- /main-content-wrapper -->
+?>

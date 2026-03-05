@@ -117,6 +117,14 @@ $pageTitle = "Roles & Permissions";
     <?php $layout->topbar($pageTitle ?? ""); ?>
     <div class="container-fluid px-4 py-4">
 
+    
+    
+
+    
+    
+
+    
+    
 
     
     
@@ -126,7 +134,6 @@ $pageTitle = "Roles & Permissions";
         
         
     
-
 
     <div class="hp-hero">
         <div class="row align-items-center">
@@ -341,7 +348,11 @@ $pageTitle = "Roles & Permissions";
 
 <!-- Delete Confirmation Form -->
 <form method="POST" id="deleteForm" style="display: none;">
-    <?= csrf_field() ?>
+    <?= csrf_field() 
+    
+    
+
+?>
     <input type="hidden" name="action" value="delete_role">
     <input type="hidden" name="role_id" id="delete_role_id">
 </form>
@@ -429,7 +440,9 @@ function editRole(id, name, desc) {
 }
 
 function deleteRole(id, name) {
-    if (confirm(`Are you sure you want to delete the role "${name}"?\n\nThis action cannot be undone.`)) {
+    if (confirm(`Are you sure you want to delete the role "${name}"?
+
+This action cannot be undone.`)) {
         document.getElementById('delete_role_id').value = id;
         document.getElementById('deleteForm').submit();
     }
@@ -439,3 +452,7 @@ function deleteRole(id, name) {
         
     </div>
 </div>
+    </div> <!-- /container-fluid -->
+    <?php $layout->footer(); ?>
+</div> <!-- /main-content-wrapper -->
+?>

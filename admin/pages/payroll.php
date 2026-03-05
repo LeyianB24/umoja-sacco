@@ -224,6 +224,14 @@ $history_runs = $db->query("SELECT * FROM payroll_runs ORDER BY month DESC LIMIT
     <?php $layout->topbar($pageTitle ?? ""); ?>
     <div class="container-fluid px-4 py-4">
 
+    
+    
+
+    
+    
+
+    
+    
 
     
     
@@ -233,7 +241,6 @@ $history_runs = $db->query("SELECT * FROM payroll_runs ORDER BY month DESC LIMIT
         
         
     
-
 
             
                 <div>
@@ -472,7 +479,15 @@ $history_runs = $db->query("SELECT * FROM payroll_runs ORDER BY month DESC LIMIT
                             </div>
                             <span class="badge bg-light  border fw-normal font-monospace"><?= ksh((float)$h['total_net']) ?></span>
                         </a>
-                    <?php endwhile; ?>
+                    <?php endwhile; 
+    
+    
+
+?>
                 </div>
 </div>
 </div>
+    </div> <!-- /container-fluid -->
+    <?php $layout->footer(); ?>
+</div> <!-- /main-content-wrapper -->
+?>

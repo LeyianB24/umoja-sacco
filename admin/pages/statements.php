@@ -34,6 +34,14 @@ $pageTitle = "Statement Portal";
     
     
 
+
+    
+    
+
+
+    
+    
+
     
     
         
@@ -278,4 +286,9 @@ ob_start();
 <?php 
 $extraJs = ob_get_clean();
 $layout->footer(); 
+?>
+    </div> <!-- /container-fluid -->
+</div> <!-- /main-content-wrapper -->
+<?php 
+// Final cleanup
 ?>

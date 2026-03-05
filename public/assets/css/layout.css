@@ -6,6 +6,7 @@
 
 /* ── Admin Shell ─────────────────────────────────────────────────────────── */
 .admin-body {
+    display: block !important;
     min-height: 100vh;
     background: var(--bg-primary);
     overflow-x: hidden;

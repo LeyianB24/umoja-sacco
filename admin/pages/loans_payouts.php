@@ -201,6 +201,14 @@ $pageTitle = "Loan Management";
     <?php $layout->topbar($pageTitle ?? ""); ?>
     <div class="container-fluid px-4 py-4">
 
+    
+    
+
+    
+    
+
+    
+    
 
     
     
@@ -210,7 +218,6 @@ $pageTitle = "Loan Management";
         
         
     
-
 
             <!-- Header -->
             <div class="hp-hero fade-in shadow-lg">
@@ -473,7 +480,11 @@ $pageTitle = "Loan Management";
 </div>
 
 <form id="actionForm" method="POST" style="display:none;">
-    <?= csrf_field() ?>
+    <?= csrf_field() 
+    
+    
+
+?>
     <input type="hidden" name="action" id="form_action">
     <input type="hidden" name="loan_id" id="form_loan_id">
 </form>
@@ -513,3 +524,7 @@ $pageTitle = "Loan Management";
 </script>
 </body>
 </html>
+    </div> <!-- /container-fluid -->
+    <?php $layout->footer(); ?>
+</div> <!-- /main-content-wrapper -->
+?>

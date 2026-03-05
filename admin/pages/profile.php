@@ -82,7 +82,6 @@ $stmt->execute();
 $admin = $stmt->get_result()->fetch_assoc();
 $stmt->close();
 
-
 $display_pic = BASE_URL . '/public/assets/uploads/male.jpg';
 
 // If a custom uploaded picture exists in the DB, override the default
@@ -302,7 +301,6 @@ $pageTitle = "My Profile";
 </head>
 <body>
 
-
             
             <?php if (!empty($_SESSION['success'])): ?>
                 <div class="alert alert-success border-0 shadow-sm rounded-4 animate__animated animate__zoomIn d-flex align-items-center mb-4 p-3" role="alert" style="background: rgba(16, 185, 129, 0.1); color: #064E3B;">
@@ -424,7 +422,11 @@ $pageTitle = "My Profile";
                                                 <label class="form-label">Account Creation Date</label>
                                                 <div class="input-group input-group-lg">
                                                     <span class="input-group-text"><i class="bi bi-calendar3 ms-1"></i></span>
-                                                    <input type="text" class="form-control with-icon fs-6" value="<?= date('d M, Y', strtotime($admin['created_at'])); ?>" readonly>
+                                                    <input type="text" class="form-control with-icon fs-6" value="<?= date('d M, Y', strtotime($admin['created_at'])); 
+    
+    
+
+?>" readonly>
                                                 </div>
                                                 <div class="form-text mt-2">Locked fields require Super Admin intervention to modify.</div>
                                             </div>
@@ -461,4 +463,7 @@ $pageTitle = "My Profile";
         }
     }
 </script>
-
+    </div> <!-- /container-fluid -->
+    <?php $layout->footer(); ?>
+</div> <!-- /main-content-wrapper -->
+?>
