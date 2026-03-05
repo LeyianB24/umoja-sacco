@@ -12,7 +12,7 @@ require_permission();
 // Initialize Layout Manager
 $layout = LayoutManager::create('admin');
 
-$admin_id = (int) $_SESSION['admin_id'];
+$admin_id  = (int) $_SESSION['admin_id'];
 $user_role = $_SESSION['role'] ?? 'admin';
 
 // Fetch Notifications
@@ -26,447 +26,490 @@ $stmt = $conn->prepare($query);
 $stmt->bind_param("is", $admin_id, $user_role);
 $stmt->execute();
 $result = $stmt->get_result();
-$stmt->close(); 
+$stmt->close();
 
-// Helper for Icon/Color logic based on the Dashboard Theme
 function getNotificationStyle($title, $msg) {
     $t = strtolower($title . ' ' . $msg);
-    
-    // Finance/Money
     if (strpos($t, 'loan') !== false || strpos($t, 'credit') !== false || strpos($t, 'pay') !== false || strpos($t, 'disburs') !== false) {
-        return ['icon' => 'bi-wallet2', 'class' => 'theme-finance'];
+        return ['icon' => 'bi-wallet2', 'type' => 'finance'];
     }
-    // Success/Approval
     if (strpos($t, 'approv') !== false || strpos($t, 'success') !== false || strpos($t, 'verify') !== false) {
-        return ['icon' => 'bi-check-lg', 'class' => 'theme-success'];
+        return ['icon' => 'bi-check-circle-fill', 'type' => 'success'];
     }
-    // Alerts/Rejection
     if (strpos($t, 'reject') !== false || strpos($t, 'fail') !== false || strpos($t, 'error') !== false) {
-        return ['icon' => 'bi-exclamation-lg', 'class' => 'theme-alert'];
+        return ['icon' => 'bi-exclamation-circle-fill', 'type' => 'alert'];
     }
-    // System/General
-    return ['icon' => 'bi-bell', 'class' => 'theme-general'];
+    return ['icon' => 'bi-bell-fill', 'type' => 'general'];
 }
 
 $pageTitle = "My Notifications";
 ?>
-<!DOCTYPE html>
-<html lang="en" data-bs-theme="light">
-<head>
-    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
-    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= $pageTitle ?> - <?= defined('SITE_NAME') ? SITE_NAME : 'SACCO' ?></title>
-    
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    
-    <style>
-        :root {
-            --brand-dark:    #064420;
-            --brand-emerald: #10B981;
-            --brand-lime:    #D1FAE5;
-            --brand-text:    #111827;
-            --brand-muted:   #6B7280;
-            --bg-app:        #f4f6f8;
-            --card-bg:       #ffffff;
-            --border-color:  #e5e7eb;
-            --ease-expo:     cubic-bezier(0.16, 1, 0.3, 1);
-            --ease-spring:   cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
+<?php $layout->header($pageTitle); ?>
 
-        [data-bs-theme="dark"] {
-            --bg-app:        #0d1117;
-            --card-bg:       #161b22;
-            --brand-dark:    #34D399;
-            --brand-text:    #f0f6fc;
-            --brand-muted:   #8b949e;
-            --border-color:  #21262d;
-            --brand-lime:    rgba(16, 185, 129, 0.08);
-        }
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
 
-        * { box-sizing: border-box; }
+<style>
+/* ─── Base ─── */
+*, body, .main-content-wrapper {
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+}
 
-        body {
-            background-color: var(--bg-app);
-            color: var(--brand-text);
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            overflow-x: hidden;
-        }
+/* ─── Hero Banner ─── */
+.nf-hero {
+    background: linear-gradient(135deg, #0F392B 0%, #1a5c43 55%, #0d2e22 100%);
+    border-radius: 20px;
+    padding: 32px 36px;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 28px;
+}
+.nf-hero::before {
+    content: '';
+    position: absolute;
+    top: -70px; right: -70px;
+    width: 280px; height: 280px;
+    background: radial-gradient(circle, rgba(57,181,74,0.18) 0%, transparent 65%);
+    border-radius: 50%;
+    pointer-events: none;
+}
+.nf-hero::after {
+    content: '';
+    position: absolute;
+    bottom: -50px; left: 20%;
+    width: 200px; height: 200px;
+    background: radial-gradient(circle, rgba(163,230,53,0.09) 0%, transparent 65%);
+    border-radius: 50%;
+    pointer-events: none;
+}
+.nf-hero-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.14);
+    border-radius: 100px;
+    padding: 5px 13px;
+    font-size: 0.67rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.7);
+    margin-bottom: 12px;
+}
+.nf-hero-eyebrow i { color: #A3E635; }
+.nf-hero h1 {
+    font-size: 2.1rem;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: -0.4px;
+    margin: 0 0 6px;
+    line-height: 1.15;
+}
+.nf-hero-sub {
+    font-size: 0.87rem;
+    color: rgba(255,255,255,0.55);
+    font-weight: 500;
+    margin: 0;
+}
+.nf-unread-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255,255,255,0.1);
+    border: 1.5px solid rgba(255,255,255,0.18);
+    border-radius: 14px;
+    padding: 10px 18px;
+    backdrop-filter: blur(8px);
+}
+.nf-unread-pill .count {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: #A3E635;
+    line-height: 1;
+}
+.nf-unread-pill .label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: rgba(255,255,255,0.55);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    line-height: 1.3;
+}
+.nf-pulse {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #A3E635;
+    box-shadow: 0 0 0 3px rgba(163,230,53,0.28);
+    animation: nfPulse 2s ease-in-out infinite;
+    flex-shrink: 0;
+}
+@keyframes nfPulse {
+    0%,100% { box-shadow: 0 0 0 3px rgba(163,230,53,0.28); }
+    50%      { box-shadow: 0 0 0 6px rgba(163,230,53,0.1); }
+}
 
-        /* ── Page Shell ── */
-        .main-content-wrapper {
-            margin-left: 280px;
-            transition: margin 0.3s ease;
-            min-height: 100vh;
-            padding: 2.5rem;
-        }
-        @media (max-width: 991px) {
-            .main-content-wrapper { margin-left: 0; padding: 1.5rem; }
-        }
+/* ─── Filter Bar ─── */
+.nf-filter-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 18px;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.nf-filter-tabs {
+    display: flex;
+    gap: 6px;
+    background: #fff;
+    border: 1px solid #E0EDE7;
+    border-radius: 12px;
+    padding: 4px;
+    box-shadow: 0 1px 8px rgba(15,57,43,0.05);
+}
+.nf-filter-tab {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #7a9e8e;
+    background: transparent;
+    border: none;
+    border-radius: 9px;
+    padding: 6px 14px;
+    cursor: pointer;
+    transition: all 0.18s;
+    white-space: nowrap;
+}
+.nf-filter-tab:hover { color: #0F392B; background: #F0F7F4; }
+.nf-filter-tab.active { background: #0F392B; color: #fff; }
+.nf-count-badge {
+    font-size: 0.67rem;
+    font-weight: 800;
+    padding: 2px 6px;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.18);
+    margin-left: 4px;
+}
+.nf-filter-tab:not(.active) .nf-count-badge { background: #E0EDE7; color: #3a6b55; }
+.nf-total-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #a0b8b0;
+}
 
-        /* ── Page Header ── */
-        .notif-page-header {
-            display: flex;
-            align-items: flex-start;
-            justify-content: space-between;
-            margin-bottom: 32px;
-            animation: fadeUp 0.55s var(--ease-expo) both;
-        }
+/* ─── Notification Card ─── */
+.nf-card {
+    background: #fff;
+    border: 1.5px solid #E8F0ED;
+    border-radius: 16px;
+    padding: 18px 20px;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.22s cubic-bezier(0.16,1,0.3,1), box-shadow 0.22s cubic-bezier(0.16,1,0.3,1), border-color 0.2s;
+    animation: nfFadeUp 0.4s cubic-bezier(0.16,1,0.3,1) both;
+    margin-bottom: 10px;
+}
+.nf-card:last-child { margin-bottom: 0; }
+.nf-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 28px rgba(15,57,43,0.09);
+    border-color: #C8DDD6;
+}
+@keyframes nfFadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
 
-        .notif-page-header .header-eyebrow {
-            font-size: 10.5px;
-            font-weight: 700;
-            letter-spacing: 1.2px;
-            text-transform: uppercase;
-            color: var(--brand-emerald);
-            margin-bottom: 6px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
+/* Stagger */
+.nf-card:nth-child(1)  { animation-delay: 0.04s; }
+.nf-card:nth-child(2)  { animation-delay: 0.08s; }
+.nf-card:nth-child(3)  { animation-delay: 0.12s; }
+.nf-card:nth-child(4)  { animation-delay: 0.16s; }
+.nf-card:nth-child(5)  { animation-delay: 0.20s; }
+.nf-card:nth-child(6)  { animation-delay: 0.24s; }
+.nf-card:nth-child(n+7){ animation-delay: 0.28s; }
 
-        .notif-page-header h3 {
-            font-size: 1.85rem;
-            font-weight: 800;
-            color: var(--brand-text);
-            margin: 0 0 6px;
-            letter-spacing: -0.4px;
-            line-height: 1.15;
-        }
+/* Unread state */
+.nf-card.is-unread {
+    background: linear-gradient(to right, rgba(57,181,74,0.04), #fff 55%);
+    border-color: rgba(57,181,74,0.22);
+}
+.nf-card.is-unread::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3.5px;
+    background: linear-gradient(to bottom, #39B54A, #A3E635);
+    border-radius: 0 2px 2px 0;
+}
 
-        .notif-page-header p {
-            font-size: 0.9rem;
-            color: var(--brand-muted);
-            margin: 0;
-            font-weight: 400;
-        }
+/* ─── Icon Boxes ─── */
+.nf-icon {
+    width: 44px; height: 44px;
+    border-radius: 13px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+    transition: transform 0.2s;
+}
+.nf-card:hover .nf-icon { transform: scale(1.08); }
+.nf-icon-finance { background: linear-gradient(135deg, #0F392B, #2d7a56); color: #A3E635; }
+.nf-icon-success { background: #D1FAE5; color: #059669; }
+.nf-icon-alert   { background: #FEE2E2; color: #DC2626; }
+.nf-icon-general { background: #F0F7F4; color: #5a7a6e; }
 
-        .unread-counter {
-            display: inline-flex;
-            align-items: center;
-            gap: 7px;
-            background: var(--brand-dark);
-            color: #fff;
-            font-size: 12px;
-            font-weight: 700;
-            padding: 6px 14px;
-            border-radius: 50px;
-            letter-spacing: 0.3px;
-        }
+/* ─── Card Body ─── */
+.nf-card-body { flex: 1; min-width: 0; }
+.nf-card-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 5px;
+}
+.nf-card-title {
+    font-size: 0.9rem;
+    font-weight: 800;
+    color: #0F392B;
+    margin: 0;
+    line-height: 1.35;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+.nf-new-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: #39B54A;
+    box-shadow: 0 0 0 2.5px rgba(57,181,74,0.22);
+    flex-shrink: 0;
+    animation: dotPulse 2s ease-in-out infinite;
+}
+@keyframes dotPulse {
+    0%,100% { box-shadow: 0 0 0 2.5px rgba(57,181,74,0.22); }
+    50%      { box-shadow: 0 0 0 5px rgba(57,181,74,0.08); }
+}
+.nf-card-time {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #a0b8b0;
+    white-space: nowrap;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.nf-card-msg {
+    font-size: 0.84rem;
+    color: #7a9e8e;
+    line-height: 1.6;
+    margin: 0;
+    font-weight: 500;
+}
 
-        [data-bs-theme="dark"] .unread-counter {
-            background: rgba(52, 211, 153, 0.15);
-            color: #34D399;
-            border: 1px solid rgba(52, 211, 153, 0.2);
-        }
+/* ─── Read badge ─── */
+.nf-read-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: #F0F7F4;
+    color: #a0b8b0;
+    border-radius: 6px;
+    padding: 2px 8px;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    align-self: flex-start;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
 
-        /* ── Notification List ── */
-        .notif-list {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
+/* ─── End Divider ─── */
+.nf-end {
+    text-align: center;
+    margin-top: 28px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    color: #c8ddd6;
+    font-size: 0.67rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+.nf-end::before, .nf-end::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: #E0EDE7;
+}
 
-        /* ── Notification Card ── */
-        .notif-card {
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-            padding: 20px 22px;
-            display: flex;
-            align-items: flex-start;
-            gap: 16px;
-            position: relative;
-            overflow: hidden;
-            transition: transform 0.22s var(--ease-expo), box-shadow 0.22s var(--ease-expo), border-color 0.22s ease;
-            animation: fadeUp 0.5s var(--ease-expo) both;
-            cursor: default;
-        }
-
-        .notif-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 28px rgba(0,0,0,0.07);
-            border-color: rgba(16,185,129,0.2);
-        }
-
-        /* Unread accent bar */
-        .notif-card.unread {
-            background: linear-gradient(to right, rgba(16,185,129,0.04), var(--card-bg) 60%);
-            border-color: rgba(16,185,129,0.18);
-        }
-
-        [data-bs-theme="dark"] .notif-card.unread {
-            background: linear-gradient(to right, rgba(16,185,129,0.07), var(--card-bg) 60%);
-        }
-
-        .notif-card.unread::before {
-            content: '';
-            position: absolute;
-            left: 0; top: 0; bottom: 0;
-            width: 3px;
-            background: var(--brand-emerald);
-            border-radius: 0 2px 2px 0;
-        }
-
-        /* Stagger delays */
-        .notif-card:nth-child(1)  { animation-delay: 0.04s; }
-        .notif-card:nth-child(2)  { animation-delay: 0.08s; }
-        .notif-card:nth-child(3)  { animation-delay: 0.12s; }
-        .notif-card:nth-child(4)  { animation-delay: 0.16s; }
-        .notif-card:nth-child(5)  { animation-delay: 0.20s; }
-        .notif-card:nth-child(6)  { animation-delay: 0.24s; }
-        .notif-card:nth-child(7)  { animation-delay: 0.28s; }
-        .notif-card:nth-child(8)  { animation-delay: 0.32s; }
-        .notif-card:nth-child(n+9){ animation-delay: 0.35s; }
-
-        /* ── Icon Box ── */
-        .icon-box {
-            width: 44px;
-            height: 44px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.15rem;
-            flex-shrink: 0;
-        }
-
-        .theme-finance .icon-box  { background: var(--brand-dark); color: #a7f3d0; }
-        .theme-success .icon-box  { background: rgba(16,185,129,0.12); color: var(--brand-emerald); }
-        .theme-alert   .icon-box  { background: #fef2f2; color: #dc2626; }
-        .theme-general .icon-box  { background: #f3f4f6; color: var(--brand-muted); }
-
-        [data-bs-theme="dark"] .theme-finance .icon-box { background: rgba(52,211,153,0.12); color: #34D399; }
-        [data-bs-theme="dark"] .theme-alert   .icon-box { background: rgba(239,68,68,0.1); color: #f87171; }
-        [data-bs-theme="dark"] .theme-general .icon-box { background: rgba(255,255,255,0.06); color: var(--brand-muted); }
-
-        /* ── Card Body ── */
-        .notif-body { flex: 1; min-width: 0; }
-
-        .notif-top-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-            margin-bottom: 5px;
-        }
-
-        .notif-title {
-            font-size: 0.93rem;
-            font-weight: 700;
-            color: var(--brand-text);
-            margin: 0;
-            line-height: 1.3;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .new-dot {
-            width: 7px;
-            height: 7px;
-            border-radius: 50%;
-            background: var(--brand-emerald);
-            flex-shrink: 0;
-            box-shadow: 0 0 0 2px rgba(16,185,129,0.2);
-            animation: pulseGreen 2s infinite;
-        }
-
-        .notif-time {
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: var(--brand-muted);
-            white-space: nowrap;
-            letter-spacing: 0.2px;
-        }
-
-        .notif-msg {
-            font-size: 0.865rem;
-            color: var(--brand-muted);
-            line-height: 1.55;
-            margin: 0;
-            font-weight: 400;
-        }
-
-        /* ── End Divider ── */
-        .notif-end-label {
-            text-align: center;
-            margin-top: 32px;
-            margin-bottom: 8px;
-        }
-
-        .notif-end-label span {
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 10.5px;
-            font-weight: 700;
-            letter-spacing: 1.2px;
-            text-transform: uppercase;
-            color: var(--brand-muted);
-            opacity: 0.45;
-        }
-
-        .notif-end-label span::before,
-        .notif-end-label span::after {
-            content: '';
-            display: block;
-            width: 48px;
-            height: 1px;
-            background: var(--border-color);
-        }
-
-        /* ── Empty State ── */
-        .empty-state {
-            text-align: center;
-            padding: 80px 24px;
-            animation: fadeUp 0.6s var(--ease-expo) both;
-        }
-
-        .empty-icon-wrap {
-            width: 96px;
-            height: 96px;
-            border-radius: 50%;
-            background: rgba(16,185,129,0.07);
-            border: 1px solid rgba(16,185,129,0.12);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 24px;
-            color: var(--brand-emerald);
-            font-size: 2.2rem;
-        }
-
-        .empty-state h4 {
-            font-size: 1.15rem;
-            font-weight: 800;
-            color: var(--brand-text);
-            margin-bottom: 8px;
-            letter-spacing: -0.2px;
-        }
-
-        .empty-state p {
-            font-size: 0.9rem;
-            color: var(--brand-muted);
-            margin: 0;
-        }
-
-        /* ── Animations ── */
-        @keyframes fadeUp {
-            from { opacity: 0; transform: translateY(14px); }
-            to   { opacity: 1; transform: translateY(0); }
-        }
-
-        @keyframes pulseGreen {
-            0%   { box-shadow: 0 0 0 0   rgba(16,185,129,0.4); }
-            70%  { box-shadow: 0 0 0 6px rgba(16,185,129,0); }
-            100% { box-shadow: 0 0 0 0   rgba(16,185,129,0); }
-        }
-    </style>
-
-    <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
-</head>
-<body>
+/* ─── Empty State ─── */
+.nf-empty {
+    text-align: center;
+    padding: 72px 24px;
+    animation: nfFadeUp 0.5s cubic-bezier(0.16,1,0.3,1) both;
+}
+.nf-empty-icon {
+    width: 90px; height: 90px;
+    border-radius: 50%;
+    background: #F0F7F4;
+    border: 1.5px solid #E0EDE7;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 22px;
+    color: #a0b8b0;
+    font-size: 2rem;
+}
+.nf-empty h4 {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: #0F392B;
+    margin-bottom: 6px;
+}
+.nf-empty p {
+    font-size: 0.87rem;
+    color: #7a9e8e;
+    font-weight: 500;
+    margin: 0;
+}
+</style>
 
 <?php $layout->sidebar(); ?>
-
 <div class="main-content-wrapper">
     <?php $layout->topbar($pageTitle ?? ""); ?>
-
-    <div class="container-fluid px-2 py-2">
+    <div class="container-fluid px-4 py-4">
 
         <?php
-            // Pre-count unread
             $unread_count = 0;
             $all_rows = [];
             while ($row = $result->fetch_assoc()) {
                 if ((int)$row['is_read'] === 0) $unread_count++;
                 $all_rows[] = $row;
             }
+            $total = count($all_rows);
+            $read_count = $total - $unread_count;
         ?>
 
-        <!-- ─── PAGE HEADER ─────────────────────────────── -->
-        <div class="notif-page-header">
-            <div>
-                <div class="header-eyebrow">
-                    <i class="bi bi-bell-fill"></i> Notifications
+        <!-- ── Hero ── -->
+        <div class="nf-hero">
+            <div class="row align-items-center">
+                <div class="col-lg-8">
+                    <div class="nf-hero-eyebrow">
+                        <i class="bi bi-bell-fill"></i> Notification Center
+                    </div>
+                    <h1>Admin Notifications.</h1>
+                    <p class="nf-hero-sub">Stay up-to-date with system alerts, member actions, and important updates.</p>
                 </div>
-                <h3>Admin Notifications</h3>
-                <p>Stay up-to-date with system alerts and member actions.</p>
+                <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+                    <?php if ($unread_count > 0): ?>
+                    <div class="nf-unread-pill d-inline-flex">
+                        <span class="nf-pulse"></span>
+                        <div>
+                            <div class="count"><?= $unread_count ?></div>
+                            <div class="label">Unread</div>
+                        </div>
+                    </div>
+                    <?php else: ?>
+                    <div class="nf-unread-pill d-inline-flex">
+                        <i class="bi bi-check-circle-fill" style="color:#A3E635; font-size:1.2rem;"></i>
+                        <div>
+                            <div class="count" style="font-size:1rem; color:#fff;">All read</div>
+                            <div class="label">You're caught up</div>
+                        </div>
+                    </div>
+                    <?php endif; ?>
+                </div>
             </div>
-            <?php if ($unread_count > 0): ?>
-            <div class="pt-1">
-                <span class="unread-counter">
-                    <i class="bi bi-dot" style="font-size:1.1rem;margin:-2px;"></i>
-                    <?= $unread_count ?> Unread
-                </span>
-            </div>
-            <?php endif; ?>
         </div>
 
-        <!-- ─── NOTIFICATION LIST ────────────────────────── -->
         <div class="row justify-content-center">
             <div class="col-xl-9 col-lg-10">
 
+                <!-- Filter Bar -->
+                <?php if ($total > 0): ?>
+                <div class="nf-filter-bar">
+                    <div class="nf-filter-tabs">
+                        <button class="nf-filter-tab active" onclick="filterNotifs('all', this)">
+                            All <span class="nf-count-badge"><?= $total ?></span>
+                        </button>
+                        <button class="nf-filter-tab" onclick="filterNotifs('unread', this)">
+                            Unread <span class="nf-count-badge"><?= $unread_count ?></span>
+                        </button>
+                        <button class="nf-filter-tab" onclick="filterNotifs('read', this)">
+                            Read <span class="nf-count-badge"><?= $read_count ?></span>
+                        </button>
+                    </div>
+                    <span class="nf-total-label"><?= $total ?> notification<?= $total !== 1 ? 's' : '' ?> total</span>
+                </div>
+                <?php endif; ?>
+
+                <!-- Notifications -->
                 <?php if (!empty($all_rows)): ?>
-                <div class="notif-list">
-                    <?php foreach ($all_rows as $row):
+                <div class="nf-list" id="nfList">
+                    <?php foreach ($all_rows as $index => $row):
                         $title       = htmlspecialchars($row['title'] ?: 'Notification');
                         $message     = htmlspecialchars($row['message'] ?: '');
                         $created_raw = $row['created_at'] ?? null;
                         $time_diff   = time() - strtotime($created_raw);
 
-                        if ($time_diff < 3600) {
-                            $time = floor($time_diff / 60) . ' mins ago';
+                        if ($time_diff < 60) {
+                            $time = 'Just now';
+                        } elseif ($time_diff < 3600) {
+                            $time = floor($time_diff / 60) . ' min ago';
                         } elseif ($time_diff < 86400) {
-                            $time = floor($time_diff / 3600) . ' hrs ago';
+                            $time = floor($time_diff / 3600) . ' hr ago';
+                        } elseif ($time_diff < 172800) {
+                            $time = 'Yesterday';
                         } else {
-                            $time = date('M d, Y', strtotime($created_raw));
+                            $time = date('d M, Y', strtotime($created_raw));
                         }
 
                         $is_new = ((int)$row['is_read'] === 0);
                         $style  = getNotificationStyle($title, $message);
                     ?>
-
-                    <div class="notif-card <?= $is_new ? 'unread' : '' ?> <?= $style['class'] ?>">
-                        <div class="icon-box">
+                    <div class="nf-card <?= $is_new ? 'is-unread' : '' ?>"
+                         data-status="<?= $is_new ? 'unread' : 'read' ?>">
+                        <div class="nf-icon nf-icon-<?= $style['type'] ?>">
                             <i class="bi <?= $style['icon'] ?>"></i>
                         </div>
-
-                        <div class="notif-body">
-                            <div class="notif-top-row">
-                                <h6 class="notif-title">
+                        <div class="nf-card-body">
+                            <div class="nf-card-top">
+                                <h6 class="nf-card-title">
                                     <?= $title ?>
                                     <?php if ($is_new): ?>
-                                        <span class="new-dot" title="Unread"></span>
+                                        <span class="nf-new-dot" title="Unread"></span>
                                     <?php endif; ?>
                                 </h6>
-                                <span class="notif-time">
-                                    <i class="bi bi-clock me-1 opacity-50"></i><?= $time ?>
-                                </span>
+                                <div style="display:flex; align-items:center; gap:8px; flex-shrink:0;">
+                                    <?php if (!$is_new): ?>
+                                        <span class="nf-read-badge"><i class="bi bi-check2"></i> Read</span>
+                                    <?php endif; ?>
+                                    <span class="nf-card-time">
+                                        <i class="bi bi-clock" style="font-size:0.65rem;"></i> <?= $time ?>
+                                    </span>
+                                </div>
                             </div>
-                            <p class="notif-msg"><?= nl2br($message) ?></p>
+                            <p class="nf-card-msg"><?= nl2br($message) ?></p>
                         </div>
                     </div>
-
                     <?php endforeach; ?>
                 </div>
 
-                <div class="notif-end-label">
-                    <span>End of Notifications</span>
-                </div>
+                <div class="nf-end">End of Notifications</div>
 
                 <?php else: ?>
 
-                <div class="empty-state">
-                    <div class="empty-icon-wrap">
+                <div class="nf-empty">
+                    <div class="nf-empty-icon">
                         <i class="bi bi-bell-slash"></i>
                     </div>
                     <h4>You're all caught up</h4>
-                    <p>No notifications right now. System alerts will appear here.</p>
+                    <p>No notifications right now. System alerts will appear here when triggered.</p>
                 </div>
 
                 <?php endif; ?>
@@ -475,18 +518,24 @@ $pageTitle = "My Notifications";
         </div>
 
     </div><!-- /container-fluid -->
-
     <?php $layout->footer(); ?>
 </div><!-- /main-content-wrapper -->
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    const savedTheme = localStorage.getItem('theme') || 'light';
-    document.documentElement.setAttribute('data-bs-theme', savedTheme);
+function filterNotifs(filter, btn) {
+    document.querySelectorAll('.nf-filter-tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.nf-card').forEach(card => {
+        if (filter === 'all') {
+            card.style.display = '';
+        } else {
+            card.style.display = card.dataset.status === filter ? '' : 'none';
+        }
+    });
+}
 </script>
 
-<?php 
-// Mark Read Logic
+<?php
 if (!empty($all_rows)) {
     if ($stmt2 = $conn->prepare("UPDATE notifications SET is_read = 1 WHERE user_type = 'admin' AND (user_id = ? OR to_role = ? OR to_role = 'all') AND is_read = 0")) {
         $stmt2->bind_param("is", $admin_id, $user_role);
