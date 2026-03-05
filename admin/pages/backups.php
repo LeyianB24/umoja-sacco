@@ -6,17 +6,7 @@ require_once __DIR__ . '/../../config/app.php';
 require_once __DIR__ . '/../../inc/Auth.php';
 require_once __DIR__ . '/../../inc/LayoutManager.php';
 
-$layout = LayoutManager::create('admin');
-
-// usms/admin/pages/backups.php
-// Enhanced IT Admin - Database Maintenance (Matches "Hope UI" Visual Style)
-
-if (session_status() === PHP_SESSION_NONE) session_start();
-
-// Enforce Admin Role
 require_admin();
-
-// Initialize Layout Manager
 $layout = LayoutManager::create('admin');
 require_permission();
 
@@ -24,7 +14,6 @@ $admin_id   = $_SESSION['admin_id'];
 $admin_name = $_SESSION['full_name'] ?? 'IT Admin';
 $db         = $conn;
 
-// 1. Fetch DB Stats
 $stats_q = $conn->query("SELECT 
     COUNT(TABLE_NAME) as tables, 
     SUM(TABLE_ROWS) as total_rows, 
@@ -35,154 +24,360 @@ $stats = $stats_q->fetch_assoc();
 $total_bytes = (float)($stats['total_bytes'] ?? 0);
 $stats['size_mb'] = number_format($total_bytes / 1024 / 1024, 2);
 
-// 2. Fetch Backup Logs
 $backup_logs = $conn->query("SELECT a.*, admin_id as username FROM audit_logs a WHERE action LIKE '%backup%' ORDER BY created_at DESC LIMIT 8");
 
 $pageTitle = "System Maintenance Hub";
 ?>
 <?php $layout->header($pageTitle ?? 'Database Backups'); ?>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap" rel="stylesheet">
+
+<style>
+/* ============================================================
+   SYSTEM MAINTENANCE HUB — JAKARTA SANS + GLASSMORPHISM
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; }
+
+:root {
+    --forest:       #0d2b1f;
+    --forest-mid:   #1a3d2b;
+    --forest-light: #234d36;
+    --lime:         #b5f43c;
+    --lime-soft:    #d6fb8a;
+    --lime-glow:    rgba(181,244,60,0.18);
+    --lime-glow-sm: rgba(181,244,60,0.08);
+    --surface:      #ffffff;
+    --bg-muted:     #f5f8f6;
+    --text-primary: #0d1f15;
+    --text-muted:   #6b7c74;
+    --border:       rgba(13,43,31,0.07);
+    --radius-sm:    8px;
+    --radius-md:    14px;
+    --radius-lg:    20px;
+    --radius-xl:    28px;
+    --shadow-sm:    0 2px 8px rgba(13,43,31,0.07);
+    --shadow-md:    0 8px 28px rgba(13,43,31,0.11);
+    --shadow-lg:    0 20px 60px rgba(13,43,31,0.16);
+    --shadow-glow:  0 0 0 3px var(--lime-glow), 0 6px 24px rgba(181,244,60,0.15);
+    --transition:   all 0.22s cubic-bezier(0.4,0,0.2,1);
+}
+
+body, *, input, select, textarea, button, .btn, table, th, td,
+h1,h2,h3,h4,h5,h6,p,span,div,label,a,.modal,.offcanvas {
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+}
+
+/* ── Hero ── */
+.hp-hero {
+    background: linear-gradient(135deg, var(--forest) 0%, var(--forest-mid) 55%, #0e3522 100%);
+    border-radius: var(--radius-xl);
+    padding: 2.6rem 3rem 5rem;
+    position: relative; overflow: hidden; color: #fff; margin-bottom: 0;
+}
+.hp-hero::before {
+    content:''; position:absolute; inset:0;
+    background:
+        radial-gradient(ellipse 55% 70% at 95% 5%,  rgba(181,244,60,0.13) 0%, transparent 60%),
+        radial-gradient(ellipse 35% 45% at 5%  95%, rgba(181,244,60,0.06) 0%, transparent 60%);
+    pointer-events:none;
+}
+.hp-hero .ring { position:absolute; border-radius:50%; border:1px solid rgba(181,244,60,0.1); pointer-events:none; }
+.hp-hero .ring1 { width:320px; height:320px; top:-80px; right:-80px; }
+.hp-hero .ring2 { width:500px; height:500px; top:-160px; right:-160px; }
+.hero-badge {
+    display:inline-flex; align-items:center; gap:0.45rem;
+    background:rgba(181,244,60,0.12); border:1px solid rgba(181,244,60,0.25);
+    color:var(--lime-soft); border-radius:100px; padding:0.28rem 0.85rem;
+    font-size:0.68rem; font-weight:700; letter-spacing:0.12em; text-transform:uppercase;
+    margin-bottom:0.9rem; position:relative;
+}
+.hero-badge::before { content:''; width:6px; height:6px; border-radius:50%; background:var(--lime); animation:pulse-dot 2s ease-in-out infinite; }
+@keyframes pulse-dot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(1.4)} }
+
+/* ── Storage Hero Card ── */
+.storage-card {
+    background: linear-gradient(135deg, var(--forest) 0%, var(--forest-mid) 100%);
+    border-radius: var(--radius-lg);
+    padding: 1.8rem;
+    position: relative; overflow: hidden; color: #fff;
+    border: none; box-shadow: var(--shadow-lg);
+    margin-bottom: 0.9rem;
+}
+.storage-card::before {
+    content:''; position:absolute; inset:0;
+    background: radial-gradient(ellipse 60% 80% at 90% 10%, rgba(181,244,60,0.18), transparent 60%);
+    pointer-events:none;
+}
+.storage-label { font-size:0.67rem; font-weight:800; text-transform:uppercase; letter-spacing:0.12em; color:rgba(255,255,255,0.45); margin-bottom:0.9rem; position:relative; }
+.storage-value-row { display:flex; align-items:flex-end; gap:0.5rem; margin-bottom:0.5rem; position:relative; }
+.storage-num { font-size:3rem; font-weight:800; letter-spacing:-0.05em; color:#fff; line-height:1; }
+.storage-unit { font-size:1.2rem; font-weight:700; color:rgba(255,255,255,0.4); margin-bottom:0.35rem; }
+.storage-sub { font-size:0.78rem; color:rgba(255,255,255,0.45); font-weight:500; position:relative; }
+
+/* ── Stat Mini Cards ── */
+.stat-mini-card {
+    background: var(--surface); border-radius: var(--radius-lg);
+    border: 1px solid var(--border); box-shadow: var(--shadow-md);
+    padding: 1.3rem 1.4rem; display: flex; align-items: center; gap: 1rem;
+    transition: var(--transition); margin-bottom: 0.9rem;
+}
+.stat-mini-card:last-child { margin-bottom: 0; }
+.stat-mini-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+.stat-mini-icon {
+    width: 44px; height: 44px; border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0;
+}
+.stat-mini-value { font-size: 1.3rem; font-weight: 800; color: var(--text-primary); letter-spacing: -0.03em; line-height: 1; }
+.stat-mini-label { font-size: 0.7rem; font-weight: 700; color: var(--text-muted); margin-top: 0.15rem; text-transform: uppercase; letter-spacing: 0.07em; }
+
+/* ── Security Policy Note ── */
+.security-note {
+    background: #fffbeb; border: 1px solid rgba(245,158,11,0.2);
+    border-left: 3px solid #f59e0b;
+    border-radius: var(--radius-md);
+    padding: 0.9rem 1.1rem;
+    display: flex; align-items: flex-start; gap: 0.7rem;
+}
+.security-note i { color: #f59e0b; font-size: 0.95rem; margin-top: 1px; flex-shrink: 0; }
+.security-note-title { font-size: 0.78rem; font-weight: 800; color: #b45309; margin-bottom: 0.2rem; }
+.security-note-body  { font-size: 0.75rem; color: #92400e; font-weight: 500; margin: 0; line-height: 1.55; }
+
+/* ── Backup Logs Table Card ── */
+.table-card {
+    background: var(--surface); border-radius: var(--radius-lg);
+    border: 1px solid var(--border); box-shadow: var(--shadow-md); overflow: hidden; height: 100%;
+}
+.table-card-header {
+    padding: 1rem 1.5rem; border-bottom: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center; background: #fff;
+}
+.table-card-header h5 { font-weight: 800; font-size: 0.95rem; color: var(--text-primary); margin: 0; }
+.session-badge {
+    background: var(--forest); color: #fff; border-radius: 100px;
+    padding: 0.22rem 0.8rem; font-size: 0.68rem; font-weight: 800; letter-spacing: 0.07em;
+}
+.table-card-footer {
+    padding: 0.85rem 1.5rem; border-top: 1px solid var(--border);
+    background: #fafcfb; text-align: center;
+}
+.table-card-footer a {
+    font-size: 0.8rem; font-weight: 700; color: var(--forest); text-decoration: none;
+    transition: var(--transition);
+}
+.table-card-footer a:hover { color: var(--forest-light); }
+
+.backup-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+.backup-table thead th {
+    background: #f5f8f6; color: var(--text-muted); font-size: 0.67rem;
+    font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em;
+    padding: 0.8rem 1rem; border-bottom: 1px solid var(--border); white-space: nowrap;
+}
+.backup-table thead th:first-child { padding-left: 1.5rem; }
+.backup-table thead th:last-child  { padding-right: 1.5rem; text-align: right; }
+.backup-table tbody tr { border-bottom: 1px solid rgba(13,43,31,0.04); transition: var(--transition); }
+.backup-table tbody tr:last-child  { border-bottom: none; }
+.backup-table tbody tr:hover { background: #f0faf4; }
+.backup-table tbody td { padding: 0.9rem 1rem; vertical-align: middle; }
+.backup-table tbody td:first-child { padding-left: 1.5rem; }
+.backup-table tbody td:last-child  { padding-right: 1.5rem; text-align: right; }
+
+.success-pill {
+    display: inline-flex; align-items: center; gap: 0.3rem;
+    background: #f0fdf4; color: #166534; border: 1px solid rgba(22,163,74,0.18);
+    border-radius: 100px; padding: 0.22rem 0.75rem;
+    font-size: 0.67rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.07em;
+}
+.success-pill::before { content:''; width:5px; height:5px; border-radius:50%; background:#22c55e; flex-shrink:0; }
+
+.cell-date  { font-size: 0.82rem; font-weight: 700; color: var(--text-primary); }
+.cell-time  { font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.07em; margin-top: 0.1rem; }
+
+.admin-cell { display: flex; align-items: center; gap: 0.65rem; }
+.admin-avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--forest); color: var(--lime);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.65rem; font-weight: 800; flex-shrink: 0; letter-spacing: 0.03em;
+}
+.admin-name { font-size: 0.82rem; font-weight: 700; color: var(--text-primary); }
+
+.format-badge {
+    font-family: 'Courier New', monospace !important;
+    font-size: 0.72rem; font-weight: 800;
+    background: #f0faf4; border: 1px solid rgba(13,43,31,0.1);
+    border-radius: 6px; padding: 0.2rem 0.6rem; color: var(--forest);
+    letter-spacing: 0.05em;
+}
+
+/* Empty state */
+.empty-cell { text-align: center; padding: 4rem 2rem !important; }
+.empty-icon { width: 60px; height: 60px; border-radius: 14px; background: #f5f8f6; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; color: #c4d4cb; margin: 0 auto 0.8rem; }
+
+/* Buttons */
+.btn-lime { background: var(--lime); color: var(--forest) !important; border: none; font-weight: 700; transition: var(--transition); }
+.btn-lime:hover { background: var(--lime-soft); box-shadow: var(--shadow-glow); transform: translateY(-1px); }
+
+/* Animations */
+@keyframes fadeIn  { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+@keyframes slideUp { from{opacity:0;transform:translateY(22px)} to{opacity:1;transform:translateY(0)} }
+.fade-in  { animation: fadeIn  0.5s ease-out both; }
+.slide-up { animation: slideUp 0.5s cubic-bezier(0.4,0,0.2,1) both; }
+
+@media (max-width:768px) { .hp-hero { padding: 2rem 1.5rem 4rem; } }
+</style>
+
 <?php $layout->sidebar(); ?>
 <div class="main-content-wrapper">
     <?php $layout->topbar($pageTitle ?? ""); ?>
     <div class="container-fluid px-4 py-4">
 
-    
-    
-
-    
-    
-
-    
-    
-
-    
-    
-
-    
-    
-
-    
-    
-        
-        
-    
-
-            
-                <div>
-                    <h2 class="fw-bold mb-1" style="color: var(--forest);">Database Backups</h2>
-                    <p class="text-muted mb-0">Monitor system health and generate recovery points</p>
+        <!-- Hero -->
+        <div class="hp-hero fade-in">
+            <div class="ring ring1"></div>
+            <div class="ring ring2"></div>
+            <div class="row align-items-center">
+                <div class="col-lg-8">
+                    <div class="hero-badge">IT Admin</div>
+                    <h1 style="font-weight:800;letter-spacing:-0.03em;font-size:2.2rem;line-height:1.15;position:relative;margin-bottom:0.5rem;color:#fff;">
+                        Database Backups
+                    </h1>
+                    <p style="color:rgba(255,255,255,0.55);font-size:0.93rem;font-weight:500;position:relative;margin:0;">
+                        Monitor system health and generate encrypted recovery points for the SACCO database.
+                    </p>
                 </div>
-                <form method="post" onsubmit="return confirm('Generate full SQL backup?');">
-                    <input type="hidden" name="action" value="create_backup">
-                    <button class="btn btn-lime">
-                        <i class="bi bi-cloud-arrow-down me-2"></i> Create Backup Now
-                    </button>
-                </form>
+                <div class="col-lg-4 text-lg-end mt-3 mt-lg-0" style="position:relative;">
+                    <form method="post" onsubmit="return confirm('Generate full SQL backup now?');">
+                        <input type="hidden" name="action" value="create_backup">
+                        <button class="btn btn-lime rounded-pill px-4 py-2 fw-bold" style="font-size:0.875rem;">
+                            <i class="bi bi-cloud-arrow-down me-2"></i>Create Backup Now
+                        </button>
+                    </form>
+                </div>
             </div>
+        </div>
+
+        <div style="margin-top:-36px; position:relative; z-index:10;">
 
             <div class="row g-4">
+
+                <!-- Left column: Storage + Stats + Security note -->
                 <div class="col-xl-4">
-                    <div class="card-custom p-4 mb-4" style="background: linear-gradient(135deg, var(--forest) 0%, var(--forest-mid) 100%); color: white;">
-                        <h6 class="text-white-50 small text-uppercase fw-bold mb-4">Storage Overview</h6>
-                        
-                            <h1 class="display-5 fw-bold mb-0 text-white"><?= $stats['size_mb'] ?></h1>
-                            <span class="h4 mb-2 opacity-50">MB</span>
+
+                    <!-- Storage Card -->
+                    <div class="storage-card slide-up" style="animation-delay:0.06s;">
+                        <div class="storage-label"><i class="bi bi-server me-2"></i>Storage Overview</div>
+                        <div class="storage-value-row">
+                            <span class="storage-num"><?= $stats['size_mb'] ?></span>
+                            <span class="storage-unit">MB</span>
                         </div>
-                        <p class="small opacity-75 mb-0">Total footprint of Umoja SACCO DB</p>
+                        <div class="storage-sub">Total footprint of Umoja SACCO database</div>
                     </div>
 
-                    <div class="card-custom p-4">
-                        
-                            <div class="stat-circle bg-light text-success">
-                                <i class="bi bi-table"></i>
-                            </div>
-                            <div>
-                                <h4 class="fw-bold mb-0"><?= $stats['tables'] ?></h4>
-                                <small class="text-muted">Total Tables</small>
-                            </div>
+                    <!-- Tables count -->
+                    <div class="stat-mini-card slide-up" style="animation-delay:0.12s;">
+                        <div class="stat-mini-icon" style="background:#f0fdf4; color:#166534;">
+                            <i class="bi bi-table"></i>
                         </div>
-                        
-                            <div class="stat-circle bg-light text-primary">
-                                <i class="bi bi-hdd-stack"></i>
-                            </div>
-                            <div>
-                                <h4 class="fw-bold mb-0"><?= number_format((float)($stats['total_rows'] ?? 0)) ?></h4>
-                                <small class="text-muted">Database Records</small>
-                            </div>
+                        <div>
+                            <div class="stat-mini-value"><?= number_format((int)$stats['tables']) ?></div>
+                            <div class="stat-mini-label">Total Tables</div>
                         </div>
                     </div>
 
-                    <div class="card-custom mt-4 p-4 bg-light border-0">
-                        <h6 class="fw-bold small mb-2"><i class="bi bi-shield-check text-success me-2"></i>Security Policy</h6>
-                        <p class="text-muted small mb-0">Backups are generated as plain SQL files. Ensure they are stored in an encrypted external volume after download.</p>
+                    <!-- Records count -->
+                    <div class="stat-mini-card slide-up" style="animation-delay:0.18s;">
+                        <div class="stat-mini-icon" style="background:#eff6ff; color:#1d4ed8;">
+                            <i class="bi bi-hdd-stack"></i>
+                        </div>
+                        <div>
+                            <div class="stat-mini-value"><?= number_format((float)($stats['total_rows'] ?? 0)) ?></div>
+                            <div class="stat-mini-label">Database Records</div>
+                        </div>
                     </div>
+
+                    <!-- Security Policy -->
+                    <div class="security-note slide-up" style="animation-delay:0.24s;">
+                        <i class="bi bi-shield-exclamation"></i>
+                        <div>
+                            <div class="security-note-title">Security Policy</div>
+                            <p class="security-note-body">Backups are generated as plain SQL files. Ensure they are stored in an encrypted external volume immediately after download.</p>
+                        </div>
+                    </div>
+
                 </div>
 
+                <!-- Right column: Backup Logs -->
                 <div class="col-xl-8">
-                    <div class="card-custom overflow-hidden">
-                        <div class="p-4 border-bottom bg-white d-flex justify-content-between align-items-center">
-                            <h5 class="fw-bold mb-0">Backup Logs</h5>
-                            <span class="badge bg-dark text-white rounded-pill px-3 py-2">Last 8 Sessions</span>
+                    <div class="table-card slide-up" style="animation-delay:0.1s;">
+                        <div class="table-card-header">
+                            <h5>Backup Logs</h5>
+                            <span class="session-badge">Last 8 Sessions</span>
                         </div>
                         <div class="table-responsive">
-                            <table class="table table-custom mb-0">
+                            <table class="backup-table">
                                 <thead>
                                     <tr>
                                         <th>Status</th>
-                                        <th>Date & Time</th>
+                                        <th>Date &amp; Time</th>
                                         <th>Administrator</th>
-                                        <th class="text-end">Format</th>
+                                        <th>Format</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php if ($backup_logs->num_rows == 0): ?>
-                                        <tr>
-                                            <td colspan="4" class="text-center py-5 text-muted">
-                                                <i class="bi bi-inbox fs-2 d-block mb-2"></i>
-                                                No backup history found.
-                                            </td>
-                                        </tr>
-                                    <?php else: ?>
-                                        <?php while ($log = $backup_logs->fetch_assoc()): ?>
-                                            <tr>
-                                                <td>
-                                                    <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3 py-2 small">
-                                                        <i class="bi bi-check-circle-fill me-1"></i> Success
-                                                    </span>
-                                                </td>
-                                                <td class="fw-medium ">
-                                                    <?= date('M d, Y', strtotime($log['created_at'])) ?>
-                                                    <div class="text-muted x-small"><?= date('H:i A', strtotime($log['created_at'])) ?></div>
-                                                </td>
-                                                <td>
-                                                    
-                                                        <div class="bg-dark text-white rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width:30px; height:30px; font-size:0.7rem;">
-                                                            <?= getInitials($log['username']) ?>
-                                                        </div>
-                                                        <span class="small fw-semibold"><?= htmlspecialchars($log['username'] ?? 'System') ?></span>
-                                                    </div>
-                                                </td>
-                                                <td class="text-end">
-                                                    <code class="bg-light px-2 py-1 rounded  fw-bold">.SQL</code>
-                                                </td>
-                                            </tr>
-                                        <?php endwhile; ?>
-                                    <?php endif; 
-    
-    
-
-?>
+                                    <?php if ($backup_logs->num_rows === 0): ?>
+                                    <tr>
+                                        <td colspan="4" class="empty-cell">
+                                            <div class="empty-icon"><i class="bi bi-inbox"></i></div>
+                                            <div style="font-weight:800;font-size:0.95rem;color:var(--text-primary);margin-bottom:0.25rem;">No Backup History</div>
+                                            <div style="font-size:0.8rem;color:var(--text-muted);">No backup sessions have been recorded yet.</div>
+                                        </td>
+                                    </tr>
+                                    <?php else: while ($log = $backup_logs->fetch_assoc()): ?>
+                                    <tr>
+                                        <td>
+                                            <span class="success-pill">Success</span>
+                                        </td>
+                                        <td>
+                                            <div class="cell-date"><?= date('M d, Y', strtotime($log['created_at'])) ?></div>
+                                            <div class="cell-time"><?= date('H:i', strtotime($log['created_at'])) ?></div>
+                                        </td>
+                                        <td>
+                                            <div class="admin-cell">
+                                                <div class="admin-avatar">
+                                                    <?php
+                                                    $uname = (string)($log['username'] ?? 'SYS');
+                                                    $parts = explode(' ', trim($uname));
+                                                    $initials = strtoupper(substr($parts[0], 0, 1) . (isset($parts[1]) ? substr($parts[1], 0, 1) : ''));
+                                                    echo htmlspecialchars($initials ?: 'SY');
+                                                    ?>
+                                                </div>
+                                                <span class="admin-name"><?= htmlspecialchars($log['username'] ?? 'System') ?></span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="format-badge">.SQL</span>
+                                        </td>
+                                    </tr>
+                                    <?php endwhile; endif; ?>
                                 </tbody>
                             </table>
                         </div>
-                        <div class="p-3 bg-light text-center">
-                            <a href="audit_logs.php" class="text-decoration-none small fw-bold ">View Full Audit Trail <i class="bi bi-arrow-right ms-1"></i></a>
+                        <div class="table-card-footer">
+                            <a href="audit_logs.php">
+                                View Full Audit Trail <i class="bi bi-arrow-right ms-1"></i>
+                            </a>
                         </div>
                     </div>
                 </div>
+
             </div>
-    </div> <!-- /container-fluid -->
+        </div><!-- /overlap -->
+
+    </div><!-- /container-fluid -->
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
     <?php $layout->footer(); ?>
-</div> <!-- /main-content-wrapper -->
-</body>
-</html>
+</div><!-- /main-content-wrapper -->

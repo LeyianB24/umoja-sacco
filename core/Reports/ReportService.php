@@ -13,8 +13,111 @@ use PDO;
 class ReportService {
     private PDO $db;
 
-    public function __construct() {
-        $this->db = Database::getInstance()->getPdo();
+    public function __construct($db = null) {
+        try {
+            $this->db = ($db instanceof PDO) ? $db : \USMS\Database\Database::getInstance()->getPdo();
+        } catch (\Exception $e) {
+            // Fallback for environments where the Database singleton might not be fully ready
+            // though in USMS it usually is. 
+            global $pdo;
+            if (isset($pdo)) $this->db = $pdo;
+            else throw $e;
+        }
+    }
+
+    /**
+     * Generates a PDF Report using the Enterprise Export Engine
+     */
+    public function generatePDF(string $title, array $data, bool $returnContent = false) {
+        $config = [
+            'title' => $title,
+            'module' => 'Reporting Service',
+            'output_mode' => $returnContent ? 'S' : 'D'
+        ];
+
+        // We use a closure to handle the specific balance sheet layout
+        $renderTask = function($pdf) use ($data) {
+            $pdf->SetFont('Arial', 'B', 11);
+            $pdf->SetTextColor(27, 94, 32);
+            $pdf->Cell(0, 10, 'STATEMENT OF FINANCIAL POSITION', 0, 1, 'L');
+            $pdf->Ln(2);
+
+            // Assets Header
+            $pdf->SetFillColor(235, 245, 235);
+            $pdf->SetTextColor(0, 0, 0);
+            $pdf->SetFont('Arial', 'B', 9);
+            $pdf->Cell(130, 8, ' ASSETS DESCRIPTION', 1, 0, 'L', true);
+            $pdf->Cell(50, 8, 'AMOUNT (KES) ', 1, 1, 'R', true);
+
+            // Assets Rows
+            $pdf->SetFont('Arial', '', 9);
+            foreach ($data['assets'] as $row) {
+                $pdf->Cell(130, 8, ' ' . $row['label'], 1, 0, 'L');
+                $pdf->Cell(50, 8, number_format((float)$row['amount'], 2) . ' ', 1, 1, 'R');
+            }
+
+            // Assets Total
+            $pdf->SetFont('Arial', 'B', 9);
+            $pdf->SetFillColor(245, 245, 245);
+            $pdf->Cell(130, 8, ' TOTAL ASSETS', 1, 0, 'L', true);
+            $pdf->Cell(50, 8, number_format((float)$data['totals']['assets'], 2) . ' ', 1, 1, 'R', true);
+            $pdf->Ln(10);
+
+            // Liabilities Header
+            $pdf->SetFont('Arial', 'B', 11);
+            $pdf->SetTextColor(27, 94, 32);
+            $pdf->Cell(0, 10, 'LIABILITIES & EQUITY', 0, 1, 'L');
+            $pdf->Ln(2);
+
+            $pdf->SetFillColor(235, 245, 235);
+            $pdf->SetTextColor(0, 0, 0);
+            $pdf->SetFont('Arial', 'B', 9);
+            $pdf->Cell(130, 8, ' LIABILITY / EQUITY ITEM', 1, 0, 'L', true);
+            $pdf->Cell(50, 8, 'AMOUNT (KES) ', 1, 1, 'R', true);
+
+            // Liabilities Rows
+            $pdf->SetFont('Arial', '', 9);
+            foreach ($data['liabilities_equity'] as $row) {
+                $pdf->Cell(130, 8, ' ' . $row['label'], 1, 0, 'L');
+                $pdf->Cell(50, 8, number_format((float)$row['amount'], 2) . ' ', 1, 1, 'R');
+            }
+
+            // Liabilities Total
+            $pdf->SetFont('Arial', 'B', 9);
+            $pdf->SetFillColor(245, 245, 245);
+            $pdf->Cell(130, 8, ' TOTAL LIABILITIES & EQUITY', 1, 0, 'L', true);
+            $pdf->Cell(50, 8, number_format((float)$data['totals']['liability'], 2) . ' ', 1, 1, 'R', true);
+            
+            $pdf->Ln(10);
+            $pdf->SetFont('Arial', 'I', 8);
+            $pdf->SetTextColor(100, 100, 100);
+            $pdf->Cell(0, 5, "This is a computer-generated document and does not require a signature.", 0, 1, 'C');
+        };
+
+        return \USMS\Services\FinancialExportEngine::export('pdf', $renderTask, $config);
+    }
+
+    /**
+     * Generates an Excel Export of the report data
+     */
+    public function generateExcel(array $data) {
+        $rows = [];
+        // Flatten the complex balance sheet structure for Excel
+        foreach ($data['assets'] as $a) {
+            $rows[] = ['Classification' => 'Asset', 'Label' => $a['label'], 'Amount' => $a['amount']];
+        }
+        $rows[] = ['Classification' => 'Asset', 'Label' => 'TOTAL ASSETS', 'Amount' => $data['totals']['assets']];
+        
+        foreach ($data['liabilities_equity'] as $le) {
+            $rows[] = ['Classification' => 'Liability/Equity', 'Label' => $le['label'], 'Amount' => $le['amount']];
+        }
+        $rows[] = ['Classification' => 'Liability/Equity', 'Label' => 'TOTAL LIABILITIES & EQUITY', 'Amount' => $data['totals']['liability']];
+
+        return \USMS\Services\FinancialExportEngine::export('excel', $rows, [
+            'title' => 'Financial Report',
+            'module' => 'Balance Sheet',
+            'headers' => ['Classification', 'Label', 'Amount']
+        ]);
     }
 
     // ─── Internal Query Helpers ───────────────────────────────────────────────
