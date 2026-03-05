@@ -19,6 +19,11 @@ $layout = LayoutManager::create('admin');
 require_superadmin();
 ?>
 <?php $layout->header($pageTitle); ?>
+<div class="d-flex">
+    <?php $layout->sidebar(); ?>
+    <div class="flex-fill main-content-wrapper">
+        <?php $layout->topbar($pageTitle ?? ""); ?>
+        <div class="container-fluid px-4 py-4">
 <?php flash_render(); ?>
     
 <?php
@@ -94,11 +99,7 @@ $users_res = $conn->query("SELECT a.*, r.name as role_name FROM admins a LEFT JO
 
 $pageTitle = "Staff Management";
 ?>
-<div class="d-flex">
-    <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper p-0">
-        <?php $layout->topbar($pageTitle ?? 'Staff Management'); ?>
-        <div class="container-fluid px-4">
+
         <?php flash_render(); ?>
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>

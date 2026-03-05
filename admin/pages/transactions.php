@@ -165,13 +165,14 @@ $gl_stats = $stmt_s->get_result()->fetch_assoc();
 $pageTitle = "Golden Ledger Vault";
 ?>
 <?php $layout->header($pageTitle); ?>
-    
-
 <div class="d-flex">
     <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper p-0">
-        <?php $layout->topbar($pageTitle ?? 'Financial Ledger'); ?>
-        <div class="container-fluid px-4">
+    <div class="flex-fill main-content-wrapper">
+        <?php $layout->topbar($pageTitle ?? ""); ?>
+        <div class="container-fluid px-4 py-4">
+    
+
+
         <div class="hp-hero mb-4">
             <div class="row align-items-center">
                 <div class="col-lg-7">
@@ -329,7 +330,4 @@ $pageTitle = "Golden Ledger Vault";
         </div>
         </div>
         
-        <?php $layout->footer(); ?>
-        </div>
-    </div>
-</div>
+        

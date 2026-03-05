@@ -259,13 +259,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_to_all'])) {
 $pageTitle = "Executive Reports";
 ?>
 <?php $layout->header($pageTitle); ?>
-    
-
 <div class="d-flex">
     <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper p-0">
-        <?php $layout->topbar($pageTitle ?? 'Financial Analytics'); ?>
-        <div class="container-fluid px-4">
+    <div class="flex-fill main-content-wrapper">
+        <?php $layout->topbar($pageTitle ?? ""); ?>
+        <div class="container-fluid px-4 py-4">
+    
+
+
         <div class="hp-hero">
             <div class="row align-items-center">
                 <div class="col-md-7">
@@ -471,11 +472,7 @@ $pageTitle = "Executive Reports";
             <div class="text-center mt-5 mb-4 text-muted small no-print">
                 &copy; <?= date('Y') ?> Umoja Sacco Management System. All rights reserved.
             </div>
-            <?php $layout->footer(); ?>
-        </div>
-    </div>
-</div>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+            <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>

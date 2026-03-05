@@ -174,13 +174,14 @@ $can_disburse = $is_super || in_array('disburse_loans', $permissions);
 $pageTitle = "Loan #$loan_id Detail";
 ?>
 <?php $layout->header($pageTitle); ?>
-
-
 <div class="d-flex">
     <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper p-0">
-        <?php $layout->topbar($pageTitle); ?>
-        <div class="container-fluid px-4">
+    <div class="flex-fill main-content-wrapper">
+        <?php $layout->topbar($pageTitle ?? ""); ?>
+        <div class="container-fluid px-4 py-4">
+
+
+
 
             <!-- Breadcrumb -->
             <nav class="mb-4"><ol class="breadcrumb">
@@ -352,11 +353,7 @@ $pageTitle = "Loan #$loan_id Detail";
                 </div>
             </div>
 
-        <?php $layout->footer(); ?>
-        </div>
-    </div>
-</div>
-<div class="modal fade" id="approveModal" tabindex="-1">
+        <div class="modal fade" id="approveModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
             <form method="POST">

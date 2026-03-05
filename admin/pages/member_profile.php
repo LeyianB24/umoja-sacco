@@ -207,13 +207,14 @@ $member_docs = $q_docs->get_result()->fetch_all(MYSQLI_ASSOC);
 $pageTitle = $member['full_name'] . " - Member Profile";
 ?>
 <?php $layout->header($pageTitle); ?>
-    
-
 <div class="d-flex">
     <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper p-0">
-        <?php $layout->topbar($pageTitle ?? 'Member Profile'); ?>
-        <div class="container-fluid px-4">
+    <div class="flex-fill main-content-wrapper">
+        <?php $layout->topbar($pageTitle ?? ""); ?>
+        <div class="container-fluid px-4 py-4">
+    
+
+
 
     <!-- Breadcrumb -->
     <nav aria-label="breadcrumb" class="mb-4">
@@ -545,7 +546,4 @@ $pageTitle = $member['full_name'] . " - Member Profile";
                 <?php endif; ?>
             </div>
         </div>
-        <?php $layout->footer(); ?>
-        </div>
-    </div>
-</div>
+        

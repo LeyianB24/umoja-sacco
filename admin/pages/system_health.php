@@ -31,13 +31,14 @@ $recent_logs = $recent_logs_q->fetch_all(MYSQLI_ASSOC);
 $pageTitle = "System Health & Integrity";
 ?>
 <?php $layout->header($pageTitle); ?>
-    
-
 <div class="d-flex">
     <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper p-0">
-        <?php $layout->topbar($pageTitle ?? 'Pulse Monitor'); ?>
-        <div class="container-fluid px-4">
+    <div class="flex-fill main-content-wrapper">
+        <?php $layout->topbar($pageTitle ?? ""); ?>
+        <div class="container-fluid px-4 py-4">
+    
+
+
         <!-- Hero Section -->
         <div class="hp-hero">
             <div class="row align-items-center">
@@ -151,7 +152,3 @@ $pageTitle = "System Health & Integrity";
                 </div>
             </div>
         </div>
-<?php $layout->footer(); ?>
-        </div>
-    </div>
-</div>

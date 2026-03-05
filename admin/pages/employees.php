@@ -389,14 +389,15 @@ if ($current_view === 'hr') {
 $pageTitle = "People & Access";
 ?>
 <?php $layout->header($pageTitle); ?>
+<div class="d-flex">
+    <?php $layout->sidebar(); ?>
+    <div class="flex-fill main-content-wrapper">
+        <?php $layout->topbar($pageTitle ?? ""); ?>
+        <div class="container-fluid px-4 py-4">
     
     
 
-<div class="d-flex">
-    <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper p-0">
-        <?php $layout->topbar($pageTitle ?? 'Staff Command Center'); ?>
-        <div class="container-fluid px-4">
+
             <div class="hp-hero">
                 <div class="row align-items-center">
                     <div class="col-md-7">
@@ -738,11 +739,7 @@ $pageTitle = "People & Access";
                     </table>
                 </div>
                 <?php endif; ?>
-                <?php $layout->footer(); ?>
-        </div>
-    </div>
-</div>
-<div class="modal fade" id="addStaffModal" tabindex="-1">
+                <div class="modal fade" id="addStaffModal" tabindex="-1">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content hd-glass border-0 shadow-2xl">
             <div class="modal-header border-bottom-0 pt-4 px-4">

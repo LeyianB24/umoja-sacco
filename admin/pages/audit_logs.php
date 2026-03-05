@@ -151,13 +151,14 @@ function getActionStyle($action) {
 $pageTitle = "Audit Logs";
 ?>
 <?php $layout->header($pageTitle); ?>
-
-
 <div class="d-flex">
     <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper p-0">
-        <?php $layout->topbar($pageTitle ?? 'System Audit Trails'); ?>
-        <div class="container-fluid px-4">
+    <div class="flex-fill main-content-wrapper">
+        <?php $layout->topbar($pageTitle ?? ""); ?>
+        <div class="container-fluid px-4 py-4">
+
+
+
             <div class="row align-items-end mb-5">
                 <div class="col-md-7">
                     <h2 class="fw-bold mb-1 display-6" style="letter-spacing: -0.03em;">System Audit Trails</h2>
@@ -278,7 +279,4 @@ $pageTitle = "Audit Logs";
                     <small class="text-muted fw-bold">Showing latest 200 entries</small>
                 </div>
             </div>
-            <?php $layout->footer(); ?>
-        </div>
-    </div>
-</div>
+            

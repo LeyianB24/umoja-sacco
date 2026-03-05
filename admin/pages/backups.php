@@ -41,13 +41,14 @@ $backup_logs = $conn->query("SELECT a.*, admin_id as username FROM audit_logs a 
 $pageTitle = "System Maintenance Hub";
 ?>
 <?php $layout->header($pageTitle ?? 'Database Backups'); ?>
-    
-
 <div class="d-flex">
     <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper p-0">
-        <?php $layout->topbar($pageTitle ?? 'Database Backups'); ?>
-        <div class="container-fluid px-4">
+    <div class="flex-fill main-content-wrapper">
+        <?php $layout->topbar($pageTitle ?? ""); ?>
+        <div class="container-fluid px-4 py-4">
+    
+
+
             <div class="d-flex justify-content-between align-items-center mb-5">
                 <div>
                     <h2 class="fw-bold mb-1" style="color: var(--forest);">Database Backups</h2>
@@ -158,7 +159,4 @@ $pageTitle = "System Maintenance Hub";
                     </div>
                 </div>
             </div>
-            <?php $layout->footer(); ?>
-        </div>
-    </div>
-</div>
+            

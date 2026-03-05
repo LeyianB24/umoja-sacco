@@ -14,6 +14,11 @@ Auth::requireAdmin();
 $layout = LayoutManager::create('admin');
 ?>
 <?php $layout->header($pageTitle); ?>
+<div class="d-flex">
+    <?php $layout->sidebar(); ?>
+    <div class="flex-fill main-content-wrapper">
+        <?php $layout->topbar($pageTitle ?? ""); ?>
+        <div class="container-fluid px-4 py-4">
     
 
 <?php
@@ -312,11 +317,7 @@ $global = $conn->query("SELECT
     FROM investments")->fetch_assoc();
 ?>
 
-<div class="d-flex">
-    <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper p-0">
-        <?php $layout->topbar($pageTitle ?? 'Investment Portfolio'); ?>
-        <div class="container-fluid px-4">
+
         
         <!-- Header -->
         <div class="hp-hero">
@@ -650,11 +651,7 @@ $global = $conn->query("SELECT
                     <button type="submit" class="btn btn-lime rounded-pill px-5 shadow-lg">Confirm & Register Asset</button>
                 </div>
             </form>
-              <?php $layout->footer(); ?>
-        </div>
-    </div>
-</div>
-<div class="modal fade" id="valuationModal" tabindex="-1">
+              <div class="modal fade" id="valuationModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content shadow-2xl">
             <div class="modal-header bg-forest text-white border-0 py-4 px-5">

@@ -219,13 +219,14 @@ if ($active_run) {
 $history_runs = $db->query("SELECT * FROM payroll_runs ORDER BY month DESC LIMIT 12");
 ?>
 <?php $layout->header($pageTitle); ?>
-    
-
 <div class="d-flex">
     <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper p-0">
-        <?php $layout->topbar($pageTitle ?? 'Payroll Command'); ?>
-        <div class="container-fluid px-4">
+    <div class="flex-fill main-content-wrapper">
+        <?php $layout->topbar($pageTitle ?? ""); ?>
+        <div class="container-fluid px-4 py-4">
+    
+
+
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
                     <h3 class="fw-bold mb-1 text-gradient">Payroll Management</h3>
@@ -421,11 +422,7 @@ $history_runs = $db->query("SELECT * FROM payroll_runs ORDER BY month DESC LIMIT
                     </button>
                 </div>
             <?php endif; ?>
-            <?php $layout->footer(); ?>
-        </div>
-    </div>
-</div>
-<div class="modal fade" id="newRunModal" tabindex="-1">
+            <div class="modal fade" id="newRunModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content hd-glass border-0 shadow-lg">
             <form method="POST">

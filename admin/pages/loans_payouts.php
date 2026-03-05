@@ -196,13 +196,14 @@ if (isset($_GET['export']) && in_array($_GET['export'], ['pdf', 'excel'])) {
 $pageTitle = "Loan Management";
 ?>
 <?php $layout->header($pageTitle ?? 'Disbursement Console'); ?>
-    
-
 <div class="d-flex">
     <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper p-0">
-        <?php $layout->topbar($pageTitle ?? 'Loan Disbursements'); ?>
-        <div class="container-fluid px-4">
+    <div class="flex-fill main-content-wrapper">
+        <?php $layout->topbar($pageTitle ?? ""); ?>
+        <div class="container-fluid px-4 py-4">
+    
+
+
             <!-- Header -->
             <div class="hp-hero fade-in shadow-lg">
                 <div class="row align-items-center">
@@ -367,11 +368,7 @@ $pageTitle = "Loan Management";
                 </div>
             </div>
 
-            <?php $layout->footer(); ?>
-        </div>
-    </div>
-</div>
-<div class="offcanvas offcanvas-end border-0 shadow-lg" tabindex="-1" id="loanDrawer" style="background: rgba(255,255,255,0.9); backdrop-filter: blur(20px);">
+            <div class="offcanvas offcanvas-end border-0 shadow-lg" tabindex="-1" id="loanDrawer" style="background: rgba(255,255,255,0.9); backdrop-filter: blur(20px);">
     <div class="offcanvas-header bg-forest text-white p-4">
         <h5 class="offcanvas-title fw-800">Loan Deep Analytics</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>

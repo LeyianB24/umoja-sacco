@@ -256,13 +256,14 @@ $stats = $db->query("SELECT
 
 ?>
 <?php $layout->header($pageTitle ?? 'Loan Management'); ?>
-    
-
 <div class="d-flex">
     <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper p-0">
-        <?php $layout->topbar($pageTitle ?? 'Loan Approval Matrix'); ?>
-        <div class="container-fluid px-4">
+    <div class="flex-fill main-content-wrapper">
+        <?php $layout->topbar($pageTitle ?? ""); ?>
+        <div class="container-fluid px-4 py-4">
+    
+
+
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
                     <h4 class="fw-bold mb-1" style="color: var(--dark-green);">Loan Portfolio</h4>
@@ -376,11 +377,7 @@ $stats = $db->query("SELECT
                             <?php endwhile; endif; ?>
                         </tbody>
                     </table>
-                     <?php $layout->footer(); ?>
-        </div>
-    </div>
-</div>
-<?php 
+                     <?php 
 if($loans->num_rows > 0): 
     $loans->data_seek(0); 
     while($l = $loans->fetch_assoc()):

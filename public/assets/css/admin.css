@@ -64,11 +64,12 @@
 
     /* Sidebar */
     --sidebar-width:      280px;
+    --sidebar-collapsed:  86px;
     --sidebar-bg:         var(--brand-forest);
     --sidebar-text:       rgba(255,255,255,0.85);
     --sidebar-active-bg:  rgba(208, 247, 100, 0.12);
     --sidebar-active-text:var(--brand-lime);
-    --topbar-height:      64px;
+    --topbar-height:      80px;
 }
 
 /* ────────────────────────────────────────────────────────────────────────────
@@ -340,6 +341,15 @@ body {
 /* ────────────────────────────────────────────────────────────────────────────
    14. PAGE HEADER SECTION (common pattern across pages)
    ──────────────────────────────────────────────────────────────────────── */
+/* ── Admin Shell ─────────────────────────────────────────────────────────── */
+.admin-body {
+    display: flex;
+    min-height: 100vh;
+    background: var(--bg-primary);
+    overflow-x: hidden;
+    margin: 0;
+    padding: 0;
+}
 .page-header {
     display: flex;
     align-items: center;

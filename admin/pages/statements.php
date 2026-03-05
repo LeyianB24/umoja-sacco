@@ -25,6 +25,11 @@ $stats = $db->query("SELECT
 $pageTitle = "Statement Portal";
 ?>
 <?php $layout->header($pageTitle); ?>
+<div class="d-flex">
+    <?php $layout->sidebar(); ?>
+    <div class="flex-fill main-content-wrapper">
+        <?php $layout->topbar($pageTitle ?? ""); ?>
+        <div class="container-fluid px-4 py-4">
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
 
@@ -85,11 +90,7 @@ $pageTitle = "Statement Portal";
         .select2-container--bootstrap-5 .select2-selection { border-radius: 0.85rem; height: auto; padding: 0.5rem 0.75rem; }
     </style>
 
-<div class="d-flex">
-    <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper p-0">
-        <?php $layout->topbar($pageTitle ?? 'Statement Portal'); ?>
-        <div class="container-fluid px-4">
+
             <!-- Portal Header -->
             <div class="portal-header shadow-lg">
                 <div class="row align-items-center">

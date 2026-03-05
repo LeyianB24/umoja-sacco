@@ -194,6 +194,11 @@ $transactions = $stmt->get_result();
 $pageTitle = "Payments Ledger";
 ?>
 <?php $layout->header($pageTitle); ?>
+<div class="d-flex">
+    <?php $layout->sidebar(); ?>
+    <div class="flex-fill main-content-wrapper">
+        <?php $layout->topbar($pageTitle ?? ""); ?>
+        <div class="container-fluid px-4 py-4">
     <style>
         .stat-card {
             background: rgba(255, 255, 255, 0.8);
@@ -235,11 +240,7 @@ $pageTitle = "Payments Ledger";
         .badge-out { background: #fce7f3; color: #be185d; border: 1px solid rgba(251, 207, 232, 0.5); }
     </style>
 
-<div class="d-flex">
-    <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper p-0">
-        <?php $layout->topbar($pageTitle ?? 'Cashier & Payments'); ?>
-        <div class="container-fluid px-4">
+
             
             <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-5 gap-3">
                 <div>
@@ -396,11 +397,7 @@ $pageTitle = "Payments Ledger";
                         </tbody>
                     </table>
                 </div>
-                <?php $layout->footer(); ?>
-        </div>
-    </div>
-</div>
-<div class="modal fade" id="recordTxnModal" tabindex="-1" aria-hidden="true">
+                <div class="modal fade" id="recordTxnModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content shadow-lg">
             <div class="modal-header">

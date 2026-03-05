@@ -76,6 +76,7 @@ $memory_usage = round(memory_get_usage() / 1024 / 1024, 2);
         </div>
     </footer>
 
+
     <style>
         @keyframes ping {
             0% { transform: scale(1); opacity: 1; }

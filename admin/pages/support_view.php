@@ -174,14 +174,15 @@ if (!function_exists('getInitials')) {
 $pageTitle = "Ticket View";
 ?>
 <?php $layout->header($pageTitle); ?>
+<div class="d-flex">
+    <?php $layout->sidebar(); ?>
+    <div class="flex-fill main-content-wrapper">
+        <?php $layout->topbar($pageTitle ?? ""); ?>
+        <div class="container-fluid px-4 py-4">
 
     
 
-<div class="d-flex">
-    <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper p-0">
-        <?php $layout->topbar($pageTitle ?? 'Support Ticket'); ?>
-        <div class="container-fluid px-4">
+
         
         <div class="hp-hero mb-4">
             <div class="row align-items-center">
@@ -302,7 +303,4 @@ $pageTitle = "Ticket View";
                 </div>
             </div>
         </div>
-        <?php $layout->footer(); ?>
-        </div>
-    </div>
-</div>
+        

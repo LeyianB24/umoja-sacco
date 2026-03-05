@@ -155,6 +155,11 @@ $jsData   = json_encode($chartData);
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css">
 <?php $layout->header($pageTitle); ?>
+<div class="d-flex">
+    <?php $layout->sidebar(); ?>
+    <div class="flex-fill main-content-wrapper">
+        <?php $layout->topbar($pageTitle ?? ""); ?>
+        <div class="container-fluid px-4 py-4">
     <style>
         :root {
             --font-main: 'Plus Jakarta Sans', sans-serif;
@@ -270,11 +275,7 @@ $jsData   = json_encode($chartData);
 </head>
 <body>
 
-<div class="d-flex">
-    <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper p-0">
-        <?php $layout->topbar($pageTitle ?? 'Equity & Share Management'); ?>
-        <div class="container-fluid px-4">
+
             
             <?php if (!empty($msg)): ?>
                 <div class="mb-4"><?= $msg ?></div>
@@ -488,11 +489,7 @@ $jsData   = json_encode($chartData);
                     </div>
                 </div>
             </div>
-             <?php $layout->footer(); ?>
-        </div>
-    </div>
-</div>
-<div class="modal fade" id="exitModal" tabindex="-1">
+             <div class="modal fade" id="exitModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 rounded-4 shadow-lg">
             <div class="modal-header border-bottom bg-light">

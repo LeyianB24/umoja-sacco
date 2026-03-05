@@ -302,11 +302,7 @@ $pageTitle = "My Profile";
 </head>
 <body>
 
-<div class="d-flex">
-    <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper p-0">
-        <?php $layout->topbar($pageTitle ?? ''); ?>
-        <div class="container-fluid px-4">
+
             
             <?php if (!empty($_SESSION['success'])): ?>
                 <div class="alert alert-success border-0 shadow-sm rounded-4 animate__animated animate__zoomIn d-flex align-items-center mb-4 p-3" role="alert" style="background: rgba(16, 185, 129, 0.1); color: #064E3B;">
@@ -449,10 +445,6 @@ $pageTitle = "My Profile";
                     </div>
                 </div>
             </div>
-<?php $layout->footer(); ?>
-        </div>
-    </div>
-</div>
 <script>
     // Image Preview Logic
     function previewImage(event) {

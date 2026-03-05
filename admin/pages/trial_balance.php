@@ -112,9 +112,10 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
 <?php $layout->header($pageTitle); ?>
 <div class="d-flex">
     <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper p-0">
-        <?php $layout->topbar($pageTitle ?? 'Accounting Ledger'); ?>
-        <div class="container-fluid px-4">
+    <div class="flex-fill main-content-wrapper">
+        <?php $layout->topbar($pageTitle ?? ""); ?>
+        <div class="container-fluid px-4 py-4">
+
 
         <!-- Layout Header -->
         <div class="portal-header fade-in">
@@ -334,11 +335,7 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
             Internal Audit Protocol V10.4 &bull; Generated <?= date('d M Y, H:i:s') ?> &bull; <?= SITE_NAME ?> Finance
         </div>
         
-        <?php $layout->footer(); ?>
-        </div>
-    </div>
-</div>
-<?php 
+        <?php 
 $all_cats = array_unique(array_column($all_accounts, 'category'));
 foreach($all_cats as $cat_name): 
     $safe_id = str_replace([' ','/','-'],'_', (string)$cat_name);

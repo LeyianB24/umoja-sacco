@@ -112,13 +112,14 @@ while($m = $map_res->fetch_assoc()) {
 $pageTitle = "Roles & Permissions";
 ?>
 <?php $layout->header($pageTitle); ?>
-    
-
 <div class="d-flex">
     <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper p-0">
-        <?php $layout->topbar($pageTitle ?? 'Role Matrix'); ?>
-        <div class="container-fluid px-4">
+    <div class="flex-fill main-content-wrapper">
+        <?php $layout->topbar($pageTitle ?? ""); ?>
+        <div class="container-fluid px-4 py-4">
+    
+
+
     <div class="hp-hero">
         <div class="row align-items-center">
             <div class="col-md-7">
@@ -269,11 +270,7 @@ $pageTitle = "Roles & Permissions";
         </div>
     </div>
     <?php endforeach; ?>
-    <?php $layout->footer(); ?>
-        </div>
-    </div>
-</div>
-<!-- Add Role Modal -->
+    <!-- Add Role Modal -->
 <div class="modal fade" id="addRoleModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">

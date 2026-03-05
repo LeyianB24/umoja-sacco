@@ -127,15 +127,16 @@ $php_v     = phpversion();
 $pageTitle = 'System Settings';
 ?>
 <?php $layout->header($pageTitle); ?>
+<div class="d-flex">
+    <?php $layout->sidebar(); ?>
+    <div class="flex-fill main-content-wrapper">
+        <?php $layout->topbar($pageTitle ?? ""); ?>
+        <div class="container-fluid px-4 py-4">
 
     
 
 
-<div class="d-flex">
-    <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper p-0">
-        <?php $layout->topbar($pageTitle ?? 'System Settings'); ?>
-        <div class="container-fluid px-4">
+
         
             
         <div class="hp-hero">
@@ -341,7 +342,4 @@ $pageTitle = 'System Settings';
                     </div>
                 </div>
         </div>
-        <?php $layout->footer(); ?>
-        </div>
-    </div>
-</div>
+        

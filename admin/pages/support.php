@@ -82,11 +82,7 @@ $layout->header($pageTitle);
 ?>
     
 </head>
-<div class="d-flex">
-    <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper p-0">
-        <?php $layout->topbar($pageTitle ?? 'Helpdesk Support'); ?>
-        <div class="container-fluid px-4">
+
         
         <div class="hp-hero mb-4">
             <div class="row align-items-center">
@@ -256,11 +252,7 @@ $layout->header($pageTitle);
                     </table>
                 </div>
             </div>
-            <?php $layout->footer(); ?>
-        </div>
-    </div>
-</div>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+            <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
         </div>
         
     </div>

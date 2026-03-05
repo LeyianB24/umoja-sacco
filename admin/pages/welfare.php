@@ -38,13 +38,14 @@ $engine = new FinancialEngine($conn);
 $pool_balance = $engine->getWelfarePoolBalance();
 ?>
 <?php $layout->header($pageTitle); ?>
-    
-
 <div class="d-flex">
     <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper p-0">
-        <?php $layout->topbar($pageTitle ?? 'Benevolence Fund'); ?>
-        <div class="container-fluid px-4">
+    <div class="flex-fill main-content-wrapper">
+        <?php $layout->topbar($pageTitle ?? ""); ?>
+        <div class="container-fluid px-4 py-4">
+    
+
+
             <div class="row g-4 mb-4">
                 <div class="col-xl-3 col-md-6">
                     <div class="glass-card p-3 h-100 bg-forest text-white overflow-hidden position-relative mb-0 border-0 shadow-lg">
@@ -171,11 +172,7 @@ $pool_balance = $engine->getWelfarePoolBalance();
                     </table>
                 </div>
             </div>
-            <?php $layout->footer(); ?>
-        </div>
-    </div>
-</div>
-<div class="modal fade" id="newCaseModal" tabindex="-1">
+            <div class="modal fade" id="newCaseModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <form method="POST" class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
             <input type="hidden" name="action" value="create_case">

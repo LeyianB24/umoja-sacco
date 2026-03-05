@@ -137,12 +137,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $pageTitle = "Register Member";
 ?>
 <?php $layout->header($pageTitle); ?>
-    
 <div class="d-flex">
     <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper p-0">
-        <?php $layout->topbar($pageTitle ?? 'Register Member'); ?>
-        <div class="container-fluid px-4">
+    <div class="flex-fill main-content-wrapper">
+        <?php $layout->topbar($pageTitle ?? ""); ?>
+        <div class="container-fluid px-4 py-4">
+    
+
         
         
         <div class="container-fluid py-4">
@@ -265,11 +266,7 @@ $pageTitle = "Register Member";
             </div>
             
         </div>
-        <?php $layout->footer(); ?>
-        </div>
-    </div>
-</div>
-<script>
+        <script>
     function togglePayment(checked) {
         document.getElementById('paymentDetails').style.display = checked ? 'block' : 'none';
     }
