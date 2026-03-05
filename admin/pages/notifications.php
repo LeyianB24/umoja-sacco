@@ -254,10 +254,12 @@ if ($result->num_rows > 0) {
     if($stmt2 = $conn->prepare("UPDATE notifications SET is_read = 1 WHERE user_type = 'admin' AND (user_id = ? OR to_role = ? OR to_role = 'all') AND is_read = 0")){
         $stmt2->bind_param("is", $admin_id, $user_role);
         $stmt2->execute();
-        $stmt2->close();
     }
 }
+?>
     </div> <!-- /container-fluid -->
     <?php $layout->footer(); ?>
 </div> <!-- /main-content-wrapper -->
-?>
+</body>
+</html>
+
