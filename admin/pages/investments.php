@@ -18,11 +18,15 @@ $layout = LayoutManager::create('admin');
 <div class="main-content-wrapper">
     <?php $layout->topbar($pageTitle ?? ""); ?>
     <div class="container-fluid px-4 py-4">
-<div class="d-flex">
-    <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper">
-        <?php $layout->topbar($pageTitle ?? ""); ?>
-        <div class="container-fluid px-4 py-4">
+
+
+    
+    
+
+    
+    
+        
+        
     
 
 <?php
@@ -409,7 +413,7 @@ $global = $conn->query("SELECT
         <!-- Filters -->
         <div class="row g-3 mb-4 align-items-center">
             <div class="col-lg-6">
-                <div class="d-flex gap-2 overflow-auto py-1">
+                
                     <a href="?cat=all" class="btn btn-<?= $filter=='all'?'forest':'white' ?> rounded-pill px-4 btn-sm fw-bold border">All Assets</a>
                     <a href="?cat=vehicle_fleet" class="btn btn-<?= $filter=='vehicle_fleet'?'forest':'white' ?> rounded-pill px-4 btn-sm fw-bold border">Vehicles</a>
                     <a href="?cat=farm" class="btn btn-<?= $filter=='farm'?'forest':'white' ?> rounded-pill px-4 btn-sm fw-bold border">Farms</a>
@@ -455,11 +459,11 @@ $global = $conn->query("SELECT
             ?>
             <div class="col-xl-4 col-md-6">
                 <div class="asset-card slide-up">
-                    <div class="d-flex justify-content-between align-items-start mb-4">
+                    
                         <div class="asset-icon-box">
                             <i class="bi <?= $icon ?>"></i>
                         </div>
-                        <div class="d-flex flex-column align-items-end">
+                        
                             <span class="status-badge st-<?= $a['status'] ?> mb-2"><?= $a['status'] ?></span>
                             <?php 
                             // Viability Status Badge
@@ -504,7 +508,7 @@ $global = $conn->query("SELECT
                     </div>
 
                     <div class="mb-4">
-                        <div class="d-flex justify-content-between align-items-center small mb-2">
+                        
                             <span class="text-muted fw-medium">Net Profit/Loss</span>
                             <span class="fw-bold <?= $a['net_profit'] >= 0 ? 'text-success' : 'text-danger' ?>">
                                 KES <?= number_format((float)$a['net_profit']) ?>
@@ -512,7 +516,7 @@ $global = $conn->query("SELECT
                         </div>
                         
                         <!-- Target Achievement Progress -->
-                        <div class="d-flex justify-content-between align-items-center small mb-1 mt-3">
+                        
                             <span class="text-muted fw-medium">Target Achievement (<?= ucfirst($a['target_period']) ?>)</span>
                             <span class="fw-bold <?= $a['target_achievement'] >= 100 ? 'text-success' : ($a['target_achievement'] >= 70 ? 'text-warning' : 'text-danger') ?>">
                                 <?= number_format($a['target_achievement'], 1) ?>%
@@ -528,7 +532,7 @@ $global = $conn->query("SELECT
                         </div>
                     </div>
 
-                    <div class="d-flex gap-2">
+                    
                         <?php if ($a['status'] === 'active'): ?>
                             <?php if ($a['source_table'] === 'investments'): ?>
                                 <button class="btn btn-outline-primary btn-sm px-3 rounded-pill" onclick="openEditModal(<?= htmlspecialchars(json_encode($a)) ?>)" title="Edit Investment">

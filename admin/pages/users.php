@@ -23,11 +23,15 @@ require_superadmin();
 <div class="main-content-wrapper">
     <?php $layout->topbar($pageTitle ?? ""); ?>
     <div class="container-fluid px-4 py-4">
-<div class="d-flex">
-    <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper">
-        <?php $layout->topbar($pageTitle ?? ""); ?>
-        <div class="container-fluid px-4 py-4">
+
+
+    
+    
+
+    
+    
+        
+        
 <?php flash_render(); ?>
     
 <?php
@@ -105,7 +109,7 @@ $pageTitle = "Staff Management";
 ?>
 
         <?php flash_render(); ?>
-            <div class="d-flex justify-content-between align-items-center mb-4">
+            
                 <div>
                     <h2 class="fw-bold mb-1">Administrative Staff</h2>
                     <p class="text-muted mb-0">Manage personnel and assign them to specific roles.</p>
@@ -135,7 +139,7 @@ $pageTitle = "Staff Management";
                             ?>
                             <tr>
                                 <td class="ps-4">
-                                    <div class="d-flex align-items-center gap-3">
+                                    
                                         <div class="avatar-box">
                                             <?= strtoupper(substr($u['full_name'], 0, 1)) ?>
                                         </div>

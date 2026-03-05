@@ -94,11 +94,15 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
 <div class="main-content-wrapper">
     <?php $layout->topbar($pageTitle ?? ""); ?>
     <div class="container-fluid px-4 py-4">
-<div class="d-flex">
-    <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper">
-        <?php $layout->topbar($pageTitle ?? ""); ?>
-        <div class="container-fluid px-4 py-4">
+
+
+    
+    
+
+    
+    
+        
+        
     
 
 
@@ -223,7 +227,7 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
                             ?>
                                 <tr class="member-row">
                                     <td class="ps-4">
-                                        <div class="d-flex align-items-center gap-3">
+                                        
                                             <?php if(!empty($m['profile_pic'])): ?>
                                                 <img src="data:image/jpeg;base64,<?= base64_encode($m['profile_pic']) ?>" class="rounded-3 shadow-sm" style="width: 40px; height: 40px; object-fit: cover;">
                                             <?php else: ?>
@@ -251,7 +255,7 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
                                         <div class="small text-muted opacity-75">System Registered</div>
                                     </td>
                                     <td class="text-end pe-4">
-                                        <div class="d-flex justify-content-end gap-2">
+                                        
                                             <?php if(can('manage_members')): ?>
                                                 <?php if($m['status'] == 'inactive'): ?>
                                                     <form method="POST" class="d-inline">

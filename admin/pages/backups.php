@@ -45,15 +45,19 @@ $pageTitle = "System Maintenance Hub";
 <div class="main-content-wrapper">
     <?php $layout->topbar($pageTitle ?? ""); ?>
     <div class="container-fluid px-4 py-4">
-<div class="d-flex">
-    <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper">
-        <?php $layout->topbar($pageTitle ?? ""); ?>
-        <div class="container-fluid px-4 py-4">
+
+
+    
+    
+
+    
+    
+        
+        
     
 
 
-            <div class="d-flex justify-content-between align-items-center mb-5">
+            
                 <div>
                     <h2 class="fw-bold mb-1" style="color: var(--forest);">Database Backups</h2>
                     <p class="text-muted mb-0">Monitor system health and generate recovery points</p>
@@ -70,7 +74,7 @@ $pageTitle = "System Maintenance Hub";
                 <div class="col-xl-4">
                     <div class="card-custom p-4 mb-4" style="background: linear-gradient(135deg, var(--forest) 0%, var(--forest-mid) 100%); color: white;">
                         <h6 class="text-white-50 small text-uppercase fw-bold mb-4">Storage Overview</h6>
-                        <div class="d-flex align-items-end gap-2 mb-2">
+                        
                             <h1 class="display-5 fw-bold mb-0 text-white"><?= $stats['size_mb'] ?></h1>
                             <span class="h4 mb-2 opacity-50">MB</span>
                         </div>
@@ -78,7 +82,7 @@ $pageTitle = "System Maintenance Hub";
                     </div>
 
                     <div class="card-custom p-4">
-                        <div class="d-flex align-items-center gap-3 mb-4">
+                        
                             <div class="stat-circle bg-light text-success">
                                 <i class="bi bi-table"></i>
                             </div>
@@ -87,7 +91,7 @@ $pageTitle = "System Maintenance Hub";
                                 <small class="text-muted">Total Tables</small>
                             </div>
                         </div>
-                        <div class="d-flex align-items-center gap-3">
+                        
                             <div class="stat-circle bg-light text-primary">
                                 <i class="bi bi-hdd-stack"></i>
                             </div>
@@ -141,7 +145,7 @@ $pageTitle = "System Maintenance Hub";
                                                     <div class="text-muted x-small"><?= date('H:i A', strtotime($log['created_at'])) ?></div>
                                                 </td>
                                                 <td>
-                                                    <div class="d-flex align-items-center gap-2">
+                                                    
                                                         <div class="bg-dark text-white rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width:30px; height:30px; font-size:0.7rem;">
                                                             <?= getInitials($log['username']) ?>
                                                         </div>

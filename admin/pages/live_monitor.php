@@ -25,11 +25,15 @@ $pageTitle = "Live Operations Monitor";
 <div class="main-content-wrapper">
     <?php $layout->topbar($pageTitle ?? ""); ?>
     <div class="container-fluid px-4 py-4">
-<div class="d-flex">
-    <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper">
-        <?php $layout->topbar($pageTitle ?? ""); ?>
-        <div class="container-fluid px-4 py-4">
+
+
+    
+    
+
+    
+    
+        
+        
     
 
 
@@ -37,7 +41,7 @@ $pageTitle = "Live Operations Monitor";
             <div class="monitor-hero">
                 <div class="row align-items-center">
                     <div class="col-md-8">
-                        <div class="d-flex align-items-center mb-3">
+                        
                             <span class="live-dot"></span>
                             <span class="text-lime fw-bold small text-uppercase tracking-wider">Live System Feed</span>
                         </div>
@@ -45,7 +49,7 @@ $pageTitle = "Live Operations Monitor";
                         <p class="lead opacity-75 mb-0 text-white">Tracking real-time payment callbacks, notification delivery, and system activity logs.</p>
                     </div>
                     <div class="col-md-4 text-end d-none d-md-block">
-                        <div class="d-flex flex-column gap-2">
+                        
                             <button onclick="location.reload()" class="btn btn-lime rounded-pill px-4 py-2 fw-bold text-dark">
                                 <i class="bi bi-arrow-clockwise me-2"></i> REFRESH FEED
                             </button>
@@ -95,7 +99,7 @@ $pageTitle = "Live Operations Monitor";
             </div>
 
             <!-- Real-time Audit Feed -->
-            <div class="d-flex justify-content-between align-items-center mb-4">
+            
                 <h4 class="fw-800 mb-0">Operation Audit Feed</h4>
                 <div class="small text-muted fw-bold">Showing last 50 events</div>
             </div>

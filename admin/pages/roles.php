@@ -116,11 +116,15 @@ $pageTitle = "Roles & Permissions";
 <div class="main-content-wrapper">
     <?php $layout->topbar($pageTitle ?? ""); ?>
     <div class="container-fluid px-4 py-4">
-<div class="d-flex">
-    <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper">
-        <?php $layout->topbar($pageTitle ?? ""); ?>
-        <div class="container-fluid px-4 py-4">
+
+
+    
+    
+
+    
+    
+        
+        
     
 
 
@@ -147,7 +151,7 @@ $pageTitle = "Roles & Permissions";
 
     <!-- Role Selector Control -->
     <div class="glass-stat mb-4">
-        <div class="d-flex align-items-center gap-4">
+        
             <div class="flex-grow-1">
                 <label class="small text-muted fw-800 text-uppercase mb-2 d-block" style="letter-spacing: 1px;">Select Role to Configure</label>
                 <div class="input-group input-group-lg">
@@ -188,7 +192,7 @@ $pageTitle = "Roles & Permissions";
                     </h3>
                     <p class="role-desc"><?= htmlspecialchars($role['description'] ?? 'No description defined.') ?></p>
                 </div>
-                <div class="d-flex align-items-center gap-3">
+                
                     <span class="badge-count" id="badge_<?= $role['id'] ?>"><?= $perm_count ?> permissions active</span>
                     <?php if (!$is_super): ?>
                     <div class="role-actions">
@@ -222,7 +226,7 @@ $pageTitle = "Roles & Permissions";
                     <i class="bi bi-headset"></i>
                     ASSIGNED SUPPORT CATEGORIES
                 </div>
-                <div class="d-flex flex-wrap gap-2">
+                
                     <?php if ($is_super): ?>
                         <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill">
                             <i class="bi bi-infinity me-1"></i> All Categories (Full Access)

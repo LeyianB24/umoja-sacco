@@ -211,11 +211,15 @@ $pageTitle = $member['full_name'] . " - Member Profile";
 <div class="main-content-wrapper">
     <?php $layout->topbar($pageTitle ?? ""); ?>
     <div class="container-fluid px-4 py-4">
-<div class="d-flex">
-    <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper">
-        <?php $layout->topbar($pageTitle ?? ""); ?>
-        <div class="container-fluid px-4 py-4">
+
+
+    
+    
+
+    
+    
+        
+        
     
 
 
@@ -240,20 +244,20 @@ $pageTitle = $member['full_name'] . " - Member Profile";
                 <?php endif; ?>
             </div>
             <div class="col px-md-4 mt-3 mt-md-0">
-                <div class="d-flex align-items-center gap-3 mb-2">
+                
                     <h1 class="fw-800 mb-0"><?= htmlspecialchars($member['full_name']) ?></h1>
                     <span class="badge-status bg-<?= $member['status']=='active'?'success':'danger' ?> text-white">
                         <?= strtoupper($member['status']) ?>
                     </span>
                 </div>
-                <div class="d-flex flex-wrap gap-4 opacity-75">
+                
                     <span><i class="bi bi-hash me-1"></i> REG NO: <?= $member['member_reg_no'] ?></span>
                     <span><i class="bi bi-calendar3 me-1"></i> Joined <?= date('M d, Y', strtotime($member['join_date'])) ?></span>
                     <span><i class="bi bi-phone me-1"></i> <?= $member['phone'] ?></span>
                 </div>
             </div>
             <div class="col-md-auto text-md-end mt-4 mt-md-0">
-                <div class="d-flex gap-2">
+                
                     <a href="generate_statement.php?member_id=<?= $member_id ?>" class="btn btn-lime rounded-pill px-4 fw-bold">
                         <i class="bi bi-file-earmark-pdf me-2"></i>Statement
                     </a>
@@ -305,7 +309,7 @@ $pageTitle = $member['full_name'] . " - Member Profile";
                         <i class="bi bi-shield-check"></i>
                     </div>
                     <div class="info-label">KYC Status</div>
-                    <div class="d-flex align-items-center gap-2">
+                    
                         <div class="h3 fw-800 text-forest mb-0"><?= ucwords(str_replace('_', ' ', $member['kyc_status'] ?? 'pending')) ?></div>
                         <form method="POST" class="d-inline">
                             <?= csrf_field() ?>
@@ -365,7 +369,7 @@ $pageTitle = $member['full_name'] . " - Member Profile";
                         </div>
                         <hr class="opacity-10 my-4">
                         <div class="info-label">Risk Profile</div>
-                        <div class="d-flex align-items-center gap-2 mt-2">
+                        
                             <div class="flex-grow-1 progress" style="height: 8px; border-radius: 10px;">
                                 <div class="progress-bar bg-success" style="width: 85%"></div>
                             </div>
@@ -375,7 +379,7 @@ $pageTitle = $member['full_name'] . " - Member Profile";
                 </div>
                 <div class="col-lg-8">
                     <div class="glass-card">
-                        <div class="d-flex justify-content-between align-items-center mb-4">
+                        
                             <h5 class="fw-bold mb-0">Recent Activity</h5>
                             <a href="payments.php?search=<?= urlencode($member['full_name']) ?>" class="btn btn-light btn-sm rounded-pill px-3">View All</a>
                         </div>
@@ -419,7 +423,7 @@ $pageTitle = $member['full_name'] . " - Member Profile";
         <!-- LOANS TAB -->
         <div class="tab-pane fade" id="loans" role="tabpanel">
             <div class="glass-card">
-                <div class="d-flex justify-content-between align-items-center mb-4">
+                
                     <h5 class="fw-bold mb-0">Loan History</h5>
                     <button class="btn btn-forest btn-sm rounded-pill px-4 fw-bold">Apply For Loan</button>
                 </div>
@@ -510,13 +514,13 @@ $pageTitle = $member['full_name'] . " - Member Profile";
                 <div class="col-md-6">
                     <div class="glass-card">
                         <h6 class="fw-bold mb-3 text-uppercase"><?= str_replace('_', ' ', $doc['document_type']) ?></h6>
-                        <div class="d-flex align-items-center gap-3 p-3 bg-light rounded-4 border">
+                        
                             <div class="icon-box bg-white shadow-sm mb-0"><i class="bi bi-file-earmark-text"></i></div>
                             <div class="flex-grow-1">
                                 <div class="fw-bold small"><?= htmlspecialchars($doc['file_path']) ?></div>
                                 <div class="text-muted x-small">Uploaded: <?= date('d M Y', strtotime($doc['uploaded_at'])) ?></div>
                             </div>
-                            <div class="d-flex gap-2">
+                            
                                 <a href="<?= BASE_URL ?>/uploads/kyc/<?= $doc['file_path'] ?>" target="_blank" class="btn btn-sm btn-light border rounded-pill px-3">View</a>
                                 <span class="badge bg-<?= $doc['status'] == 'verified' ? 'success' : ($doc['status'] == 'rejected' ? 'danger' : 'warning') ?> bg-opacity-10 text-<?= $doc['status'] == 'verified' ? 'success' : ($doc['status'] == 'rejected' ? 'danger' : 'warning') ?> d-flex align-items-center"><?= strtoupper($doc['status']) ?></span>
                             </div>

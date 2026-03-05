@@ -155,11 +155,15 @@ $pageTitle = "Audit Logs";
 <div class="main-content-wrapper">
     <?php $layout->topbar($pageTitle ?? ""); ?>
     <div class="container-fluid px-4 py-4">
-<div class="d-flex">
-    <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper">
-        <?php $layout->topbar($pageTitle ?? ""); ?>
-        <div class="container-fluid px-4 py-4">
+
+
+    
+    
+
+    
+    
+        
+        
 
 
 
@@ -187,7 +191,7 @@ $pageTitle = "Audit Logs";
             <div class="row mb-4">
                 <div class="col-12">
                     <form method="GET">
-                        <div class="d-flex gap-2">
+                        
                             <div class="flex-grow-1 search-wrapper d-flex align-items-center bg-white">
                                 <i class="bi bi-search text-emerald ps-3 pe-2 fs-5"></i>
                                 <input type="text" name="q" class="search-input w-100" 
@@ -204,7 +208,7 @@ $pageTitle = "Audit Logs";
 
             <div class="card-hope mb-4">
                 <div class="px-4 py-3 border-bottom border-light d-flex justify-content-between align-items-center">
-                    <div class="d-flex align-items-center gap-2">
+                    
                         <span class="badge rounded-circle bg-success p-2 border border-white border-2"></span>
                         <h6 class="mb-0 fw-bold text-forest">Recent Activity</h6>
                     </div>
@@ -244,7 +248,7 @@ $pageTitle = "Audit Logs";
                                     </td>
 
                                     <td>
-                                        <div class="d-flex align-items-center gap-3">
+                                        
                                             <div class="avatar-box">
                                                 <?= getInitials($name) ?>
                                             </div>

@@ -200,11 +200,15 @@ $pageTitle = "Loan Management";
 <div class="main-content-wrapper">
     <?php $layout->topbar($pageTitle ?? ""); ?>
     <div class="container-fluid px-4 py-4">
-<div class="d-flex">
-    <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper">
-        <?php $layout->topbar($pageTitle ?? ""); ?>
-        <div class="container-fluid px-4 py-4">
+
+
+    
+    
+
+    
+    
+        
+        
     
 
 
@@ -270,7 +274,7 @@ $pageTitle = "Loan Management";
                 <div class="glass-card slide-up" style="animation-delay: 0.3s">
                     <div class="p-4 d-flex flex-wrap justify-content-between align-items-center gap-3 border-bottom border-white border-opacity-10">
                         <h5 class="fw-bold mb-0">Payment Queue</h5>
-                        <div class="d-flex gap-2">
+                        
                             <form class="d-flex gap-2" method="GET">
                                 <div class="position-relative">
                                     <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted small"></i>
@@ -305,7 +309,7 @@ $pageTitle = "Loan Management";
                                     <?php while ($row = $loans->fetch_assoc()): ?>
                                     <tr onclick="openLoanDrawer(<?= htmlspecialchars(json_encode($row)) ?>)" style="cursor: pointer;">
                                         <td class="ps-4">
-                                            <div class="d-flex align-items-center gap-3">
+                                            
                                                 <div class="rounded-3 bg-forest text-lime d-flex align-items-center justify-content-center fw-800 shadow-sm" style="width: 40px; height: 40px;">
                                                     <?= strtoupper(substr($row['full_name'], 0, 1)) ?>
                                                 </div>
@@ -342,7 +346,7 @@ $pageTitle = "Loan Management";
                                             </span>
                                         </td>
                                         <td class="pe-4 text-end" onclick="event.stopPropagation()">
-                                            <div class="d-flex justify-content-end gap-2">
+                                            
                                                 <?php if ($row['status'] === 'pending' && $can_approve): ?>
                                                     <button onclick="confirmAction('approve', <?= $row['loan_id'] ?>)" class="btn btn-sm btn-outline-lime rounded-pill px-3 fw-bold">Review</button>
                                                     <button onclick="openRejectModal(<?= $row['loan_id'] ?>)" class="btn btn-sm btn-link text-danger text-decoration-none fw-bold">Reject</button>
@@ -386,16 +390,16 @@ $pageTitle = "Loan Management";
 
         <div class="glass-card p-4 mb-4 border border-white border-opacity-20 shadow-sm" style="background: rgba(0,0,0,0.02);">
             <h6 class="text-uppercase small text-muted fw-800 mb-4 letter-spacing-1">Financial Commitment</h6>
-            <div class="d-flex justify-content-between align-items-center mb-3">
+            
                 <span class="text-secondary fw-semibold">Principal Sum</span>
                 <span class="fw-800  fs-5" id="drawer_amount">KES 0.00</span>
             </div>
-            <div class="d-flex justify-content-between align-items-center mb-3">
+            
                 <span class="text-secondary fw-semibold">Risk Engine Rate</span>
                 <span class="badge bg-lime text-forest fw-800 px-3 py-2 rounded-pill" id="drawer_rate">0%</span>
             </div>
             <div class="mt-4 pt-4 border-top border-dark border-opacity-10">
-                <div class="d-flex justify-content-between align-items-center">
+                
                     <span class="fw-800 text-muted small text-uppercase">Total Repayable</span>
                     <span class="fw-900 text-forest fs-4" id="drawer_total">KES 0.00</span>
                 </div>

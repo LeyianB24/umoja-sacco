@@ -246,7 +246,7 @@ $pageTitle = "Revenue Portal";
             <?php if (!empty($top_investments)): ?>
             <div class="row g-4 mb-4">
                 <div class="col-12">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
+                    
                         <h5 class="fw-800 mb-0"><i class="bi bi-trophy-fill text-warning me-2"></i>Portfolio Revenue Performance</h5>
                         <a href="investments.php" class="btn btn-outline-forest btn-sm rounded-pill px-3">View All Assets</a>
                     </div>
@@ -268,7 +268,7 @@ $pageTitle = "Revenue Portal";
                 ?>
                 <div class="col-md-4">
                     <div class="stat-card slide-up h-100" style="border-left: 4px solid <?= $inv['target_achievement'] >= 100 ? '#22c55e' : ($inv['target_achievement'] >= 70 ? '#eab308' : '#ef4444') ?>;">
-                        <div class="d-flex justify-content-between align-items-start mb-3">
+                        
                             <div class="icon-circle bg-lime bg-opacity-10 text-forest">
                                 <i class="<?= $icon ?>"></i>
                             </div>
@@ -283,7 +283,7 @@ $pageTitle = "Revenue Portal";
                             <i class="bi bi-bullseye me-1"></i>Target: KES <?= number_format((float)$inv['target_amount']) ?>
                         </div>
                         
-                        <div class="d-flex justify-content-between align-items-center small mb-1">
+                        
                             <span class="text-muted fw-bold">Achievement</span>
                             <span class="fw-800"><?= number_format($inv['target_achievement'], 1) ?>%</span>
                         </div>
@@ -358,7 +358,7 @@ $pageTitle = "Revenue Portal";
                                 </div>
                             </div>
                             <div id="customDateRange" class="mt-2 <?= $duration !== 'custom' ? 'd-none' : '' ?>">
-                                <div class="d-flex gap-2">
+                                
                                     <input type="date" name="start_date" class="form-control form-control-sm" value="<?= $start_date ?>">
                                     <input type="date" name="end_date" class="form-control form-control-sm" value="<?= $end_date ?>">
                                 </div>
@@ -468,8 +468,8 @@ $pageTitle = "Revenue Portal";
                                 foreach ($source_breakdown as $name => $val): 
                                     if ($count++ >= 5) break; // Use $count here
                                 ?>
-                                    <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom border-light border-opacity-10">
-                                        <div class="d-flex align-items-center gap-2">
+                                    
+                                        
                                             <div class="badge bg-lime rounded-circle" style="width: 8px; height: 8px;"></div>
                                             <span class="small fw-600"><?= $name ?></span>
                                         </div>

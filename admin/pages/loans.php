@@ -178,11 +178,15 @@ $pageTitle = "Loan #$loan_id Detail";
 <div class="main-content-wrapper">
     <?php $layout->topbar($pageTitle ?? ""); ?>
     <div class="container-fluid px-4 py-4">
-<div class="d-flex">
-    <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper">
-        <?php $layout->topbar($pageTitle ?? ""); ?>
-        <div class="container-fluid px-4 py-4">
+
+
+    
+    
+
+    
+    
+        
+        
 
 
 
@@ -203,11 +207,11 @@ $pageTitle = "Loan #$loan_id Detail";
                         <span class="badge bg-white bg-opacity-15 text-white rounded-pill mb-3 px-3 py-2 small">
                             <i class="bi bi-hash me-1"></i>REF: <?= htmlspecialchars($loan['reference_no'] ?? "LOAN-$loan_id") ?>
                         </span>
-                        <div class="d-flex align-items-center gap-3 mb-2">
+                        
                             <h1 class="fw-800 mb-0">KES <?= number_format($principal) ?></h1>
                             <span class="st-badge st-<?= $loan['status'] ?>"><?= $scfg['label'] ?></span>
                         </div>
-                        <div class="d-flex flex-wrap gap-4 opacity-75 small">
+                        
                             <span><i class="bi bi-person me-1"></i><?= htmlspecialchars($loan['full_name']) ?></span>
                             <span><i class="bi bi-tag me-1"></i><?= htmlspecialchars($loan['loan_type']) ?></span>
                             <span><i class="bi bi-calendar3 me-1"></i>Applied: <?= date('d M Y', strtotime($loan['created_at'])) ?></span>
@@ -254,7 +258,7 @@ $pageTitle = "Loan #$loan_id Detail";
                         <div class="info-row"><span class="info-label">Amount Paid</span><span class="info-val text-success">KES <?= number_format($paid, 2) ?></span></div>
                         <?php if ($loan['status'] === 'disbursed' || $loan['status'] === 'completed'): ?>
                         <div class="mt-4">
-                            <div class="d-flex justify-content-between mb-1 small fw-bold"><span>Repayment Progress</span><span><?= $progress_pct ?>%</span></div>
+                            <span>Repayment Progress</span><span><?= $progress_pct ?>%</span></div>
                             <div class="progress-track"><div class="progress-fill" style="width:<?= $progress_pct ?>%"></div></div>
                         </div>
                         <?php endif; ?>
@@ -284,7 +288,7 @@ $pageTitle = "Loan #$loan_id Detail";
                     <!-- Borrower -->
                     <div class="detail-card shadow-sm">
                         <h6 class="fw-800 mb-4 text-uppercase small" style="letter-spacing:1px; color:var(--forest)">Borrower Information</h6>
-                        <div class="d-flex align-items-center gap-3 mb-4">
+                        
                             <?php if (!empty($loan['profile_pic'])): ?>
                                 <img src="data:image/jpeg;base64,<?= base64_encode($loan['profile_pic']) ?>" class="rounded-3 shadow-sm" style="width:64px;height:64px;object-fit:cover;">
                             <?php else: ?>
@@ -302,7 +306,7 @@ $pageTitle = "Loan #$loan_id Detail";
 
                     <!-- Guarantors -->
                     <div class="detail-card shadow-sm">
-                        <div class="d-flex justify-content-between align-items-center mb-4">
+                        
                             <h6 class="fw-800 mb-0 text-uppercase small" style="letter-spacing:1px; color:var(--forest)">Guarantors</h6>
                             <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3"><?= count($guarantors) ?> assigned</span>
                         </div>

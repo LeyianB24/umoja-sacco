@@ -131,11 +131,15 @@ $pageTitle = 'System Settings';
 <div class="main-content-wrapper">
     <?php $layout->topbar($pageTitle ?? ""); ?>
     <div class="container-fluid px-4 py-4">
-<div class="d-flex">
-    <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper">
-        <?php $layout->topbar($pageTitle ?? ""); ?>
-        <div class="container-fluid px-4 py-4">
+
+
+    
+    
+
+    
+    
+        
+        
 
     
 
@@ -172,7 +176,7 @@ $pageTitle = 'System Settings';
                     <h5 class="mb-1 fw-800"><?= htmlspecialchars($me['full_name']) ?></h5>
                     <p class="text-white-50 small mb-4"><?= $me['email'] ?></p>
                     
-                    <div class="d-flex justify-content-center gap-4 pt-3 border-top border-white border-opacity-10">
+                    
                         <div class="text-center">
                             <div class="small text-white-50 fw-bold text-uppercase" style="letter-spacing: 1px;">Admin ID</div>
                             <div class="h5 fw-800 mb-0 text-lime">#<?= $admin_id ?></div>
@@ -209,7 +213,7 @@ $pageTitle = 'System Settings';
                         
                         <div class="tab-pane fade show active" id="v-pills-profile">
                             <div class="glass-card p-4 p-md-5">
-                                <div class="d-flex justify-content-between align-items-center mb-4">
+                                
                                     <h5 class="fw-800 mb-0">Edit Profile</h5>
                                     <span class="hp-badge">Personal Details</span>
                                 </div>
@@ -241,7 +245,7 @@ $pageTitle = 'System Settings';
 
                         <div class="tab-pane fade" id="v-pills-security">
                             <div class="glass-card p-4 p-md-5">
-                                <div class="d-flex justify-content-between align-items-center mb-4">
+                                
                                     <h5 class="fw-800 mb-0">Security</h5>
                                     <span class="hp-badge">Password Manager</span>
                                 </div>

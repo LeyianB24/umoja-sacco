@@ -114,11 +114,15 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
 <div class="main-content-wrapper">
     <?php $layout->topbar($pageTitle ?? ""); ?>
     <div class="container-fluid px-4 py-4">
-<div class="d-flex">
-    <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper">
-        <?php $layout->topbar($pageTitle ?? ""); ?>
-        <div class="container-fluid px-4 py-4">
+
+
+    
+    
+
+    
+    
+        
+        
 
 
         <!-- Layout Header -->
@@ -155,7 +159,7 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
                     <div class="col-md-4">
                         <div class="card border-0 shadow-sm h-100 rounded-4 overflow-hidden position-relative" style="background: #ffffff;">
                             <div class="card-body p-4 d-flex flex-column justify-content-center">
-                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                
                                     <div class="text-muted small fw-800 text-uppercase ls-1" style="font-size: 0.75rem;">Total Assets</div>
                                     <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; background: rgba(16, 185, 129, 0.1); color: #10b981;">
                                         <i class="bi bi-safe2 fs-5"></i>
@@ -171,7 +175,7 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
                     <div class="col-md-4">
                         <div class="card border-0 shadow-sm h-100 rounded-4 overflow-hidden position-relative <?= $is_balanced ? 'bg-success text-white' : 'bg-danger text-white' ?>" style="<?= $is_balanced ? 'background: linear-gradient(135deg, #0f392b 0%, #1a5140 100%);' : '' ?>">
                             <div class="card-body p-4 d-flex flex-column justify-content-center position-relative z-1">
-                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                
                                     <div class="small fw-800 text-uppercase ls-1 opacity-75" style="font-size: 0.75rem;">Liab. & Equity</div>
                                     <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; background: rgba(255, 255, 255, 0.15); color: #ffffff;">
                                         <i class="bi bi-shield-lock fs-5"></i>
@@ -189,7 +193,7 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
                     <div class="col-md-4">
                         <div class="card border-0 shadow-sm h-100 rounded-4 overflow-hidden position-relative" style="background: #d0f764;">
                             <div class="card-body p-4 d-flex flex-column justify-content-center position-relative z-1">
-                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                
                                     <div class="small fw-800 text-uppercase ls-1" style="color: #0f392b; font-size: 0.75rem;">Net Income (P&L)</div>
                                     <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; background: rgba(15, 57, 43, 0.1); color: #0f392b;">
                                         <i class="bi bi-graph-up-arrow fs-5"></i>
@@ -209,7 +213,7 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
             <div class="col-xl-4">
                 <div class="card border-0 shadow-sm h-100 rounded-4" style="background: #ffffff;">
                     <div class="card-body p-4 d-flex flex-column">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
+                        
                             <h6 class="fw-bold mb-0 text-dark">Equation Balance</h6>
                             <span class="badge <?= $is_balanced ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger' ?> rounded-pill px-3 py-2 fw-bold">
                                 <?= $is_balanced ? 'Balanced' : 'Imbalanced' ?>

@@ -169,11 +169,15 @@ $pageTitle = "Golden Ledger Vault";
 <div class="main-content-wrapper">
     <?php $layout->topbar($pageTitle ?? ""); ?>
     <div class="container-fluid px-4 py-4">
-<div class="d-flex">
-    <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper">
-        <?php $layout->topbar($pageTitle ?? ""); ?>
-        <div class="container-fluid px-4 py-4">
+
+
+    
+    
+
+    
+    
+        
+        
     
 
 
@@ -286,7 +290,7 @@ $pageTitle = "Golden Ledger Vault";
                                     <div class="fw-600 "><?= esc($row['full_name']) ?></div>
                                 </a>
                             <?php else: ?>
-                                <div class="d-flex align-items-center gap-2">
+                                
                                     <div class="bg-forest-soft rounded-circle text-center d-flex align-items-center justify-content-center" style="width:32px; height:32px; font-size: 0.7rem; color: var(--forest);">
                                         <i class="bi bi-shield-shaded"></i>
                                     </div>

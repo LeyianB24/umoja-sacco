@@ -263,11 +263,15 @@ $pageTitle = "Executive Reports";
 <div class="main-content-wrapper">
     <?php $layout->topbar($pageTitle ?? ""); ?>
     <div class="container-fluid px-4 py-4">
-<div class="d-flex">
-    <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper">
-        <?php $layout->topbar($pageTitle ?? ""); ?>
-        <div class="container-fluid px-4 py-4">
+
+
+    
+    
+
+    
+    
+        
+        
     
 
 
@@ -279,7 +283,7 @@ $pageTitle = "Executive Reports";
                     <p class="opacity-75 fs-5">Track liquidity, growth, and operational efficiency. Real-time data visualization meets <span class="text-lime fw-bold">exclusive intelligence</span>.</p>
                 </div>
                 <div class="col-md-5 text-end d-none d-lg-block">
-                    <div class="d-flex gap-2 justify-content-end no-print mb-3">
+                    
                         <div class="dropdown">
                             <button class="btn btn-white bg-opacity-10 text-white border-white border-opacity-25 shadow-sm dropdown-toggle fw-bold rounded-pill px-4" type="button" data-bs-toggle="dropdown">
                                 <i class="bi bi-file-earmark-arrow-down me-2 text-lime"></i> Export
@@ -304,7 +308,7 @@ $pageTitle = "Executive Reports";
         </div>
 
             <div class="filter-bar d-flex flex-wrap align-items-center gap-3 no-print">
-                <div class="d-flex align-items-center gap-2">
+                
                     <i class="bi bi-funnel text-muted"></i>
                     <span class="fw-bold small text-uppercase text-muted">Filter:</span>
                 </div>
@@ -335,7 +339,7 @@ $pageTitle = "Executive Reports";
             <div class="row g-4 mb-4">
                 <div class="col-xl-3 col-md-6">
                     <div class="glass-stat stat-card-dark h-100">
-                        <div class="d-flex justify-content-between align-items-start mb-3">
+                        
                             <div class="stat-icon bg-white bg-opacity-10 text-lime p-3 rounded-4 fs-3">
                                 <i class="bi bi-graph-up-arrow"></i>
                             </div>
@@ -353,7 +357,7 @@ $pageTitle = "Executive Reports";
 
                 <div class="col-xl-3 col-md-6">
                     <div class="glass-stat h-100">
-                        <div class="d-flex justify-content-between align-items-start mb-3">
+                        
                             <div class="stat-icon bg-forest bg-opacity-10 text-forest p-3 rounded-4 fs-3">
                                 <i class="bi bi-graph-down-arrow"></i>
                             </div>
@@ -371,7 +375,7 @@ $pageTitle = "Executive Reports";
 
                 <div class="col-xl-3 col-md-6">
                     <div class="glass-stat stat-card-accent h-100">
-                        <div class="d-flex justify-content-between align-items-start mb-3">
+                        
                             <div class="stat-icon bg-forest bg-opacity-10 text-forest p-3 rounded-4 fs-3">
                                 <i class="bi bi-wallet2"></i>
                             </div>
@@ -386,7 +390,7 @@ $pageTitle = "Executive Reports";
 
                 <div class="col-xl-3 col-md-6">
                     <div class="glass-stat h-100">
-                        <div class="d-flex justify-content-between align-items-start mb-3">
+                        
                             <div class="stat-icon bg-forest bg-opacity-10 text-forest p-3 rounded-4 fs-3">
                                 <i class="bi bi-receipt"></i>
                             </div>
@@ -424,7 +428,7 @@ $pageTitle = "Executive Reports";
                             arsort($top_sources);
                             $top_sources = array_slice($top_sources, 0, 3);
                             foreach($top_sources as $k => $v): ?>
-                            <div class="d-flex justify-content-between align-items-center mb-2">
+                            
                                 <span class="text-muted"><i class="bi bi-circle-fill me-2 text-lime" style="font-size: 10px;"></i><?= $k ?></span>
                                 <span class="fw-800 text-forest">KES <?= number_format($v) ?></span>
                             </div>

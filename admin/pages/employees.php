@@ -393,11 +393,15 @@ $pageTitle = "People & Access";
 <div class="main-content-wrapper">
     <?php $layout->topbar($pageTitle ?? ""); ?>
     <div class="container-fluid px-4 py-4">
-<div class="d-flex">
-    <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper">
-        <?php $layout->topbar($pageTitle ?? ""); ?>
-        <div class="container-fluid px-4 py-4">
+
+
+    
+    
+
+    
+    
+        
+        
     
     
 
@@ -409,7 +413,7 @@ $pageTitle = "People & Access";
                         <h1 class="display-4 fw-800 mb-2">HR & Identity.</h1>
                         <p class="opacity-75 fs-5 mb-4">Manage your talent ecosystem. Hire, compensate, and secure your workforce with <span class="text-lime fw-bold">vibrant efficiency</span>.</p>
                         
-                        <div class="d-flex gap-3">
+                        
                             <?php if($current_view === 'hr'): ?>
                                 <button class="btn btn-lime rounded-pill px-4 py-2 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#addStaffModal">
                                     <i class="bi bi-person-plus-fill me-2"></i>Hire Employee
@@ -471,7 +475,7 @@ $pageTitle = "People & Access";
 
             <!-- TABBED VIEW -->
             <div class="glass-card p-0 overflow-hidden">
-                <div class="d-flex border-bottom bg-white bg-opacity-50 px-3 justify-content-between align-items-center">
+                
                     <ul class="nav nav-tabs-custom mb-0">
                         <li class="nav-item">
                             <a class="nav-link <?= $current_view === 'hr' ? 'active' : '' ?>" href="?view=hr">
@@ -535,7 +539,7 @@ $pageTitle = "People & Access";
                             ?>
                             <tr>
                                 <td class="ps-4">
-                                    <div class="d-flex align-items-center gap-3">
+                                    
                                         <div class="avatar-circle"><?= getInitials($row['full_name']) ?></div>
                                         <div>
                                             <div class="fw-bold "><?= htmlspecialchars($row['full_name'] ?? '') ?></div>
@@ -573,7 +577,7 @@ $pageTitle = "People & Access";
                             <?php else: // SYS VIEW ?>
                             <tr>
                                 <td class="ps-4">
-                                    <div class="d-flex align-items-center gap-3">
+                                    
                                         <div class="avatar-circle bg-dark text-white"><?= getInitials($row['full_name']) ?></div>
                                         <div>
                                             <div class="fw-bold "><?= htmlspecialchars($row['full_name'] ?? '') ?></div>
@@ -609,14 +613,14 @@ $pageTitle = "People & Access";
                 <?php elseif ($current_view === 'payroll'): ?>
                     <?php if ($active_run): ?>
                         <div class="p-4 border-bottom bg-light bg-opacity-10">
-                            <div class="d-flex justify-content-between align-items-center">
+                            
                                 <div>
                                     <span class="badge rounded-pill border px-3 py-2 <?= $active_run['status'] === 'paid' ? 'bg-success text-white' : 'bg-warning ' ?>">
                                         <?= strtoupper($active_run['status']) ?>
                                     </span>
                                     <span class="ms-2 fw-800 "><?= date('F Y', strtotime($active_run['month'])) ?></span>
                                 </div>
-                                <div class="d-flex gap-2">
+                                
                                     <?php if ($active_run['status'] === 'draft'): ?>
                                         <form method="POST" class="d-inline">
                                             <?= csrf_field() ?>
@@ -715,7 +719,7 @@ $pageTitle = "People & Access";
                         ?>
                             <tr>
                                 <td class="ps-4">
-                                    <div class="d-flex align-items-center gap-3">
+                                    
                                         <div class="avatar-circle"><?= getInitials($row['full_name']) ?></div>
                                         <div>
                                             <div class="fw-bold "><?= htmlspecialchars($row['full_name'] ?? '') ?></div>

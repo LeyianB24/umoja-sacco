@@ -29,11 +29,15 @@ $pageTitle = "Statement Portal";
 <div class="main-content-wrapper">
     <?php $layout->topbar($pageTitle ?? ""); ?>
     <div class="container-fluid px-4 py-4">
-<div class="d-flex">
-    <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper">
-        <?php $layout->topbar($pageTitle ?? ""); ?>
-        <div class="container-fluid px-4 py-4">
+
+
+    
+    
+
+    
+    
+        
+        
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
 
@@ -104,7 +108,7 @@ $pageTitle = "Statement Portal";
                         <p class="opacity-75 fs-5">Generate certified financial ledgers and transaction histories with digital verification.</p>
                     </div>
                     <div class="col-lg-5 text-end d-none d-lg-block">
-                        <div class="d-flex justify-content-end gap-3">
+                        
                             <div class="stat-badge">
                                 <div class="h4 fw-800 mb-0"><?= number_format((float)($stats['total_txns'] ?? 0)) ?></div>
                                 <div class="small opacity-60 fw-bold">Total Processed</div>
@@ -123,7 +127,7 @@ $pageTitle = "Statement Portal";
             <div class="row g-4 mt-1">
                 <div class="col-lg-7">
                     <div class="glass-card">
-                        <div class="d-flex align-items-center mb-4">
+                        
                             <div class="bg-forest bg-opacity-10 text-forest p-3 rounded-4 me-3">
                                 <i class="bi bi-gear-fill fs-4"></i>
                             </div>

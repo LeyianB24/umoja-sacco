@@ -104,7 +104,7 @@ $layout->header($pageTitle);
             <div class="row g-4 mb-5">
                 <div class="col-md-3">
                     <div class="glass-stat h-100 stat-card-dark">
-                        <div class="d-flex justify-content-between align-items-start">
+                        
                             <div>
                                 <div class="small text-white opacity-50 fw-800 text-uppercase ls-1">Pending</div>
                                 <h2 class="fw-800 text-white mt-1 mb-0"><?= $stats['pending'] ?></h2>
@@ -117,7 +117,7 @@ $layout->header($pageTitle);
                 </div>
                 <div class="col-md-3">
                     <div class="glass-stat h-100">
-                        <div class="d-flex justify-content-between align-items-start">
+                        
                             <div>
                                 <div class="small text-muted fw-800 text-uppercase ls-1">In Progress</div>
                                 <h2 class="fw-800 text-forest mt-1 mb-0"><?= $stats['open'] ?></h2>
@@ -130,7 +130,7 @@ $layout->header($pageTitle);
                 </div>
                 <div class="col-md-3">
                     <div class="glass-stat h-100 stat-card-accent">
-                        <div class="d-flex justify-content-between align-items-start">
+                        
                             <div>
                                 <div class="small text-forest opacity-50 fw-800 text-uppercase ls-1">Resolved</div>
                                 <h2 class="fw-800 text-forest mt-1 mb-0"><?= $stats['closed'] ?></h2>
@@ -143,7 +143,7 @@ $layout->header($pageTitle);
                 </div>
                 <div class="col-md-3">
                     <div class="glass-stat h-100">
-                        <div class="d-flex justify-content-between align-items-start">
+                        
                             <div>
                                 <div class="small text-muted fw-800 text-uppercase ls-1">Total Issues</div>
                                 <h2 class="fw-800 text-forest mt-1 mb-0"><?= $stats['total'] ?></h2>
@@ -231,7 +231,7 @@ $layout->header($pageTitle);
                                     </span>
                                 </td>
                                 <td>
-                                    <div class="d-flex align-items-center gap-2">
+                                    
                                         <div class="avatar-initial"><?= getInitials($t['sender_name']) ?></div>
                                         <div>
                                             <div class="small fw-bold  mb-0"><?= htmlspecialchars($t['sender_name'] ?? 'Guest') ?></div>

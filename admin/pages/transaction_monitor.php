@@ -74,7 +74,7 @@ $layout->header("Transaction Monitor"); ?>
             <div class="card card-flush">
                 <div class="card-header align-items-center py-5 gap-2 gap-md-5">
                     <div class="card-title">
-                        <div class="d-flex align-items-center position-relative my-1">
+                        
                             <h3>Transaction Monitoring & Recovery</h3>
                         </div>
                     </div>
@@ -117,8 +117,8 @@ $layout->header("Transaction Monitor"); ?>
                                             <tr>
                                                 <td><?php echo date('d M, H:i', strtotime($s['created_at'])); ?></td>
                                                 <td>
-                                                    <div class="d-flex align-items-center">
-                                                        <div class="d-flex flex-column">
+                                                    
+                                                        
                                                             <a href="#" class="text-gray-800 text-hover-primary mb-1"><?php echo $s['full_name']; ?></a>
                                                             <span><?php echo $s['phone']; ?></span>
                                                         </div>

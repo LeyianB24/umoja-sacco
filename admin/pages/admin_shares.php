@@ -159,11 +159,15 @@ $jsData   = json_encode($chartData);
 <div class="main-content-wrapper">
     <?php $layout->topbar($pageTitle ?? ""); ?>
     <div class="container-fluid px-4 py-4">
-<div class="d-flex">
-    <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper">
-        <?php $layout->topbar($pageTitle ?? ""); ?>
-        <div class="container-fluid px-4 py-4">
+
+
+    
+    
+
+    
+    
+        
+        
     <style>
         :root {
             --font-main: 'Plus Jakarta Sans', sans-serif;
@@ -285,12 +289,12 @@ $jsData   = json_encode($chartData);
                 <div class="mb-4"><?= $msg ?></div>
             <?php endif; ?>
             
-            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-5 gap-3">
+            
                 <div>
                     <h2 class="fw-bold mb-1" style="color: var(--brand-dark);">Corporate Equity</h2>
                     <p class="text-secondary mb-0">Global Sacco Share Portfolio & Valuation.</p>
                 </div>
-                <div class="d-flex gap-2">
+                
                     <button class="btn btn-lime d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#dividendModal">
                         <i class="bi bi-cash-stack"></i>
                         <span>Distribute Dividend</span>
@@ -347,7 +351,7 @@ $jsData   = json_encode($chartData);
                 
                 <div class="col-xl-4 col-lg-5 col-md-12">
                     <div class="stat-card hero-card d-flex flex-column justify-content-between h-100">
-                        <div class="d-flex justify-content-between align-items-start z-1">
+                        
                             <span class="badge bg-white bg-opacity-10 border border-white border-opacity-10 rounded-pill px-3 py-2 fw-normal backdrop-blur">
                                 <i class="bi bi-bank me-2"></i> Corporate Net Worth (NAV)
                             </span>
@@ -375,7 +379,7 @@ $jsData   = json_encode($chartData);
                     <div class="row g-4 h-100">
                         <div class="col-md-5">
                             <div class="stat-card">
-                                <div class="d-flex align-items-center justify-content-between mb-3">
+                                
                                     <div>
                                         <p class="text-uppercase text-muted small fw-bold mb-1">Total Issued Units</p>
                                         <h3 class="fw-bold mb-0"><?= number_format((float)$valuation['total_units'], 4) ?></h3>
@@ -385,11 +389,11 @@ $jsData   = json_encode($chartData);
                                     </div>
                                 </div>
                                 <hr class="border-light my-3">
-                                <div class="d-flex align-items-center justify-content-between mb-2 pb-2 border-bottom">
+                                
                                     <span class="text-muted small">Total Assets</span>
                                     <span class="fw-bold text-success">KES <?= number_format((float)$valuation['total_assets'], 2) ?></span>
                                 </div>
-                                <div class="d-flex align-items-center justify-content-between">
+                                
                                     <span class="text-muted small">Total Liabilities</span>
                                     <span class="fw-bold text-danger">KES <?= number_format((float)$valuation['liabilities'], 2) ?></span>
                                 </div>
@@ -398,7 +402,7 @@ $jsData   = json_encode($chartData);
 
                         <div class="col-md-7">
                             <div class="stat-card bg-light border-0">
-                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                
                                     <p class="text-uppercase text-muted small fw-bold mb-0">Corporate Portfolio Growth</p>
                                     <span class="badge bg-white border text-success shadow-sm">
                                         <i class="bi bi-graph-up-arrow me-1"></i> Active
@@ -435,7 +439,7 @@ $jsData   = json_encode($chartData);
                                         <?php if(!empty($transactions)): foreach ($transactions as $row): ?>
                                             <tr>
                                                 <td class="ps-3">
-                                                    <div class="d-flex flex-column">
+                                                    
                                                         <span class="fw-bold"><?= date('M d, Y', strtotime($row['created_at'])) ?></span>
                                                         <span class="small text-muted"><?= date('H:i A', strtotime($row['created_at'])) ?></span>
                                                     </div>
@@ -447,7 +451,7 @@ $jsData   = json_encode($chartData);
                                                     </span>
                                                 </td>
                                                 <td>
-                                                    <div class="d-flex align-items-center">
+                                                    
                                                         <div class="bg-success bg-opacity-10 text-success rounded-circle p-1 me-2" style="font-size:0.6rem;">
                                                             <i class="bi bi-plus-lg"></i>
                                                         </div>
@@ -475,7 +479,7 @@ $jsData   = json_encode($chartData);
                             <div class="list-group list-group-flush mt-2">
                                 <?php foreach ($topHolders as $idx => $holder): ?>
                                     <div class="list-group-item d-flex justify-content-between align-items-center px-4 py-3 bg-transparent border-light">
-                                        <div class="d-flex align-items-center gap-3">
+                                        
                                             <div class="text-muted fw-bold small">#<?= $idx + 1 ?></div>
                                             <div>
                                                 <div class="fw-bold text-dark"><?= htmlspecialchars($holder['full_name']) ?></div>
@@ -505,11 +509,11 @@ $jsData   = json_encode($chartData);
                     <input type="hidden" name="action" value="process_exit">
                     <input type="hidden" name="request_id" id="exit_req_id">
                     
-                    <div class="d-flex justify-content-between mb-3 pb-3 border-bottom">
+                    
                         <span class="text-muted">Member</span>
                         <span class="fw-bold" id="exit_member_name"></span>
                     </div>
-                    <div class="d-flex justify-content-between mb-3 pb-3 border-bottom">
+                    
                         <span class="text-muted">Refund Amount</span>
                         <span class="fw-bold text-danger fs-5" id="exit_amount"></span>
                     </div>

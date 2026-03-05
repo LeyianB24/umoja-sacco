@@ -178,11 +178,15 @@ $pageTitle = "Ticket View";
 <div class="main-content-wrapper">
     <?php $layout->topbar($pageTitle ?? ""); ?>
     <div class="container-fluid px-4 py-4">
-<div class="d-flex">
-    <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper">
-        <?php $layout->topbar($pageTitle ?? ""); ?>
-        <div class="container-fluid px-4 py-4">
+
+
+    
+    
+
+    
+    
+        
+        
 
     
 
@@ -214,7 +218,7 @@ $pageTitle = "Ticket View";
                         </div>
 
                         <div class="chat-area mb-4 shadow-sm" id="chatBox">
-                            <div class="d-flex gap-3 mb-4 chat-bubble-anim">
+                            
                                 <div class="chat-avatar bg-forest-light text-lime"><?= getInitials($creator_name) ?></div>
                                 <div class="msg-bubble msg-member">
                                     <div class="fw-bold mb-1 small text-forest"><?= htmlspecialchars($creator_name) ?></div>
@@ -270,8 +274,8 @@ $pageTitle = "Ticket View";
                             
                             <form method="post">
                                 <textarea name="reply_message" class="form-control border-0 rounded-4 shadow-sm mb-4 p-3" rows="4" placeholder="Type your response here..." required></textarea>
-                                <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
-                                    <div class="d-flex align-items-center gap-3 bg-white p-2 rounded-pill shadow-sm border px-3">
+                                
+                                    
                                         <span class="small fw-800 text-muted text-uppercase ls-1">Update Status:</span>
                                         <select name="status" class="form-select form-select-sm border-0 bg-transparent fw-bold text-forest" style="width: auto; min-width: 120px;">
                                             <option value="Pending" <?= $ticket['status']=='Pending'?'selected':'' ?>>Pending</option>
@@ -291,15 +295,15 @@ $pageTitle = "Ticket View";
                 <div class="col-lg-4">
                     <div class="glass-card">
                         <h6 class="fw-800 text-uppercase small text-muted mb-4 ls-1">Meta-Information</h6>
-                        <div class="d-flex justify-content-between mb-3 pb-3 border-bottom">
+                        
                             <span class="text-muted small">Category</span>
                             <span class="badge bg-forest bg-opacity-10 text-forest rounded-pill px-3"><?= ucfirst($ticket['category']) ?></span>
                         </div>
-                        <div class="d-flex justify-content-between mb-3 pb-3 border-bottom">
+                        
                             <span class="text-muted small">Submitted On</span>
                             <span class="fw-800 text-forest small"><?= date('d M, Y', strtotime($ticket['created_at'])) ?></span>
                         </div>
-                        <div class="d-flex justify-content-between">
+                        
                             <span class="text-muted small">Ticket Reference</span>
                             <span class="fw-800 text-forest small">#US-<?= $support_id ?></span>
                         </div>

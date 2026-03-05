@@ -260,20 +260,24 @@ $stats = $db->query("SELECT
 <div class="main-content-wrapper">
     <?php $layout->topbar($pageTitle ?? ""); ?>
     <div class="container-fluid px-4 py-4">
-<div class="d-flex">
-    <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper">
-        <?php $layout->topbar($pageTitle ?? ""); ?>
-        <div class="container-fluid px-4 py-4">
+
+
+    
+    
+
+    
+    
+        
+        
     
 
 
-            <div class="d-flex justify-content-between align-items-center mb-4">
+            
                 <div>
                     <h4 class="fw-bold mb-1" style="color: var(--dark-green);">Loan Portfolio</h4>
                     <p class="text-muted small mb-0">Review applications and monitor disbursements.</p>
                 </div>
-                <div class="d-flex gap-2">
+                
                     <a href="?<?= http_build_query(array_merge($_GET, ['action' => 'print_report'])) ?>" target="_blank" class="btn btn-outline-success btn-sm rounded-pill fw-bold">
                         <i class="bi bi-printer me-1"></i> Print
                     </a>
@@ -292,7 +296,7 @@ $stats = $db->query("SELECT
             <?php flash_render(); ?>
 
             <div class="glass-card p-3 mb-4">
-                <div class="d-flex flex-wrap gap-3 align-items-center justify-content-between">
+                
                     <div class="btn-group shadow-sm rounded-pill overflow-hidden" role="group">
                         <a href="?status=pending" class="btn btn-sm btn-filter <?= $filter=='pending'?'active':'' ?>">
                             Pending <span class="badge bg-white  ms-1 rounded-pill text-dark"><?= $stats['pending'] ?></span>
@@ -349,7 +353,7 @@ $stats = $db->query("SELECT
                             ?>
                             <tr>
                                 <td class="ps-4 py-3">
-                                    <div class="d-flex align-items-center gap-3">
+                                    
                                         <img src="<?= $img ?>" class="rounded-circle avatar-circle shadow-sm">
                                         <div>
                                             <div class="fw-bold "><?= htmlspecialchars($l['full_name']) ?></div>
@@ -425,7 +429,7 @@ if($loans->num_rows > 0):
                         <?php 
                         $resG = $db->query("SELECT lg.*, m.full_name FROM loan_guarantors lg JOIN members m ON lg.member_id = m.member_id WHERE lg.loan_id = " . (int)$l['loan_id']);
                         if($resG && $resG->num_rows > 0): while($g = $resG->fetch_assoc()): ?>
-                            <div class="d-flex justify-content-between align-items-center mb-1">
+                            
                                 <span class="small fw-bold "><?= htmlspecialchars($g['full_name']) ?></span>
                                 <span class="badge bg-white text-success border small ksh-font">KES <?= ksh($g['amount_locked']) ?></span>
                             </div>
@@ -435,7 +439,7 @@ if($loans->num_rows > 0):
                     </div>
                 </div>
                 
-                <div class="d-flex gap-2">
+                
                     <button type="button" class="btn btn-outline-danger w-50 py-2 rounded-pill fw-bold" data-bs-toggle="modal" data-bs-target="#rejectModal<?= $l['loan_id'] ?>" data-bs-dismiss="modal">
                         Reject
                     </button>
@@ -474,7 +478,7 @@ if($loans->num_rows > 0):
                         <label>Reason for Rejection *</label>
                     </div>
                     
-                    <div class="d-flex gap-2">
+                    
                         <button type="button" class="btn btn-light w-50 py-2 rounded-pill" data-bs-toggle="modal" data-bs-target="#approveModal<?= $l['loan_id'] ?>" data-bs-dismiss="modal">Back</button>
                         <button type="submit" class="btn btn-danger w-50 py-2 rounded-pill fw-bold shadow-sm">Confirm Reject</button>
                     </div>

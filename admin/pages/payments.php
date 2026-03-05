@@ -198,11 +198,15 @@ $pageTitle = "Payments Ledger";
 <div class="main-content-wrapper">
     <?php $layout->topbar($pageTitle ?? ""); ?>
     <div class="container-fluid px-4 py-4">
-<div class="d-flex">
-    <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper">
-        <?php $layout->topbar($pageTitle ?? ""); ?>
-        <div class="container-fluid px-4 py-4">
+
+
+    
+    
+
+    
+    
+        
+        
     <style>
         .stat-card {
             background: rgba(255, 255, 255, 0.8);
@@ -246,12 +250,12 @@ $pageTitle = "Payments Ledger";
 
 
             
-            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-5 gap-3">
+            
                 <div>
                     <h2 class="fw-bold mb-1" style="color: var(--forest-dark);">Transactions Ledger</h2>
                     <p class="text-muted mb-0">Monitor financial inflows and outflows.</p>
                 </div>
-                <div class="d-flex gap-2">
+                
                     <div class="dropdown">
                         <button class="btn btn-outline-forest dropdown-toggle shadow-sm" data-bs-toggle="dropdown">
                             <i class="bi bi-download me-2"></i>Export
@@ -343,7 +347,7 @@ $pageTitle = "Payments Ledger";
                                 ?>
                                 <tr>
                                     <td class="ps-4">
-                                        <div class="d-flex align-items-center gap-3">
+                                        
                                             <div class="avatar-initials shadow-sm" style="background: <?= $avatar_bg ?>; color: <?= $avatar_col ?>;">
                                                 <?= $initials ?>
                                             </div>

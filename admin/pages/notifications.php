@@ -169,7 +169,7 @@ $pageTitle = "My Notifications";
 
  
                
-            <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-5 page-header">
+            
                 <div>
                     <h3 class="mb-1 display-6 fw-bold">Admin Notifications</h3>
                     <p class="small mb-0 text-muted fs-6">Stay up-to-date with system alerts and member actions.</p>
@@ -181,7 +181,7 @@ $pageTitle = "My Notifications";
                 <div class="col-xl-9 col-lg-10">
                     
                     <?php if ($result->num_rows > 0): ?>
-                        <div class="d-flex flex-column gap-3">
+                        
                             <?php while ($row = $result->fetch_assoc()): 
                                 $title = htmlspecialchars($row['title'] ?: 'Notification');
                                 $message = htmlspecialchars($row['message'] ?: '');
@@ -206,7 +206,7 @@ $pageTitle = "My Notifications";
                                 </div>
                                 
                                 <div class="grow pt-1 w-100">
-                                    <div class="d-flex justify-content-between align-items-start mb-1">
+                                    
                                         <h6 class="notif-title mb-0 fs-5">
                                             <?= $title ?>
                                             <?php if($is_new): ?>

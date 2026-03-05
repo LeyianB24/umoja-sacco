@@ -35,11 +35,15 @@ $pageTitle = "System Health & Integrity";
 <div class="main-content-wrapper">
     <?php $layout->topbar($pageTitle ?? ""); ?>
     <div class="container-fluid px-4 py-4">
-<div class="d-flex">
-    <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper">
-        <?php $layout->topbar($pageTitle ?? ""); ?>
-        <div class="container-fluid px-4 py-4">
+
+
+    
+    
+
+    
+    
+        
+        
     
 
 
@@ -49,7 +53,7 @@ $pageTitle = "System Health & Integrity";
                 <div class="col-md-7">
                     <h1 class="display-5 fw-800 mb-3">System Health Center</h1>
                     <p class="lead opacity-75 mb-4">Monitor real-time operational metrics, financial integrity checks, and security audit logs.</p>
-                    <div class="d-flex gap-3">
+                    
                         <form method="POST">
                             <button type="submit" name="run_audit" class="btn btn-lime rounded-pill px-4 py-2">
                                 <i class="bi bi-shield-check me-2"></i> Run Full Audit
@@ -69,7 +73,7 @@ $pageTitle = "System Health & Integrity";
 
         <?php if ($audit_results): ?>
         <div class="alert alert-info border-0 rounded-4 shadow-sm mb-4 animate__animated animate__fadeIn">
-            <div class="d-flex align-items-center">
+            
                 <i class="bi bi-info-circle-fill fs-4 me-3"></i>
                 <div>
                     <h6 class="mb-1 fw-bold">Audit Completed</h6>
@@ -83,7 +87,7 @@ $pageTitle = "System Health & Integrity";
         <div class="row g-4 mb-5">
             <div class="col-md-4">
                 <div class="stat-card">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
+                    
                         <h6 class="mb-0 fw-bold">Ledger Balance Sync</h6>
                         <span class="health-indicator <?= $health['ledger_imbalance'] ? 'bg-err' : 'bg-ok' ?>"></span>
                     </div>
@@ -97,7 +101,7 @@ $pageTitle = "System Health & Integrity";
             </div>
             <div class="col-md-4">
                 <div class="stat-card">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
+                    
                         <h6 class="mb-0 fw-bold">Member Account Sync</h6>
                         <span class="health-indicator bg-ok"></span>
                     </div>
@@ -109,7 +113,7 @@ $pageTitle = "System Health & Integrity";
             </div>
             <div class="col-md-4">
                 <div class="stat-card">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
+                    
                         <h6 class="mb-0 fw-bold">Database Storage</h6>
                         <i class="bi bi-database text-muted"></i>
                     </div>
@@ -127,7 +131,7 @@ $pageTitle = "System Health & Integrity";
         <div class="row g-4 mb-5">
             <div class="col-md-6">
                 <div class="stat-card p-4">
-                    <div class="d-flex gap-4">
+                    
                         <div class="icon-puck bg-forest text-lime fs-4"><i class="bi bi-shield-check"></i></div>
                         <div>
                             <h5 class="fw-bold">Financial Integrity Audit</h5>
@@ -143,7 +147,7 @@ $pageTitle = "System Health & Integrity";
             </div>
             <div class="col-md-6">
                 <div class="stat-card p-4">
-                    <div class="d-flex gap-4">
+                    
                         <div class="icon-puck bg-secondary bg-opacity-10 text-secondary fs-4"><i class="bi bi-broadcast"></i></div>
                         <div>
                             <h5 class="fw-bold">Performance Monitor</h5>

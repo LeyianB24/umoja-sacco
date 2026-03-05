@@ -55,11 +55,15 @@ $pageTitle = "System Dashboard";
 <div class="main-content-wrapper">
     <?php $layout->topbar($pageTitle ?? ""); ?>
     <div class="container-fluid px-4 py-4">
-<div class="d-flex">
-    <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper">
-        <?php $layout->topbar($pageTitle ?? ""); ?>
-        <div class="container-fluid px-4 py-4">
+
+
+    
+    
+
+    
+    
+        
+        
     <style>
         .hp-hero { 
             background: linear-gradient(135deg, var(--forest) 0%, var(--forest-mid) 100%); 
@@ -93,7 +97,7 @@ $pageTitle = "System Dashboard";
                 <div class="col-md-3">
                     <a href="<?= BASE_URL ?>/admin/pages/support.php" class="text-decoration-none">
                         <div class="glass-stat">
-                            <div class="d-flex justify-content-between align-items-start mb-4">
+                            
                                 <div class="icon-puck bg-primary bg-opacity-10 text-primary"><i class="bi bi-ticket-perforated"></i></div>
                                 <div class="text-end">
                                     <div class="small text-muted fw-bold">TICKETS</div>
@@ -109,7 +113,7 @@ $pageTitle = "System Dashboard";
                 <div class="col-md-3">
                     <a href="<?= BASE_URL ?>/admin/pages/audit_logs.php" class="text-decoration-none">
                         <div class="glass-stat">
-                            <div class="d-flex justify-content-between align-items-start mb-4">
+                            
                                 <div class="icon-puck bg-success bg-opacity-10 text-success"><i class="bi bi-activity"></i></div>
                                 <div class="text-end">
                                     <div class="small text-muted fw-bold">LOGS</div>
@@ -125,7 +129,7 @@ $pageTitle = "System Dashboard";
                 <div class="col-md-3">
                     <a href="<?= BASE_URL ?>/admin/pages/revenue.php" class="text-decoration-none">
                         <div class="glass-stat">
-                            <div class="d-flex justify-content-between align-items-start mb-4">
+                            
                                 <div class="icon-puck bg-dark text-lime"><i class="bi bi-bank"></i></div>
                                 <div class="text-end">
                                     <div class="small text-muted fw-bold">CASH</div>
@@ -141,7 +145,7 @@ $pageTitle = "System Dashboard";
                 <div class="col-md-3">
                     <a href="<?= BASE_URL ?>/admin/pages/system_health.php" class="text-decoration-none">
                         <div class="glass-stat">
-                            <div class="d-flex justify-content-between align-items-start mb-4">
+                            
                                 <div class="icon-puck bg-warning bg-opacity-10 text-warning"><i class="bi bi-database"></i></div>
                                 <div class="text-end">
                                     <div class="small text-muted fw-bold">STORAGE</div>
@@ -160,7 +164,7 @@ $pageTitle = "System Dashboard";
                 <div class="col-12">
                     <a href="<?= BASE_URL ?>/admin/pages/live_monitor.php" class="text-decoration-none">
                         <div class="glass-stat border-0 shadow-sm">
-                            <div class="d-flex justify-content-between align-items-center mb-4">
+                            
                                 <div>
                                     <h5 class="fw-bold mb-1"><i class="bi bi-broadcast text-danger me-2"></i>Live Operations Monitor</h5>
                                     <p class="small text-muted mb-0">Real-time status of payment gateways and notification engines.</p>
@@ -205,7 +209,7 @@ $pageTitle = "System Dashboard";
             <div class="row g-4">
                 <div class="col-lg-8">
                     <div class="table-glass shadow-sm p-4">
-                        <div class="d-flex justify-content-between align-items-center mb-4">
+                        
                             <h5 class="fw-bold mb-0">Active Support Inbox</h5>
                             <a href="<?= BASE_URL ?>/admin/pages/support.php" class="btn btn-light rounded-pill px-4 btn-sm border fw-bold text-forest">Open Support Center</a>
                         </div>

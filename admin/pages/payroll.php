@@ -223,20 +223,24 @@ $history_runs = $db->query("SELECT * FROM payroll_runs ORDER BY month DESC LIMIT
 <div class="main-content-wrapper">
     <?php $layout->topbar($pageTitle ?? ""); ?>
     <div class="container-fluid px-4 py-4">
-<div class="d-flex">
-    <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper">
-        <?php $layout->topbar($pageTitle ?? ""); ?>
-        <div class="container-fluid px-4 py-4">
+
+
+    
+    
+
+    
+    
+        
+        
     
 
 
-            <div class="d-flex justify-content-between align-items-center mb-4">
+            
                 <div>
                     <h3 class="fw-bold mb-1 text-gradient">Payroll Management</h3>
                     <p class="text-muted small mb-0">Disburse salaries, manage tax deductions, and generate payslips.</p>
                 </div>
-                <div class="d-flex gap-2">
+                
                     <button class="btn btn-light border shadow-sm rounded-pill" data-bs-toggle="modal" data-bs-target="#historyModal">
                         <i class="bi bi-clock-history me-2"></i> History
                     </button>
@@ -252,7 +256,7 @@ $history_runs = $db->query("SELECT * FROM payroll_runs ORDER BY month DESC LIMIT
                     <!-- Period Info -->
                     <div class="col-md-5">
                         <div class="hd-glass p-4 h-100 d-flex flex-column justify-content-center">
-                            <div class="d-flex justify-content-between align-items-start mb-2">
+                            
                                 <span class="badge text-uppercase fw-bold rounded-pill border px-3 py-2 <?= $active_run['status'] === 'paid' ? 'bg-success text-white border-success' : ($active_run['status'] === 'approved' ? 'bg-info text-white border-info' : 'bg-warning bg-opacity-10 text-warning border-warning') ?>">
                                     <?= strtoupper($active_run['status']) ?>
                                 </span>
@@ -287,11 +291,11 @@ $history_runs = $db->query("SELECT * FROM payroll_runs ORDER BY month DESC LIMIT
 
                 <!-- ACTIONS TOOLBAR -->
                 <div class="hd-glass p-3 mb-4">
-                    <div class="d-flex justify-content-between align-items-center">
+                    
                         <div class="text-muted small">
                             Actions for <strong><?= date('F Y', strtotime($active_run['month'] ?? 'now')) ?></strong>
                         </div>
-                        <div class="d-flex gap-2">
+                        
                             <?php if ($active_run['status'] === 'draft'): ?>
                                 <form method="POST" class="d-inline">
                                     <input type="hidden" name="action" value="calculate_batch">

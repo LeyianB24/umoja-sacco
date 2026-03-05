@@ -42,11 +42,15 @@ $pool_balance = $engine->getWelfarePoolBalance();
 <div class="main-content-wrapper">
     <?php $layout->topbar($pageTitle ?? ""); ?>
     <div class="container-fluid px-4 py-4">
-<div class="d-flex">
-    <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper">
-        <?php $layout->topbar($pageTitle ?? ""); ?>
-        <div class="container-fluid px-4 py-4">
+
+
+    
+    
+
+    
+    
+        
+        
     
 
 
@@ -54,7 +58,7 @@ $pool_balance = $engine->getWelfarePoolBalance();
                 <div class="col-xl-3 col-md-6">
                     <div class="glass-card p-3 h-100 bg-forest text-white overflow-hidden position-relative mb-0 border-0 shadow-lg">
                         <div class="position-absolute end-0 bottom-0 opacity-10 p-2"><i class="bi bi-safe2 display-1"></i></div>
-                        <div class="d-flex justify-content-between align-items-start z-1 position-relative">
+                        
                             <div>
                                 <div class="text-white-50 text-uppercase small fw-bold mb-0">Welfare Pool</div>
                                 <h3 class="fw-bold mb-0"><?= ksh($pool_balance) ?></h3>
@@ -65,7 +69,7 @@ $pool_balance = $engine->getWelfarePoolBalance();
                 </div>
                 <div class="col-xl-3 col-md-6">
                     <div class="glass-card p-3 h-100 mb-0">
-                        <div class="d-flex justify-content-between">
+                        
                             <div><div class="text-muted text-uppercase small fw-bold">Active Cases</div><h3 class="fw-bold mb-0 "><?= $stats['active'] ?></h3></div>
                             <div class="icon-box bg-warning bg-opacity-10 text-warning"><i class="bi bi-hourglass-split"></i></div>
                         </div>
@@ -73,7 +77,7 @@ $pool_balance = $engine->getWelfarePoolBalance();
                 </div>
                 <div class="col-xl-3 col-md-6">
                     <div class="glass-card p-3 h-100 mb-0">
-                        <div class="d-flex justify-content-between">
+                        
                             <div><div class="text-muted text-uppercase small fw-bold">Total Donated</div><h3 class="fw-bold mb-0 "><?= ksh($stats['total_raised']) ?></h3></div>
                             <div class="icon-box bg-info bg-opacity-10 text-info"><i class="bi bi-heart-fill"></i></div>
                         </div>
@@ -81,7 +85,7 @@ $pool_balance = $engine->getWelfarePoolBalance();
                 </div>
                 <div class="col-xl-3 col-md-6">
                     <div class="glass-card p-3 h-100 mb-0">
-                        <div class="d-flex justify-content-between">
+                        
                             <div><div class="text-muted text-uppercase small fw-bold">Total Disbursed</div><h3 class="fw-bold mb-0 "><?= ksh($stats['total_disbursed']) ?></h3></div>
                             <div class="icon-box bg-success bg-opacity-10 text-success"><i class="bi bi-check-circle-fill"></i></div>
                         </div>
@@ -128,7 +132,7 @@ $pool_balance = $engine->getWelfarePoolBalance();
                             ?>
                             <tr>
                                 <td class="ps-4">
-                                    <div class="d-flex align-items-center">
+                                    
                                         <img src="<?= $avatar ?>" class="rounded-circle me-3" width="35" height="35" style="object-fit:cover;">
                                         <div><div class="fw-bold "><?= $row['full_name'] ?></div><div class="small text-muted"><?= $row['phone'] ?></div></div>
                                     </div>
@@ -153,7 +157,7 @@ $pool_balance = $engine->getWelfarePoolBalance();
                                             <button type="submit" class="btn btn-sm btn-success rounded-pill px-3" onclick="return confirm('Disburse funds to member wallet?')">Disburse</button>
                                         </form>
                                     <?php elseif($row['status'] === 'active' || $row['status'] === 'funded'): ?>
-                                        <div class="d-flex justify-content-end gap-1">
+                                        
                                             <?php if($row['status'] === 'active'): ?>
                                                 <button class="btn btn-sm btn-outline-forest rounded-pill px-3" onclick='openDonationModal(<?= json_encode($row) ?>)'>Donation</button>
                                             <?php endif; ?>
@@ -253,7 +257,7 @@ $pool_balance = $engine->getWelfarePoolBalance();
                 <div id="reject_section" class="d-none">
                     <h6 class="fw-bold text-danger mb-3">Rejection Reason</h6>
                     <textarea name="reason" class="form-control mb-4" rows="3" placeholder="Provide reason for rejection..."></textarea>
-                    <div class="d-flex gap-2">
+                    
                         <button type="button" class="btn btn-light rounded-pill px-4 fw-bold" onclick="location.reload()">Cancel</button>
                         <button type="button" class="btn btn-danger flex-fill rounded-pill fw-bold" onclick="confirmReject()">Confirm Rejection</button>
                     </div>

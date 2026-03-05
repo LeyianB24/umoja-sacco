@@ -19,11 +19,15 @@ $pageTitle = "Expenditure Portal";
 <div class="main-content-wrapper">
     <?php $layout->topbar($pageTitle ?? ""); ?>
     <div class="container-fluid px-4 py-4">
-<div class="d-flex">
-    <?php $layout->sidebar(); ?>
-    <div class="flex-fill main-content-wrapper">
-        <?php $layout->topbar($pageTitle ?? ""); ?>
-        <div class="container-fluid px-4 py-4">
+
+
+    
+    
+
+    
+    
+        
+        
     
 
 <?php
@@ -170,12 +174,12 @@ $investments_all = $investments_list->fetch_all(MYSQLI_ASSOC);
 ?>
 
 
-            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-5 gap-3">
+            
                 <div>
                     <h2 class="fw-bold mb-1" style="color: var(--forest-dark);">Expenditure Portal</h2>
                     <p class="text-muted mb-0">Record and track office operational spending.</p>
                 </div>
-                <div class="d-flex gap-2">
+                
                     <div class="dropdown">
                         <button class="btn btn-outline-dark dropdown-toggle shadow-sm" data-bs-toggle="dropdown" style="border-radius: 50px;">
                             <i class="bi bi-download me-2"></i>Export
