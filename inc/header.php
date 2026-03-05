@@ -11,7 +11,7 @@ if (session_status() === PHP_SESSION_NONE) {
 /* -------------------------------------------------------------
    2. Load Configuration
 ------------------------------------------------------------- */
-require_once __DIR__ . '/../config/app_config.php';
+require_once __DIR__ . '/../config/app.php';
 
 // Seed CSRF token in session for all pages
 if (class_exists('USMS\\Middleware\\CsrfMiddleware')) {
