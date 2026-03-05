@@ -126,6 +126,24 @@ if (!function_exists('flash_set')) {
 }
 
 /**
+ * Get and remove the first flash message from session
+ * @return array|null ['message' => string, 'type' => string] or null
+ */
+if (!function_exists('flash_get')) {
+    function flash_get()
+    {
+        if (!empty($_SESSION['flash'])) {
+            $flash = array_shift($_SESSION['flash']);
+            return [
+                'message' => $flash['msg'] ?? '',
+                'type' => $flash['type'] ?? 'info'
+            ];
+        }
+        return null;
+    }
+}
+
+/**
  * Render flash messages with Bootstrap Icons
  */
 if (!function_exists('flash_render')) {
