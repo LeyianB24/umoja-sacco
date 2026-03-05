@@ -10,16 +10,10 @@ $layout = LayoutManager::create('admin');
 
 /**
  * admin/member_profile.php
- * Member Portrait & Financial Intelligence Hub - V28 Glassmorphism
+ * Member Portrait & Financial Intelligence Hub
  */
 
-if (session_status() === PHP_SESSION_NONE) session_start();
-
-// 1. AUTHENTICATION & PERMISSION
 require_permission();
-
-// Initialize Layout Manager
-$layout = LayoutManager::create('admin');
 
 $member_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 if ($member_id <= 0) {
@@ -28,19 +22,18 @@ if ($member_id <= 0) {
     exit;
 }
 
-// 1.5 HANDLE KYC ACTIONS (POST)
+// POST HANDLERS
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf_token();
 
-    // 1.5.1 HANDLE FILE UPLOAD
+    // File Upload
     if (!empty($_FILES['kyc_upload']['name'])) {
-        $doc_type = $_POST['doc_type'] ?? '';
+        $doc_type      = $_POST['doc_type'] ?? '';
         $allowed_types = ['image/jpeg', 'image/png', 'application/pdf'];
-        $max_size = 5 * 1024 * 1024; // 5MB
-        
-        $file_type = mime_content_type($_FILES['kyc_upload']['tmp_name']);
-        $file_size = $_FILES['kyc_upload']['size'];
-        
+        $max_size      = 5 * 1024 * 1024;
+        $file_type     = mime_content_type($_FILES['kyc_upload']['tmp_name']);
+        $file_size     = $_FILES['kyc_upload']['size'];
+
         if (!in_array($file_type, $allowed_types)) {
             flash_set("Invalid file type. Only JPG, PNG, and PDF are allowed.", "danger");
         } elseif ($file_size > $max_size) {
@@ -48,37 +41,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $upload_dir = __DIR__ . '/../../uploads/kyc/';
             if (!is_dir($upload_dir)) mkdir($upload_dir, 0777, true);
-            
-            $file_name = $_FILES['kyc_upload']['name'];
-            $file_tmp = $_FILES['kyc_upload']['tmp_name'];
-            $ext = pathinfo($file_name, PATHINFO_EXTENSION);
+            $ext      = pathinfo($_FILES['kyc_upload']['name'], PATHINFO_EXTENSION);
             $new_name = "{$doc_type}_{$member_id}_" . time() . ".$ext";
-            
-            if (move_uploaded_file($file_tmp, $upload_dir . $new_name)) {
-                // Insert or Update existing doc for this type
-                $stmt = $conn->prepare("INSERT INTO member_documents (member_id, document_type, file_path, status, uploaded_at, verified_by, verified_at, verification_notes) VALUES (?, ?, ?, 'verified', NOW(), ?, NOW(), 'Uploaded by Admin') ON DUPLICATE KEY UPDATE file_path = VALUES(file_path), status = 'verified', uploaded_at = NOW(), verified_by = VALUES(verified_by), verified_at = NOW(), verification_notes = VALUES(verification_notes)");
+            if (move_uploaded_file($_FILES['kyc_upload']['tmp_name'], $upload_dir . $new_name)) {
+                $stmt     = $conn->prepare("INSERT INTO member_documents (member_id, document_type, file_path, status, uploaded_at, verified_by, verified_at, verification_notes) VALUES (?, ?, ?, 'verified', NOW(), ?, NOW(), 'Uploaded by Admin') ON DUPLICATE KEY UPDATE file_path = VALUES(file_path), status = 'verified', uploaded_at = NOW(), verified_by = VALUES(verified_by), verified_at = NOW(), verification_notes = VALUES(verification_notes)");
                 $admin_id = $_SESSION['admin_id'];
                 $stmt->bind_param("issi", $member_id, $doc_type, $new_name, $admin_id);
-                
                 if ($stmt->execute()) {
                     flash_set("Document uploaded and auto-verified successfully.", "success");
-                    
-                    // Recalculate overall KYC status
                     $q = $conn->query("SELECT status FROM member_documents WHERE member_id = $member_id AND document_type IN ('national_id_front', 'national_id_back', 'passport_photo')");
                     $all_docs = $q->fetch_all(MYSQLI_ASSOC);
-                    $verified_count = 0;
-                    $rejected_count = 0;
-                    foreach($all_docs as $d) {
+                    $verified_count = 0; $rejected_count = 0;
+                    foreach ($all_docs as $d) {
                         if ($d['status'] === 'verified') $verified_count++;
                         if ($d['status'] === 'rejected') $rejected_count++;
                     }
-                    
-                    $new_kyc_status = 'pending';
-                    if ($verified_count >= 3) $new_kyc_status = 'approved'; 
-                    elseif ($rejected_count > 0) $new_kyc_status = 'rejected';
-                    
-                    $conn->query("UPDATE members SET kyc_status = '$new_kyc_status' WHERE member_id = $member_id");
-
+                    $new_kyc = $verified_count >= 3 ? 'approved' : ($rejected_count > 0 ? 'rejected' : 'pending');
+                    $conn->query("UPDATE members SET kyc_status = '$new_kyc' WHERE member_id = $member_id");
                 } else {
                     flash_set("Database error: " . $stmt->error, "danger");
                 }
@@ -87,96 +66,58 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 flash_set("Failed to move uploaded file.", "danger");
             }
         }
-        // Redirect to avoid resubmission
-        header("Location: member_profile.php?id=$member_id#kyc");
-        exit;
+        header("Location: member_profile.php?id=$member_id#kyc"); exit;
     }
 
-    // 1.5.2 HANDLE KYC ACTIONS (VERIFY/REJECT)
+    // KYC Verify/Reject
     if (isset($_POST['kyc_action'])) {
         $doc_id = intval($_POST['doc_id']);
-        $action = $_POST['kyc_action']; // 'verify' or 'reject'
+        $action = $_POST['kyc_action'];
         $notes  = trim($_POST['verification_notes'] ?? '');
         $status = ($action === 'verify') ? 'verified' : 'rejected';
-        
-        $stmt = $conn->prepare("UPDATE member_documents SET status = ?, verification_notes = ?, verified_by = ?, verified_at = NOW() WHERE document_id = ? AND member_id = ?");
+        $stmt   = $conn->prepare("UPDATE member_documents SET status = ?, verification_notes = ?, verified_by = ?, verified_at = NOW() WHERE document_id = ? AND member_id = ?");
         $stmt->bind_param("ssiii", $status, $notes, $_SESSION['admin_id'], $doc_id, $member_id);
-        
         if ($stmt->execute()) {
-            // Recalculate overall KYC status
             $q = $conn->query("SELECT status FROM member_documents WHERE member_id = $member_id AND document_type IN ('national_id_front', 'national_id_back', 'passport_photo')");
             $all_docs = $q->fetch_all(MYSQLI_ASSOC);
-            $verified_count = 0;
-            $rejected_count = 0;
-            foreach($all_docs as $d) {
-                if ($d['status'] === 'verified') $verified_count++;
-                if ($d['status'] === 'rejected') $rejected_count++;
-            }
-            
-            $new_kyc_status = 'pending';
-            if ($verified_count >= 3) $new_kyc_status = 'approved'; 
-            elseif ($rejected_count > 0) $new_kyc_status = 'rejected';
-            
-            $sql_update = "UPDATE members SET kyc_status = '$new_kyc_status'";
-            if ($action === 'reject') {
-                $sql_update .= ", kyc_notes = '" . $conn->real_escape_string($notes) . "'";
-            }
-            $sql_update .= " WHERE member_id = $member_id";
+            $vc = 0; $rc = 0;
+            foreach ($all_docs as $d) { if ($d['status']==='verified') $vc++; if ($d['status']==='rejected') $rc++; }
+            $new_kyc    = $vc >= 3 ? 'approved' : ($rc > 0 ? 'rejected' : 'pending');
+            $sql_update = "UPDATE members SET kyc_status = '$new_kyc'" . ($action==='reject' ? ", kyc_notes = '".$conn->real_escape_string($notes)."'" : "") . " WHERE member_id = $member_id";
             $conn->query($sql_update);
-            
             flash_set("Document " . ($action === 'verify' ? 'approved' : 'rejected') . " successfully.", "success");
-        } else {
-            flash_set("Action failed: " . $conn->error, "danger");
-        }
-        header("Location: member_profile.php?id=$member_id#kyc");
-        exit;
+        } else { flash_set("Action failed: " . $conn->error, "danger"); }
+        header("Location: member_profile.php?id=$member_id#kyc"); exit;
     }
 
-    // 1.5.3 HANDLE MANUAL RECALCULATION
+    // Recalculate KYC
     if (isset($_POST['recalc_kyc'])) {
         $q = $conn->query("SELECT status FROM member_documents WHERE member_id = $member_id AND document_type IN ('national_id_front', 'national_id_back', 'passport_photo')");
         $all_docs = $q->fetch_all(MYSQLI_ASSOC);
-        $verified_count = 0;
-        $rejected_count = 0;
-        foreach($all_docs as $d) {
-            if ($d['status'] === 'verified') $verified_count++;
-            if ($d['status'] === 'rejected') $rejected_count++;
-        }
-        
-        $new_kyc_status = 'pending';
-        if ($verified_count >= 3) $new_kyc_status = 'approved'; 
-        elseif ($rejected_count > 0) $new_kyc_status = 'rejected';
-        
-        $conn->query("UPDATE members SET kyc_status = '$new_kyc_status' WHERE member_id = $member_id");
-        flash_set("KYC status recalculated: " . strtoupper($new_kyc_status), "success");
-        header("Location: member_profile.php?id=$member_id");
-        exit;
+        $vc = 0; $rc = 0;
+        foreach ($all_docs as $d) { if ($d['status']==='verified') $vc++; if ($d['status']==='rejected') $rc++; }
+        $new_kyc = $vc >= 3 ? 'approved' : ($rc > 0 ? 'rejected' : 'pending');
+        $conn->query("UPDATE members SET kyc_status = '$new_kyc' WHERE member_id = $member_id");
+        flash_set("KYC status recalculated: " . strtoupper($new_kyc), "success");
+        header("Location: member_profile.php?id=$member_id"); exit;
     }
 }
 
-// 2. FETCH MEMBER CORE DATA
+// FETCH MEMBER DATA
 $stmt = $conn->prepare("SELECT * FROM members WHERE member_id = ?");
 $stmt->bind_param("i", $member_id);
 $stmt->execute();
 $member = $stmt->get_result()->fetch_assoc();
+if (!$member) { flash_set("Member not found.", "warning"); header("Location: members.php"); exit; }
 
-if (!$member) {
-    flash_set("Member not found.", "warning");
-    header("Location: members.php");
-    exit;
-}
-
-// 3. FETCH FINANCIAL SUMMARY (Unified Ledger)
+// FINANCIAL SUMMARY
 require_once __DIR__ . '/../../inc/FinancialEngine.php';
-$engine = new FinancialEngine($conn);
-$balances = $engine->getBalances($member_id);
-
-$savings_balance     = $balances['savings'];
-$total_debt          = $balances['loans'];
-$total_shares_value  = $balances['shares'];
-$total_shares_units  = $balances['share_units'] ?? 0;
-
-// Total Contributions (Lifetime Ledger Credits)
+$engine             = new FinancialEngine($conn);
+$balances           = $engine->getBalances($member_id);
+$savings_balance    = $balances['savings'];
+$total_debt         = $balances['loans'];
+$total_shares_value = $balances['shares'];
+$total_shares_units = $balances['share_units'] ?? 0;
 $total_contributions = $engine->getLifetimeCredits($member_id, ['savings', 'shares', 'welfare']);
 
 $q_loans = $conn->prepare("SELECT COUNT(*) as active_count FROM loans WHERE member_id = ? AND status IN ('disbursed', 'active')");
@@ -185,26 +126,24 @@ $q_loans->execute();
 $active_loans_count = $q_loans->get_result()->fetch_assoc()['active_count'] ?? 0;
 $q_loans->close();
 
-// 4. FETCH ACTIVITY LISTS (Limited for overview)
-// Recent Transactions
+// ACTIVITY LISTS
 $q_txns = $conn->prepare("SELECT * FROM transactions WHERE member_id = ? ORDER BY created_at DESC LIMIT 5");
 $q_txns->bind_param("i", $member_id);
 $q_txns->execute();
 $recent_txns = $q_txns->get_result()->fetch_all(MYSQLI_ASSOC);
 
-// Recent Loans
 $q_l_list = $conn->prepare("SELECT * FROM loans WHERE member_id = ? ORDER BY created_at DESC LIMIT 5");
 $q_l_list->bind_param("i", $member_id);
 $q_l_list->execute();
 $member_loans = $q_l_list->get_result()->fetch_all(MYSQLI_ASSOC);
 
-// 5. FETCH KYC DOCUMENTS
+// KYC DOCUMENTS
 $q_docs = $conn->prepare("SELECT * FROM member_documents WHERE member_id = ?");
 $q_docs->bind_param("i", $member_id);
 $q_docs->execute();
 $member_docs = $q_docs->get_result()->fetch_all(MYSQLI_ASSOC);
 
-$pageTitle = $member['full_name'] . " - Member Profile";
+$pageTitle = $member['full_name'] . " — Member Profile";
 ?>
 <?php $layout->header($pageTitle); ?>
 <?php $layout->sidebar(); ?>
@@ -212,214 +151,859 @@ $pageTitle = $member['full_name'] . " - Member Profile";
     <?php $layout->topbar($pageTitle ?? ""); ?>
     <div class="container-fluid px-4 py-4">
 
-    
-    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
 
-    
-    
+        :root {
+            --ease-expo:   cubic-bezier(0.16, 1, 0.3, 1);
+            --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
 
-    
-    
+        body, .main-content-wrapper, input, select, textarea, table, button, .nav-link {
+            font-family: 'Plus Jakarta Sans', sans-serif !important;
+        }
 
-    
-    
+        /* ── Breadcrumb ── */
+        .prof-breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 22px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            animation: fadeUp 0.4s var(--ease-expo) both;
+        }
 
-    
-    
+        .prof-breadcrumb a {
+            color: #9ca3af;
+            text-decoration: none;
+            transition: color 0.15s ease;
+        }
 
-    
-    
-        
-        
-    
+        .prof-breadcrumb a:hover { color: var(--forest, #0f2e25); }
+        .prof-breadcrumb .sep { color: #d1d5db; }
+        .prof-breadcrumb .current { color: #374151; }
 
-    <!-- Breadcrumb -->
-    <nav aria-label="breadcrumb" class="mb-4">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="dashboard.php" class="text-decoration-none">Dashboard</a></li>
-            <li class="breadcrumb-item"><a href="members.php" class="text-decoration-none">Members</a></li>
-            <li class="breadcrumb-item active" aria-current="page"><?= htmlspecialchars($member['full_name']) ?></li>
-        </ol>
+        /* ── Profile Hero ── */
+        .profile-hero {
+            background: linear-gradient(135deg, var(--forest) 0%, var(--forest-mid) 100%);
+            border-radius: 24px;
+            padding: 40px 48px;
+            color: #fff;
+            margin-bottom: 28px;
+            position: relative;
+            overflow: hidden;
+            animation: fadeUp 0.6s var(--ease-expo) both;
+        }
+
+        .profile-hero .hero-grid {
+            position: absolute;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+            background-size: 32px 32px;
+            pointer-events: none;
+        }
+
+        .profile-hero .hero-circle {
+            position: absolute;
+            top: -80px; right: -80px;
+            width: 280px; height: 280px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.04);
+            pointer-events: none;
+        }
+
+        .hero-avatar {
+            width: 80px; height: 80px;
+            border-radius: 20px;
+            object-fit: cover;
+            border: 3px solid rgba(255,255,255,0.2);
+            flex-shrink: 0;
+        }
+
+        .hero-avatar-initials {
+            width: 80px; height: 80px;
+            border-radius: 20px;
+            background: rgba(255,255,255,0.12);
+            border: 3px solid rgba(255,255,255,0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            font-weight: 800;
+            color: #a3e635;
+            flex-shrink: 0;
+        }
+
+        .hero-name {
+            font-size: 1.9rem;
+            font-weight: 800;
+            letter-spacing: -0.4px;
+            line-height: 1.1;
+            margin-bottom: 6px;
+        }
+
+        .hero-status-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 10.5px;
+            font-weight: 700;
+            padding: 3px 10px;
+            border-radius: 20px;
+            margin-bottom: 10px;
+        }
+
+        .hero-status-chip.active   { background: rgba(163,230,53,0.15); color: #a3e635; border: 1px solid rgba(163,230,53,0.25); }
+        .hero-status-chip.inactive,
+        .hero-status-chip.suspended { background: rgba(239,68,68,0.15); color: #fca5a5; border: 1px solid rgba(239,68,68,0.25); }
+
+        .hero-status-chip::before {
+            content: '';
+            width: 5px; height: 5px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+
+        .hero-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-top: 6px;
+        }
+
+        .hero-meta span {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.82rem;
+            opacity: 0.7;
+        }
+
+        .hero-meta span i { font-size: 0.85rem; }
+
+        .hero-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn-hero-primary {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            background: #a3e635;
+            color: var(--forest, #0f2e25);
+            font-size: 0.85rem;
+            font-weight: 700;
+            padding: 10px 20px;
+            border-radius: 50px;
+            border: none;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.22s var(--ease-expo);
+            font-family: 'Plus Jakarta Sans', sans-serif !important;
+        }
+
+        .btn-hero-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(163,230,53,0.3);
+            color: var(--forest, #0f2e25);
+        }
+
+        .btn-hero-secondary {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: #fff;
+            font-size: 0.85rem;
+            font-weight: 700;
+            padding: 10px 20px;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: background 0.18s ease;
+            font-family: 'Plus Jakarta Sans', sans-serif !important;
+        }
+
+        .btn-hero-secondary:hover { background: rgba(255,255,255,0.17); color: #fff; }
+
+        /* ── Stat Cards ── */
+        .fin-stat {
+            background: #fff;
+            border-radius: 18px;
+            padding: 22px 24px;
+            border: 1px solid rgba(0,0,0,0.055);
+            box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+            height: 100%;
+            animation: fadeUp 0.6s var(--ease-expo) both;
+            transition: transform 0.22s var(--ease-expo), box-shadow 0.22s ease;
+        }
+
+        .fin-stat:hover { transform: translateY(-3px); box-shadow: 0 10px 28px rgba(0,0,0,0.09); }
+        .fin-stat:nth-child(1) { animation-delay: 0.05s; }
+        .fin-stat:nth-child(2) { animation-delay: 0.10s; }
+        .fin-stat:nth-child(3) { animation-delay: 0.15s; }
+        .fin-stat:nth-child(4) { animation-delay: 0.20s; }
+
+        .fin-stat .stat-icon {
+            width: 42px; height: 42px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            margin-bottom: 14px;
+        }
+
+        .fin-stat .stat-label {
+            font-size: 10.5px;
+            font-weight: 700;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            color: #9ca3af;
+            margin-bottom: 5px;
+        }
+
+        .fin-stat .stat-value {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--forest, #0f2e25);
+            line-height: 1;
+            margin-bottom: 6px;
+        }
+
+        .fin-stat .stat-sub {
+            font-size: 0.75rem;
+            color: #9ca3af;
+        }
+
+        /* KYC recalc row */
+        .kyc-recalc-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-recalc {
+            width: 28px; height: 28px;
+            border-radius: 8px;
+            background: #f3f4f6;
+            border: 1px solid #e5e7eb;
+            color: #6b7280;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.18s ease;
+            padding: 0;
+        }
+
+        .btn-recalc:hover { background: rgba(15,46,37,0.07); color: var(--forest,#0f2e25); border-color: rgba(15,46,37,0.15); }
+
+        /* ── Tabs ── */
+        .profile-tabs {
+            display: flex;
+            gap: 4px;
+            background: #f3f4f6;
+            border-radius: 14px;
+            padding: 5px;
+            margin-bottom: 24px;
+            border: none;
+            animation: fadeUp 0.5s var(--ease-expo) 0.25s both;
+        }
+
+        .profile-tabs .nav-item { flex: 1; }
+
+        .profile-tabs .nav-link {
+            width: 100%;
+            text-align: center;
+            padding: 9px 16px;
+            border-radius: 10px;
+            font-size: 0.83rem;
+            font-weight: 600;
+            color: #6b7280;
+            border: none;
+            background: transparent;
+            transition: all 0.2s var(--ease-expo);
+        }
+
+        .profile-tabs .nav-link.active {
+            background: #fff;
+            color: var(--forest, #0f2e25);
+            font-weight: 700;
+            box-shadow: 0 1px 6px rgba(0,0,0,0.07);
+        }
+
+        .profile-tabs .nav-link:hover:not(.active) { color: #374151; }
+
+        /* ── Content Cards ── */
+        .prof-card {
+            background: #fff;
+            border-radius: 18px;
+            padding: 26px 28px;
+            border: 1px solid rgba(0,0,0,0.055);
+            box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+
+        .prof-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .prof-card-header h5 {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #111827;
+            margin: 0;
+        }
+
+        /* Info rows */
+        .info-row {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 18px;
+        }
+
+        .info-row:last-child { margin-bottom: 0; }
+
+        .info-label {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            color: #9ca3af;
+            margin-bottom: 3px;
+        }
+
+        .info-value {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #111827;
+        }
+
+        /* Risk bar */
+        .risk-bar-wrap {
+            padding: 16px;
+            background: #fafafa;
+            border: 1px solid #f0f0f0;
+            border-radius: 12px;
+        }
+
+        .risk-bar-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .risk-bar-label span:first-child {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.7px;
+            color: #9ca3af;
+        }
+
+        .risk-bar-label .risk-val {
+            font-size: 11px;
+            font-weight: 700;
+            color: #16a34a;
+        }
+
+        .risk-bar {
+            height: 5px;
+            border-radius: 99px;
+            background: #e5e7eb;
+            overflow: hidden;
+        }
+
+        .risk-bar-fill {
+            height: 100%;
+            border-radius: 99px;
+            background: linear-gradient(90deg, #16a34a, #4ade80);
+        }
+
+        /* ── Tables inside tabs ── */
+        .prof-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.875rem;
+        }
+
+        .prof-table thead th {
+            background: #fafafa;
+            font-size: 10.5px;
+            font-weight: 700;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            color: #9ca3af;
+            padding: 11px 16px;
+            border: none;
+            border-bottom: 1px solid #f0f0f0;
+            white-space: nowrap;
+        }
+
+        .prof-table tbody tr {
+            border-bottom: 1px solid #f9fafb;
+            transition: background 0.15s ease;
+        }
+
+        .prof-table tbody tr:last-child { border-bottom: none; }
+        .prof-table tbody tr:hover { background: #fafff8; }
+        .prof-table tbody td { padding: 12px 16px; vertical-align: middle; color: #374151; }
+
+        /* Loan status */
+        .loan-badge {
+            display: inline-flex;
+            align-items: center;
+            font-size: 10.5px;
+            font-weight: 700;
+            padding: 3px 10px;
+            border-radius: 7px;
+        }
+
+        .loan-badge.disbursed { background: #f0fdf4; color: #16a34a; }
+        .loan-badge.pending   { background: #fffbeb; color: #d97706; }
+        .loan-badge.closed    { background: #f3f4f6; color: #6b7280; }
+
+        /* Txn amount */
+        .txn-credit { color: #16a34a; font-weight: 700; }
+        .txn-debit  { color: #dc2626; font-weight: 700; }
+
+        /* ── KYC Upload Panel ── */
+        .kyc-upload-panel {
+            background: #fafafa;
+            border: 1.5px dashed #d1d5db;
+            border-radius: 16px;
+            padding: 22px 24px;
+            margin-bottom: 20px;
+        }
+
+        .kyc-upload-panel h6 {
+            font-size: 0.875rem;
+            font-weight: 700;
+            color: #111827;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .kyc-upload-panel .form-label {
+            font-size: 10.5px;
+            font-weight: 700;
+            letter-spacing: 0.7px;
+            text-transform: uppercase;
+            color: #6b7280;
+            margin-bottom: 6px;
+        }
+
+        .kyc-upload-panel .form-control,
+        .kyc-upload-panel .form-select {
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 9px 13px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #111827;
+            box-shadow: none;
+            font-family: 'Plus Jakarta Sans', sans-serif !important;
+        }
+
+        .kyc-upload-panel .form-control:focus,
+        .kyc-upload-panel .form-select:focus {
+            border-color: rgba(15,46,37,0.35);
+            box-shadow: 0 0 0 3px rgba(15,46,37,0.07);
+        }
+
+        /* ── KYC Doc Cards ── */
+        .kyc-doc-card {
+            background: #fff;
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid #e5e7eb;
+            margin-bottom: 16px;
+            transition: box-shadow 0.2s ease;
+        }
+
+        .kyc-doc-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.07); }
+
+        .kyc-doc-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .kyc-doc-title {
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: #111827;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .kyc-doc-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 3px 9px;
+            border-radius: 6px;
+        }
+
+        .kyc-doc-status.verified  { background: #f0fdf4; color: #16a34a; }
+        .kyc-doc-status.rejected  { background: #fef2f2; color: #dc2626; }
+        .kyc-doc-status.pending   { background: #fffbeb; color: #d97706; }
+
+        .kyc-doc-meta {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            background: #fafafa;
+            border-radius: 10px;
+            border: 1px solid #f0f0f0;
+        }
+
+        .kyc-doc-icon {
+            width: 36px; height: 36px;
+            border-radius: 9px;
+            background: rgba(15,46,37,0.07);
+            color: var(--forest, #0f2e25);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+
+        .kyc-doc-filename {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #374151;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            flex: 1;
+        }
+
+        .kyc-doc-date {
+            font-size: 0.72rem;
+            color: #9ca3af;
+            margin-top: 2px;
+        }
+
+        .kyc-action-row {
+            margin-top: 12px;
+            padding: 12px 14px;
+            background: #fafafa;
+            border-radius: 10px;
+            border: 1px solid #f0f0f0;
+        }
+
+        .kyc-action-row .form-control {
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 7px 11px;
+            font-size: 0.8rem;
+            font-family: 'Plus Jakarta Sans', sans-serif !important;
+        }
+
+        .kyc-notes {
+            margin-top: 10px;
+            padding: 10px 12px;
+            background: #fafafa;
+            border-left: 3px solid #e5e7eb;
+            border-radius: 0 8px 8px 0;
+            font-size: 0.78rem;
+            color: #6b7280;
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 60px 24px;
+        }
+
+        .empty-state .empty-icon { font-size: 2.8rem; color: #d1d5db; margin-bottom: 14px; }
+        .empty-state h5 { font-weight: 700; color: #374151; margin-bottom: 6px; }
+        .empty-state p  { font-size: 0.875rem; color: #9ca3af; }
+
+        /* Transactions info panel */
+        .txn-info-panel {
+            text-align: center;
+            padding: 48px 24px;
+            color: #9ca3af;
+        }
+
+        .txn-info-panel i { font-size: 2.5rem; margin-bottom: 14px; display: block; opacity: 0.3; }
+        .txn-info-panel p { font-size: 0.875rem; margin-bottom: 16px; }
+
+        /* ── Animations ── */
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(14px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 768px) {
+            .profile-hero { padding: 28px 24px; }
+            .hero-name    { font-size: 1.5rem; }
+            .hero-actions { margin-top: 16px; }
+        }
+    </style>
+
+    <!-- ─── BREADCRUMB ─────────────────────────────────────── -->
+    <nav class="prof-breadcrumb" aria-label="breadcrumb">
+        <a href="dashboard.php">Dashboard</a>
+        <span class="sep"><i class="bi bi-chevron-right" style="font-size:0.7rem;"></i></span>
+        <a href="members.php">Members</a>
+        <span class="sep"><i class="bi bi-chevron-right" style="font-size:0.7rem;"></i></span>
+        <span class="current"><?= htmlspecialchars($member['full_name']) ?></span>
     </nav>
 
-    <!-- Profile Hero -->
-    <div class="profile-hero shadow">
-        <div class="row align-items-center">
-            <div class="col-auto">
-                <?php if($member['profile_pic']): ?>
-                    <img src="data:image/jpeg;base64,<?= base64_encode($member['profile_pic']) ?>" class="profile-avatar shadow">
+    <?php flash_render(); ?>
+
+    <!-- ─── PROFILE HERO ───────────────────────────────────── -->
+    <div class="profile-hero mb-4">
+        <div class="hero-grid"></div>
+        <div class="hero-circle"></div>
+        <div class="d-flex align-items-center justify-content-between gap-4 flex-wrap">
+            <div class="d-flex align-items-center gap-4">
+                <?php if ($member['profile_pic']): ?>
+                    <img src="data:image/jpeg;base64,<?= base64_encode($member['profile_pic']) ?>"
+                         class="hero-avatar" alt="<?= htmlspecialchars($member['full_name']) ?>">
                 <?php else: ?>
-                    <div class="profile-avatar shadow"><?= strtoupper(substr($member['full_name'], 0, 1)) ?></div>
+                    <div class="hero-avatar-initials">
+                        <?= strtoupper(substr($member['full_name'], 0, 1)) ?>
+                    </div>
                 <?php endif; ?>
-            </div>
-            <div class="col px-md-4 mt-3 mt-md-0">
-                
-                    <h1 class="fw-800 mb-0"><?= htmlspecialchars($member['full_name']) ?></h1>
-                    <span class="badge-status bg-<?= $member['status']=='active'?'success':'danger' ?> text-white">
+                <div>
+                    <div class="hero-name"><?= htmlspecialchars($member['full_name']) ?></div>
+                    <span class="hero-status-chip <?= $member['status'] ?>">
                         <?= strtoupper($member['status']) ?>
                     </span>
-                </div>
-                
-                    <span><i class="bi bi-hash me-1"></i> REG NO: <?= $member['member_reg_no'] ?></span>
-                    <span><i class="bi bi-calendar3 me-1"></i> Joined <?= date('M d, Y', strtotime($member['join_date'])) ?></span>
-                    <span><i class="bi bi-phone me-1"></i> <?= $member['phone'] ?></span>
+                    <div class="hero-meta">
+                        <span><i class="bi bi-hash"></i> <?= $member['member_reg_no'] ?></span>
+                        <span><i class="bi bi-calendar3"></i> Joined <?= date('M d, Y', strtotime($member['join_date'])) ?></span>
+                        <span><i class="bi bi-phone"></i> <?= $member['phone'] ?></span>
+                    </div>
                 </div>
             </div>
-            <div class="col-md-auto text-md-end mt-4 mt-md-0">
-                
-                    <a href="generate_statement.php?member_id=<?= $member_id ?>" class="btn btn-lime rounded-pill px-4 fw-bold">
-                        <i class="bi bi-file-earmark-pdf me-2"></i>Statement
-                    </a>
-                    <?php if(can('manage_members')): ?>
-                        <button class="btn btn-white bg-white bg-opacity-10 text-white border-0 rounded-pill px-4 fw-bold" data-bs-toggle="modal" data-bs-target="#editModal">
-                            <i class="bi bi-pencil-square me-2"></i>Edit
-                        </button>
-                    <?php endif; ?>
-                </div>
+            <div class="hero-actions">
+                <a href="generate_statement.php?member_id=<?= $member_id ?>" class="btn-hero-primary">
+                    <i class="bi bi-file-earmark-pdf"></i> Statement
+                </a>
+                <?php if (can('manage_members')): ?>
+                <button class="btn-hero-secondary" data-bs-toggle="modal" data-bs-target="#editModal">
+                    <i class="bi bi-pencil-square"></i> Edit Member
+                </button>
+                <?php endif; ?>
             </div>
         </div>
     </div>
 
-    <!-- Financial Metrics -->
-    <div class="row g-4 mb-5">
+    <!-- ─── FINANCIAL STAT CARDS ──────────────────────────── -->
+    <div class="row g-3 mb-4">
         <div class="col-md-3">
-            <div class="stat-card">
-                <div class="icon-box bg-primary bg-opacity-10 text-primary">
-                    <i class="bi bi-piggy-bank"></i>
+            <div class="fin-stat">
+                <div class="stat-icon" style="background:rgba(15,46,37,0.08);color:var(--forest,#0f2e25);">
+                    <i class="bi bi-piggy-bank-fill"></i>
                 </div>
-                <div class="info-label">Savings Balance</div>
-                <div class="h3 fw-800 text-forest">KES <?= number_format((float)$savings_balance) ?></div>
-                <div class="small text-muted mt-2">Total contributed: KES <?= number_format((float)$total_contributions) ?></div>
+                <div class="stat-label">Savings Balance</div>
+                <div class="stat-value">KES <?= number_format((float)$savings_balance) ?></div>
+                <div class="stat-sub">Lifetime: KES <?= number_format((float)$total_contributions) ?></div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="stat-card">
-                <div class="icon-box bg-success bg-opacity-10 text-success">
+            <div class="fin-stat">
+                <div class="stat-icon" style="background:#f0fdf4;color:#16a34a;">
                     <i class="bi bi-graph-up-arrow"></i>
                 </div>
-                <div class="info-label">Share Capital</div>
-                <div class="h3 fw-800 text-forest">KES <?= number_format((float)$total_shares_value) ?></div>
-                <div class="small text-muted mt-2"><?= number_format((float)$total_shares_units) ?> Units Owned</div>
+                <div class="stat-label">Share Capital</div>
+                <div class="stat-value">KES <?= number_format((float)$total_shares_value) ?></div>
+                <div class="stat-sub"><?= number_format((float)$total_shares_units) ?> Units Owned</div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="stat-card">
-                <div class="icon-box bg-danger bg-opacity-10 text-danger">
+            <div class="fin-stat">
+                <div class="stat-icon" style="background:#fef2f2;color:#dc2626;">
                     <i class="bi bi-cash-stack"></i>
                 </div>
-                <div class="info-label">Loan Exposure</div>
-                <div class="h3 fw-800 text-forest">KES <?= number_format((float)$total_debt) ?></div>
-                <div class="small text-muted mt-2"><?= $active_loans_count ?> Active Applications</div>
+                <div class="stat-label">Loan Exposure</div>
+                <div class="stat-value">KES <?= number_format((float)$total_debt) ?></div>
+                <div class="stat-sub"><?= $active_loans_count ?> Active Application<?= $active_loans_count != 1 ? 's' : '' ?></div>
             </div>
         </div>
         <div class="col-md-3">
-                <div class="stat-card">
-                    <div class="icon-box bg-warning bg-opacity-10 text-warning">
-                        <i class="bi bi-shield-check"></i>
-                    </div>
-                    <div class="info-label">KYC Status</div>
-                    
-                        <div class="h3 fw-800 text-forest mb-0"><?= ucwords(str_replace('_', ' ', $member['kyc_status'] ?? 'pending')) ?></div>
-                        <form method="POST" class="d-inline">
-                            <?= csrf_field() ?>
-                            <button type="submit" name="recalc_kyc" class="btn btn-sm btn-link text-muted p-0" title="Refresh/Recalculate Status" onclick="return confirm('Recalculate KYC status based on current documents?');">
-                                <i class="bi bi-arrow-repeat fs-5"></i>
-                            </button>
-                        </form>
-                    </div>
-                    <div class="small text-muted mt-2">
-                        <?php 
-                        $reg_paid = ($member['registration_fee_status'] === 'paid' || $member['reg_fee_paid'] == 1);
-                        echo $reg_paid ? 'Reg Fee Paid' : '<span class="text-danger">Reg Fee Unpaid</span>';
-                        ?>
-                    </div>
+            <div class="fin-stat">
+                <div class="stat-icon" style="background:#fffbeb;color:#d97706;">
+                    <i class="bi bi-shield-check"></i>
+                </div>
+                <div class="stat-label">KYC Status</div>
+                <div class="kyc-recalc-row">
+                    <div class="stat-value mb-0"><?= ucwords(str_replace('_', ' ', $member['kyc_status'] ?? 'pending')) ?></div>
+                    <form method="POST" class="d-inline">
+                        <?= csrf_field() ?>
+                        <button type="submit" name="recalc_kyc" class="btn-recalc"
+                                title="Recalculate KYC"
+                                onclick="return confirm('Recalculate KYC status based on current documents?');">
+                            <i class="bi bi-arrow-repeat"></i>
+                        </button>
+                    </form>
+                </div>
+                <?php $reg_paid = ($member['registration_fee_status'] === 'paid' || $member['reg_fee_paid'] == 1); ?>
+                <div class="stat-sub" style="margin-top:8px;">
+                    <?= $reg_paid
+                        ? '<span style="color:#16a34a;font-weight:700;">✓ Reg Fee Paid</span>'
+                        : '<span style="color:#dc2626;font-weight:700;">✗ Reg Fee Unpaid</span>' ?>
                 </div>
             </div>
+        </div>
     </div>
 
-    <!-- Details & History Tabs -->
-    <ul class="nav nav-tabs nav-tabs-custom shadow-sm p-2 bg-light rounded-4" id="profileTabs" role="tablist">
-        <li class="nav-item">
-            <button class="nav-link active" id="overview-tab" data-bs-toggle="tab" data-bs-target="#overview" type="button" role="tab">Overview</button>
+    <!-- ─── TABS ───────────────────────────────────────────── -->
+    <ul class="nav profile-tabs" id="profileTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#overview" type="button">
+                <i class="bi bi-person me-1"></i> Overview
+            </button>
         </li>
-        <li class="nav-item">
-            <button class="nav-link" id="loans-tab" data-bs-toggle="tab" data-bs-target="#loans" type="button" role="tab">Loan History</button>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#loans" type="button">
+                <i class="bi bi-bank me-1"></i> Loan History
+            </button>
         </li>
-        <li class="nav-item">
-            <button class="nav-link" id="txns-tab" data-bs-toggle="tab" data-bs-target="#txns" type="button" role="tab">Transactions</button>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#txns" type="button">
+                <i class="bi bi-journal-text me-1"></i> Transactions
+            </button>
         </li>
-        <li class="nav-item">
-            <button class="nav-link" id="kyc-tab" data-bs-toggle="tab" data-bs-target="#kyc" type="button" role="tab">KYC & Documents</button>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#kyc" type="button">
+                <i class="bi bi-shield-check me-1"></i> KYC &amp; Docs
+            </button>
         </li>
     </ul>
 
     <div class="tab-content" id="profileTabsContent">
-        <!-- OVERVIEW TAB -->
+
+        <!-- ── OVERVIEW TAB ── -->
         <div class="tab-pane fade show active" id="overview" role="tabpanel">
-            <div class="row">
+            <div class="row g-3">
                 <div class="col-lg-4">
-                    <div class="glass-card">
-                        <h5 class="fw-bold mb-4">Personal Information</h5>
-                        <div class="mb-4">
+                    <div class="prof-card">
+                        <div class="prof-card-header">
+                            <h5><i class="bi bi-person-fill me-2" style="color:var(--forest,#0f2e25);opacity:0.6;"></i>Personal Information</h5>
+                        </div>
+                        <div class="info-row">
                             <div class="info-label">Full Name</div>
                             <div class="info-value"><?= htmlspecialchars($member['full_name']) ?></div>
                         </div>
-                        <div class="mb-4">
+                        <div class="info-row">
                             <div class="info-label">National ID / Passport</div>
                             <div class="info-value"><?= $member['national_id'] ?></div>
                         </div>
-                        <div class="mb-4">
+                        <div class="info-row">
                             <div class="info-label">Email Address</div>
                             <div class="info-value"><?= $member['email'] ?></div>
                         </div>
-                        <div class="mb-4">
+                        <div class="info-row">
                             <div class="info-label">Phone Number</div>
                             <div class="info-value"><?= $member['phone'] ?></div>
                         </div>
-                        <hr class="opacity-10 my-4">
-                        <div class="info-label">Risk Profile</div>
-                        
-                            <div class="flex-grow-1 progress" style="height: 8px; border-radius: 10px;">
-                                <div class="progress-bar bg-success" style="width: 85%"></div>
+                        <?php if (!empty($member['address'])): ?>
+                        <div class="info-row">
+                            <div class="info-label">Address</div>
+                            <div class="info-value"><?= htmlspecialchars($member['address']) ?></div>
+                        </div>
+                        <?php endif; ?>
+                        <?php if (!empty($member['occupation'])): ?>
+                        <div class="info-row">
+                            <div class="info-label">Occupation</div>
+                            <div class="info-value"><?= htmlspecialchars($member['occupation']) ?></div>
+                        </div>
+                        <?php endif; ?>
+                        <?php if (!empty($member['next_of_kin_name'])): ?>
+                        <div class="info-row">
+                            <div class="info-label">Next of Kin</div>
+                            <div class="info-value"><?= htmlspecialchars($member['next_of_kin_name']) ?>
+                                <?php if ($member['next_of_kin_phone']): ?>
+                                <span style="color:#9ca3af;font-size:0.8rem;"> · <?= htmlspecialchars($member['next_of_kin_phone']) ?></span>
+                                <?php endif; ?>
                             </div>
-                            <small class="fw-bold text-success">Low Risk</small>
+                        </div>
+                        <?php endif; ?>
+                        <hr style="border-color:#f3f4f6;margin:18px 0;">
+                        <div class="risk-bar-wrap">
+                            <div class="risk-bar-label">
+                                <span>Risk Profile</span>
+                                <span class="risk-val">Low Risk</span>
+                            </div>
+                            <div class="risk-bar">
+                                <div class="risk-bar-fill" style="width:85%;"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
                 <div class="col-lg-8">
-                    <div class="glass-card">
-                        
-                            <h5 class="fw-bold mb-0">Recent Activity</h5>
-                            <a href="payments.php?search=<?= urlencode($member['full_name']) ?>" class="btn btn-light btn-sm rounded-pill px-3">View All</a>
+                    <div class="prof-card p-0 overflow-hidden">
+                        <div class="prof-card-header" style="padding:22px 24px 18px;">
+                            <h5><i class="bi bi-clock-history me-2" style="color:var(--forest,#0f2e25);opacity:0.6;"></i>Recent Activity</h5>
+                            <a href="payments.php?search=<?= urlencode($member['full_name']) ?>"
+                               class="btn btn-sm rounded-pill px-4 fw-bold"
+                               style="background:#f3f4f6;color:#374151;border:none;font-size:0.8rem;">
+                               View All <i class="bi bi-arrow-right ms-1"></i>
+                            </a>
                         </div>
                         <div class="table-responsive">
-                            <table class="table table-hover align-middle mb-0">
-                                <thead class="bg-light">
+                            <table class="prof-table">
+                                <thead>
                                     <tr>
-                                        <th class="border-0 rounded-start">Date</th>
-                                        <th class="border-0">Description</th>
-                                        <th class="border-0">Reference</th>
-                                        <th class="border-0 text-end rounded-end">Amount</th>
+                                        <th style="padding-left:24px;">Date</th>
+                                        <th>Description</th>
+                                        <th>Reference</th>
+                                        <th style="text-align:right;padding-right:24px;">Amount</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php foreach($recent_txns as $tx): 
-                                        $is_credit = in_array($tx['transaction_type'], ['deposit', 'repayment', 'income', 'loan_repayment', 'share_capital']);
+                                    <?php if (!empty($recent_txns)): foreach ($recent_txns as $tx):
+                                        $is_credit = in_array($tx['transaction_type'], ['deposit','repayment','income','loan_repayment','share_capital']);
                                     ?>
                                     <tr>
-                                        <td class="small text-muted"><?= date('d M, Y', strtotime($tx['created_at'])) ?></td>
-                                        <td>
-                                            <div class="fw-bold"><?= ucwords(str_replace('_', ' ', $tx['transaction_type'])) ?></div>
-                                            <small class="text-muted"><?= htmlspecialchars($tx['notes']) ?></small>
+                                        <td style="padding-left:24px;">
+                                            <div style="font-weight:600;font-size:0.83rem;color:#374151;"><?= date('d M, Y', strtotime($tx['created_at'])) ?></div>
                                         </td>
-                                        <td class="small fw-semibold"><?= $tx['reference_no'] ?></td>
-                                        <td class="text-end fw-bold text-<?= $is_credit?'success':'danger' ?>">
-                                            <?= $is_credit?'+':'-' ?><?= number_format((float)$tx['amount']) ?>
+                                        <td>
+                                            <div style="font-weight:700;font-size:0.875rem;color:#111827;"><?= ucwords(str_replace('_', ' ', $tx['transaction_type'])) ?></div>
+                                            <div style="font-size:0.75rem;color:#9ca3af;"><?= htmlspecialchars($tx['notes']) ?></div>
+                                        </td>
+                                        <td style="font-size:0.8rem;font-weight:600;color:#6b7280;"><?= $tx['reference_no'] ?></td>
+                                        <td style="text-align:right;padding-right:24px;" class="<?= $is_credit ? 'txn-credit' : 'txn-debit' ?>">
+                                            <?= $is_credit ? '+' : '−' ?> <?= number_format((float)$tx['amount']) ?>
                                         </td>
                                     </tr>
-                                    <?php endforeach; ?>
-                                    <?php if(empty($recent_txns)): ?>
-                                    <tr><td colspan="4" class="text-center py-4 text-muted">No recent transactions.</td></tr>
+                                    <?php endforeach; else: ?>
+                                    <tr>
+                                        <td colspan="4">
+                                            <div class="empty-state" style="padding:40px 24px;">
+                                                <div class="empty-icon"><i class="bi bi-receipt"></i></div>
+                                                <p style="color:#9ca3af;font-size:0.875rem;">No recent transactions.</p>
+                                            </div>
+                                        </td>
+                                    </tr>
                                     <?php endif; ?>
                                 </tbody>
                             </table>
@@ -429,47 +1013,57 @@ $pageTitle = $member['full_name'] . " - Member Profile";
             </div>
         </div>
 
-        <!-- LOANS TAB -->
+        <!-- ── LOANS TAB ── -->
         <div class="tab-pane fade" id="loans" role="tabpanel">
-            <div class="glass-card">
-                
-                    <h5 class="fw-bold mb-0">Loan History</h5>
-                    <button class="btn btn-forest btn-sm rounded-pill px-4 fw-bold">Apply For Loan</button>
+            <div class="prof-card p-0 overflow-hidden">
+                <div class="prof-card-header" style="padding:22px 24px 18px;">
+                    <h5><i class="bi bi-bank2 me-2" style="color:var(--forest,#0f2e25);opacity:0.6;"></i>Loan History</h5>
+                    <button class="btn btn-sm rounded-pill px-4 fw-bold btn-forest">
+                        Apply For Loan
+                    </button>
                 </div>
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle">
+                    <table class="prof-table">
                         <thead>
-                            <tr class="text-muted small">
-                                <th>TYPE</th>
-                                <th>PRINCIPAL</th>
-                                <th>BALANCE</th>
-                                <th>STATUS</th>
-                                <th>DATE</th>
-                                <th>ACTION</th>
+                            <tr>
+                                <th style="padding-left:24px;">Type</th>
+                                <th>Principal</th>
+                                <th>Balance</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                                <th style="padding-right:24px;text-align:right;">Action</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <?php foreach($member_loans as $l): ?>
+                            <?php if (!empty($member_loans)): foreach ($member_loans as $l):
+                                $loan_status = in_array($l['status'], ['disbursed','active']) ? 'disbursed' : ($l['status'] === 'pending' ? 'pending' : 'closed');
+                            ?>
                             <tr>
-                                <td>
-                                    <div class="fw-bold"><?= $l['loan_type'] ?></div>
-                                    <small class="text-muted"><?= $l['interest_rate'] ?>% Interest</small>
+                                <td style="padding-left:24px;">
+                                    <div style="font-weight:700;color:#111827;"><?= $l['loan_type'] ?></div>
+                                    <div style="font-size:0.75rem;color:#9ca3af;"><?= $l['interest_rate'] ?>% Interest</div>
                                 </td>
-                                <td class="fw-bold">KES <?= number_format((float)$l['amount']) ?></td>
-                                <td class="fw-bold text-forest">KES <?= number_format((float)$l['current_balance']) ?></td>
-                                <td>
-                                    <span class="badge rounded-pill bg-<?= $l['status']=='disbursed'?'success':($l['status']=='pending'?'warning':'secondary') ?> bg-opacity-10 text-<?= $l['status']=='disbursed'?'success':($l['status']=='pending'?'warning':'secondary') ?> px-3">
-                                        <?= strtoupper($l['status']) ?>
-                                    </span>
-                                </td>
-                                <td class="small"><?= date('d M Y', strtotime($l['created_at'])) ?></td>
-                                <td>
-                                    <a href="loans.php?id=<?= $l['loan_id'] ?>" class="btn btn-light btn-sm rounded-pill border"><i class="bi bi-eye"></i></a>
+                                <td style="font-weight:700;color:#374151;">KES <?= number_format((float)$l['amount']) ?></td>
+                                <td style="font-weight:700;color:var(--forest,#0f2e25);">KES <?= number_format((float)$l['current_balance']) ?></td>
+                                <td><span class="loan-badge <?= $loan_status ?>"><?= strtoupper($l['status']) ?></span></td>
+                                <td style="font-size:0.8rem;color:#6b7280;"><?= date('d M Y', strtotime($l['created_at'])) ?></td>
+                                <td style="text-align:right;padding-right:24px;">
+                                    <a href="loans.php?id=<?= $l['loan_id'] ?>"
+                                       style="width:30px;height:30px;border-radius:8px;background:#f3f4f6;border:1px solid #e5e7eb;color:#6b7280;display:inline-flex;align-items:center;justify-content:center;font-size:0.85rem;text-decoration:none;">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
                                 </td>
                             </tr>
-                            <?php endforeach; ?>
-                            <?php if(empty($member_loans)): ?>
-                            <tr><td colspan="6" class="text-center py-4 text-muted">No loan history found.</td></tr>
+                            <?php endforeach; else: ?>
+                            <tr>
+                                <td colspan="6">
+                                    <div class="empty-state">
+                                        <div class="empty-icon"><i class="bi bi-bank"></i></div>
+                                        <h5>No Loan History</h5>
+                                        <p>This member has no loan records yet.</p>
+                                    </div>
+                                </td>
+                            </tr>
                             <?php endif; ?>
                         </tbody>
                     </table>
@@ -477,98 +1071,122 @@ $pageTitle = $member['full_name'] . " - Member Profile";
             </div>
         </div>
 
-        <!-- TRANSACTIONS TAB -->
+        <!-- ── TRANSACTIONS TAB ── -->
         <div class="tab-pane fade" id="txns" role="tabpanel">
-             <div class="glass-card p-0 overflow-hidden">
-                <div class="p-4 border-bottom d-flex justify-content-between align-items-center">
-                    <h5 class="fw-bold mb-0">Full Transaction Ledger</h5>
-                    <button class="btn btn-outline-dark btn-sm rounded-pill px-3"><i class="bi bi-download me-2"></i>Export CSV</button>
+            <div class="prof-card">
+                <div class="txn-info-panel">
+                    <i class="bi bi-bar-chart-line"></i>
+                    <p>Use the Financial Intelligence reports for advanced filtering and full ledger access.</p>
+                    <a href="payments.php?search=<?= urlencode($member['full_name']) ?>"
+                       class="btn btn-forest rounded-pill px-5 fw-bold">
+                        <i class="bi bi-journal-text me-2"></i>Go to Payments Ledger
+                    </a>
                 </div>
-                <!-- This could be loaded via AJAX for better performance if too large -->
-                <div class="p-4 text-center text-muted">
-                    <i class="bi bi-info-circle me-2"></i> Use the Financial Intelligence reports for advanced filtering.
-                    <br><br>
-                    <a href="payments.php?search=<?= urlencode($member['full_name']) ?>" class="btn btn-forest rounded-pill px-4">Go to Payments Ledger</a>
-                </div>
-             </div>
+            </div>
         </div>
 
-        <!-- KYC TAB -->
+        <!-- ── KYC TAB ── -->
         <div class="tab-pane fade" id="kyc" role="tabpanel">
-            
-            <div class="glass-card mb-4">
-                <h6 class="fw-bold mb-3"><i class="bi bi-cloud-upload me-2"></i>Upload Document for Member</h6>
-                <form method="POST" enctype="multipart/form-data" class="row g-3 align-items-end">
+
+            <!-- Upload Panel -->
+            <div class="kyc-upload-panel">
+                <h6><i class="bi bi-cloud-upload-fill" style="color:var(--forest,#0f2e25);"></i> Upload Document for Member</h6>
+                <form method="POST" enctype="multipart/form-data">
                     <?= csrf_field() ?>
-                    <div class="col-md-4">
-                        <label class="form-label small fw-bold text-muted">Document Type</label>
-                        <select name="doc_type" class="form-select" required>
-                            <option value="national_id_front">National ID (Front)</option>
-                            <option value="national_id_back">National ID (Back)</option>
-                            <option value="passport_photo">Passport Photo</option>
-                        </select>
-                    </div>
-                    <div class="col-md-5">
-                        <label class="form-label small fw-bold text-muted">Select File (PDF, JPG, PNG)</label>
-                        <input type="file" name="kyc_upload" class="form-control" required accept="image/jpeg,image/png,application/pdf">
-                    </div>
-                    <div class="col-md-3">
-                        <button type="submit" class="btn btn-forest w-100 fw-bold"><i class="bi bi-upload me-2"></i>Upload & Verify</button>
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-4">
+                            <label class="form-label">Document Type</label>
+                            <select name="doc_type" class="form-select" required>
+                                <option value="national_id_front">National ID (Front)</option>
+                                <option value="national_id_back">National ID (Back)</option>
+                                <option value="passport_photo">Passport Photo</option>
+                            </select>
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label">Select File (PDF, JPG, PNG · Max 5MB)</label>
+                            <input type="file" name="kyc_upload" class="form-control" required accept="image/jpeg,image/png,application/pdf">
+                        </div>
+                        <div class="col-md-3">
+                            <button type="submit" class="btn btn-forest w-100 fw-bold rounded-3">
+                                <i class="bi bi-upload me-2"></i>Upload &amp; Verify
+                            </button>
+                        </div>
                     </div>
                 </form>
             </div>
 
-            <div class="row g-4">
-                <?php foreach($member_docs as $doc): ?>
+            <!-- Doc Cards -->
+            <?php if (!empty($member_docs)): ?>
+            <div class="row g-3">
+                <?php foreach ($member_docs as $doc):
+                    $doc_status = $doc['status'] ?? 'pending';
+                ?>
                 <div class="col-md-6">
-                    <div class="glass-card">
-                        <h6 class="fw-bold mb-3 text-uppercase"><?= str_replace('_', ' ', $doc['document_type']) ?></h6>
-                        
-                            <div class="icon-box bg-white shadow-sm mb-0"><i class="bi bi-file-earmark-text"></i></div>
-                            <div class="flex-grow-1">
-                                <div class="fw-bold small"><?= htmlspecialchars($doc['file_path']) ?></div>
-                                <div class="text-muted x-small">Uploaded: <?= date('d M Y', strtotime($doc['uploaded_at'])) ?></div>
-                            </div>
-                            
-                                <a href="<?= BASE_URL ?>/uploads/kyc/<?= $doc['file_path'] ?>" target="_blank" class="btn btn-sm btn-light border rounded-pill px-3">View</a>
-                                <span class="badge bg-<?= $doc['status'] == 'verified' ? 'success' : ($doc['status'] == 'rejected' ? 'danger' : 'warning') ?> bg-opacity-10 text-<?= $doc['status'] == 'verified' ? 'success' : ($doc['status'] == 'rejected' ? 'danger' : 'warning') ?> d-flex align-items-center"><?= strtoupper($doc['status']) ?></span>
-                            </div>
+                    <div class="kyc-doc-card">
+                        <div class="kyc-doc-top">
+                            <span class="kyc-doc-title">
+                                <i class="bi bi-file-earmark me-1"></i>
+                                <?= str_replace('_', ' ', $doc['document_type']) ?>
+                            </span>
+                            <span class="kyc-doc-status <?= $doc_status ?>">
+                                <?= strtoupper($doc_status) ?>
+                            </span>
                         </div>
-                        <?php if ($doc['status'] === 'pending'): ?>
-                            <div class="mt-3 p-3 bg-white rounded-3 border">
-                                <form method="POST" class="d-flex align-items-center gap-2">
-                                    <?= csrf_field() ?>
-                                    <input type="hidden" name="doc_id" value="<?= $doc['document_id'] ?>">
-                                    <input type="text" name="verification_notes" class="form-control form-control-sm" placeholder="Notes (required if rejecting)">
-                                    <button type="submit" name="kyc_action" value="verify" class="btn btn-success btn-sm fw-bold rounded-pill px-3">Verify</button>
-                                    <button type="submit" name="kyc_action" value="reject" class="btn btn-danger btn-sm fw-bold rounded-pill px-3">Reject</button>
-                                </form>
+
+                        <div class="kyc-doc-meta">
+                            <div class="kyc-doc-icon"><i class="bi bi-file-earmark-text-fill"></i></div>
+                            <div style="flex:1;min-width:0;">
+                                <div class="kyc-doc-filename"><?= htmlspecialchars($doc['file_path']) ?></div>
+                                <div class="kyc-doc-date">Uploaded: <?= date('d M Y', strtotime($doc['uploaded_at'])) ?></div>
                             </div>
+                            <a href="<?= BASE_URL ?>/uploads/kyc/<?= $doc['file_path'] ?>" target="_blank"
+                               style="flex-shrink:0;font-size:0.78rem;font-weight:700;color:var(--forest,#0f2e25);text-decoration:none;background:rgba(15,46,37,0.07);padding:5px 12px;border-radius:7px;">
+                                <i class="bi bi-eye me-1"></i>View
+                            </a>
+                        </div>
+
+                        <?php if ($doc_status === 'pending'): ?>
+                        <div class="kyc-action-row">
+                            <form method="POST" class="d-flex align-items-center gap-2">
+                                <?= csrf_field() ?>
+                                <input type="hidden" name="doc_id" value="<?= $doc['document_id'] ?>">
+                                <input type="text" name="verification_notes" class="form-control form-control-sm flex-grow-1" placeholder="Notes (required if rejecting)">
+                                <button type="submit" name="kyc_action" value="verify"
+                                        style="font-size:0.78rem;font-weight:700;padding:6px 14px;border-radius:7px;background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;cursor:pointer;white-space:nowrap;font-family:'Plus Jakarta Sans',sans-serif;">
+                                    <i class="bi bi-check-lg me-1"></i>Verify
+                                </button>
+                                <button type="submit" name="kyc_action" value="reject"
+                                        style="font-size:0.78rem;font-weight:700;padding:6px 14px;border-radius:7px;background:#fef2f2;color:#dc2626;border:1px solid #fecaca;cursor:pointer;white-space:nowrap;font-family:'Plus Jakarta Sans',sans-serif;">
+                                    <i class="bi bi-x-lg me-1"></i>Reject
+                                </button>
+                            </form>
+                        </div>
                         <?php elseif ($doc['verification_notes']): ?>
-                            <div class="mt-2 x-small text-muted ps-2 border-start ms-4">
-                                <strong>Notes:</strong> <?= esc($doc['verification_notes'] ?? '') ?>
-                            </div>
+                        <div class="kyc-notes">
+                            <strong>Admin Notes:</strong> <?= esc($doc['verification_notes'] ?? '') ?>
+                        </div>
                         <?php endif; ?>
                     </div>
                 </div>
                 <?php endforeach; ?>
-                <?php if(empty($member_docs)): ?>
-                <div class="col-12">
-                    <div class="glass-card text-center py-5">
-                        <i class="bi bi-shield-exclamation text-muted fs-1 mb-3 d-block"></i>
-                        <h5 class="text-muted">No KYC documents found.</h5>
-                        <p class="text-secondary small">The member hasn't uploaded any verification documents yet.</p>
-                    </div>
-                </div>
-                <?php endif; 
-    
-    
-
-?>
             </div>
-        </div>
-    </div> <!-- /container-fluid -->
+
+            <?php else: ?>
+            <div class="prof-card">
+                <div class="empty-state">
+                    <div class="empty-icon"><i class="bi bi-shield-exclamation"></i></div>
+                    <h5>No KYC Documents Found</h5>
+                    <p>The member hasn't uploaded any verification documents yet. Use the panel above to upload on their behalf.</p>
+                </div>
+            </div>
+            <?php endif; ?>
+
+        </div><!-- /kyc tab -->
+
+    </div><!-- /tab-content -->
+
+    </div><!-- /container-fluid -->
     <?php $layout->footer(); ?>
-</div> <!-- /main-content-wrapper -->
+</div><!-- /main-content-wrapper -->
 </body>
 </html>

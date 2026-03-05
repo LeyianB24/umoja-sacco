@@ -198,6 +198,7 @@ class PayrollEngine {
         return [
             'basic_salary' => $basic,
             'house_allowance' => $house,
+            'transport_allowance' => $transport,
             'gross_pay' => $gross,
             'tax_nssf' => $nssf,
             'tax_sha' => $sha,
