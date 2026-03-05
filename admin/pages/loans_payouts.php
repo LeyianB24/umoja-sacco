@@ -46,7 +46,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt->bind_param("ii", $admin_id, $loan_id);
                 $stmt->execute();
 
-                // Trigger Loan Approved Notification
                 require_once __DIR__ . '/../../inc/notification_helpers.php';
                 $res_l = $conn->query("SELECT member_id, amount, reference_no FROM loans WHERE loan_id = $loan_id");
                 if ($l_row = $res_l->fetch_assoc()) {
@@ -65,7 +64,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt->bind_param("i", $loan_id);
                 $stmt->execute();
 
-                // Trigger Loan Rejected Notification
                 require_once __DIR__ . '/../../inc/notification_helpers.php';
                 $res_l = $conn->query("SELECT member_id, amount, reference_no FROM loans WHERE loan_id = $loan_id");
                 if ($l_row = $res_l->fetch_assoc()) {
@@ -75,7 +73,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 flash_set("Loan #$loan_id Rejected.", "warning");
             }
             elseif ($action === 'disburse' && $can_disburse) {
-                // Generate a fallback ref if empty somehow
                 $fallback_ref = "DSB-" . date('Ymd') . "-" . rand(1000, 9999);
                 $ref    = !empty($_POST['ref_no']) ? $_POST['ref_no'] : $fallback_ref;
                 $method = $_POST['payment_method'] ?? 'cash';
@@ -101,10 +98,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'notes'         => "Loan Disbursement via $method. Ref: $ref"
                 ]);
 
-                // Update loan balance
                 $conn->query("UPDATE loans SET current_balance = amount, status='disbursed', disbursement_date=NOW() WHERE loan_id=$loan_id");
 
-                // Trigger Loan Disbursed Notification
                 require_once __DIR__ . '/../../inc/notification_helpers.php';
                 send_notification($conn, (int)$l_chk['member_id'], 'loan_disbursed', ['amount' => (float)$l_chk['amount'], 'ref' => $ref]);
 
@@ -120,7 +115,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// --- 4. Fetch Data (Enhanced Query) ---
+// --- 4. Fetch Data ---
 $where = "1";
 $params = [];
 $types = "";
@@ -149,7 +144,6 @@ if (!empty($params)) { $stmt->bind_param($types, ...$params); }
 $stmt->execute();
 $loans = $stmt->get_result();
 
-// Financial Stats
 $stats_query = "SELECT 
     COUNT(CASE WHEN status='pending' THEN 1 END) as pending_count,
     SUM(CASE WHEN status='pending' THEN amount ELSE 0 END) as pending_val,
@@ -165,7 +159,6 @@ $stats = $stats_result ? $stats_result->fetch_assoc() : [
 
 // --- 5. Export Handler ---
 if (isset($_GET['export']) && in_array($_GET['export'], ['pdf', 'excel'])) {
-    
     $export_data = [];
     $total_val = 0;
     while ($row_ex = $loans->fetch_assoc()) {
@@ -181,7 +174,6 @@ if (isset($_GET['export']) && in_array($_GET['export'], ['pdf', 'excel'])) {
     }
     
     require_once __DIR__ . '/../../inc/ExportHelper.php';
-    
     $title = 'Loan_Management_Report_' . date('Ymd_His');
     $headers = ['ID', 'Member', 'ID No', 'Amount', 'Status', 'Applied'];
 
@@ -196,337 +188,1239 @@ if (isset($_GET['export']) && in_array($_GET['export'], ['pdf', 'excel'])) {
 $pageTitle = "Loan Management";
 ?>
 <?php $layout->header($pageTitle ?? 'Disbursement Console'); ?>
+
+<!-- Jakarta Sans Font -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Jakarta+Sans:ital,wght@0,200..800;1,200..800&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap" rel="stylesheet">
+
+<style>
+/* ============================================================
+   JAKARTA SANS + GLASSMORPHISM ENHANCED THEME
+   ============================================================ */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+:root {
+    --forest:        #0d2b1f;
+    --forest-mid:    #1a3d2b;
+    --forest-light:  #234d36;
+    --lime:          #b5f43c;
+    --lime-soft:     #d6fb8a;
+    --lime-glow:     rgba(181,244,60,0.18);
+    --lime-glow-sm:  rgba(181,244,60,0.08);
+    --glass-bg:      rgba(255,255,255,0.07);
+    --glass-border:  rgba(255,255,255,0.13);
+    --glass-hover:   rgba(255,255,255,0.12);
+    --surface:       rgba(255,255,255,0.95);
+    --text-primary:  #0d1f15;
+    --text-muted:    #6b7c74;
+    --radius-sm:     8px;
+    --radius-md:     14px;
+    --radius-lg:     20px;
+    --radius-xl:     28px;
+    --shadow-sm:     0 2px 8px rgba(13,43,31,0.08);
+    --shadow-md:     0 8px 28px rgba(13,43,31,0.12);
+    --shadow-lg:     0 20px 60px rgba(13,43,31,0.18);
+    --shadow-glow:   0 0 0 3px var(--lime-glow), 0 8px 30px rgba(181,244,60,0.15);
+    --transition:    all 0.22s cubic-bezier(0.4,0,0.2,1);
+}
+
+/* Global Font Override */
+body,
+.main-content-wrapper,
+.offcanvas,
+.modal,
+input, select, textarea, button, .btn, table, th, td,
+h1, h2, h3, h4, h5, h6, p, span, div, label, a {
+    font-family: 'Plus Jakarta Sans', 'Jakarta Sans', sans-serif !important;
+}
+
+/* ── Hero Banner ── */
+.hp-hero {
+    background: linear-gradient(135deg, var(--forest) 0%, var(--forest-mid) 55%, #0f3320 100%);
+    border-radius: var(--radius-xl);
+    padding: 2.8rem 3rem 5rem;
+    position: relative;
+    overflow: hidden;
+    color: #fff;
+}
+.hp-hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: 
+        radial-gradient(ellipse 60% 80% at 90% 10%, rgba(181,244,60,0.12) 0%, transparent 60%),
+        radial-gradient(ellipse 40% 50% at 10% 90%, rgba(181,244,60,0.06) 0%, transparent 60%);
+    pointer-events: none;
+}
+.hp-hero::after {
+    content: '';
+    position: absolute;
+    top: -60px; right: -60px;
+    width: 340px; height: 340px;
+    border-radius: 50%;
+    border: 1px solid rgba(181,244,60,0.12);
+    pointer-events: none;
+}
+.hp-hero .hero-ring2 {
+    position: absolute;
+    top: -120px; right: -120px;
+    width: 500px; height: 500px;
+    border-radius: 50%;
+    border: 1px solid rgba(181,244,60,0.07);
+    pointer-events: none;
+}
+.hp-hero h1 {
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.15;
+    font-size: 2.4rem !important;
+}
+.hp-hero .ops-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    background: rgba(181,244,60,0.12);
+    border: 1px solid rgba(181,244,60,0.25);
+    color: var(--lime-soft);
+    border-radius: 100px;
+    padding: 0.3rem 0.9rem;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+}
+.hp-hero .ops-label::before {
+    content: '';
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--lime);
+    animation: pulse-dot 2s ease-in-out infinite;
+}
+@keyframes pulse-dot {
+    0%,100% { opacity:1; transform:scale(1); }
+    50% { opacity:0.5; transform:scale(1.4); }
+}
+
+/* Export Button */
+.btn-lime {
+    background: var(--lime);
+    color: var(--forest) !important;
+    border: none;
+    font-weight: 700;
+    transition: var(--transition);
+    letter-spacing: -0.01em;
+}
+.btn-lime:hover {
+    background: var(--lime-soft);
+    box-shadow: var(--shadow-glow);
+    transform: translateY(-1px);
+}
+.btn-outline-lime {
+    border: 1.5px solid var(--lime);
+    color: var(--lime) !important;
+    background: transparent;
+    font-weight: 700;
+    transition: var(--transition);
+}
+.btn-outline-lime:hover {
+    background: var(--lime-glow);
+    border-color: var(--lime-soft);
+}
+
+/* ── KPI Cards ── */
+.glass-stat {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    padding: 1.6rem 1.8rem;
+    border: 1px solid rgba(13,43,31,0.07);
+    box-shadow: var(--shadow-md);
+    position: relative;
+    overflow: hidden;
+    transition: var(--transition);
+}
+.glass-stat::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 3px;
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+    opacity: 0;
+    transition: var(--transition);
+}
+.glass-stat:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
+.glass-stat:hover::after { opacity: 1; }
+.glass-stat:nth-child(1)::after { background: linear-gradient(90deg, #f59e0b, #fcd34d); }
+.glass-stat:nth-child(2)::after { background: linear-gradient(90deg, #3b82f6, #93c5fd); }
+.glass-stat:nth-child(3)::after { background: linear-gradient(90deg, var(--lime), var(--lime-soft)); }
+
+.glass-stat-icon {
+    width: 46px; height: 46px;
+    border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.2rem;
+    margin-bottom: 1.1rem;
+    flex-shrink: 0;
+}
+.glass-stat-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 0.3rem;
+}
+.glass-stat-value {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    line-height: 1;
+    letter-spacing: -0.04em;
+    margin-bottom: 0.4rem;
+}
+.glass-stat-trend {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+/* ── Main Table Card ── */
+.glass-card {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    border: 1px solid rgba(13,43,31,0.07);
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+}
+.glass-card .card-header-zone {
+    padding: 1.4rem 1.8rem;
+    border-bottom: 1px solid rgba(13,43,31,0.06);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    background: #fff;
+}
+.glass-card .card-header-zone h5 {
+    font-weight: 800;
+    font-size: 1rem;
+    color: var(--text-primary);
+    letter-spacing: -0.02em;
+    margin: 0;
+}
+
+/* Search & Filter Bar */
+.search-input-wrap {
+    position: relative;
+}
+.search-input-wrap i {
+    position: absolute;
+    top: 50%; left: 14px;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    pointer-events: none;
+}
+.search-input-wrap input {
+    padding-left: 2.4rem;
+    border-radius: 100px;
+    border: 1.5px solid rgba(13,43,31,0.1);
+    background: #f8faf9;
+    font-size: 0.85rem;
+    font-weight: 500;
+    height: 38px;
+    color: var(--text-primary);
+    transition: var(--transition);
+    min-width: 220px;
+}
+.search-input-wrap input:focus {
+    outline: none;
+    border-color: var(--lime);
+    background: #fff;
+    box-shadow: var(--shadow-glow);
+}
+.filter-select {
+    border-radius: 100px;
+    border: 1.5px solid rgba(13,43,31,0.1);
+    background: #f8faf9;
+    font-size: 0.82rem;
+    font-weight: 600;
+    height: 38px;
+    color: var(--text-primary);
+    padding: 0 1.1rem;
+    cursor: pointer;
+    transition: var(--transition);
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%236b7c74' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14L2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    padding-right: 2.4rem;
+}
+.filter-select:focus {
+    outline: none;
+    border-color: var(--lime);
+    box-shadow: var(--shadow-glow);
+}
+
+/* ── Table Styles ── */
+.table-custom {
+    margin: 0;
+    border-collapse: separate;
+    border-spacing: 0;
+    width: 100%;
+}
+.table-custom thead th {
+    background: #f5f8f6;
+    color: var(--text-muted);
+    font-size: 0.68rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid rgba(13,43,31,0.07);
+    white-space: nowrap;
+}
+.table-custom thead th:first-child { padding-left: 1.8rem; border-radius: var(--radius-sm) 0 0 0; }
+.table-custom thead th:last-child  { padding-right: 1.8rem; border-radius: 0 var(--radius-sm) 0 0; }
+
+.table-custom tbody tr {
+    border-bottom: 1px solid rgba(13,43,31,0.04);
+    transition: var(--transition);
+    cursor: pointer;
+}
+.table-custom tbody tr:last-child { border-bottom: none; }
+.table-custom tbody tr:hover {
+    background: #f0faf4;
+}
+.table-custom tbody td {
+    padding: 0.9rem 1rem;
+    vertical-align: middle;
+    font-size: 0.875rem;
+    color: var(--text-primary);
+}
+.table-custom tbody td:first-child { padding-left: 1.8rem; }
+.table-custom tbody td:last-child  { padding-right: 1.8rem; }
+
+/* Member Cell */
+.member-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+.member-avatar {
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    background: var(--forest);
+    color: var(--lime);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem;
+    font-weight: 800;
+    flex-shrink: 0;
+    letter-spacing: -0.02em;
+}
+.member-name {
+    font-weight: 700;
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    line-height: 1.3;
+}
+.member-id {
+    font-size: 0.73rem;
+    color: var(--text-muted);
+    font-family: 'Courier New', monospace !important;
+    font-weight: 600;
+    margin-top: 1px;
+}
+
+/* Product cell */
+.product-type {
+    font-weight: 700;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--text-primary);
+}
+.product-meta {
+    font-size: 0.73rem;
+    color: var(--text-muted);
+    font-weight: 500;
+    margin-top: 1px;
+}
+
+/* Amount */
+.amount-value {
+    font-weight: 800;
+    font-size: 0.9rem;
+    color: var(--forest);
+    letter-spacing: -0.02em;
+}
+
+/* Guarantor badge */
+.guarantor-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: #f0f4f2;
+    color: var(--text-muted);
+    border: 1px solid rgba(13,43,31,0.08);
+    border-radius: 100px;
+    padding: 0.28rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+.guarantor-badge.full { background: #e8faf0; color: #16a34a; border-color: rgba(22,163,74,0.15); }
+
+/* Status badges */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    border-radius: 100px;
+    padding: 0.3rem 0.85rem;
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+.status-badge::before {
+    content: '';
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+.status-pending  { background: #fffbeb; color: #b45309; border: 1px solid rgba(245,158,11,0.2); }
+.status-pending::before  { background: #f59e0b; }
+.status-approved { background: #eff6ff; color: #1d4ed8; border: 1px solid rgba(59,130,246,0.2); }
+.status-approved::before { background: #3b82f6; }
+.status-disbursed{ background: #f0fdf4; color: #166534; border: 1px solid rgba(22,163,74,0.2); }
+.status-disbursed::before{ background: #22c55e; }
+.status-rejected { background: #fef2f2; color: #b91c1c; border: 1px solid rgba(239,68,68,0.2); }
+.status-rejected::before { background: #ef4444; }
+
+/* Action buttons */
+.action-zone {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}
+.btn-action-approve {
+    padding: 0.35rem 1rem;
+    border-radius: 100px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    border: 1.5px solid var(--lime);
+    color: var(--forest);
+    background: var(--lime-glow-sm);
+    cursor: pointer;
+    transition: var(--transition);
+    white-space: nowrap;
+}
+.btn-action-approve:hover {
+    background: var(--lime);
+    box-shadow: 0 4px 14px rgba(181,244,60,0.3);
+}
+.btn-action-reject {
+    padding: 0.35rem 0.8rem;
+    border-radius: 100px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    border: none;
+    color: #dc2626;
+    background: transparent;
+    cursor: pointer;
+    transition: var(--transition);
+}
+.btn-action-reject:hover { background: #fef2f2; }
+.btn-action-disburse {
+    padding: 0.42rem 1.2rem;
+    border-radius: 100px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    border: none;
+    background: var(--lime);
+    color: var(--forest);
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex; align-items: center; gap: 0.4rem;
+    white-space: nowrap;
+    box-shadow: 0 3px 12px rgba(181,244,60,0.25);
+}
+.btn-action-disburse:hover {
+    background: var(--lime-soft);
+    box-shadow: 0 6px 20px rgba(181,244,60,0.4);
+    transform: translateY(-1px);
+}
+.btn-finalized {
+    padding: 0.35rem 1rem;
+    border-radius: 100px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    border: 1px solid rgba(13,43,31,0.08);
+    color: var(--text-muted);
+    background: #f8faf9;
+    cursor: not-allowed;
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 4.5rem 2rem;
+}
+.empty-state-icon {
+    width: 72px; height: 72px;
+    border-radius: 18px;
+    background: #f5f8f6;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.8rem;
+    color: #c4d4cb;
+    margin: 0 auto 1.2rem;
+}
+.empty-state h5 {
+    font-weight: 800;
+    font-size: 1rem;
+    color: var(--text-primary);
+    margin-bottom: 0.4rem;
+}
+.empty-state p {
+    font-size: 0.83rem;
+    color: var(--text-muted);
+    margin: 0;
+}
+
+/* ── Offcanvas Drawer ── */
+#loanDrawer {
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+    background: #ffffff !important;
+    backdrop-filter: none !important;
+    width: 400px !important;
+    border-left: 1px solid rgba(13,43,31,0.08) !important;
+    box-shadow: -20px 0 60px rgba(13,43,31,0.12) !important;
+}
+.drawer-header {
+    background: linear-gradient(135deg, var(--forest) 0%, var(--forest-mid) 100%);
+    padding: 1.6rem 1.8rem;
+    position: relative;
+    overflow: hidden;
+}
+.drawer-header::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 90% 20%, rgba(181,244,60,0.15), transparent 60%);
+}
+.drawer-header h5 {
+    color: #fff;
+    font-weight: 800;
+    font-size: 1rem;
+    margin: 0;
+    position: relative;
+}
+.drawer-avatar-wrap {
+    text-align: center;
+    padding: 2rem 0 1.5rem;
+}
+.drawer-avatar {
+    width: 76px; height: 76px;
+    border-radius: 20px;
+    background: var(--forest);
+    color: var(--lime);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2rem;
+    font-weight: 800;
+    margin: 0 auto 1rem;
+    box-shadow: 0 8px 24px rgba(13,43,31,0.2);
+}
+.drawer-name {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    letter-spacing: -0.02em;
+    margin-bottom: 0.4rem;
+}
+.drawer-id-badge {
+    display: inline-block;
+    background: #f0faf4;
+    color: var(--forest);
+    border: 1px solid rgba(13,43,31,0.1);
+    border-radius: 100px;
+    padding: 0.25rem 0.9rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+.drawer-section {
+    background: #f8faf9;
+    border-radius: var(--radius-md);
+    padding: 1.2rem 1.4rem;
+    margin: 0 1.4rem 1rem;
+    border: 1px solid rgba(13,43,31,0.05);
+}
+.drawer-section-label {
+    font-size: 0.65rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--text-muted);
+    margin-bottom: 1rem;
+}
+.drawer-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.55rem 0;
+    border-bottom: 1px solid rgba(13,43,31,0.05);
+}
+.drawer-row:last-child { border-bottom: none; }
+.drawer-row-label { font-size: 0.8rem; color: var(--text-muted); font-weight: 500; }
+.drawer-row-value { font-size: 0.88rem; font-weight: 700; color: var(--text-primary); }
+.drawer-total-box {
+    background: var(--forest);
+    border-radius: var(--radius-md);
+    padding: 1.2rem 1.4rem;
+    margin: 0 1.4rem 1.4rem;
+    display: flex; justify-content: space-between; align-items: center;
+}
+.drawer-total-label { color: rgba(255,255,255,0.6); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; }
+.drawer-total-value { color: var(--lime); font-size: 1.35rem; font-weight: 800; letter-spacing: -0.03em; }
+.drawer-close-btn {
+    margin: 0 1.4rem 1.4rem;
+    display: flex;
+    padding: 0.7rem;
+    border-radius: var(--radius-md);
+    border: 1.5px solid rgba(13,43,31,0.1);
+    background: #fff;
+    color: var(--text-primary);
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: var(--transition);
+    align-items: center; justify-content: center; gap: 0.5rem;
+    width: calc(100% - 2.8rem);
+}
+.drawer-close-btn:hover { background: #f0faf4; border-color: var(--lime); }
+
+/* ── Modals ── */
+.modal-content {
+    border-radius: var(--radius-xl) !important;
+    border: none !important;
+    overflow: hidden;
+}
+.modal-reject-header {
+    background: linear-gradient(135deg, #991b1b, #dc2626);
+    padding: 1.4rem 1.8rem;
+    color: #fff;
+}
+.modal-reject-header h5 {
+    font-weight: 800;
+    font-size: 1rem;
+    margin: 0;
+}
+.modal-body-pad {
+    padding: 1.6rem 1.8rem;
+    background: #fff;
+}
+.modal-body-pad label {
+    font-size: 0.75rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    margin-bottom: 0.6rem;
+}
+.modal-body-pad textarea {
+    border-radius: var(--radius-md);
+    border: 1.5px solid rgba(13,43,31,0.1);
+    font-size: 0.875rem;
+    font-weight: 500;
+    padding: 0.85rem 1rem;
+    resize: vertical;
+    transition: var(--transition);
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+    width: 100%;
+}
+.modal-body-pad textarea:focus {
+    outline: none;
+    border-color: #dc2626;
+    box-shadow: 0 0 0 3px rgba(220,38,38,0.1);
+}
+.modal-footer-pad {
+    padding: 0 1.8rem 1.6rem;
+    background: #fff;
+    display: flex; gap: 0.75rem; justify-content: flex-end;
+}
+
+/* Disburse Modal */
+.disburse-hero {
+    background: linear-gradient(135deg, var(--forest) 0%, var(--forest-mid) 100%);
+    padding: 2.5rem 2rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+.disburse-hero::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 80% 0%, rgba(181,244,60,0.2), transparent 60%);
+}
+.disburse-hero .amount-label {
+    color: rgba(255,255,255,0.55);
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-bottom: 0.4rem;
+    position: relative;
+}
+.disburse-hero .amount-display {
+    font-size: 2.6rem;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: -0.04em;
+    line-height: 1;
+    position: relative;
+}
+.disburse-hero .amount-display span {
+    color: var(--lime);
+}
+.disburse-body {
+    padding: 1.6rem 1.8rem;
+    background: #fff;
+}
+.field-label-enhanced {
+    font-size: 0.7rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    margin-bottom: 0.55rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.ref-autobadge {
+    background: #e8faf0;
+    color: #16a34a;
+    border-radius: 100px;
+    padding: 0.15rem 0.6rem;
+    font-size: 0.67rem;
+    font-weight: 700;
+    letter-spacing: 0;
+    text-transform: none;
+}
+.form-control-enhanced {
+    border-radius: var(--radius-md);
+    border: 1.5px solid rgba(13,43,31,0.1);
+    font-size: 0.9rem;
+    font-weight: 600;
+    padding: 0.7rem 1rem;
+    width: 100%;
+    color: var(--text-primary);
+    background: #f8faf9;
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+    transition: var(--transition);
+}
+.form-control-enhanced:focus {
+    outline: none;
+    border-color: var(--lime);
+    background: #fff;
+    box-shadow: var(--shadow-glow);
+}
+.form-control-enhanced.monospace {
+    font-family: 'Courier New', monospace !important;
+    letter-spacing: 0.04em;
+}
+.disburse-footer {
+    padding: 0 1.8rem 1.6rem;
+    background: #fff;
+    display: flex; gap: 0.75rem;
+}
+
+/* Animations */
+@keyframes fadeIn { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+@keyframes slideUp { from { opacity:0; transform:translateY(24px); } to { opacity:1; transform:translateY(0); } }
+.fade-in  { animation: fadeIn 0.5s ease-out both; }
+.slide-up { animation: slideUp 0.5s cubic-bezier(0.4,0,0.2,1) both; }
+
+/* Dropdown */
+.dropdown-menu {
+    border-radius: var(--radius-md) !important;
+    border: 1px solid rgba(13,43,31,0.08) !important;
+    box-shadow: var(--shadow-lg) !important;
+    padding: 0.4rem !important;
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+}
+.dropdown-item {
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 0.6rem 0.9rem !important;
+    color: var(--text-primary) !important;
+    transition: var(--transition);
+}
+.dropdown-item:hover { background: #f0faf4 !important; }
+
+/* Flash Messages */
+.alert {
+    border-radius: var(--radius-md) !important;
+    font-weight: 600 !important;
+    font-size: 0.875rem !important;
+    border: none !important;
+}
+
+/* Responsive tweaks */
+@media (max-width: 768px) {
+    .hp-hero { padding: 2rem 1.5rem 4rem; }
+    .hp-hero h1 { font-size: 1.7rem !important; }
+    .glass-stat-value { font-size: 1.6rem; }
+    #loanDrawer { width: 100% !important; }
+    .table-responsive { font-size: 0.82rem; }
+    .disburse-hero .amount-display { font-size: 2rem; }
+}
+</style>
+
 <?php $layout->sidebar(); ?>
 <div class="main-content-wrapper">
     <?php $layout->topbar($pageTitle ?? ""); ?>
     <div class="container-fluid px-4 py-4">
 
-    
-    
-
-    
-    
-
-    
-    
-
-    
-    
-
-    
-    
-
-    
-    
-        
-        
-    
-
-            <!-- Header -->
-            <div class="hp-hero fade-in shadow-lg">
-                <div class="row align-items-center">
-                    <div class="col-lg-8">
-                        <span class="badge bg-white bg-opacity-10 text-white rounded-pill px-3 py-2 mb-3 small letter-spacing-1">OPERATIONS ENGINE</span>
-                        <h1 class="display-5 fw-800 mb-2">Loan Disbursement Center</h1>
-                        <p class="opacity-75 fs-5 mb-0">Processing approved credit lines into active liquidity.</p>
+        <!-- Hero Banner -->
+        <div class="hp-hero fade-in mb-0">
+            <div class="hero-ring2"></div>
+            <div class="row align-items-center">
+                <div class="col-lg-8">
+                    <div class="ops-label">
+                        Operations Engine
                     </div>
-                    <div class="col-lg-4 text-end">
-                        <div class="dropdown">
-                            <button class="btn btn-lime shadow-lg px-4 dropdown-toggle fw-bold text-dark" data-bs-toggle="dropdown">
-                                <i class="bi bi-cloud-download me-2"></i>Export Logs
-                            </button>
-                            <ul class="dropdown-menu shadow-lg border-0 mt-2">
-                                <li><a class="dropdown-item py-2" href="?export=pdf"><i class="bi bi-file-pdf text-danger me-2"></i>Disbursement PDF</a></li>
-                                <li><a class="dropdown-item py-2" href="?export=excel"><i class="bi bi-file-excel text-success me-2"></i>Excel Sheet</a></li>
-                            </ul>
-                        </div>
+                    <h1 class="mb-2">Loan Disbursement Center</h1>
+                    <p class="mb-0" style="color: rgba(255,255,255,0.6); font-size: 0.95rem; font-weight: 500;">
+                        Processing approved credit lines into active liquidity.
+                    </p>
+                </div>
+                <div class="col-lg-4 text-end mt-3 mt-lg-0">
+                    <div class="dropdown">
+                        <button class="btn btn-lime px-4 py-2 rounded-pill dropdown-toggle fw-bold" data-bs-toggle="dropdown" style="font-size: 0.875rem;">
+                            <i class="bi bi-cloud-download me-2"></i>Export Logs
+                        </button>
+                        <ul class="dropdown-menu shadow-lg border-0 mt-2">
+                            <li><a class="dropdown-item py-2" href="?export=pdf">
+                                <i class="bi bi-file-pdf text-danger me-2"></i>Disbursement PDF
+                            </a></li>
+                            <li><a class="dropdown-item py-2" href="?export=excel">
+                                <i class="bi bi-file-excel text-success me-2"></i>Excel Sheet
+                            </a></li>
+                        </ul>
                     </div>
                 </div>
             </div>
+        </div>
 
-            <div class="px-2" style="margin-top: -40px;">
-                <?php flash_render(); ?>
+        <!-- Content Area (overlapping hero) -->
+        <div style="margin-top: -36px; position: relative; z-index: 10;">
 
-                <!-- Vital KPIs -->
-                <div class="row g-4 mb-5">
-                    <div class="col-md-4">
-                        <div class="glass-stat slide-up">
-                            <div class="glass-stat-icon bg-warning-soft text-warning">
+            <?php flash_render(); ?>
+
+            <!-- KPI Cards -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <div class="glass-stat slide-up" style="animation-delay: 0.05s">
+                        <div class="d-flex align-items-start gap-3">
+                            <div class="glass-stat-icon" style="background:#fffbeb; color:#b45309;">
                                 <i class="bi bi-hourglass-split"></i>
                             </div>
-                            <div class="glass-stat-label">Pending Review</div>
-                            <div class="glass-stat-value"><?= number_format((int)$stats['pending_count']) ?></div>
-                            <div class="glass-stat-trend">KES <?= number_format((float)$stats['pending_val']) ?> Value</div>
+                            <div>
+                                <div class="glass-stat-label">Pending Review</div>
+                                <div class="glass-stat-value"><?= number_format((int)$stats['pending_count']) ?></div>
+                                <div class="glass-stat-trend">
+                                    <span style="color:#b45309; font-weight:700;">KES <?= number_format((float)$stats['pending_val']) ?></span> in queue
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div class="col-md-4">
-                        <div class="glass-stat slide-up" style="animation-delay: 0.1s">
-                            <div class="glass-stat-icon bg-primary-soft text-primary">
+                </div>
+                <div class="col-md-4">
+                    <div class="glass-stat slide-up" style="animation-delay: 0.12s">
+                        <div class="d-flex align-items-start gap-3">
+                            <div class="glass-stat-icon" style="background:#eff6ff; color:#1d4ed8;">
                                 <i class="bi bi-wallet2"></i>
                             </div>
-                            <div class="glass-stat-label">Awaiting Payout</div>
-                            <div class="glass-stat-value"><?= number_format((int)$stats['approved_count']) ?></div>
-                            <div class="glass-stat-trend text-primary">KES <?= number_format((float)$stats['approved_val']) ?> Required</div>
+                            <div>
+                                <div class="glass-stat-label">Awaiting Payout</div>
+                                <div class="glass-stat-value"><?= number_format((int)$stats['approved_count']) ?></div>
+                                <div class="glass-stat-trend">
+                                    <span style="color:#1d4ed8; font-weight:700;">KES <?= number_format((float)$stats['approved_val']) ?></span> required
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div class="col-md-4">
-                        <div class="glass-stat slide-up" style="animation-delay: 0.2s">
-                            <div class="glass-stat-icon bg-success-soft text-success">
+                </div>
+                <div class="col-md-4">
+                    <div class="glass-stat slide-up" style="animation-delay: 0.19s">
+                        <div class="d-flex align-items-start gap-3">
+                            <div class="glass-stat-icon" style="background:#f0fdf4; color:#166534;">
                                 <i class="bi bi-graph-up-arrow"></i>
                             </div>
-                            <div class="glass-stat-label">Active Portfolio</div>
-                            <div class="glass-stat-value"><?= number_format((int)$stats['active_count']) ?></div>
-                            <div class="glass-stat-trend text-success">KES <?= number_format((float)$stats['active_portfolio']) ?> Out</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="glass-card slide-up" style="animation-delay: 0.3s">
-                    <div class="p-4 d-flex flex-wrap justify-content-between align-items-center gap-3 border-bottom border-white border-opacity-10">
-                        <h5 class="fw-bold mb-0">Payment Queue</h5>
-                        
-                            <form class="d-flex gap-2" method="GET">
-                                <div class="position-relative">
-                                    <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted small"></i>
-                                    <input type="text" name="search" class="form-control ps-5 rounded-pill border-0 bg-white bg-opacity-5 text-dark" placeholder="Search queue..." value="<?= htmlspecialchars($_GET['search'] ?? '') ?>">
+                            <div>
+                                <div class="glass-stat-label">Active Portfolio</div>
+                                <div class="glass-stat-value"><?= number_format((int)$stats['active_count']) ?></div>
+                                <div class="glass-stat-trend">
+                                    <span style="color:#166534; font-weight:700;">KES <?= number_format((float)$stats['active_portfolio']) ?></span> outstanding
                                 </div>
-                                <select name="status" class="form-select border-0 bg-white bg-opacity-5 rounded-pill px-3 text-dark" onchange="this.form.submit()" style="backdrop-filter: blur(5px);">
-                                    <option value="">All Queues</option>
-                                    <option value="pending" <?= ($_GET['status'] ?? '') === 'pending' ? 'selected' : '' ?>>Queue: Review</option>
-                                    <option value="approved" <?= ($_GET['status'] ?? '') === 'approved' ? 'selected' : '' ?>>Queue: Payout</option>
-                                    <option value="disbursed" <?= ($_GET['status'] ?? '') === 'disbursed' ? 'selected' : '' ?>>Queue: Disbursed</option>
-                                </select>
-                            </form>
+                            </div>
                         </div>
                     </div>
-                    
-                    <div class="table-responsive">
-                        <table class="table table-custom align-middle mb-0">
-                            <thead>
-                                <tr>
-                                    <th class="ps-4">Beneficiary Identity</th>
-                                    <th>Product Specs</th>
-                                    <th>Payout Value</th>
-                                    <th>Collateral</th>
-                                    <th>Flow Status</th>
-                                    <th class="pe-4 text-end">Pipeline Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php 
-                                $loans->data_seek(0);
-                                if ($loans->num_rows > 0): ?>
-                                    <?php while ($row = $loans->fetch_assoc()): ?>
-                                    <tr onclick="openLoanDrawer(<?= htmlspecialchars(json_encode($row)) ?>)" style="cursor: pointer;">
-                                        <td class="ps-4">
-                                            
-                                                <div class="rounded-3 bg-forest text-lime d-flex align-items-center justify-content-center fw-800 shadow-sm" style="width: 40px; height: 40px;">
-                                                    <?= strtoupper(substr($row['full_name'], 0, 1)) ?>
-                                                </div>
-                                                <div>
-                                                    <div class="fw-bold "><?= htmlspecialchars($row['full_name']) ?></div>
-                                                    <div class="text-muted small font-monospace">ID: <?= htmlspecialchars($row['national_id']) ?></div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div class="fw-bold text-uppercase small letter-spacing-1"><?= ucfirst($row['loan_type']) ?></div>
-                                            <div class="text-muted small"><?= $row['duration_months'] ?> Mo @ <?= $row['interest_rate'] ?>%</div>
-                                        </td>
-                                        <td>
-                                            <div class="fw-800 text-forest">KES <?= number_format((float)$row['amount'], 2) ?></div>
-                                        </td>
-                                        <td>
-                                            <span class="badge bg-white bg-opacity-10 text-dark border rounded-pill px-3 py-2 small fw-bold">
-                                                <i class="bi bi-people-fill me-1"></i> <?= $row['guarantor_count'] ?> / 2
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <?php 
-                                                $stClass = match($row['status']) {
-                                                    'pending' => 'bg-warning bg-opacity-10 text-warning',
-                                                    'approved' => 'bg-info bg-opacity-10 text-info',
-                                                    'disbursed' => 'bg-success bg-opacity-10 text-success',
-                                                    'rejected' => 'bg-danger bg-opacity-10 text-danger',
-                                                    default => 'bg-light text-dark'
-                                                };
-                                            ?>
-                                            <span class="badge <?= $stClass ?> rounded-pill px-3 py-2 fw-bold" style="font-size: 0.65rem;">
-                                                <?= strtoupper($row['status']) ?>
-                                            </span>
-                                        </td>
-                                        <td class="pe-4 text-end" onclick="event.stopPropagation()">
-                                            
-                                                <?php if ($row['status'] === 'pending' && $can_approve): ?>
-                                                    <button onclick="confirmAction('approve', <?= $row['loan_id'] ?>)" class="btn btn-sm btn-outline-lime rounded-pill px-3 fw-bold">Review</button>
-                                                    <button onclick="openRejectModal(<?= $row['loan_id'] ?>)" class="btn btn-sm btn-link text-danger text-decoration-none fw-bold">Reject</button>
-                                                <?php elseif ($row['status'] === 'approved' && $can_disburse): ?>
-                                                    <button onclick="openDisburseModal(<?= $row['loan_id'] ?>, <?= $row['amount'] ?>)" class="btn btn-lime btn-sm px-4 rounded-pill fw-bold shadow-sm text-dark">
-                                                        Process Payout <i class="bi bi-send-fill ms-1"></i>
-                                                    </button>
-                                                <?php else: ?>
-                                                    <button class="btn btn-light rounded-pill btn-sm px-3 border-0 fw-bold text-muted small" disabled>Finalized</button>
-                                                <?php endif; ?>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    <?php endwhile; ?>
-                                <?php else: ?>
-                                    <tr>
-                                        <td colspan="6" class="text-center py-5">
-                                            <div class="opacity-25 mb-4"><i class="bi bi-inbox display-2"></i></div>
-                                            <h5 class="text-muted fw-bold">Pipeline Empty</h5>
-                                            <p class="text-muted small">No loan records match the current queue.</p>
-                                        </td>
-                                    </tr>
-                                <?php endif; ?>
-                            </tbody>
-                        </table>
+                </div>
+            </div>
+
+            <!-- Table Card -->
+            <div class="glass-card slide-up" style="animation-delay: 0.26s">
+                <!-- Card Header -->
+                <div class="card-header-zone">
+                    <div class="d-flex align-items-center gap-2">
+                        <h5>Payment Queue</h5>
+                        <span style="background:#f0faf4; color:#166534; border:1px solid rgba(22,163,74,0.15); border-radius:100px; padding:0.2rem 0.7rem; font-size:0.7rem; font-weight:800;">
+                            <?= $loans->num_rows ?> records
+                        </span>
                     </div>
-                </div>
-            </div>
 
-            <div class="offcanvas offcanvas-end border-0 shadow-lg" tabindex="-1" id="loanDrawer" style="background: rgba(255,255,255,0.9); backdrop-filter: blur(20px);">
-    <div class="offcanvas-header bg-forest text-white p-4">
-        <h5 class="offcanvas-title fw-800">Loan Deep Analytics</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
-    </div>
-    <div class="offcanvas-body p-4">
-        <div class="text-center mb-5">
-            <div class="mx-auto mb-3 shadow-lg" style="width: 80px; height: 80px; font-size: 2.2rem; border-radius: 20px; background: var(--forest); color: var(--lime); display: flex; align-items: center; justify-content: center; font-weight: 800;" id="drawer_avatar"></div>
-            <h4 class="fw-800 mb-1 " id="drawer_name">Member Name</h4>
-            <span class="badge bg-forest bg-opacity-10 text-forest rounded-pill px-3 py-2 small fw-bold" id="drawer_id">ID: ---</span>
-        </div>
-
-        <div class="glass-card p-4 mb-4 border border-white border-opacity-20 shadow-sm" style="background: rgba(0,0,0,0.02);">
-            <h6 class="text-uppercase small text-muted fw-800 mb-4 letter-spacing-1">Financial Commitment</h6>
-            
-                <span class="text-secondary fw-semibold">Principal Sum</span>
-                <span class="fw-800  fs-5" id="drawer_amount">KES 0.00</span>
-            </div>
-            
-                <span class="text-secondary fw-semibold">Risk Engine Rate</span>
-                <span class="badge bg-lime text-forest fw-800 px-3 py-2 rounded-pill" id="drawer_rate">0%</span>
-            </div>
-            <div class="mt-4 pt-4 border-top border-dark border-opacity-10">
-                
-                    <span class="fw-800 text-muted small text-uppercase">Total Repayable</span>
-                    <span class="fw-900 text-forest fs-4" id="drawer_total">KES 0.00</span>
-                </div>
-            </div>
-        </div>
-        
-        <button class="btn btn-outline-dark w-100 rounded-pill fw-bold py-3 mt-3 shadow-sm" data-bs-dismiss="offcanvas">Close Analytics</button>
-    </div>
-</div>
-
-<div class="modal fade" id="rejectModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
-            <form method="POST">
-                <?= csrf_field() ?>
-                <input type="hidden" name="action" value="reject">
-                <input type="hidden" name="loan_id" id="reject_loan_id">
-                <div class="modal-header bg-danger text-white border-0 p-4">
-                    <h5 class="modal-title fw-bold">Reject Application</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body p-4 bg-light">
-                    <label class="form-label fw-bold  mb-2">Reason for Rejection (Visible to Member)</label>
-                    <textarea name="rejection_reason" class="form-control bg-white" rows="4" required placeholder="e.g. Insufficient Guarantor coverage..."></textarea>
-                </div>
-                <div class="modal-footer border-0 bg-light p-4 pt-0">
-                    <button type="button" class="btn btn-link text-muted text-decoration-none fw-bold" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-danger rounded-pill px-5 fw-bold shadow-sm">Confirm Reject</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="disburseModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
-            <form method="POST">
-                <?= csrf_field() ?>
-                <input type="hidden" name="action" value="disburse">
-                <input type="hidden" name="loan_id" id="disburse_loan_id">
-                
-                <div class="bg-forest text-white p-5 text-center position-relative">
-                    <h1 class="fw-bold my-2 display-5 text-white">KES <span id="disburse_amount_val">0.00</span></h1>
-                </div>
-
-                <div class="modal-body p-4 bg-white">
-                    <div class="mb-4">
-                        <label class="form-label small text-uppercase fw-bold text-secondary mb-2">Disbursement Channel</label>
-                        <select name="payment_method" id="payment_method" class="form-select form-select-lg fw-medium " required onchange="handleRefGeneration()">
-                            <option value="bank">Bank Transfer (Internal)</option>
-                            <option value="cash">Petty Cash (Internal)</option>
-                            <option value="mpesa">M-Pesa (External)</option>
+                    <form class="d-flex gap-2 align-items-center" method="GET">
+                        <div class="search-input-wrap">
+                            <i class="bi bi-search"></i>
+                            <input type="text" name="search" placeholder="Search members, ID..."
+                                   value="<?= htmlspecialchars($_GET['search'] ?? '') ?>">
+                        </div>
+                        <select name="status" class="filter-select" onchange="this.form.submit()">
+                            <option value="">All Queues</option>
+                            <option value="pending"   <?= ($_GET['status'] ?? '') === 'pending'   ? 'selected' : '' ?>>Review Queue</option>
+                            <option value="approved"  <?= ($_GET['status'] ?? '') === 'approved'  ? 'selected' : '' ?>>Payout Queue</option>
+                            <option value="disbursed" <?= ($_GET['status'] ?? '') === 'disbursed' ? 'selected' : '' ?>>Disbursed</option>
                         </select>
-                    </div>
-                    <div class="mb-4">
-                        <label class="form-label small text-uppercase fw-bold text-secondary mb-2 d-flex justify-content-between">
-                            <span>Transaction Reference</span>
-                            <span id="ref_badge" class="badge bg-success bg-opacity-10 text-success rounded-pill px-2">Auto-Generated</span>
-                        </label>
-                        <input type="text" name="ref_no" id="ref_no_input" class="form-control form-control-lg fw-bold font-monospace " required>
-                    </div>
+                        <?php if (!empty($_GET['search']) || !empty($_GET['status'])): ?>
+                            <a href="loans_payouts.php" class="btn btn-finalized" style="cursor:pointer; text-decoration:none; white-space:nowrap;">
+                                <i class="bi bi-x-lg me-1"></i>Clear
+                            </a>
+                        <?php endif; ?>
+                    </form>
                 </div>
-                <div class="modal-footer border-0 p-4 pt-0 bg-white">
-                    <button type="button" class="btn btn-light rounded-pill px-4 fw-bold" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-lime rounded-pill px-5 fw-bold shadow-sm flex-fill text-dark">Process Payout <i class="bi bi-check-circle-fill ms-2"></i></button>
+
+                <!-- Table -->
+                <div class="table-responsive">
+                    <table class="table-custom">
+                        <thead>
+                            <tr>
+                                <th>Beneficiary</th>
+                                <th>Product</th>
+                                <th>Amount</th>
+                                <th>Collateral</th>
+                                <th>Status</th>
+                                <th style="text-align:right;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php
+                            $loans->data_seek(0);
+                            if ($loans->num_rows > 0):
+                                while ($row = $loans->fetch_assoc()):
+                                    $g_count = (int)$row['guarantor_count'];
+                                    $g_full  = $g_count >= 2;
+                            ?>
+                            <tr onclick="openLoanDrawer(<?= htmlspecialchars(json_encode($row)) ?>)">
+                                <td>
+                                    <div class="member-cell">
+                                        <div class="member-avatar">
+                                            <?= strtoupper(substr($row['full_name'], 0, 1)) ?>
+                                        </div>
+                                        <div>
+                                            <div class="member-name"><?= htmlspecialchars($row['full_name']) ?></div>
+                                            <div class="member-id">ID: <?= htmlspecialchars($row['national_id']) ?></div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="product-type"><?= ucfirst(htmlspecialchars($row['loan_type'])) ?></div>
+                                    <div class="product-meta"><?= $row['duration_months'] ?> mo &bull; <?= $row['interest_rate'] ?>% p.a.</div>
+                                </td>
+                                <td>
+                                    <div class="amount-value">KES <?= number_format((float)$row['amount'], 2) ?></div>
+                                </td>
+                                <td>
+                                    <span class="guarantor-badge <?= $g_full ? 'full' : '' ?>">
+                                        <i class="bi bi-people-fill" style="font-size:0.7rem;"></i>
+                                        <?= $g_count ?> / 2
+                                        <?php if ($g_full): ?><i class="bi bi-check-circle-fill" style="font-size:0.65rem;"></i><?php endif; ?>
+                                    </span>
+                                </td>
+                                <td>
+                                    <?php
+                                        $sc = match($row['status']) {
+                                            'pending'   => 'status-pending',
+                                            'approved'  => 'status-approved',
+                                            'disbursed' => 'status-disbursed',
+                                            'rejected'  => 'status-rejected',
+                                            default     => ''
+                                        };
+                                    ?>
+                                    <span class="status-badge <?= $sc ?>">
+                                        <?= strtoupper($row['status']) ?>
+                                    </span>
+                                </td>
+                                <td onclick="event.stopPropagation()">
+                                    <div class="action-zone">
+                                        <?php if ($row['status'] === 'pending' && $can_approve): ?>
+                                            <button onclick="confirmAction('approve', <?= $row['loan_id'] ?>)" class="btn-action-approve">
+                                                <i class="bi bi-check2 me-1"></i>Approve
+                                            </button>
+                                            <button onclick="openRejectModal(<?= $row['loan_id'] ?>)" class="btn-action-reject">
+                                                Reject
+                                            </button>
+                                        <?php elseif ($row['status'] === 'approved' && $can_disburse): ?>
+                                            <button onclick="openDisburseModal(<?= $row['loan_id'] ?>, <?= $row['amount'] ?>)" class="btn-action-disburse">
+                                                Process Payout <i class="bi bi-send-fill" style="font-size:0.7rem;"></i>
+                                            </button>
+                                        <?php else: ?>
+                                            <span class="btn-finalized">Finalized</span>
+                                        <?php endif; ?>
+                                    </div>
+                                </td>
+                            </tr>
+                            <?php endwhile; ?>
+                            <?php else: ?>
+                            <tr>
+                                <td colspan="6">
+                                    <div class="empty-state">
+                                        <div class="empty-state-icon">
+                                            <i class="bi bi-inbox"></i>
+                                        </div>
+                                        <h5>Pipeline Empty</h5>
+                                        <p>No loan records match the current queue filter.</p>
+                                    </div>
+                                </td>
+                            </tr>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
                 </div>
-            </form>
+            </div>
+
+        </div><!-- /content overlap -->
+
+    </div><!-- /container-fluid -->
+
+
+    <!-- ═══════════════════════════════════════════
+         LOAN DETAILS DRAWER
+    ═══════════════════════════════════════════ -->
+    <div class="offcanvas offcanvas-end border-0" tabindex="-1" id="loanDrawer">
+        <div class="drawer-header offcanvas-header">
+            <h5 class="offcanvas-title">Loan Analytics</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+        </div>
+        <div class="offcanvas-body p-0" style="overflow-y: auto;">
+
+            <div class="drawer-avatar-wrap">
+                <div class="drawer-avatar" id="drawer_avatar"></div>
+                <div class="drawer-name" id="drawer_name">—</div>
+                <span class="drawer-id-badge" id="drawer_id">ID: —</span>
+            </div>
+
+            <div class="drawer-section">
+                <div class="drawer-section-label">Loan Details</div>
+                <div class="drawer-row">
+                    <span class="drawer-row-label">Principal</span>
+                    <span class="drawer-row-value" id="drawer_amount">KES 0</span>
+                </div>
+                <div class="drawer-row">
+                    <span class="drawer-row-label">Interest Rate</span>
+                    <span class="drawer-row-value">
+                        <span style="background:var(--lime-glow); color:var(--forest); border-radius:100px; padding:0.15rem 0.6rem; font-size:0.8rem; font-weight:800;" id="drawer_rate">0%</span>
+                    </span>
+                </div>
+                <div class="drawer-row">
+                    <span class="drawer-row-label">Duration</span>
+                    <span class="drawer-row-value" id="drawer_duration">— months</span>
+                </div>
+                <div class="drawer-row">
+                    <span class="drawer-row-label">Loan Type</span>
+                    <span class="drawer-row-value" id="drawer_type">—</span>
+                </div>
+                <div class="drawer-row">
+                    <span class="drawer-row-label">Phone</span>
+                    <span class="drawer-row-value" id="drawer_phone">—</span>
+                </div>
+            </div>
+
+            <div class="drawer-total-box">
+                <div>
+                    <div class="drawer-total-label">Total Repayable</div>
+                    <div style="color:rgba(255,255,255,0.45); font-size:0.72rem; font-weight:500;">Principal + Interest</div>
+                </div>
+                <div class="drawer-total-value" id="drawer_total">KES 0</div>
+            </div>
+
+            <button class="drawer-close-btn" data-bs-dismiss="offcanvas">
+                <i class="bi bi-x-circle"></i> Close Analytics
+            </button>
+
         </div>
     </div>
-</div>
 
-<form id="actionForm" method="POST" style="display:none;">
-    <?= csrf_field() 
-    
-    
 
-?>
-    <input type="hidden" name="action" id="form_action">
-    <input type="hidden" name="loan_id" id="form_loan_id">
-</form>
+    <!-- ═══════════════════════════════════════════
+         REJECT MODAL
+    ═══════════════════════════════════════════ -->
+    <div class="modal fade" id="rejectModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered" style="max-width:440px;">
+            <div class="modal-content">
+                <form method="POST">
+                    <?= csrf_field() ?>
+                    <input type="hidden" name="action" value="reject">
+                    <input type="hidden" name="loan_id" id="reject_loan_id">
+
+                    <div class="modal-reject-header d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center gap-2">
+                            <div style="width:32px; height:32px; border-radius:8px; background:rgba(255,255,255,0.15); display:flex; align-items:center; justify-content:center;">
+                                <i class="bi bi-x-circle-fill" style="font-size:0.9rem;"></i>
+                            </div>
+                            <h5 class="modal-reject-header">Reject Application</h5>
+                        </div>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+
+                    <div class="modal-body-pad">
+                        <label>Rejection Reason <span style="color:#dc2626;">*</span></label>
+                        <textarea name="rejection_reason" rows="4" required
+                                  placeholder="e.g. Insufficient guarantor coverage, credit history concerns..."></textarea>
+                        <p style="font-size:0.73rem; color:var(--text-muted); margin-top:0.6rem; margin-bottom:0;">
+                            <i class="bi bi-info-circle me-1"></i>This reason will be visible to the member in their notification.
+                        </p>
+                    </div>
+
+                    <div class="modal-footer-pad">
+                        <button type="button" style="background:none; border:1.5px solid rgba(13,43,31,0.1); border-radius:100px; padding:0.5rem 1.2rem; font-weight:700; font-size:0.85rem; cursor:pointer;" data-bs-dismiss="modal">
+                            Cancel
+                        </button>
+                        <button type="submit" style="background:#dc2626; color:#fff; border:none; border-radius:100px; padding:0.5rem 1.6rem; font-weight:700; font-size:0.85rem; cursor:pointer; box-shadow:0 4px 14px rgba(220,38,38,0.3);">
+                            Confirm Reject
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ═══════════════════════════════════════════
+         DISBURSE MODAL
+    ═══════════════════════════════════════════ -->
+    <div class="modal fade" id="disburseModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered" style="max-width:440px;">
+            <div class="modal-content">
+                <form method="POST">
+                    <?= csrf_field() ?>
+                    <input type="hidden" name="action" value="disburse">
+                    <input type="hidden" name="loan_id" id="disburse_loan_id">
+
+                    <div class="disburse-hero">
+                        <div class="amount-label">Disbursement Amount</div>
+                        <div class="amount-display">
+                            <span>KES</span> <span id="disburse_amount_val">0.00</span>
+                        </div>
+                        <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-3" data-bs-dismiss="modal"></button>
+                    </div>
+
+                    <div class="disburse-body">
+                        <div class="mb-4">
+                            <div class="field-label-enhanced">Disbursement Channel</div>
+                            <select name="payment_method" id="payment_method" class="form-control-enhanced" required onchange="handleRefGeneration()">
+                                <option value="bank">🏦 Bank Transfer (Internal)</option>
+                                <option value="cash">💵 Petty Cash (Internal)</option>
+                                <option value="mpesa">📱 M-Pesa (External)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <div class="field-label-enhanced">
+                                Transaction Reference
+                                <span class="ref-autobadge" id="ref_badge">Auto-Generated</span>
+                            </div>
+                            <input type="text" name="ref_no" id="ref_no_input"
+                                   class="form-control-enhanced monospace" required
+                                   placeholder="DSB-...">
+                        </div>
+                    </div>
+
+                    <div class="disburse-footer">
+                        <button type="button" style="flex:1; background:#f5f8f6; color:var(--text-muted); border:1.5px solid rgba(13,43,31,0.1); border-radius:100px; padding:0.65rem; font-weight:700; font-size:0.85rem; cursor:pointer;" data-bs-dismiss="modal">
+                            Cancel
+                        </button>
+                        <button type="submit" style="flex:2; background:var(--lime); color:var(--forest); border:none; border-radius:100px; padding:0.65rem 1.6rem; font-weight:800; font-size:0.875rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:0.5rem; box-shadow:0 4px 16px rgba(181,244,60,0.35);">
+                            Process Payout <i class="bi bi-check-circle-fill" style="font-size:0.85rem;"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Hidden action form -->
+    <form id="actionForm" method="POST" style="display:none;">
+        <?= csrf_field() ?>
+        <input type="hidden" name="action" id="form_action">
+        <input type="hidden" name="loan_id" id="form_loan_id">
+    </form>
+
+    <?php $layout->footer(); ?>
+</div><!-- /main-content-wrapper -->
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    function confirmAction(action, id) {
-        if(confirm('Are you absolutely sure?')) {
-            document.getElementById('form_action').value = action;
-            document.getElementById('form_loan_id').value = id;
-            document.getElementById('actionForm').submit();
-        }
+function confirmAction(action, id) {
+    if (confirm('Are you absolutely sure you want to ' + action + ' this loan?')) {
+        document.getElementById('form_action').value = action;
+        document.getElementById('form_loan_id').value = id;
+        document.getElementById('actionForm').submit();
     }
-    function openRejectModal(id) {
-        document.getElementById('reject_loan_id').value = id;
-        new bootstrap.Modal(document.getElementById('rejectModal')).show();
-    }
-    function openDisburseModal(id, amount) {
-        document.getElementById('disburse_loan_id').value = id;
-        document.getElementById('disburse_amount_val').innerText = new Intl.NumberFormat().format(amount);
-        document.getElementById('ref_no_input').value = 'DSB-' + Date.now();
-        new bootstrap.Modal(document.getElementById('disburseModal')).show();
-    }
-    function handleRefGeneration() {
-        document.getElementById('ref_no_input').value = 'DSB-' + Date.now();
-    }
-    function openLoanDrawer(data) {
-        document.getElementById('drawer_name').innerText = data.full_name;
-        document.getElementById('drawer_avatar').innerText = data.full_name.charAt(0);
-        document.getElementById('drawer_id').innerText = 'ID: ' + data.national_id;
-        document.getElementById('drawer_amount').innerText = 'KES ' + new Intl.NumberFormat().format(data.amount);
-        document.getElementById('drawer_rate').innerText = data.interest_rate + '%';
-        let total = parseFloat(data.amount) + (parseFloat(data.amount) * (parseFloat(data.interest_rate)/100));
-        document.getElementById('drawer_total').innerText = 'KES ' + new Intl.NumberFormat().format(total);
-        new bootstrap.Offcanvas(document.getElementById('loanDrawer')).show();
-    }
+}
+
+function openRejectModal(id) {
+    document.getElementById('reject_loan_id').value = id;
+    new bootstrap.Modal(document.getElementById('rejectModal')).show();
+}
+
+function openDisburseModal(id, amount) {
+    document.getElementById('disburse_loan_id').value = id;
+    document.getElementById('disburse_amount_val').innerText = new Intl.NumberFormat('en-KE', {
+        minimumFractionDigits: 2, maximumFractionDigits: 2
+    }).format(amount);
+    document.getElementById('ref_no_input').value = 'DSB-' + Date.now();
+    new bootstrap.Modal(document.getElementById('disburseModal')).show();
+}
+
+function handleRefGeneration() {
+    document.getElementById('ref_no_input').value = 'DSB-' + Date.now();
+}
+
+function openLoanDrawer(data) {
+    const fmt = v => new Intl.NumberFormat('en-KE', {minimumFractionDigits: 2}).format(v);
+    const amt   = parseFloat(data.amount) || 0;
+    const rate  = parseFloat(data.interest_rate) || 0;
+    const total = amt + (amt * (rate / 100));
+
+    document.getElementById('drawer_avatar').innerText  = data.full_name.charAt(0).toUpperCase();
+    document.getElementById('drawer_name').innerText    = data.full_name;
+    document.getElementById('drawer_id').innerText      = 'ID: ' + data.national_id;
+    document.getElementById('drawer_amount').innerText  = 'KES ' + fmt(amt);
+    document.getElementById('drawer_rate').innerText    = rate + '%';
+    document.getElementById('drawer_total').innerText   = 'KES ' + fmt(total);
+    document.getElementById('drawer_duration').innerText = (data.duration_months || '—') + ' months';
+    document.getElementById('drawer_type').innerText    = data.loan_type ? data.loan_type.charAt(0).toUpperCase() + data.loan_type.slice(1) : '—';
+    document.getElementById('drawer_phone').innerText   = data.phone || '—';
+
+    new bootstrap.Offcanvas(document.getElementById('loanDrawer')).show();
+}
 </script>
-    </div> <!-- /container-fluid -->
-    <?php $layout->footer(); ?>
-</div> <!-- /main-content-wrapper -->
 </body>
 </html>
