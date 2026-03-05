@@ -9,8 +9,6 @@ $execution_time = round($time_end - $time_start, 3);
 $memory_usage = round(memory_get_usage() / 1024 / 1024, 2);
 ?>
 
-    </div> <!-- /main-content -->
-
     <button type="button" class="btn btn-primary rounded-circle shadow-lg" id="btn-back-to-top" 
             style="position: fixed; bottom: 80px; right: 20px; display: none; z-index: 999; width: 45px; height: 45px;">
         <i class="bi bi-arrow-up"></i>
@@ -77,7 +75,6 @@ $memory_usage = round(memory_get_usage() / 1024 / 1024, 2);
             </div>
         </div>
     </footer>
-</div> <!-- /main-wrapper -->
 
     <style>
         @keyframes ping {
