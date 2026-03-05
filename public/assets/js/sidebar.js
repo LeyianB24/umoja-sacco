@@ -6,7 +6,7 @@
 (function () {
     'use strict';
 
-    const STORAGE_KEY = 'usms_sidebar_collapsed';
+    const STORAGE_KEY = 'hd_sidebar_collapsed';
 
     let sidebar, overlay, mainWrapper;
 
@@ -27,7 +27,7 @@
 
         // Wire all toggle buttons (desktop + mobile, any selector)
         document.querySelectorAll(
-            '#sidebarToggle, #mobileSidebarToggle, #mobileToggle, .sidebar-toggle-btn'
+            '#sidebarToggle, #mobileSidebarToggle, #mobileToggle, .sidebar-toggle-btn, .mobile-nav-toggle'
         ).forEach(btn => btn.addEventListener('click', onToggle));
 
         // Overlay click → close on mobile

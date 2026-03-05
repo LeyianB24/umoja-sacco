@@ -432,45 +432,5 @@ if (!function_exists('is_active')) {
 
 </aside>
 
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const body = document.body;
-        const sidebar = document.getElementById('sidebar');
-        const backdrop = document.getElementById('sidebarBackdrop');
-        const toggleBtn = document.getElementById('sidebarToggle');
 
-        // 1. RESTORE STATE (Instant Fix for "Jumping" pages)
-        // We apply the class immediately if saved in localStorage
-        if(localStorage.getItem('hd_sidebar_collapsed') === 'true') {
-            body.classList.add('sb-collapsed');
-        }
-
-        // 2. DESKTOP TOGGLE (Click 3-dashes button)
-        if(toggleBtn) {
-            toggleBtn.addEventListener('click', () => {
-                body.classList.toggle('sb-collapsed');
-                // Save state so other pages know to stay collapsed
-                const isCollapsed = body.classList.contains('sb-collapsed');
-                localStorage.setItem('hd_sidebar_collapsed', isCollapsed);
-            });
-        }
-
-        // 3. MOBILE TOGGLE LOGIC
-        // This listens for ANY button with class 'mobile-nav-toggle' (usually in Topbar)
-        document.addEventListener('click', (e) => {
-            const trigger = e.target.closest('.mobile-nav-toggle');
-            if (trigger) {
-                sidebar.classList.add('mobile-open');
-                backdrop.classList.add('show');
-            }
-        });
-
-        // Close when clicking outside on mobile
-        if(backdrop) {
-            backdrop.addEventListener('click', () => {
-                sidebar.classList.remove('mobile-open');
-                backdrop.classList.remove('show');
-            });
-        }
-    });
-</script>
+<?php // Sidebar state restoration handled by assets/js/sidebar.js ?>

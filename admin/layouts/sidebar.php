@@ -569,40 +569,4 @@ if (!function_exists('is_active')) {
 
 </aside>
 
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const body     = document.body;
-        const sidebar  = document.getElementById('sidebar');
-        const backdrop = document.getElementById('sidebarBackdrop');
-        const toggleBtn = document.getElementById('sidebarToggle');
-
-        // Restore collapsed state
-        if (localStorage.getItem('hd_sidebar_collapsed') === 'true') {
-            body.classList.add('sb-collapsed');
-        }
-
-        // Desktop toggle
-        if (toggleBtn) {
-            toggleBtn.addEventListener('click', () => {
-                body.classList.toggle('sb-collapsed');
-                localStorage.setItem('hd_sidebar_collapsed', body.classList.contains('sb-collapsed'));
-            });
-        }
-
-        // Mobile open
-        document.addEventListener('click', (e) => {
-            if (e.target.closest('.mobile-nav-toggle')) {
-                sidebar.classList.add('show');
-                backdrop.classList.add('show');
-            }
-        });
-
-        // Mobile close
-        if (backdrop) {
-            backdrop.addEventListener('click', () => {
-                sidebar.classList.remove('show');
-                backdrop.classList.remove('show');
-            });
-        }
-    });
-</script>
+<?php // Sidebar state restoration handled by assets/js/sidebar.js ?>
