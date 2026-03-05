@@ -238,6 +238,9 @@ $history_runs = $db->query("SELECT * FROM payroll_runs ORDER BY month DESC LIMIT
 
     
     
+
+    
+    
         
         
     
@@ -490,4 +493,5 @@ $history_runs = $db->query("SELECT * FROM payroll_runs ORDER BY month DESC LIMIT
     </div> <!-- /container-fluid -->
     <?php $layout->footer(); ?>
 </div> <!-- /main-content-wrapper -->
-?>
+</body>
+</html>

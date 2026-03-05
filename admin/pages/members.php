@@ -109,6 +109,9 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
 
     
     
+
+    
+    
         
         
     
@@ -303,4 +306,5 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
     </div> <!-- /container-fluid -->
     <?php $layout->footer(); ?>
 </div> <!-- /main-content-wrapper -->
-?>
+</body>
+</html>

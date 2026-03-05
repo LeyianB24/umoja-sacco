@@ -131,6 +131,9 @@ $pageTitle = "Roles & Permissions";
 
     
     
+
+    
+    
         
         
     
@@ -455,4 +458,5 @@ This action cannot be undone.`)) {
     </div> <!-- /container-fluid -->
     <?php $layout->footer(); ?>
 </div> <!-- /main-content-wrapper -->
-?>
+</body>
+</html>

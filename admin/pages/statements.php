@@ -30,14 +30,14 @@ $pageTitle = "Statement Portal";
     <?php $layout->topbar($pageTitle ?? ""); ?>
     <div class="container-fluid px-4 py-4">
 
+    
+    
 
     
     
 
-
     
     
-
 
     
     
@@ -105,7 +105,6 @@ $pageTitle = "Statement Portal";
         /* Select2 Customization */
         .select2-container--bootstrap-5 .select2-selection { border-radius: 0.85rem; height: auto; padding: 0.5rem 0.75rem; }
     </style>
-
 
             <!-- Portal Header -->
             <div class="portal-header shadow-lg">
@@ -287,8 +286,12 @@ ob_start();
 $extraJs = ob_get_clean();
 $layout->footer(); 
 ?>
-    </div> <!-- /container-fluid -->
-</div> <!-- /main-content-wrapper -->
+    
+
 <?php 
 // Final cleanup
-?>
+    </div> <!-- /container-fluid -->
+    <?php $layout->footer(); ?>
+</div> <!-- /main-content-wrapper -->
+</body>
+</html>

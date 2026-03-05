@@ -226,6 +226,9 @@ $pageTitle = $member['full_name'] . " - Member Profile";
 
     
     
+
+    
+    
         
         
     
@@ -567,4 +570,5 @@ $pageTitle = $member['full_name'] . " - Member Profile";
     </div> <!-- /container-fluid -->
     <?php $layout->footer(); ?>
 </div> <!-- /main-content-wrapper -->
-?>
+</body>
+</html>

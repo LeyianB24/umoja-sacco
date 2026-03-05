@@ -170,6 +170,9 @@ $pageTitle = "Audit Logs";
 
     
     
+
+    
+    
         
         
 
@@ -300,4 +303,5 @@ $pageTitle = "Audit Logs";
     </div> <!-- /container-fluid -->
     <?php $layout->footer(); ?>
 </div> <!-- /main-content-wrapper -->
-?>
+</body>
+</html>

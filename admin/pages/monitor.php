@@ -52,6 +52,9 @@ if ($table_check && $table_check->num_rows > 0) {
 
     
     
+
+    
+    
         
         
     
@@ -148,4 +151,5 @@ if ($table_check && $table_check->num_rows > 0) {
     </div> <!-- /container-fluid -->
     <?php $layout->footer(); ?>
 </div> <!-- /main-content-wrapper -->
-?>
+</body>
+</html>

@@ -283,6 +283,9 @@ $pageTitle = "Executive Reports";
 
     
     
+
+    
+    
         
         
     
@@ -608,4 +611,5 @@ $pageTitle = "Executive Reports";
     </div> <!-- /container-fluid -->
     <?php $layout->footer(); ?>
 </div> <!-- /main-content-wrapper -->
-?>
+</body>
+</html>

@@ -275,6 +275,9 @@ $stats = $db->query("SELECT
 
     
     
+
+    
+    
         
         
     
@@ -507,4 +510,5 @@ if($loans->num_rows > 0):
     </div> <!-- /container-fluid -->
     <?php $layout->footer(); ?>
 </div> <!-- /main-content-wrapper -->
-?>
+</body>
+</html>

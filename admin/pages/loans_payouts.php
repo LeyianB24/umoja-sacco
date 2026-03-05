@@ -215,6 +215,9 @@ $pageTitle = "Loan Management";
 
     
     
+
+    
+    
         
         
     
@@ -522,9 +525,8 @@ $pageTitle = "Loan Management";
         new bootstrap.Offcanvas(document.getElementById('loanDrawer')).show();
     }
 </script>
-</body>
-</html>
     </div> <!-- /container-fluid -->
     <?php $layout->footer(); ?>
 </div> <!-- /main-content-wrapper -->
-?>
+</body>
+</html>

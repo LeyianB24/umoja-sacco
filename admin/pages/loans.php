@@ -193,6 +193,9 @@ $pageTitle = "Loan #$loan_id Detail";
 
     
     
+
+    
+    
         
         
 
@@ -496,4 +499,5 @@ $pageTitle = "Loan #$loan_id Detail";
     </div> <!-- /container-fluid -->
     <?php $layout->footer(); ?>
 </div> <!-- /main-content-wrapper -->
-?>
+</body>
+</html>

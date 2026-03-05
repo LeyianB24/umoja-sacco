@@ -193,6 +193,9 @@ $pageTitle = "Ticket View";
 
     
     
+
+    
+    
         
         
 
@@ -325,4 +328,5 @@ $pageTitle = "Ticket View";
     </div> <!-- /container-fluid -->
     <?php $layout->footer(); ?>
 </div> <!-- /main-content-wrapper -->
-?>
+</body>
+</html>

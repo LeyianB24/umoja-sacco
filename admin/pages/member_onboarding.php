@@ -156,6 +156,9 @@ $pageTitle = "Register Member";
 
     
     
+
+    
+    
         
         
     
@@ -294,4 +297,5 @@ $pageTitle = "Register Member";
     </div> <!-- /container-fluid -->
     <?php $layout->footer(); ?>
 </div> <!-- /main-content-wrapper -->
-?>
+</body>
+</html>

@@ -129,6 +129,9 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
 
     
     
+
+    
+    
         
         
 
@@ -473,4 +476,5 @@ document.addEventListener('DOMContentLoaded', function() {
     </div> <!-- /container-fluid -->
     <?php $layout->footer(); ?>
 </div> <!-- /main-content-wrapper -->
-?>
+</body>
+</html>

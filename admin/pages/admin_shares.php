@@ -176,6 +176,9 @@ $jsData   = json_encode($chartData);
 
     
     
+
+    
+    
         
         
     <style>
@@ -648,9 +651,8 @@ $jsData   = json_encode($chartData);
         }
     });
 </script>
-</body>
-</html>
     </div> <!-- /container-fluid -->
     <?php $layout->footer(); ?>
 </div> <!-- /main-content-wrapper -->
-?>
+</body>
+</html>

@@ -57,6 +57,9 @@ $pool_balance = $engine->getWelfarePoolBalance();
 
     
     
+
+    
+    
         
         
     
@@ -329,9 +332,8 @@ $pool_balance = $engine->getWelfarePoolBalance();
         }
     }
 </script>
-</body>
-</html>
     </div> <!-- /container-fluid -->
     <?php $layout->footer(); ?>
 </div> <!-- /main-content-wrapper -->
-?>
+</body>
+</html>

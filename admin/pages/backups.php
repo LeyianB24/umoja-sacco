@@ -60,6 +60,9 @@ $pageTitle = "System Maintenance Hub";
 
     
     
+
+    
+    
         
         
     
@@ -181,4 +184,5 @@ $pageTitle = "System Maintenance Hub";
     </div> <!-- /container-fluid -->
     <?php $layout->footer(); ?>
 </div> <!-- /main-content-wrapper -->
-?>
+</body>
+</html>

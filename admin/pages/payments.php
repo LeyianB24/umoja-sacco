@@ -213,6 +213,9 @@ $pageTitle = "Payments Ledger";
 
     
     
+
+    
+    
         
         
     <style>
@@ -523,4 +526,5 @@ $layout->footer();
     </div> <!-- /container-fluid -->
     <?php $layout->footer(); ?>
 </div> <!-- /main-content-wrapper -->
-?>
+</body>
+</html>

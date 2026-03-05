@@ -13,7 +13,9 @@ $layout = LayoutManager::create('admin');
  */
 header("Location: ../../public/login.php");
 exit;
+?>
     </div> <!-- /container-fluid -->
     <?php $layout->footer(); ?>
 </div> <!-- /main-content-wrapper -->
-?>
+</body>
+</html>

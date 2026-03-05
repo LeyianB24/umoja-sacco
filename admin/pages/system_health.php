@@ -50,6 +50,9 @@ $pageTitle = "System Health & Integrity";
 
     
     
+
+    
+    
         
         
     
@@ -174,4 +177,5 @@ $pageTitle = "System Health & Integrity";
     </div> <!-- /container-fluid -->
     <?php $layout->footer(); ?>
 </div> <!-- /main-content-wrapper -->
-?>
+</body>
+</html>

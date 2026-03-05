@@ -24,14 +24,14 @@ require_superadmin();
     <?php $layout->topbar($pageTitle ?? ""); ?>
     <div class="container-fluid px-4 py-4">
 
+    
+    
 
     
     
 
-
     
     
-
 
     
     
@@ -283,8 +283,8 @@ function openEditModal(data) {
 <?php 
 $extraJs = ob_get_clean();
 $layout->footer();
-?>
     </div> <!-- /container-fluid -->
+    <?php $layout->footer(); ?>
 </div> <!-- /main-content-wrapper -->
 </body>
 </html>

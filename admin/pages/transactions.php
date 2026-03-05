@@ -184,6 +184,9 @@ $pageTitle = "Golden Ledger Vault";
 
     
     
+
+    
+    
         
         
     
@@ -351,4 +354,5 @@ $pageTitle = "Golden Ledger Vault";
     </div> <!-- /container-fluid -->
     <?php $layout->footer(); ?>
 </div> <!-- /main-content-wrapper -->
-?>
+</body>
+</html>

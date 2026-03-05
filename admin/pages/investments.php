@@ -33,6 +33,9 @@ $layout = LayoutManager::create('admin');
 
     
     
+
+    
+    
         
         
     
@@ -798,4 +801,5 @@ $global = $conn->query("SELECT
     </div> <!-- /container-fluid -->
     <?php $layout->footer(); ?>
 </div> <!-- /main-content-wrapper -->
-?>
+</body>
+</html>
