@@ -1,37 +1,25 @@
 <?php
 // inc/header.php
 
-/* -------------------------------------------------------------
-   1. Secure Session Start
-------------------------------------------------------------- */
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-/* -------------------------------------------------------------
-   2. Load Configuration
-------------------------------------------------------------- */
 require_once __DIR__ . '/../config/app.php';
 
-// Seed CSRF token in session for all pages
 if (class_exists('USMS\\Middleware\\CsrfMiddleware')) {
     \USMS\Middleware\CsrfMiddleware::token();
 }
 
-
-/* -------------------------------------------------------------
-   3. Helpers
-------------------------------------------------------------- */
 if (!function_exists('is_active')) {
     function is_active($page_name) {
         return basename($_SERVER['PHP_SELF']) === $page_name ? 'active' : '';
     }
 }
 
-// Check if user is logged in
 $is_logged_in = isset($_SESSION['member_id']) || isset($_SESSION['admin_id']);
 
-$dashboard_link = '/member/pages/dashboard.php'; // Default
+$dashboard_link = '/member/pages/dashboard.php';
 if (isset($_SESSION['admin_id'])) {
     $role = $_SESSION['role'] ?? 'admin';
     $dashboard_link = match($role) {
@@ -45,288 +33,396 @@ if (isset($_SESSION['admin_id'])) {
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="light">
 <head>
-    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
     <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
-    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
-    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <?php if (class_exists('USMS\\Middleware\\CsrfMiddleware')): ?>
-    <?= \USMS\Middleware\CsrfMiddleware::metaTag() ?>
+        <?= \USMS\Middleware\CsrfMiddleware::metaTag() ?>
     <?php endif; ?>
-
-    <title>
-        <?= isset($pageTitle) ? htmlspecialchars($pageTitle) . ' — ' : '' ?>
-        <?= defined('SITE_NAME') ? htmlspecialchars(SITE_NAME) : 'Sacco Portal' ?>
-    </title>
+    <title><?= isset($pageTitle) ? htmlspecialchars($pageTitle) . ' — ' : '' ?><?= defined('SITE_NAME') ? htmlspecialchars(SITE_NAME) : 'Sacco Portal' ?></title>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
-
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
 
     <link rel="stylesheet" href="<?= BASE_URL ?>/public/assets/css/variables.css">
     <link rel="stylesheet" href="<?= ASSET_BASE ?>/css/style.css">
     <link rel="stylesheet" href="<?= ASSET_BASE ?>/css/darkmode.css">
 
-    <script>
-        (() => {
-            const saved = localStorage.getItem('theme') || 'light';
-            document.documentElement.setAttribute('data-bs-theme', saved);
-        })();
-    </script>
-
     <style>
-        /* ---------------------------------------------------------
-           THEME VARIABLES & CORE STYLES
-        --------------------------------------------------------- */
-        body {
-            font-family: var(--font-main);
-            background-color: var(--bg-primary);
-            color: var(--text-main);
-            transition: background-color 0.3s ease, color 0.3s ease;
-        }
+    *, *::before, *::after { box-sizing: border-box; }
 
-        .site-header {
-            z-index: 1050;
-        }
+    body {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        background-color: var(--bg-primary, #F7FBF9);
+        color: var(--text-main, #0F392B);
+        transition: background-color 0.3s ease, color 0.3s ease;
+    }
 
-        /* NAVBAR CONTAINER */
-        .site-header .navbar {
-            background: var(--sacco-green);
-            border-bottom: 3px solid var(--sacco-gold);
-            box-shadow: 0 4px 14px rgba(0,0,0,0.18);
-            padding: 0.8rem 0;
-            transition: background 0.3s ease;
-        }
+    /* ─── Navbar Shell ─── */
+    .site-header {
+        position: sticky;
+        top: 0;
+        z-index: 1050;
+    }
+    .site-navbar {
+        background: linear-gradient(135deg, #0B1E17 0%, #0F392B 60%, #0d2e22 100%);
+        border-bottom: 1px solid rgba(163,230,53,0.15);
+        padding: 0;
+        box-shadow: 0 2px 24px rgba(0,0,0,0.22);
+        height: 68px;
+        display: flex;
+        align-items: center;
+    }
 
-        /* BRANDING */
-        .brand-logo {
-            width: 45px;
-            height: 45px;
-            object-fit: contain;
-            background: rgba(255,255,255,0.1);
-            border-radius: 50%;
-            padding: 2px;
-            border: 1px solid var(--sacco-gold);
-        }
-        .navbar-brand-text {
-            color: #fff;
-            font-weight: 700;
-            font-size: 1.3rem;
-            letter-spacing: -0.5px;
-        }
-        .navbar-brand-tagline {
-            color: var(--sacco-gold);
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            font-weight: 500;
-        }
+    /* ─── Brand ─── */
+    .nb-brand {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        text-decoration: none;
+        flex-shrink: 0;
+    }
+    .nb-logo-wrap {
+        width: 40px; height: 40px;
+        border-radius: 12px;
+        background: #fff;
+        display: flex; align-items: center; justify-content: center;
+        overflow: hidden;
+        border: 1.5px solid rgba(163,230,53,0.3);
+        box-shadow: 0 4px 14px rgba(0,0,0,0.2);
+        flex-shrink: 0;
+    }
+    .nb-logo-wrap img { width: 100%; height: 100%; object-fit: contain; padding: 4px; display: block; }
+    .nb-brand-name {
+        font-size: 0.92rem;
+        font-weight: 800;
+        color: #fff;
+        letter-spacing: -0.2px;
+        line-height: 1.2;
+        white-space: nowrap;
+    }
+    .nb-brand-tagline {
+        font-size: 0.58rem;
+        font-weight: 700;
+        color: rgba(255,255,255,0.35);
+        text-transform: uppercase;
+        letter-spacing: 0.9px;
+        white-space: nowrap;
+    }
 
-        /* LINKS */
-        .site-header .nav-link {
-            color: rgba(255, 255, 255, 0.85) !important;
-            font-weight: 500;
-            font-size: 0.95rem;
-            margin: 0 5px;
-            transition: all 0.3s ease;
-            position: relative;
-        }
-        
-        .site-header .nav-link:hover,
-        .site-header .nav-link.active {
-            color: #fff !important;
-            transform: translateY(-1px);
-        }
+    /* ─── Nav Links ─── */
+    .nb-nav { list-style: none; display: flex; align-items: center; gap: 2px; margin: 0; padding: 0; flex-wrap: wrap; }
+    .nb-nav-link {
+        display: inline-flex;
+        align-items: center;
+        padding: 7px 13px;
+        border-radius: 10px;
+        font-size: 0.84rem;
+        font-weight: 600;
+        color: rgba(255,255,255,0.6);
+        text-decoration: none;
+        transition: all 0.2s;
+        position: relative;
+        white-space: nowrap;
+    }
+    .nb-nav-link:hover { color: #fff; background: rgba(255,255,255,0.07); }
+    .nb-nav-link.active {
+        color: #A3E635;
+        background: rgba(163,230,53,0.1);
+    }
 
-        /* Active Indicator (Underline) */
-        .site-header .nav-link::after {
-            content: '';
-            position: absolute;
-            width: 0;
-            height: 2px;
-            bottom: 5px;
-            left: 50%;
-            background-color: var(--sacco-gold);
-            transition: all 0.3s ease;
-            transform: translateX(-50%);
-        }
-        .site-header .nav-link:hover::after,
-        .site-header .nav-link.active::after {
-            width: 80%;
-        }
+    /* ─── Vertical Divider ─── */
+    .nb-divider {
+        width: 1px; height: 22px;
+        background: rgba(255,255,255,0.1);
+        margin: 0 6px;
+        flex-shrink: 0;
+    }
 
-        /* AUTH BUTTONS */
-        .btn-auth-login {
-            color: #fff;
-            border: 1px solid rgba(255,255,255,0.3);
-            border-radius: 50px;
-            padding: 6px 20px;
-            font-weight: 500;
-            transition: all 0.3s;
-        }
-        .btn-auth-login:hover {
-            background: rgba(255,255,255,0.1);
-            border-color: #fff;
-            color: #fff;
-        }
+    /* ─── Auth Buttons ─── */
+    .btn-nb-login {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 7px 16px;
+        border-radius: 10px;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        font-size: 0.82rem;
+        font-weight: 700;
+        color: rgba(255,255,255,0.75);
+        background: transparent;
+        border: 1.5px solid rgba(255,255,255,0.2);
+        text-decoration: none;
+        cursor: pointer;
+        transition: all 0.2s;
+        white-space: nowrap;
+    }
+    .btn-nb-login:hover { border-color: rgba(255,255,255,0.5); color: #fff; background: rgba(255,255,255,0.06); }
 
-        .btn-auth-register {
-            background-color: var(--sacco-gold);
-            color: var(--sacco-green);
-            border: none;
-            border-radius: 50px;
-            padding: 6px 24px;
-            font-weight: 600;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-            transition: all 0.3s;
-        }
-        .btn-auth-register:hover {
-            background-color: #fff;
-            color: var(--sacco-green);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 15px rgba(0,0,0,0.2);
-        }
+    .btn-nb-register {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 18px;
+        border-radius: 10px;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        font-size: 0.82rem;
+        font-weight: 800;
+        color: #0F392B;
+        background: #A3E635;
+        border: none;
+        text-decoration: none;
+        cursor: pointer;
+        transition: all 0.2s;
+        box-shadow: 0 4px 14px rgba(163,230,53,0.28);
+        white-space: nowrap;
+    }
+    .btn-nb-register:hover { background: #bde32a; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(163,230,53,0.38); color: #0F392B; }
 
-        /* MOBILE MENU */
-        .navbar-toggler {
-            border: none;
-            padding: 0;
-        }
-        .navbar-toggler:focus {
-            box-shadow: none;
-        }
-        .navbar-toggler-icon {
-            filter: invert(1);
-        }
+    /* ─── Theme Toggle ─── */
+    .nb-theme-btn {
+        width: 36px; height: 36px;
+        border-radius: 10px;
+        background: rgba(255,255,255,0.06);
+        border: 1px solid rgba(255,255,255,0.1);
+        color: rgba(255,255,255,0.5);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 0.2s;
+        flex-shrink: 0;
+    }
+    .nb-theme-btn:hover { background: rgba(163,230,53,0.12); color: #A3E635; border-color: rgba(163,230,53,0.25); }
 
-        @media (max-width: 991px) {
-            .navbar-collapse {
-                background: rgba(0,0,0,0.1);
-                border-radius: 12px;
-                padding: 1rem;
-                margin-top: 1rem;
-            }
-            .btn-auth-register, .btn-auth-login {
-                width: 100%;
-                text-align: center;
-                margin-bottom: 0.5rem;
-            }
+    /* ─── Account Dropdown ─── */
+    .nb-account-trigger {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 6px 12px 6px 7px;
+        border-radius: 10px;
+        background: rgba(163,230,53,0.1);
+        border: 1px solid rgba(163,230,53,0.2);
+        color: #A3E635;
+        font-size: 0.82rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-decoration: none;
+        white-space: nowrap;
+    }
+    .nb-account-trigger:hover { background: rgba(163,230,53,0.18); color: #A3E635; }
+    .nb-account-trigger .nb-avatar {
+        width: 26px; height: 26px;
+        border-radius: 8px;
+        background: linear-gradient(135deg, #0F392B, #1a5c43);
+        color: #A3E635;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 0.7rem;
+        font-weight: 800;
+        flex-shrink: 0;
+    }
+
+    .nb-dropdown {
+        border: 1px solid #E8F0ED;
+        border-radius: 16px;
+        box-shadow: 0 14px 44px rgba(15,57,43,0.12);
+        padding: 6px;
+        margin-top: 10px;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        min-width: 200px;
+    }
+    .nb-dropdown-item {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        padding: 9px 12px;
+        border-radius: 10px;
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: #0F392B;
+        text-decoration: none;
+        transition: background 0.18s;
+    }
+    .nb-dropdown-item:hover { background: #F7FBF9; color: #0F392B; }
+    .nb-dropdown-item.danger { color: #dc2626; }
+    .nb-dropdown-item.danger:hover { background: #FEE2E2; }
+    .nb-dropdown-icon {
+        width: 26px; height: 26px;
+        border-radius: 8px;
+        background: #F0F7F4;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 0.75rem;
+        flex-shrink: 0;
+        color: #0F392B;
+    }
+    .nb-dropdown-item.danger .nb-dropdown-icon { background: #FEE2E2; color: #dc2626; }
+    .nb-dropdown-divider { height: 1px; background: #E8F0ED; margin: 5px 4px; }
+
+    /* ─── Mobile Toggle Button ─── */
+    .nb-mobile-toggle {
+        width: 38px; height: 38px;
+        border-radius: 10px;
+        background: rgba(255,255,255,0.07);
+        border: 1px solid rgba(255,255,255,0.1);
+        color: rgba(255,255,255,0.7);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.1rem;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .nb-mobile-toggle:hover { background: rgba(163,230,53,0.12); color: #A3E635; border-color: rgba(163,230,53,0.2); }
+
+    /* ─── Mobile Collapse ─── */
+    @media (max-width: 991px) {
+        .navbar-collapse {
+            background: #0d2218;
+            border-radius: 16px;
+            padding: 16px;
+            margin-top: 12px;
+            border: 1px solid rgba(255,255,255,0.07);
+            box-shadow: 0 16px 40px rgba(0,0,0,0.3);
         }
+        .nb-nav { flex-direction: column; align-items: stretch; gap: 2px; }
+        .nb-nav-link { padding: 10px 14px; }
+        .nb-divider { display: none; }
+        .btn-nb-login,
+        .btn-nb-register { width: 100%; justify-content: center; margin-bottom: 6px; padding: 11px; }
+        .nb-account-trigger { width: 100%; justify-content: center; }
+        .nb-theme-btn { margin-left: auto; }
+    }
     </style>
 </head>
-
 <body>
 
-<header class="site-header sticky-top">
-    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
-    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
-    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
-    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
-    <nav class="navbar navbar-expand-lg">
+<header class="site-header">
+    <nav class="site-navbar navbar navbar-expand-lg">
         <div class="container">
 
-            <a class="navbar-brand d-flex align-items-center gap-3" href="<?= BASE_URL ?>/public/index.php">
-                <div class="brand-logo d-flex align-items-center justify-content-center bg-white text-success fw-bold fs-4">
-                    <img src="<?= ASSET_BASE ?>/images/people_logo.png" alt="Logo" style="width:100%; height:100%; object-fit:cover; border-radius:50%; display:block;" onerror="this.style.display='none';this.parentElement.innerText='S'">
+            <!-- Brand -->
+            <a class="nb-brand navbar-brand" href="<?= BASE_URL ?>/public/index.php">
+                <div class="nb-logo-wrap">
+                    <img src="<?= ASSET_BASE ?>/images/people_logo.png" alt="Logo"
+                         onerror="this.style.display='none';this.parentElement.innerText='U'">
                 </div>
-
-                <div class="d-flex flex-column justify-content-center lh-1">
-                    <span class="navbar-brand-text">
-                        <?= defined('SITE_NAME') ? htmlspecialchars(SITE_NAME) : 'UMOJA' ?>
-                    </span>
-                    <span class="navbar-brand-tagline d-none d-sm-block">
-                        <?= defined('TAGLINE') ? htmlspecialchars(TAGLINE) : 'DRIVERS SACCO' ?>
-                    </span>
+                <div>
+                    <div class="nb-brand-name"><?= defined('SITE_NAME') ? htmlspecialchars(SITE_NAME) : 'UMOJA' ?></div>
+                    <div class="nb-brand-tagline d-none d-sm-block"><?= defined('TAGLINE') ? htmlspecialchars(TAGLINE) : 'Drivers Sacco' ?></div>
                 </div>
             </a>
 
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
+            <!-- Mobile Right: theme + toggler -->
+            <div class="d-flex align-items-center gap-2 d-lg-none">
+                <button class="nb-theme-btn" id="themeToggleMobile" title="Toggle Theme">
+                    <i class="bi bi-moon-stars-fill" id="themeIconMobile"></i>
+                </button>
+                <button class="nb-mobile-toggle navbar-toggler" type="button"
+                        data-bs-toggle="collapse" data-bs-target="#mainNav"
+                        aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation">
+                    <i class="bi bi-list"></i>
+                </button>
+            </div>
 
+            <!-- Nav (collapses on mobile) -->
             <div class="collapse navbar-collapse" id="mainNav">
-                <ul class="navbar-nav ms-auto align-items-center gap-lg-1 py-3 py-lg-0">
+                <ul class="nb-nav ms-auto align-items-center">
+                    <li>
+                        <a href="<?= BASE_URL ?>/public/index.php"
+                           class="nb-nav-link <?= is_active('index.php') ?>">Home</a>
+                    </li>
+                    <li>
+                        <a href="<?= BASE_URL ?>/public/index.php#about"
+                           class="nb-nav-link">About Us</a>
+                    </li>
+                    <li>
+                        <a href="<?= BASE_URL ?>/public/index.php#services"
+                           class="nb-nav-link">Services</a>
+                    </li>
+                    <li>
+                        <a href="<?= BASE_URL ?>/public/index.php#contact"
+                           class="nb-nav-link">Contact</a>
+                    </li>
 
-                    <li class="nav-item">
-                        <a class="nav-link <?= is_active('index.php') ?>" href="<?= BASE_URL ?>/public/index.php">
-                            Home
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="<?= BASE_URL ?>/public/index.php#about">About Us</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="<?= BASE_URL ?>/public/index.php#services">Services</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="<?= BASE_URL ?>/public/index.php#contact">Contact</a>
-                    </li>
-
-                    <li class="nav-item d-none d-lg-block mx-2 text-white-50">|</li>
+                    <li class="d-none d-lg-block"><div class="nb-divider"></div></li>
 
                     <?php if ($is_logged_in): ?>
-                        <li class="nav-item dropdown">
-                            <a class="btn btn-auth-register dropdown-toggle d-flex align-items-center gap-2" href="#" role="button" data-bs-toggle="dropdown">
-                                <i class="bi bi-person-circle"></i> Account
+                        <li class="dropdown">
+                            <a class="nb-account-trigger" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <span class="nb-avatar"><i class="bi bi-person-fill"></i></span>
+                                Account
+                                <i class="bi bi-chevron-down" style="font-size:0.6rem; opacity:0.7;"></i>
                             </a>
-                            <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2 rounded-3">
-                                <li><a class="dropdown-item py-2" href="<?= BASE_URL . $dashboard_link ?>"><i class="bi bi-speedometer2 me-2"></i> Dashboard</a></li>
-                                <li><a class="dropdown-item py-2" href="<?= BASE_URL ?>/member/pages/profile.php"><i class="bi bi-person-gear me-2"></i> Profile</a></li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item py-2 text-danger" href="<?= BASE_URL ?>/public/logout.php"><i class="bi bi-box-arrow-right me-2"></i> Logout</a></li>
+                            <ul class="dropdown-menu nb-dropdown dropdown-menu-end">
+                                <li>
+                                    <a class="nb-dropdown-item" href="<?= BASE_URL . $dashboard_link ?>">
+                                        <span class="nb-dropdown-icon"><i class="bi bi-grid-fill"></i></span> Dashboard
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="nb-dropdown-item" href="<?= BASE_URL ?>/member/pages/profile.php">
+                                        <span class="nb-dropdown-icon"><i class="bi bi-person-fill"></i></span> Profile
+                                    </a>
+                                </li>
+                                <li><div class="nb-dropdown-divider"></div></li>
+                                <li>
+                                    <a class="nb-dropdown-item danger" href="<?= BASE_URL ?>/public/logout.php">
+                                        <span class="nb-dropdown-icon"><i class="bi bi-power"></i></span> Sign Out
+                                    </a>
+                                </li>
                             </ul>
                         </li>
                     <?php else: ?>
-                        <li class="nav-item ms-lg-2">
-                            <a href="<?= BASE_URL ?>/public/login.php" class="btn btn-auth-login nav-link border-0 text-white">
-                                Log In
+                        <li>
+                            <a href="<?= BASE_URL ?>/public/login.php" class="btn-nb-login">
+                                <i class="bi bi-box-arrow-in-right"></i> Log In
                             </a>
                         </li>
-                        <li class="nav-item ms-lg-2">
-                            <a href="<?= BASE_URL ?>/public/register.php" class="btn btn-auth-register">
-                                Join Us
+                        <li>
+                            <a href="<?= BASE_URL ?>/public/register.php" class="btn-nb-register">
+                                <i class="bi bi-person-plus-fill"></i> Join Us
                             </a>
                         </li>
                     <?php endif; ?>
 
-                    <li class="nav-item ms-lg-2">
-                        <button class="btn nav-link text-warning p-0 border-0" id="themeToggle" title="Switch Theme">
-                            <i class="bi bi-moon-stars-fill"></i>
+                    <li>
+                        <button class="nb-theme-btn ms-1 d-none d-lg-flex" id="themeToggle" title="Toggle Theme">
+                            <i class="bi bi-moon-stars-fill" id="themeIcon"></i>
                         </button>
                     </li>
-
                 </ul>
             </div>
+
         </div>
     </nav>
 </header>
 
 <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const toggle = document.getElementById('themeToggle');
-        if (!toggle) return;
-        
-        const icon = toggle.querySelector('i');
-        const html = document.documentElement;
+document.addEventListener('DOMContentLoaded', () => {
+    const html = document.documentElement;
 
-        const updateIcon = (theme) => {
-            icon.className = theme === 'light' ? 'bi bi-moon-stars-fill' : 'bi bi-sun-fill';
-        };
-
-        // Initialize icon
-        updateIcon(html.getAttribute('data-bs-theme'));
-
-        toggle.addEventListener('click', () => {
-            const current = html.getAttribute('data-bs-theme');
-            const next = current === 'light' ? 'dark' : 'light';
-            html.setAttribute('data-bs-theme', next);
-            localStorage.setItem('theme', next);
-            updateIcon(next);
-            
-            // Dispatch event for other components
-            window.dispatchEvent(new CustomEvent('themeChanged', { detail: { theme: next } }));
+    function updateThemeIcons(theme) {
+        ['themeIcon', 'themeIconMobile'].forEach(id => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.className = theme === 'dark' ? 'bi bi-sun-fill' : 'bi bi-moon-stars-fill';
         });
-    });
+    }
+
+    // Init icons
+    updateThemeIcons(html.getAttribute('data-bs-theme') || 'light');
+
+    function toggleTheme() {
+        const next = html.getAttribute('data-bs-theme') === 'dark' ? 'light' : 'dark';
+        html.setAttribute('data-bs-theme', next);
+        localStorage.setItem('theme', next);
+        updateThemeIcons(next);
+        window.dispatchEvent(new CustomEvent('themeChanged', { detail: { theme: next } }));
+    }
+
+    document.getElementById('themeToggle')?.addEventListener('click', toggleTheme);
+    document.getElementById('themeToggleMobile')?.addEventListener('click', toggleTheme);
+});
 </script>
