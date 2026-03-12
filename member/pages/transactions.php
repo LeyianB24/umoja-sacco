@@ -48,7 +48,7 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf','export_ex
             'Date'      => date('d-M-Y H:i', strtotime($row['created_at'])),
             'Type'      => ucwords(str_replace('_',' ',$t)),
             'Reference' => $row['reference_no'],
-            'Channel'   => strtoupper($row['payment_channel']),
+            'Channel'   => strtoupper($row['payment_channel'] ?? ''),
             'Amount'    => ($t==='withdrawal'?'-':'+').' '.number_format((float)$row['amount'],2),
         ];
     }
