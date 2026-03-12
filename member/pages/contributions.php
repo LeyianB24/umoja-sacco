@@ -95,10 +95,12 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf','export_ex
     $format = $_GET['action'] === 'export_excel' ? 'excel' : ($_GET['action'] === 'print_report' ? 'print' : 'pdf');
     $stmt_ex = $conn->prepare("SELECT reference_no, contribution_type, amount, payment_method, created_at, status " . $sql_base . " ORDER BY created_at DESC");
     $stmt_ex->bind_param($types, ...$params); $stmt_ex->execute();
+    $res_ex = $stmt_ex->get_result();
     $data = [];
-    while ($row = $stmt_ex->get_result()->fetch_assoc()) {
+    while ($row = $res_ex->fetch_assoc()) {
         $data[] = ['Date'=>date('d-M-Y H:i',strtotime($row['created_at'])),'Type'=>ucwords(str_replace('_',' ',$row['contribution_type'])),'Reference'=>$row['reference_no']?:'-','Method'=>$row['payment_method']?:'M-Pesa','Amount'=>'+ '.number_format((float)$row['amount'],2),'Status'=>ucfirst($row['status'])];
     }
+    $stmt_ex->close();
     UniversalExportEngine::handle($format, $data, ['title'=>'Contribution History','module'=>'Member Portal','headers'=>['Date','Type','Reference','Method','Amount','Status']]);
     exit;
 }
