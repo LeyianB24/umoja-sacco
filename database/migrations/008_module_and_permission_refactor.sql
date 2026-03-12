@@ -53,6 +53,6 @@ CREATE TABLE IF NOT EXISTS module_audit_trail (
 
 -- 5. Add module_id to support_tickets for automatic routing
 ALTER TABLE support_tickets 
-ADD COLUMN module_id INT AFTER ticket_id,
+ADD COLUMN module_id INT AFTER support_id,
 ADD INDEX idx_module_id (module_id),
 ADD FOREIGN KEY (module_id) REFERENCES system_modules(module_id) ON DELETE SET NULL;

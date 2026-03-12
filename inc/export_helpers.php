@@ -69,44 +69,51 @@ function export_to_excel($data, $headers, $filename = 'export.xlsx') {
  * Generate HTML for export
  */
 function generate_export_html($data, $headers, $title) {
-    $html = '<!DOCTYPE html>
-    <html>
-    <head>
+    $e_title = htmlspecialchars($title);
+    $site_name = SITE_NAME;
+    $company_address = COMPANY_ADDRESS;
+    $company_phone = COMPANY_PHONE;
+    $company_email = COMPANY_EMAIL;
+    $current_date = date('d M Y, h:i A');
+
+    $html = <<<HTML
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>$e_title</title>
     <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
     <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
-    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
-    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
-        <meta charset="utf-8">
-        <title>' . htmlspecialchars($title) . '</title>
-        <style>
-            body { font-family: Arial, sans-serif; padding: 20px; }
-            .header { text-align: center; margin-bottom: 30px; }
-            .header h1 { margin: 0; color: #0F392B; }
-            .header p { margin: 5px 0; color: #666; }
-            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-            th { background: #0F392B; color: white; padding: 10px; text-align: left; }
-            td { border: 1px solid #ddd; padding: 8px; }
-            tr:nth-child(even) { background: #f9f9f9; }
-            .footer { margin-top: 30px; text-align: center; font-size: 12px; color: #666; }
-        </style>
-    </head>
-    <body>
-        <div class="header">
-            <h1>' . SITE_NAME . '</h1>
-            <p>' . COMPANY_ADDRESS . ' | ' . COMPANY_PHONE . '</p>
-            <p>' . COMPANY_EMAIL . '</p>
-            <h2>' . htmlspecialchars($title) . '</h2>
-            <p>Generated: ' . date('d M Y, h:i A') . '</p>
-        </div>
-        <table>
-            <thead><tr>';
-    
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .header h1 { margin: 0; color: #0F392B; }
+        .header p { margin: 5px 0; color: #666; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th { background: #0F392B; color: white; padding: 10px; text-align: left; }
+        td { border: 1px solid #ddd; padding: 8px; }
+        tr:nth-child(even) { background: #f9f9f9; }
+        .footer { margin-top: 30px; text-align: center; font-size: 12px; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>$site_name</h1>
+        <p>$company_address | $company_phone</p>
+        <p>$company_email</p>
+        <h2>$e_title</h2>
+        <p>Generated: $current_date</p>
+    </div>
+    <table>
+        <thead><tr>
+HTML;
+
     foreach ($headers as $header) {
         $html .= '<th>' . htmlspecialchars($header) . '</th>';
     }
-    
+
     $html .= '</tr></thead><tbody>';
-    
+
     foreach ($data as $row) {
         $html .= '<tr>';
         foreach ($headers as $key => $header) {
@@ -114,13 +121,13 @@ function generate_export_html($data, $headers, $title) {
         }
         $html .= '</tr>';
     }
-    
+
     $html .= '</tbody></table>
         <div class="footer">
-            <p>© ' . date('Y') . ' ' . SITE_NAME . '. All rights reserved.</p>
+            <p>&copy; ' . date('Y') . ' ' . SITE_NAME . '. All rights reserved.</p>
         </div>
     </body>
     </html>';
-    
+
     return $html;
 }
