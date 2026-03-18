@@ -10,11 +10,6 @@ require_once __DIR__ . '/../../inc/Auth.php';
 require_once __DIR__ . '/../../inc/LayoutManager.php';
 require_once __DIR__ . '/../../inc/HRService.php';
 require_once __DIR__ . '/../../inc/SystemUserService.php';
-require_once __DIR__ . '/../../inc/PayrollService.php';
-require_once __DIR__ . '/../../inc/PayrollEngine.php';
-require_once __DIR__ . '/../../inc/PayrollCalculator.php';
-require_once __DIR__ . '/../../inc/PayslipGenerator.php';
-require_once __DIR__ . '/../../inc/Mailer.php';
 require_once __DIR__ . '/../../core/exports/UniversalExportEngine.php';
 
 if (!isset($_SESSION['admin_id'])) {
@@ -26,8 +21,6 @@ $layout     = LayoutManager::create('admin');
 $db         = $conn;
 $hrService          = new HRService($db);
 $systemUserService  = new SystemUserService($db);
-$payrollService     = new PayrollService();
-$payrollEngine      = new PayrollEngine($db);
 
 $current_view = $_GET['view'] ?? 'hr';
 $admin_id     = $_SESSION['admin_id'];
@@ -74,55 +67,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         flash_set($result['success'] ? "Employee updated successfully." : "Error: ".$result['error'], $result['success']?'success':'error');
         header("Location: employees.php?view=hr"); exit;
     }
-
-    if (isset($_POST['action']) && $_POST['action'] === 'add_admin') {
-        if (!can('system_settings') && $admin_role != 1) { flash_set("Access Denied.", 'error'); header("Location: employees.php?view=sys"); exit; }
-        $userData = ['employee_no'=>trim($_POST['username']),'company_email'=>trim($_POST['email']),'full_name'=>trim($_POST['full_name'])];
-        $result = $systemUserService->createSystemUser($userData, (int)$_POST['role_id']);
-        if ($result['success']) {
-            if (!empty($_POST['password']) && $_POST['password'] !== $userData['employee_no']) $systemUserService->resetPassword($result['admin_id'], $_POST['password']);
-            $empResult = $hrService->createEmployee(['full_name'=>$userData['full_name'],'national_id'=>'SYS-'.$result['admin_id'],'phone'=>'','job_title'=>'System Administrator','grade_id'=>1,'salary'=>0.00,'hire_date'=>date('Y-m-d')]);
-            if ($empResult['success']) { $stmt=$db->prepare("UPDATE employees SET admin_id=? WHERE employee_id=?"); $stmt->bind_param("ii",$result['admin_id'],$empResult['employee_id']); $stmt->execute(); }
-            flash_set("System Administrator registered successfully.", 'success');
-        } else { flash_set("Error: ".$result['error'], 'error'); }
-        header("Location: employees.php?view=sys"); exit;
-    }
-
-    if (isset($_POST['action']) && $_POST['action'] === 'update_admin') {
-        if (!can('system_settings') && $admin_role != 1) { flash_set("Access Denied.", 'error'); header("Location: employees.php?view=sys"); exit; }
-        $targetId = (int)$_POST['admin_id']; $fullname = trim($_POST['full_name']); $email = trim($_POST['email']); $roleId = (int)$_POST['role_id'];
-        $systemUserService->assignRole($targetId, $roleId);
-        $stmt=$db->prepare("UPDATE admins SET full_name=?,email=? WHERE admin_id=?"); $stmt->bind_param("ssi",$fullname,$email,$targetId); $stmt->execute();
-        if (!empty($_POST['password'])) $systemUserService->resetPassword($targetId, $_POST['password']);
-        $stmt=$db->prepare("UPDATE employees SET full_name=? WHERE admin_id=?"); $stmt->bind_param("si",$fullname,$targetId); $stmt->execute();
-        flash_set("Administrator account updated successfully.", 'success');
-        header("Location: employees.php?view=sys"); exit;
-    }
-
-    if (isset($_POST['action']) && $_POST['action'] === 'start_run') {
-        try { $payrollEngine->startRun($_POST['month_selector'], $_SESSION['admin_id']); flash_set("Payroll period {$_POST['month_selector']} started.", "success"); }
-        catch (Exception $e) { flash_set($e->getMessage(), "danger"); }
-        header("Location: employees.php?view=payroll"); exit;
-    }
-    if (isset($_POST['action']) && $_POST['action'] === 'calculate_batch') {
-        try { $count=$payrollEngine->calculateRun(intval($_POST['run_id'])); flash_set("Calculated payroll for $count employees.", "success"); }
-        catch (Exception $e) { flash_set("Calculation failed: ".$e->getMessage(), "danger"); }
-        header("Location: employees.php?view=payroll&run_id=".$_POST['run_id']); exit;
-    }
-    if (isset($_POST['action']) && $_POST['action'] === 'approve_run') {
-        try { $payrollEngine->approveRun(intval($_POST['run_id']), $_SESSION['admin_id']); flash_set("Payroll Run Approved.", "success"); }
-        catch (Exception $e) { flash_set("Approval failed: ".$e->getMessage(), "danger"); }
-        header("Location: employees.php?view=payroll&run_id=".$_POST['run_id']); exit;
-    }
-    if (isset($_POST['action']) && $_POST['action'] === 'disburse_run') {
-        try { $count=$payrollEngine->disburseRun(intval($_POST['run_id'])); flash_set("Disbursed salaries to $count employees. Ledger updated.", "success"); }
-        catch (Exception $e) { flash_set("Disbursement failed: ".$e->getMessage(), "danger"); }
-        header("Location: employees.php?view=payroll&run_id=".$_POST['run_id']); exit;
-    }
-    if (isset($_POST['action']) && $_POST['action'] === 'download_payslip') {
-        $pid = intval($_POST['payroll_id']);
-        $pq  = $db->query("SELECT p.*,e.full_name,e.employee_no,e.company_email,e.personal_email,e.job_title,e.kra_pin,e.nssf_no,e.sha_no,e.bank_name,e.bank_account,sg.grade_name FROM payroll p JOIN employees e ON p.employee_id=e.employee_id LEFT JOIN salary_grades sg ON e.grade_id=sg.id WHERE p.id=$pid");
-        if ($pq->num_rows > 0) { $row=$pq->fetch_assoc(); $data=['employee'=>$row,'payroll'=>$row]; require_once __DIR__.'/../../inc/ExportHelper.php'; ExportHelper::pdf("Payslip - ".$row['month'],[],function($pdf)use($data){PayslipGenerator::render($pdf,$data);},"payslip.pdf",'D'); exit; }
+}
+r::render($pdf,$data);},"payslip.pdf",'D'); exit; }
     }
 }
 
@@ -144,24 +90,10 @@ if ($current_view === 'hr') {
     $where_sql = $where ? "WHERE ".implode(" AND ",$where) : "";
     $res = $db->query("SELECT e.*,r.name as admin_role,sg.grade_name FROM employees e LEFT JOIN admins a ON e.admin_id=a.admin_id LEFT JOIN roles r ON a.role_id=r.id LEFT JOIN salary_grades sg ON e.grade_id=sg.id $where_sql ORDER BY e.full_name ASC");
     while ($row = $res->fetch_assoc()) $data_rows[] = $row;
-} elseif ($current_view === 'sys') {
-    $search = trim($_GET['q'] ?? ''); $where_sql = $search ? "WHERE full_name LIKE '%$search%' OR username LIKE '%$search%'" : "";
-    $res = $db->query("SELECT * FROM admins $where_sql ORDER BY created_at DESC");
-    while ($row = $res->fetch_assoc()) $data_rows[] = $row;
 } elseif ($current_view === 'leave') {
     $search = trim($_GET['q'] ?? ''); $where_sql = $search ? "WHERE e.full_name LIKE '%$search%' OR e.employee_no LIKE '%$search%'" : "";
     $res = $db->query("SELECT e.*,sg.grade_name FROM employees e LEFT JOIN salary_grades sg ON e.grade_id=sg.id $where_sql ORDER BY e.full_name ASC");
     while ($row = $res->fetch_assoc()) $data_rows[] = $row;
-} elseif ($current_view === 'payroll') {
-    $run_id = isset($_GET['run_id']) ? intval($_GET['run_id']) : null;
-    $active_run = $run_id ? $db->query("SELECT * FROM payroll_runs WHERE id=$run_id")->fetch_assoc() : $db->query("SELECT * FROM payroll_runs ORDER BY status='draft' DESC, month DESC LIMIT 1")->fetch_assoc();
-    $payroll_items = [];
-    if ($active_run) {
-        $run_id = $active_run['id'];
-        $pq = $db->query("SELECT p.*,e.full_name,e.employee_no,e.phone,e.job_title,e.salary as emp_salary,e.kra_pin,e.nssf_no,e.sha_no,e.status as emp_status,sg.grade_name FROM payroll p JOIN employees e ON p.employee_id=e.employee_id LEFT JOIN salary_grades sg ON e.grade_id=sg.id WHERE p.payroll_run_id=$run_id ORDER BY e.employee_no ASC");
-        while ($row = $pq->fetch_assoc()) { $row['salary']=$row['emp_salary']; $row['status']=$row['emp_status']; $payroll_items[] = $row; }
-    }
-    $history_runs = $db->query("SELECT * FROM payroll_runs ORDER BY month DESC LIMIT 12");
 }
 
 // KPIs
@@ -169,14 +101,6 @@ if ($current_view === 'hr') {
     $kpi1_lbl="Total Staff";     $kpi1_val=$db->query("SELECT COUNT(*) FROM employees")->fetch_row()[0];
     $kpi2_lbl="Monthly Payroll"; $kpi2_val="KES ".number_format($db->query("SELECT SUM(salary) FROM employees WHERE status='active'")->fetch_row()[0]??0);
     $kpi3_lbl="Active Drivers";  $kpi3_val=$db->query("SELECT COUNT(*) FROM employees WHERE job_title LIKE '%Driver%' AND status='active'")->fetch_row()[0];
-} elseif ($current_view === 'sys') {
-    $kpi1_lbl="Total Admins"; $kpi1_val=$db->query("SELECT COUNT(*) FROM admins")->fetch_row()[0];
-    $kpi2_lbl="Active Roles"; $kpi2_val=count($defined_roles);
-    $kpi3_lbl="Joined Today"; $kpi3_val=$db->query("SELECT COUNT(*) FROM admins WHERE DATE(created_at)=CURDATE()")->fetch_row()[0];
-} elseif ($current_view === 'payroll') {
-    $kpi1_lbl="Period Gross";    $kpi1_val="KES ".number_format((float)($active_run['total_gross']??0));
-    $kpi2_lbl="Net Disbursable"; $kpi2_val="KES ".number_format((float)($active_run['total_net']??0));
-    $kpi3_lbl="Deductions";      $kpi3_val="KES ".number_format((float)(($active_run['total_gross']??0)-($active_run['total_net']??0)));
 } else {
     $kpi1_lbl="Pending Leave"; $kpi1_val="0";
     $kpi2_lbl="On Leave Today"; $kpi2_val="0";
@@ -498,17 +422,6 @@ $pageTitle = "People & Access";
                     <button class="btn-hero-lime" data-bs-toggle="modal" data-bs-target="#addStaffModal">
                         <i class="bi bi-person-plus-fill"></i> Hire Employee
                     </button>
-                <?php elseif ($current_view === 'payroll'): ?>
-                    <button class="btn-hero-lime" data-bs-toggle="modal" data-bs-target="#newRunModal">
-                        <i class="bi bi-plus-lg"></i> New Pay Period
-                    </button>
-                    <button class="btn-hero-ghost" data-bs-toggle="modal" data-bs-target="#historyModal">
-                        <i class="bi bi-clock-history"></i> History
-                    </button>
-                <?php elseif ($current_view === 'sys' && ($admin_role == 1 || can('system_settings'))): ?>
-                    <button class="btn-hero-lime" data-bs-toggle="modal" data-bs-target="#addAdminModal">
-                        <i class="bi bi-shield-lock-fill"></i> New Admin
-                    </button>
                 <?php endif; ?>
                 <div class="dropdown">
                     <button class="btn-hero-ghost dropdown-toggle" data-bs-toggle="dropdown">
@@ -556,9 +469,7 @@ $pageTitle = "People & Access";
         <div class="view-tabs-bar">
             <div class="view-tabs">
                 <a href="?view=hr"      class="view-tab <?= $current_view==='hr'      ?'active':'' ?>"><i class="bi bi-person-badge-fill"></i> Staff Directory</a>
-                <a href="?view=payroll" class="view-tab <?= $current_view==='payroll' ?'active':'' ?>"><i class="bi bi-bank2"></i> Payroll Center</a>
                 <a href="?view=leave"   class="view-tab <?= $current_view==='leave'   ?'active':'' ?>"><i class="bi bi-calendar-check-fill"></i> Leave</a>
-                <a href="?view=sys"     class="view-tab <?= $current_view==='sys'     ?'active':'' ?>"><i class="bi bi-shield-lock-fill"></i> Security</a>
             </div>
             <form class="tab-search-wrap" method="GET">
                 <i class="bi bi-search"></i>
@@ -567,214 +478,7 @@ $pageTitle = "People & Access";
             </form>
         </div>
 
-        <!-- ── HR / SYS TABLES ── -->
-        <?php if ($current_view === 'hr' || $current_view === 'sys'): ?>
-        <div class="table-responsive">
-            <table class="emp-table">
-                <thead>
-                    <?php if ($current_view === 'hr'): ?>
-                    <tr>
-                        <th style="padding-left:24px;">Employee</th>
-                        <th>Role &amp; Grade</th>
-                        <th>Contact</th>
-                        <th>Salary</th>
-                        <th>Status</th>
-                        <th style="text-align:right;padding-right:24px;">Actions</th>
-                    </tr>
-                    <?php else: ?>
-                    <tr>
-                        <th style="padding-left:24px;">Administrator</th>
-                        <th>Role</th>
-                        <th>Email</th>
-                        <th>Joined</th>
-                        <th style="text-align:right;padding-right:24px;">Actions</th>
-                    </tr>
-                    <?php endif; ?>
-                </thead>
-                <tbody>
-                    <?php if (empty($data_rows)): ?>
-                    <tr><td colspan="6">
-                        <div class="empty-state">
-                            <div class="ei"><i class="bi bi-inbox"></i></div>
-                            <h5>No records found</h5>
-                            <p>Try adjusting your search or filter.</p>
-                        </div>
-                    </td></tr>
-                    <?php else: foreach ($data_rows as $row): ?>
-
-                    <?php if ($current_view === 'hr'):
-                        $st_key = match($row['status']) { 'active'=>'active','terminated'=>'terminated','suspended'=>'suspended',default=>'on_leave' };
-                    ?>
-                    <tr>
-                        <td style="padding-left:24px;">
-                            <div style="display:flex;align-items:center;gap:10px;">
-                                <div class="emp-avatar"><?= getInitials($row['full_name']) ?></div>
-                                <div>
-                                    <div class="emp-name"><?= htmlspecialchars($row['full_name']??'') ?></div>
-                                    <div class="emp-no"><?= htmlspecialchars($row['employee_no']??'') ?></div>
-                                </div>
-                            </div>
-                        </td>
-                        <td>
-                            <span class="role-pill <?= !empty($row['admin_role'])?'admin':'staff' ?>">
-                                <?= htmlspecialchars($row['job_title']??'') ?>
-                            </span>
-                            <span class="role-pill grade"><?= $row['grade_name'] ?? '—' ?></span>
-                        </td>
-                        <td>
-                            <div style="font-size:0.85rem;font-weight:600;color:#374151;"><?= htmlspecialchars($row['phone']??'') ?></div>
-                            <div style="font-size:0.75rem;color:#9ca3af;"><?= htmlspecialchars($row['company_email']??'') ?></div>
-                        </td>
-                        <td><span class="salary-val"><?= ksh($row['salary']) ?></span></td>
-                        <td><span class="status-badge <?= $st_key ?>"><?= ucfirst($row['status']) ?></span></td>
-                        <td style="text-align:right;padding-right:24px;">
-                            <div class="dropdown">
-                                <button class="action-menu-btn" data-bs-toggle="dropdown"><i class="bi bi-three-dots-vertical"></i></button>
-                                <ul class="dropdown-menu dropdown-menu-end shadow border-0" style="border-radius:14px;padding:6px;min-width:190px;">
-                                    <li><a class="dropdown-item rounded-3 py-2" href="#" onclick='editEmp(<?= json_encode($row) ?>)'><i class="bi bi-pencil-square me-2"></i>Edit Details</a></li>
-                                    <li><a class="dropdown-item rounded-3 py-2" href="payroll.php?employee_id=<?= $row['employee_id'] ?>"><i class="bi bi-bank2 me-2"></i>Payroll History</a></li>
-                                    <li><hr class="dropdown-divider mx-2"></li>
-                                    <li><a class="dropdown-item rounded-3 py-2 text-danger" href="#"><i class="bi bi-person-x me-2"></i>Suspend Access</a></li>
-                                </ul>
-                            </div>
-                        </td>
-                    </tr>
-
-                    <?php else: // SYS ?>
-                    <tr>
-                        <td style="padding-left:24px;">
-                            <div style="display:flex;align-items:center;gap:10px;">
-                                <div class="emp-avatar sys"><?= getInitials($row['full_name']) ?></div>
-                                <div>
-                                    <div class="emp-name"><?= htmlspecialchars($row['full_name']??'') ?></div>
-                                    <div class="emp-no">@<?= htmlspecialchars($row['username']??'') ?></div>
-                                </div>
-                            </div>
-                        </td>
-                        <td>
-                            <?php $rname = $defined_roles[$row['role_id']]['label'] ?? 'Unknown'; ?>
-                            <span class="role-pill admin"><?= $rname ?></span>
-                        </td>
-                        <td style="font-size:0.85rem;color:#374151;"><?= htmlspecialchars($row['email']??'') ?></td>
-                        <td style="font-size:0.8rem;color:#9ca3af;"><?= time_ago($row['created_at']) ?></td>
-                        <td style="text-align:right;padding-right:24px;">
-                            <div class="dropdown">
-                                <button class="action-menu-btn" data-bs-toggle="dropdown"><i class="bi bi-three-dots-vertical"></i></button>
-                                <ul class="dropdown-menu dropdown-menu-end shadow border-0" style="border-radius:14px;padding:6px;min-width:190px;">
-                                    <?php if ($admin_role == 1 || can('system_settings')): ?>
-                                    <li><a class="dropdown-item rounded-3 py-2" href="#" onclick='editAdmin(<?= json_encode($row) ?>)'><i class="bi bi-shield-check me-2"></i>Account Settings</a></li>
-                                    <li><a class="dropdown-item rounded-3 py-2" href="#"><i class="bi bi-key me-2"></i>Reset Password</a></li>
-                                    <li><hr class="dropdown-divider mx-2"></li>
-                                    <li><a class="dropdown-item rounded-3 py-2 text-danger" href="#"><i class="bi bi-slash-circle me-2"></i>Deactivate</a></li>
-                                    <?php endif; ?>
-                                </ul>
-                            </div>
-                        </td>
-                    </tr>
-                    <?php endif; ?>
-
-                    <?php endforeach; endif; ?>
-                </tbody>
-            </table>
-        </div>
-
-        <!-- ── PAYROLL VIEW ── -->
-        <?php elseif ($current_view === 'payroll'): ?>
-            <?php if ($active_run): ?>
-            <div class="payroll-run-header">
-                <div class="run-period">
-                    <span class="run-status-badge <?= $active_run['status'] ?>"><?= strtoupper($active_run['status']) ?></span>
-                    <span class="run-period-name"><?= date('F Y', strtotime($active_run['month'])) ?></span>
-                </div>
-                <div class="run-actions">
-                    <?php if ($active_run['status'] === 'draft'): ?>
-                        <form method="POST" class="d-inline">
-                            <?= csrf_field() ?>
-                            <input type="hidden" name="action" value="calculate_batch">
-                            <input type="hidden" name="run_id" value="<?= $active_run['id'] ?>">
-                            <button type="submit" class="btn-run calculate"><i class="bi bi-calculator me-1"></i>Calculate</button>
-                        </form>
-                        <form method="POST" class="d-inline">
-                            <?= csrf_field() ?>
-                            <input type="hidden" name="action" value="approve_run">
-                            <input type="hidden" name="run_id" value="<?= $active_run['id'] ?>">
-                            <button type="submit" class="btn-run approve"><i class="bi bi-check-circle me-1"></i>Approve</button>
-                        </form>
-                    <?php elseif ($active_run['status'] === 'approved'): ?>
-                        <form method="POST" class="d-inline">
-                            <?= csrf_field() ?>
-                            <input type="hidden" name="action" value="disburse_run">
-                            <input type="hidden" name="run_id" value="<?= $active_run['id'] ?>">
-                            <button type="submit" class="btn-run disburse"><i class="bi bi-send me-1"></i>Disburse Funds</button>
-                        </form>
-                    <?php endif; ?>
-                </div>
-            </div>
-            <div class="table-responsive">
-                <table class="emp-table">
-                    <thead>
-                        <tr>
-                            <th style="padding-left:24px;">Employee</th>
-                            <th style="text-align:right;">Basic</th>
-                            <th style="text-align:right;">Gross</th>
-                            <th style="text-align:right;">Deductions</th>
-                            <th style="text-align:right;">Net Pay</th>
-                            <th style="text-align:right;padding-right:24px;">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($payroll_items as $item): ?>
-                        <tr>
-                            <td style="padding-left:24px;">
-                                <div style="display:flex;align-items:center;gap:10px;">
-                                    <div class="emp-avatar"><?= getInitials($item['full_name']) ?></div>
-                                    <div>
-                                        <div class="emp-name"><?= htmlspecialchars($item['full_name']??'') ?></div>
-                                        <div class="emp-no"><?= htmlspecialchars($item['employee_no']??'') ?></div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td style="text-align:right;"><span class="pay-basic"><?= ksh($item['basic_salary']) ?></span></td>
-                            <td style="text-align:right;"><span class="pay-gross"><?= ksh($item['gross_pay']) ?></span></td>
-                            <td style="text-align:right;"><span class="pay-deduct">−<?= ksh($item['tax_paye']+$item['tax_housing']+$item['tax_nssf']+$item['tax_sha']) ?></span></td>
-                            <td style="text-align:right;"><span class="pay-net"><?= ksh($item['net_pay']) ?></span></td>
-                            <td style="text-align:right;padding-right:24px;">
-                                <div class="dropdown">
-                                    <button class="action-menu-btn" data-bs-toggle="dropdown"><i class="bi bi-three-dots-vertical"></i></button>
-                                    <ul class="dropdown-menu dropdown-menu-end shadow border-0" style="border-radius:14px;padding:6px;min-width:190px;">
-                                        <li><a class="dropdown-item rounded-3 py-2" href="#" onclick='editEmp(<?= json_encode($item) ?>)'><i class="bi bi-pencil-square me-2"></i>Adjust Salary</a></li>
-                                        <?php if ($item['status'] === 'paid'): ?>
-                                        <li>
-                                            <form method="POST" class="d-inline">
-                                                <?= csrf_field() ?>
-                                                <input type="hidden" name="action" value="download_payslip">
-                                                <input type="hidden" name="payroll_id" value="<?= $item['id'] ?>">
-                                                <button type="submit" class="dropdown-item rounded-3 py-2"><i class="bi bi-file-earmark-pdf me-2 text-danger"></i>Download Slip</button>
-                                            </form>
-                                        </li>
-                                        <?php endif; ?>
-                                        <li><a class="dropdown-item rounded-3 py-2" href="#"><i class="bi bi-arrow-clockwise me-2"></i>Recalculate</a></li>
-                                    </ul>
-                                </div>
-                            </td>
-                        </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
-            <?php else: ?>
-            <div class="payroll-empty">
-                <div class="ei"><i class="bi bi-bank2"></i></div>
-                <h5 style="font-weight:700;color:#374151;">No active payroll run found</h5>
-                <p style="color:#9ca3af;font-size:0.875rem;margin-bottom:20px;">Start a new pay period to begin processing salaries.</p>
-                <button class="btn-hero-lime" style="margin:0 auto;" data-bs-toggle="modal" data-bs-target="#newRunModal">
-                    <i class="bi bi-plus-lg"></i> Start New Pay Period
-                </button>
-            </div>
-            <?php endif; ?>
-
-        <!-- ── LEAVE VIEW ── -->
-        <?php elseif ($current_view === 'leave'): ?>
+        <?php endif; ?>
         <div class="table-responsive">
             <table class="emp-table">
                 <thead>
@@ -904,88 +608,6 @@ $pageTitle = "People & Access";
         </div>
     </div>
 
-    <!-- ADD ADMIN -->
-    <div class="modal fade" id="addAdminModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content shadow-lg">
-                <div class="modal-header border-0 pt-4 px-4 pb-0">
-                    <div>
-                        <h5 style="font-size:1rem;font-weight:800;color:var(--forest,#0f2e25);margin-bottom:4px;"><i class="bi bi-shield-lock-fill me-2" style="color:#a3e635;"></i>Register Administrator</h5>
-                        <p style="font-size:0.8rem;color:#9ca3af;margin:0;">Create a new system user account with role-based access.</p>
-                    </div>
-                    <button class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body px-4 py-3">
-                    <form method="POST">
-                        <?= csrf_field() ?>
-                        <input type="hidden" name="action" value="add_admin">
-                        <div class="row g-3">
-                            <div class="col-12"><label class="form-label">Full Name</label><input type="text" name="full_name" class="form-control" placeholder="Full Name" required></div>
-                            <div class="col-md-6"><label class="form-label">Email</label><input type="email" name="email" class="form-control" placeholder="admin@sacco.co.ke" required></div>
-                            <div class="col-md-6"><label class="form-label">Username</label><input type="text" name="username" class="form-control" placeholder="Username" required></div>
-                            <div class="col-12"><label class="form-label">System Role</label>
-                                <select name="role_id" class="form-select" required>
-                                    <?php foreach ($defined_roles as $id => $val) echo "<option value='$id'>{$val['label']}</option>"; ?>
-                                </select>
-                            </div>
-                            <div class="col-12"><label class="form-label">Password</label><input type="password" name="password" class="form-control" placeholder="Set password" required></div>
-                            <div class="col-12"><button type="submit" class="btn-modal-submit"><i class="bi bi-person-check-fill"></i> Create Account</button></div>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- NEW PAYROLL RUN -->
-    <div class="modal fade" id="newRunModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content shadow-lg">
-                <form method="POST">
-                    <?= csrf_field() ?>
-                    <input type="hidden" name="action" value="start_run">
-                    <div class="modal-header border-0 pt-4 px-4 pb-0">
-                        <div>
-                            <h5 style="font-size:1rem;font-weight:800;color:var(--forest,#0f2e25);margin-bottom:4px;"><i class="bi bi-bank2 me-2" style="color:#a3e635;"></i>Start Pay Period</h5>
-                            <p style="font-size:0.8rem;color:#9ca3af;margin:0;">Select the billing month to create a draft payroll run.</p>
-                        </div>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body px-4 py-3">
-                        <label class="form-label">Billing Month</label>
-                        <input type="month" name="month_selector" value="<?= date('Y-m') ?>" class="form-control" style="padding:12px;" required>
-                        <div style="margin-top:16px;">
-                            <button type="submit" class="btn-modal-submit"><i class="bi bi-plus-circle-fill"></i> Create Draft Run</button>
-                        </div>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- PAYROLL HISTORY -->
-    <div class="modal fade" id="historyModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content shadow-lg">
-                <div class="modal-header border-0 pt-4 px-4 pb-2">
-                    <h5 style="font-size:1rem;font-weight:800;color:#111827;"><i class="bi bi-clock-history me-2" style="color:var(--forest,#0f2e25);opacity:0.6;"></i>Payroll History</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body p-0">
-                    <?php if (isset($history_runs)): while ($h = $history_runs->fetch_assoc()): ?>
-                    <a href="employees.php?view=payroll&run_id=<?= $h['id'] ?>" class="history-item">
-                        <div>
-                            <div class="history-item-name"><?= date('F Y', strtotime($h['month'])) ?></div>
-                            <div class="history-item-status"><?= $h['status'] ?></div>
-                        </div>
-                        <span class="history-item-amt">KES <?= number_format((float)$h['total_net'], 0) ?></span>
-                    </a>
-                    <?php endwhile; endif; ?>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- EDIT EMPLOYEE -->
     <div class="modal fade" id="editEmpModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
@@ -1027,36 +649,6 @@ $pageTitle = "People & Access";
         </div>
     </div>
 
-    <!-- EDIT ADMIN -->
-    <div class="modal fade" id="editAdminModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content shadow-lg">
-                <div class="modal-header border-0 pt-4 px-4 pb-0">
-                    <h5 style="font-size:1rem;font-weight:800;color:var(--forest,#0f2e25);"><i class="bi bi-shield-check me-2"></i>Update Admin Account</h5>
-                    <button class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body px-4 py-3">
-                    <form method="POST">
-                        <?= csrf_field() ?>
-                        <input type="hidden" name="action" value="update_admin">
-                        <input type="hidden" name="admin_id" id="edit_admin_id">
-                        <div class="row g-3">
-                            <div class="col-12"><label class="form-label">Full Name</label><input type="text" name="full_name" id="edit_admin_name" class="form-control" required></div>
-                            <div class="col-12"><label class="form-label">Email</label><input type="email" name="email" id="edit_admin_email" class="form-control" required></div>
-                            <div class="col-12"><label class="form-label">Role</label>
-                                <select name="role_id" id="edit_admin_role" class="form-select" required>
-                                    <?php foreach ($defined_roles as $id => $val) echo "<option value='$id'>{$val['label']}</option>"; ?>
-                                </select>
-                            </div>
-                            <div class="col-12"><label class="form-label">New Password <span style="color:#9ca3af;font-weight:400;">(leave blank to keep current)</span></label><input type="password" name="password" class="form-control"></div>
-                            <div class="col-12"><button type="submit" class="btn-modal-submit"><i class="bi bi-check-circle-fill"></i> Update Account</button></div>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <script>
         function updSal() {
             const sel = document.getElementById('grade_sel');
@@ -1079,13 +671,6 @@ $pageTitle = "People & Access";
             new bootstrap.Modal(document.getElementById('editEmpModal')).show();
         }
 
-        function editAdmin(row) {
-            document.getElementById('edit_admin_id').value    = row.admin_id  || '';
-            document.getElementById('edit_admin_name').value  = row.full_name || '';
-            document.getElementById('edit_admin_email').value = row.email     || '';
-            const roleSel = document.getElementById('edit_admin_role');
-            if (roleSel) { Array.from(roleSel.options).forEach(o => o.selected = o.value == row.role_id); }
-            new bootstrap.Modal(document.getElementById('editAdminModal')).show();
         }
     </script>
 

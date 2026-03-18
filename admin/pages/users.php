@@ -5,8 +5,12 @@ if (session_status() === PHP_SESSION_NONE) session_start();
 require_once __DIR__ . '/../../config/app.php';
 require_once __DIR__ . '/../../inc/Auth.php';
 require_once __DIR__ . '/../../inc/LayoutManager.php';
+require_once __DIR__ . '/../../inc/HRService.php';
+require_once __DIR__ . '/../../inc/SystemUserService.php';
 
 $layout = LayoutManager::create('admin');
+$hrService = new HRService($conn);
+$systemUserService = new SystemUserService($conn);
 
 /**
  * admin/users.php
@@ -567,11 +571,36 @@ tr:hover .avatar-box {
                 if ($check->get_result()->num_rows > 0) {
                     flash_set("Email or Username already exists.", "danger");
                 } else {
-                    $hashed = password_hash($password, PASSWORD_DEFAULT);
-                    $stmt = $conn->prepare("INSERT INTO admins (full_name, email, username, role_id, password, created_at) VALUES (?, ?, ?, ?, ?, NOW())");
-                    $stmt->bind_param("sssis", $fullname, $email, $username, $role_id, $hashed);
-                    if ($stmt->execute()) flash_set("Admin user created successfully.");
-                    else flash_set("Error: " . $conn->error, "danger");
+                    $userData = ['employee_no' => $username, 'company_email' => $email, 'full_name' => $fullname];
+                    $result = $systemUserService->createSystemUser($userData, $role_id);
+                    
+                    if ($result['success']) {
+                        if (!empty($password) && $password !== $username) {
+                            $systemUserService->resetPassword($result['admin_id'], $password);
+                        }
+                        
+                        // Sync to employees table
+                        $empData = [
+                            'full_name' => $fullname,
+                            'national_id' => 'SYS-' . $result['admin_id'],
+                            'phone' => '',
+                            'job_title' => 'System Administrator',
+                            'grade_id' => 1,
+                            'salary' => 0.00,
+                            'hire_date' => date('Y-m-d')
+                        ];
+                        $empResult = $hrService->createEmployee($empData);
+                        
+                        if ($empResult['success']) {
+                            $stmt = $conn->prepare("UPDATE employees SET admin_id = ? WHERE employee_id = ?");
+                            $stmt->bind_param("ii", $result['admin_id'], $empResult['employee_id']);
+                            $stmt->execute();
+                        }
+                        
+                        flash_set("Admin user created and synced to employees successfully.");
+                    } else {
+                        flash_set("Error: " . $result['error'], "danger");
+                    }
                 }
             }
 
@@ -582,14 +611,20 @@ tr:hover .avatar-box {
                 $role_id = intval($_POST['role_id']);
 
                 if (!empty($_POST['password'])) {
-                    $hashed = password_hash($_POST['password'], PASSWORD_DEFAULT);
-                    $stmt = $conn->prepare("UPDATE admins SET full_name=?, email=?, role_id=?, password=? WHERE admin_id=?");
-                    $stmt->bind_param("ssisi", $fullname, $email, $role_id, $hashed, $id);
-                } else {
-                    $stmt = $conn->prepare("UPDATE admins SET full_name=?, email=?, role_id=? WHERE admin_id=?");
-                    $stmt->bind_param("ssii", $fullname, $email, $role_id, $id);
+                    $systemUserService->resetPassword($id, $_POST['password']);
                 }
-                if ($stmt->execute()) flash_set("User updated successfully.");
+                
+                $updateResult = $systemUserService->updateSystemUser($id, [
+                    'full_name' => $fullname,
+                    'email' => $email
+                ]);
+                $systemUserService->assignRole($id, $role_id);
+
+                if ($updateResult['success']) {
+                    flash_set("User updated and synced successfully.");
+                } else {
+                    flash_set("Error: " . $updateResult['error'], "danger");
+                }
             }
 
             header("Location: users.php");
