@@ -845,5 +845,79 @@ $pageTitle = "Command Dashboard";
     </div><!-- /container-fluid -->
     <?php $layout->footer(); ?>
 </div><!-- /main-content-wrapper -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // ── Revenue Trend Chart ──
+    const ctx = document.getElementById('revenueChart').getContext('2d');
+    
+    // Create gradient
+    const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+    gradient.addColorStop(0, 'rgba(163, 230, 53, 0.2)');
+    gradient.addColorStop(1, 'rgba(163, 230, 53, 0.0)');
+
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: <?= json_encode($chart_labels) ?>,
+            datasets: [{
+                label: 'Revenue (KES)',
+                data: <?= json_encode($chart_data) ?>,
+                borderColor: '#a3e635',
+                borderWidth: 3,
+                backgroundColor: gradient,
+                fill: true,
+                tension: 0.4,
+                pointRadius: 4,
+                pointBackgroundColor: '#fff',
+                pointBorderColor: '#a3e635',
+                pointBorderWidth: 2,
+                pointHoverRadius: 6,
+                pointHoverBackgroundColor: '#a3e635',
+                pointHoverBorderColor: '#fff',
+                pointHoverBorderWidth: 3,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: '#111827',
+                    titleFont: { family: 'Plus Jakarta Sans', size: 12, weight: '700' },
+                    bodyFont: { family: 'Plus Jakarta Sans', size: 14, weight: '600' },
+                    padding: 12,
+                    cornerRadius: 10,
+                    displayColors: false,
+                    callbacks: {
+                        label: function(context) {
+                            return 'KES ' + context.parsed.y.toLocaleString();
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: { display: false },
+                    ticks: {
+                        font: { family: 'Plus Jakarta Sans', size: 11, weight: '600' },
+                        color: '#9ca3af'
+                    }
+                },
+                y: {
+                    grid: { color: '#f3f4f6', borderDash: [5, 5] },
+                    ticks: {
+                        font: { family: 'Plus Jakarta Sans', size: 11, weight: '600' },
+                        color: '#9ca3af',
+                        callback: function(value) {
+                            if (value >= 1000) return (value / 1000) + 'K';
+                            return value;
+                        }
+                    }
+                }
+            }
+        }
+    });
+</script>
 </body>
 </html>
