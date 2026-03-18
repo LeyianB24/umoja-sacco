@@ -26,7 +26,7 @@ try {
     // 1. Look up the original request
     $stmt = $conn->prepare("
         SELECT r.id, r.member_id, r.amount, r.reference_no, r.status,
-               m.email, m.full_name, m.phone, m.reg_no
+               m.email, m.full_name, m.phone, m.member_reg_no
         FROM mpesa_requests r
         JOIN members m ON r.member_id = m.member_id
         WHERE r.checkout_request_id = ?

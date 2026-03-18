@@ -80,7 +80,7 @@ if (isset($response['Body']['stkCallback'])) {
     // ---------------------------------------------------
     $stmt = $conn->prepare("
         SELECT r.id, r.member_id, r.amount, r.reference_no, r.status,
-               m.email, m.full_name, m.phone, m.reg_no
+               m.email, m.full_name, m.phone, m.member_reg_no
         FROM mpesa_requests r
         JOIN members m ON r.member_id = m.member_id
         WHERE r.checkout_request_id = ?
@@ -254,7 +254,7 @@ if (isset($response['Body']['stkCallback'])) {
         // 4. Send confirmation notification (Email & SMS)
         $metadata = [
             'trx_id' => $mpesaReceipt,
-            'reg_no' => $request['reg_no'] ?? 'N/A',
+            'reg_no' => $request['member_reg_no'] ?? 'N/A',
             'balance' => 0 // Fallback
         ];
 
