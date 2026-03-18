@@ -68,9 +68,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         header("Location: employees.php?view=hr"); exit;
     }
 }
-r::render($pdf,$data);},"payslip.pdf",'D'); exit; }
-    }
-}
 
 // ── FETCH DATA ───────────────────────────────────────────
 $roles_res = $db->query("SELECT * FROM roles ORDER BY name ASC");
@@ -478,7 +475,71 @@ $pageTitle = "People & Access";
             </form>
         </div>
 
-        <?php endif; ?>
+        <?php if ($current_view === 'hr'): ?>
+        <div class="table-responsive">
+            <table class="emp-table">
+                <thead>
+                    <tr>
+                        <th style="padding-left:24px;">Employee</th>
+                        <th>Role &amp; Grade</th>
+                        <th>Contact</th>
+                        <th>Salary</th>
+                        <th>Status</th>
+                        <th style="text-align:right;padding-right:24px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if (empty($data_rows)): ?>
+                    <tr><td colspan="6">
+                        <div class="empty-state">
+                            <div class="ei"><i class="bi bi-inbox"></i></div>
+                            <h5>No records found</h5>
+                            <p>Try adjusting your search or filter.</p>
+                        </div>
+                    </td></tr>
+                    <?php else: foreach ($data_rows as $row):
+                        $st_key = match($row['status']) { 'active'=>'active','terminated'=>'terminated','suspended'=>'suspended',default=>'on_leave' };
+                    ?>
+                    <tr>
+                        <td style="padding-left:24px;">
+                            <div style="display:flex;align-items:center;gap:10px;">
+                                <div class="emp-avatar"><?= getInitials($row['full_name']) ?></div>
+                                <div>
+                                    <div class="emp-name"><?= htmlspecialchars($row['full_name']??'') ?></div>
+                                    <div class="emp-no"><?= htmlspecialchars($row['employee_no']??'') ?></div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="role-pill <?= !empty($row['admin_role'])?'admin':'staff' ?>">
+                                <?= htmlspecialchars($row['job_title']??'') ?>
+                            </span>
+                            <span class="role-pill grade"><?= $row['grade_name'] ?? '—' ?></span>
+                        </td>
+                        <td>
+                            <div style="font-size:0.85rem;font-weight:600;color:#374151;"><?= htmlspecialchars($row['phone']??'') ?></div>
+                            <div style="font-size:0.75rem;color:#9ca3af;"><?= htmlspecialchars($row['company_email']??'') ?></div>
+                        </td>
+                        <td><span class="salary-val"><?= ksh($row['salary']) ?></span></td>
+                        <td><span class="status-badge <?= $st_key ?>"><?= ucfirst($row['status']) ?></span></td>
+                        <td style="text-align:right;padding-right:24px;">
+                            <div class="dropdown">
+                                <button class="action-menu-btn" data-bs-toggle="dropdown"><i class="bi bi-three-dots-vertical"></i></button>
+                                <ul class="dropdown-menu dropdown-menu-end shadow border-0" style="border-radius:14px;padding:6px;min-width:190px;">
+                                    <li><a class="dropdown-item rounded-3 py-2" href="#" onclick='editEmp(<?= json_encode($row) ?>)'><i class="bi bi-pencil-square me-2"></i>Edit Details</a></li>
+                                    <li><a class="dropdown-item rounded-3 py-2" href="payroll.php?employee_id=<?= $row['employee_id'] ?>"><i class="bi bi-bank2 me-2"></i>Payroll History</a></li>
+                                    <li><hr class="dropdown-divider mx-2"></li>
+                                    <li><a class="dropdown-item rounded-3 py-2 text-danger" href="#"><i class="bi bi-person-x me-2"></i>Suspend Access</a></li>
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+                    <?php endforeach; endif; ?>
+                </tbody>
+            </table>
+        </div>
+
+        <?php elseif ($current_view === 'leave'): ?>
         <div class="table-responsive">
             <table class="emp-table">
                 <thead>
