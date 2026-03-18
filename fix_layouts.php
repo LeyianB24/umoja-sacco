@@ -28,7 +28,7 @@ foreach ($files as $file) {
     $content = preg_replace($pattern_bottom_after, "$1\n", $content);
 
     // 3. Remove inline styles for main-content-wrapper
-    $content = preg_replace('/<style>\s*\.main-content-wrapper\s*\{[^}]*\}\s*@media[^\{]*\{[^}]*\.[^}]*\}\s*.*?(<\/style>)?/s', '', $content);
+    $content = preg_replace('/\x3cstyle\x3e\s*\.main-content-wrapper\s*\{[^}]*\}\s*@media[^\{]*\{[^}]*\.[^}]*\}\s*.*?(\x3c\/style\x3e)?/s', '', $content);
     // simpler one for leftovers
     $content = preg_replace('/\.main-content-wrapper\s*\{[^}]*\}/s', '', $content);
 
