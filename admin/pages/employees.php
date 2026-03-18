@@ -497,44 +497,46 @@ $pageTitle = "People & Access";
                             <p>Try adjusting your search or filter.</p>
                         </div>
                     </td></tr>
-                    <?php else: foreach ($data_rows as $row):
-                        $st_key = match($row['status']) { 'active'=>'active','terminated'=>'terminated','suspended'=>'suspended',default=>'on_leave' };
-                    ?>
-                    <tr>
-                        <td style="padding-left:24px;">
-                            <div style="display:flex;align-items:center;gap:10px;">
-                                <div class="emp-avatar"><?= getInitials($row['full_name']) ?></div>
-                                <div>
-                                    <div class="emp-name"><?= htmlspecialchars($row['full_name']??'') ?></div>
-                                    <div class="emp-no"><?= htmlspecialchars($row['employee_no']??'') ?></div>
+                    <?php else: ?>
+                        <?php foreach ($data_rows as $row):
+                            $st_key = match($row['status'] ?? 'active') { 'active'=>'active','terminated'=>'terminated','suspended'=>'suspended',default=>'on_leave' };
+                        ?>
+                        <tr>
+                            <td style="padding-left:24px;">
+                                <div style="display:flex;align-items:center;gap:10px;">
+                                    <div class="emp-avatar"><?= getInitials($row['full_name']) ?></div>
+                                    <div>
+                                        <div class="emp-name"><?= htmlspecialchars($row['full_name']??'') ?></div>
+                                        <div class="emp-no"><?= htmlspecialchars($row['employee_no']??'') ?></div>
+                                    </div>
                                 </div>
-                            </div>
-                        </td>
-                        <td>
-                            <span class="role-pill <?= !empty($row['admin_role'])?'admin':'staff' ?>">
-                                <?= htmlspecialchars($row['job_title']??'') ?>
-                            </span>
-                            <span class="role-pill grade"><?= $row['grade_name'] ?? '—' ?></span>
-                        </td>
-                        <td>
-                            <div style="font-size:0.85rem;font-weight:600;color:#374151;"><?= htmlspecialchars($row['phone']??'') ?></div>
-                            <div style="font-size:0.75rem;color:#9ca3af;"><?= htmlspecialchars($row['company_email']??'') ?></div>
-                        </td>
-                        <td><span class="salary-val"><?= ksh($row['salary']) ?></span></td>
-                        <td><span class="status-badge <?= $st_key ?>"><?= ucfirst($row['status']) ?></span></td>
-                        <td style="text-align:right;padding-right:24px;">
-                            <div class="dropdown">
-                                <button class="action-menu-btn" data-bs-toggle="dropdown"><i class="bi bi-three-dots-vertical"></i></button>
-                                <ul class="dropdown-menu dropdown-menu-end shadow border-0" style="border-radius:14px;padding:6px;min-width:190px;">
-                                    <li><a class="dropdown-item rounded-3 py-2" href="#" onclick='editEmp(<?= json_encode($row) ?>)'><i class="bi bi-pencil-square me-2"></i>Edit Details</a></li>
-                                    <li><a class="dropdown-item rounded-3 py-2" href="payroll.php?employee_id=<?= $row['employee_id'] ?>"><i class="bi bi-bank2 me-2"></i>Payroll History</a></li>
-                                    <li><hr class="dropdown-divider mx-2"></li>
-                                    <li><a class="dropdown-item rounded-3 py-2 text-danger" href="#"><i class="bi bi-person-x me-2"></i>Suspend Access</a></li>
-                                </ul>
-                            </div>
-                        </td>
-                    </tr>
-                    <?php endforeach; endif; ?>
+                            </td>
+                            <td>
+                                <span class="role-pill <?= !empty($row['admin_role'])?'admin':'staff' ?>">
+                                    <?= htmlspecialchars($row['job_title']??'') ?>
+                                </span>
+                                <span class="role-pill grade"><?= $row['grade_name'] ?? '—' ?></span>
+                            </td>
+                            <td>
+                                <div style="font-size:0.85rem;font-weight:600;color:#374151;"><?= htmlspecialchars($row['phone']??'') ?></div>
+                                <div style="font-size:0.75rem;color:#9ca3af;"><?= htmlspecialchars($row['company_email']??'') ?></div>
+                            </td>
+                            <td><span class="salary-val"><?= ksh($row['salary']) ?></span></td>
+                            <td><span class="status-badge <?= $st_key ?>"><?= ucfirst($row['status']) ?></span></td>
+                            <td style="text-align:right;padding-right:24px;">
+                                <div class="dropdown">
+                                    <button class="action-menu-btn" data-bs-toggle="dropdown"><i class="bi bi-three-dots-vertical"></i></button>
+                                    <ul class="dropdown-menu dropdown-menu-end shadow border-0" style="border-radius:14px;padding:6px;min-width:190px;">
+                                        <li><a class="dropdown-item rounded-3 py-2" href="#" onclick='editEmp(<?= json_encode($row) ?>)'><i class="bi bi-pencil-square me-2"></i>Edit Details</a></li>
+                                        <li><a class="dropdown-item rounded-3 py-2" href="payroll.php?employee_id=<?= $row['employee_id'] ?>"><i class="bi bi-bank2 me-2"></i>Payroll History</a></li>
+                                        <li><hr class="dropdown-divider mx-2"></li>
+                                        <li><a class="dropdown-item rounded-3 py-2 text-danger" href="#"><i class="bi bi-person-x me-2"></i>Suspend Access</a></li>
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
                 </tbody>
             </table>
         </div>
@@ -556,35 +558,37 @@ $pageTitle = "People & Access";
                     <tr><td colspan="5">
                         <div class="empty-state"><div class="ei"><i class="bi bi-calendar-x"></i></div><h5>No employees found</h5></div>
                     </td></tr>
-                    <?php else: foreach ($data_rows as $row):
-                        $lv_key = match($row['status']) { 'on_leave'=>'on_leave','active'=>'active',default=>'default' };
-                    ?>
-                    <tr>
-                        <td style="padding-left:24px;">
-                            <div style="display:flex;align-items:center;gap:10px;">
-                                <div class="emp-avatar"><?= getInitials($row['full_name']) ?></div>
-                                <div>
-                                    <div class="emp-name"><?= htmlspecialchars($row['full_name']??'') ?></div>
-                                    <div class="emp-no"><?= htmlspecialchars($row['employee_no']??'') ?></div>
+                    <?php else: ?>
+                        <?php foreach ($data_rows as $row):
+                            $lv_key = match($row['status'] ?? 'active') { 'on_leave'=>'on_leave','active'=>'active',default=>'default' };
+                        ?>
+                        <tr>
+                            <td style="padding-left:24px;">
+                                <div style="display:flex;align-items:center;gap:10px;">
+                                    <div class="emp-avatar"><?= getInitials($row['full_name']) ?></div>
+                                    <div>
+                                        <div class="emp-name"><?= htmlspecialchars($row['full_name']??'') ?></div>
+                                        <div class="emp-no"><?= htmlspecialchars($row['employee_no']??'') ?></div>
+                                    </div>
                                 </div>
-                            </div>
-                        </td>
-                        <td><span class="leave-badge <?= $lv_key ?>"><?= ucfirst(str_replace('_',' ',$row['status'])) ?></span></td>
-                        <td style="font-size:0.85rem;color:#6b7280;"><?= htmlspecialchars($row['job_title']??'') ?></td>
-                        <td style="font-weight:700;color:#374151;font-size:0.875rem;">21 Days <span style="font-size:0.75rem;font-weight:400;color:#9ca3af;">(Standard)</span></td>
-                        <td style="text-align:right;padding-right:24px;">
-                            <div class="dropdown">
-                                <button class="action-menu-btn" data-bs-toggle="dropdown"><i class="bi bi-three-dots-vertical"></i></button>
-                                <ul class="dropdown-menu dropdown-menu-end shadow border-0" style="border-radius:14px;padding:6px;min-width:190px;">
-                                    <li><a class="dropdown-item rounded-3 py-2" href="#" onclick='editEmp(<?= json_encode($row) ?>)'><i class="bi bi-calendar-check me-2"></i>Update Status</a></li>
-                                    <li><a class="dropdown-item rounded-3 py-2" href="#"><i class="bi bi-clock-history me-2"></i>Leave History</a></li>
-                                    <li><hr class="dropdown-divider mx-2"></li>
-                                    <li><a class="dropdown-item rounded-3 py-2 text-primary" href="#"><i class="bi bi-plus-circle me-2"></i>Apply for Leave</a></li>
-                                </ul>
-                            </div>
-                        </td>
-                    </tr>
-                    <?php endforeach; endif; ?>
+                            </td>
+                            <td><span class="leave-badge <?= $lv_key ?>"><?= ucfirst(str_replace('_',' ',$row['status']??'')) ?></span></td>
+                            <td style="font-size:0.85rem;color:#6b7280;"><?= htmlspecialchars($row['job_title']??'') ?></td>
+                            <td style="font-weight:700;color:#374151;font-size:0.875rem;">21 Days <span style="font-size:0.75rem;font-weight:400;color:#9ca3af;">(Standard)</span></td>
+                            <td style="text-align:right;padding-right:24px;">
+                                <div class="dropdown">
+                                    <button class="action-menu-btn" data-bs-toggle="dropdown"><i class="bi bi-three-dots-vertical"></i></button>
+                                    <ul class="dropdown-menu dropdown-menu-end shadow border-0" style="border-radius:14px;padding:6px;min-width:190px;">
+                                        <li><a class="dropdown-item rounded-3 py-2" href="#" onclick='editEmp(<?= json_encode($row) ?>)'><i class="bi bi-calendar-check me-2"></i>Update Status</a></li>
+                                        <li><a class="dropdown-item rounded-3 py-2" href="#"><i class="bi bi-clock-history me-2"></i>Leave History</a></li>
+                                        <li><hr class="dropdown-divider mx-2"></li>
+                                        <li><a class="dropdown-item rounded-3 py-2 text-primary" href="#"><i class="bi bi-plus-circle me-2"></i>Apply for Leave</a></li>
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
                 </tbody>
             </table>
         </div>
@@ -729,10 +733,7 @@ $pageTitle = "People & Access";
             const statusSel = document.getElementById('edit_emp_status');
             if (titleSel)  { Array.from(titleSel.options).forEach(o  => o.selected = o.value === row.job_title); }
             if (statusSel) { Array.from(statusSel.options).forEach(o => o.selected = o.value === row.status); }
-            new bootstrap.Modal(document.getElementById('editEmpModal')).show();
-        }
-
-        }
+            new bootstrap.Modal(document.getElementById('editEmpModal')).show();        }
     </script>
 
     </div><!-- /container-fluid -->
