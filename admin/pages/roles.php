@@ -90,8 +90,33 @@ $roles_data = [];
 while ($r = $roles->fetch_assoc()) $roles_data[] = $r;
 
 $perms_res = $conn->query("SELECT * FROM permissions ORDER BY category, name ASC");
+
+// Custom Category Sort Order (Sidebar Mirror)
+$cat_order = [
+    'General'               => 1,
+    'Member Management'     => 2,
+    'People & Access'       => 3,
+    'Financial Management'  => 4,
+    'Loans & Credit'        => 5,
+    'Welfare Module'        => 6,
+    'Investments & Assets'  => 7,
+    'Reports & Exports'     => 8,
+    'System Control Center' => 9,
+    'Maintenance & Config'  => 10,
+    'My Account'            => 11
+];
+
 $perms_by_cat = [];
-while ($p = $perms_res->fetch_assoc()) $perms_by_cat[$p['category']][] = $p;
+while ($p = $perms_res->fetch_assoc()) {
+    $perms_by_cat[$p['category']][] = $p;
+}
+
+// Re-sort the array by the custom order
+uksort($perms_by_cat, function($a, $b) use ($cat_order) {
+    $oa = $cat_order[$a] ?? 99;
+    $ob = $cat_order[$b] ?? 99;
+    return $oa <=> $ob;
+});
 
 $map_res = $conn->query("SELECT * FROM role_permissions");
 $active_map = [];
@@ -624,11 +649,17 @@ textarea.form-control { resize: vertical; min-height: 88px; }
                     <!-- Permission groups -->
                     <?php
                     $cat_icons = [
-                        'operations' => 'briefcase-fill',
-                        'system'     => 'cpu-fill',
-                        'finance'    => 'cash-stack',
-                        'members'    => 'people-fill',
-                        'reports'    => 'bar-chart-fill',
+                        'Member Management'     => 'people-fill',
+                        'People & Access'       => 'person-badge-fill',
+                        'Financial Management'  => 'cash-stack',
+                        'Loans & Credit'        => 'bank2',
+                        'Welfare Module'        => 'heart-pulse-fill',
+                        'Investments & Assets'  => 'buildings-fill',
+                        'Reports & Exports'     => 'bar-chart-fill',
+                        'System Control Center' => 'display-fill',
+                        'Maintenance & Config'  => 'database-fill-check',
+                        'My Account'            => 'person-circle',
+                        'General'               => 'grid-1x2-fill',
                     ];
                     foreach ($perms_by_cat as $category => $permissions):
                         $cat_perm_count = count($permissions);
