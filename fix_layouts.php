@@ -39,3 +39,4 @@ foreach ($files as $file) {
     }
 }
 echo "Total files fixed: $replacements\n";
+?>

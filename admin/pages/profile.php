@@ -294,6 +294,7 @@ $pageTitle = "My Profile";
     outline: none;
     transition: all 0.2s;
     -webkit-appearance: none;
+    appearance: none;
 }
 .pf-input:focus {
     border-color: #39B54A;

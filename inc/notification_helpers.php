@@ -146,14 +146,6 @@ function get_notification_content($type, $name, $data) {
                             <p>We will notify you once a decision is made.</p>",
             'sms_message' => "Dear $name, your loan application of KES $amount has been received and is being reviewed. Ref: $ref"
         ],
-        'loan_approved' => [
-            'email_subject' => 'Loan Application Approved',
-            'email_body' => "<p>Dear <strong>$name</strong>,</p>
-                            <p>We are pleased to inform you that your loan application for <strong>KES $amount</strong> has been <strong>Approved</strong>.</p>
-                            <p>Reference: <strong>$ref</strong></p>
-                            <p>The funds are being queued for disbursement to your wallet.</p>",
-            'sms_message' => "Congratulations $name! Your loan for KES $amount has been APPROVED. Ref: $ref"
-        ],
         'loan_rejected' => [
             'email_subject' => 'Loan Application Update',
             'email_body' => "<p>Dear <strong>$name</strong>,</p>
@@ -161,21 +153,6 @@ function get_notification_content($type, $name, $data) {
                             <p>Reason: <strong>" . ($data['rejection_reason'] ?? 'Not specified') . "</strong></p>
                             <p>Please contact the office for more details.</p>",
             'sms_message' => "Dear $name, your loan application for KES $amount was not approved. Reason: " . ($data['rejection_reason'] ?? 'Contact Office')
-        ],
-        'deposit_success' => [
-            'email_subject' => 'Deposit Confirmed',
-            'email_body' => "<p>Dear <strong>$name</strong>,</p>
-                            <p>Your deposit of <strong>KES $amount</strong> has been received and credited to your account.</p>
-                            <p>Reference: <strong>$ref</strong></p>
-                            <p>Thank you for your contribution.</p>",
-            'sms_message' => "Dear $name, your deposit of KES $amount has been confirmed. Ref: $ref"
-        ],
-        'loan_disbursed' => [
-            'email_subject' => 'Loan Funds Disbursed',
-            'email_body' => "<p>Dear <strong>$name</strong>,</p>
-                            <p>Funds for your loan <strong>$ref</strong> amounting to <strong>KES $amount</strong> have been disbursed to your wallet.</p>
-                            <p>You can now withdraw the funds at your convenience.</p>",
-            'sms_message' => "Dear $name, KES $amount for loan $ref has been disbursed to your wallet. You can withdraw now."
         ]
     ];
     

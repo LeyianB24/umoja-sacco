@@ -24,7 +24,7 @@ class TransactionService {
     /**
      * Legacy Bridge - Maps parameters to FinancialService action types
      */
-    public function record(array $params): int|false {
+    public function record(array $params): int|bool {
         $type = $params['type'] ?? 'credit';
         $cat  = strtolower($params['category'] ?? '');
         $action = 'savings_deposit'; // Default
@@ -71,15 +71,15 @@ class TransactionService {
     /**
      * Static gateway for convenience (migration helper)
      */
-    public static function quickRecord(array $params): int|false {
+    public static function quickRecord(array $params): int|bool {
         return (new self())->record($params);
     }
 
-    public static function recordDoubleEntry(array $params): int|false {
+    public static function recordDoubleEntry(array $params): int|bool {
         return self::quickRecord($params);
     }
 
-    public static function recordSimple(int|null $mid, float $amt, string $type, string $notes = '', string $ref = null): int|false {
+    public static function recordSimple(int|null $mid, float $amt, string $type, string $notes = '', string $ref = null): int|bool {
         return self::quickRecord([
             'member_id' => $mid,
             'amount' => $amt,

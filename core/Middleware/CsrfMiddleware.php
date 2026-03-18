@@ -56,6 +56,15 @@ class CsrfMiddleware {
     }
 
     /**
+     * Check if the CSRF token is valid (returns boolean, doesn't abort).
+     */
+    public static function check(): bool {
+        self::boot();
+        $token = $_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
+        return !empty($token) && hash_equals($_SESSION['csrf_token'], $token);
+    }
+
+    /**
      * Generate an HTML hidden input field with the CSRF token.
      */
     public static function field(): string {

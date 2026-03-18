@@ -80,12 +80,15 @@ if (!empty($filter_type)) { $sql_base .= " AND contribution_type = ?"; $params[]
 if (!empty($filter_from) && !empty($filter_to)) { $sql_base .= " AND DATE(created_at) BETWEEN ? AND ?"; $params[] = $filter_from; $params[] = $filter_to; $types .= "ss"; }
 
 $stmt_count = $conn->prepare("SELECT COUNT(*) as total " . $sql_base);
-$stmt_count->bind_param($types, ...$params); $stmt_count->execute();
+$ref_params = []; foreach($params as $k => $v) $ref_params[$k] = &$params[$k];
+$stmt_count->bind_param($types, ...$ref_params); $stmt_count->execute();
 $total_rows  = $stmt_count->get_result()->fetch_assoc()['total'];
 $total_pages = (int)ceil($total_rows / $records_per_page);
 
 $stmt = $conn->prepare("SELECT contribution_id, reference_no, contribution_type, amount, payment_method, created_at, status " . $sql_base . " ORDER BY created_at DESC LIMIT ?, ?");
-$stmt->bind_param($types . "ii", ...array_merge($params, [$offset, $records_per_page]));
+$all_params = array_merge($params, [$offset, $records_per_page]);
+$final_refs = []; foreach($all_params as $k => $v) $final_refs[$k] = &$all_params[$k];
+$stmt->bind_param($types . "ii", ...$final_refs);
 $stmt->execute();
 $result = $stmt->get_result();
 

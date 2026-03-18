@@ -151,7 +151,11 @@ abstract class BaseRepository
         $stmt = $this->db->prepare(
             "INSERT INTO `{$this->table}` (`{$cols}`) VALUES ({$holders})"
         );
-        $stmt->bind_param($types, ...array_values($data));
+        $refs = [];
+        foreach ($data as $key => $value) {
+            $refs[$key] = &$data[$key];
+        }
+        $stmt->bind_param($types, ...array_values($refs));
         $stmt->execute();
 
         return (int)$this->db->insert_id;

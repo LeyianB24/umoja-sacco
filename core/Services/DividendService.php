@@ -24,7 +24,7 @@ class DividendService {
     /**
      * Declares a new dividend period and calculates individual payouts.
      */
-    public function declareDividends(int $year, float $rate_percent, int $admin_id): int|false {
+    public function declareDividends(int $year, float $rate_percent, int $admin_id): int|bool {
         $this->db->beginTransaction();
 
         try {

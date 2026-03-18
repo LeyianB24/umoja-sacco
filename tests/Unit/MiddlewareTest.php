@@ -29,7 +29,7 @@ class MiddlewareTest extends BaseTestCase
      */
     public function testCsrfValidation(): void
     {
-        $_SESSION['_csrf_token'] = 'test_token';
+        $_SESSION['csrf_token'] = 'test_token';
         $_POST['csrf_token'] = 'test_token';
 
         // Valid token

@@ -248,4 +248,42 @@ class ReportService {
 
         return $ledger;
     }
+
+    /**
+     * Generates a member statement PDF (Backward compatibility bridge)
+     */
+    public function generateMemberStatement(array $memberData, array $transactions): \USMS\Reports\PdfTemplate {
+        $pdf = new \USMS\Reports\PdfTemplate('P');
+        $pdf->setMetadata('Certified Member Statement', 'Reporting', [
+            'Member' => $memberData['full_name'],
+            'Member No' => $memberData['member_no'] ?? 'N/A'
+        ]);
+        $pdf->AddPage();
+        
+        $pdf->SetFont('Arial', 'B', 12);
+        $pdf->Cell(0, 10, 'Umoja Sacco Certified Statement', 0, 1, 'C');
+        $pdf->SetFont('Arial', '', 10);
+        $pdf->Cell(0, 6, 'Generated on: ' . date('d M, Y H:i'), 0, 1, 'C');
+        $pdf->Ln(5);
+
+        // Summary
+        $pdf->SetFont('Arial', 'B', 10);
+        $pdf->Cell(0, 8, 'ACCOUNT SUMMARY', 0, 1, 'L');
+        $pdf->SetFont('Arial', '', 9);
+        $pdf->Cell(50, 7, 'Savings Balance:', 0, 0); $pdf->Cell(0, 7, 'KES ' . number_format($memberData['total_savings'], 2), 0, 1);
+        $pdf->Cell(50, 7, 'Share Capital:', 0, 0);   $pdf->Cell(0, 7, 'KES ' . number_format($memberData['total_shares'], 2), 0, 1);
+        $pdf->Cell(50, 7, 'Outstanding Loans:', 0, 0); $pdf->Cell(0, 7, 'KES ' . number_format($memberData['loan_debt'], 2), 0, 1);
+        $pdf->Ln(5);
+
+        // Transaction Table
+        $headers = ['Date', 'Type', 'Amount', 'Reference'];
+        $pdf->UniversalTable($headers, array_map(fn($t) => [
+            $t['transaction_date'],
+            ucfirst($t['transaction_type']),
+            number_format($t['amount'], 2),
+            $t['reference_no']
+        ], $transactions));
+
+        return $pdf;
+    }
 }

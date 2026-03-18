@@ -177,9 +177,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // G. Redirect
     header("Location: loans.php");
     exit;
-} else {
-    header("Location: loans.php");
-    exit;
 }
 ?>
 

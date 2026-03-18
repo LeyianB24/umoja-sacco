@@ -48,7 +48,7 @@ $activePage  = $activePage  ?? '';          // set by page before including layo
     <link rel="stylesheet" href="<?= ASSET_BASE ?>/css/darkmode.css">
 
     <?php if (isset($extraCss)): ?>
-    <?= $extraCss ?>
+    <?= (string)$extraCss ?>
     <?php endif; ?>
 </head>
 <body class="admin-body">

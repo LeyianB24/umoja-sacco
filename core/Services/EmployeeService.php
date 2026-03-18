@@ -81,7 +81,7 @@ class EmployeeService {
     /**
      * Create System User (Admin) for Employee
      */
-    public function createSystemUser(array $empData, int $roleId): int|false {
+    public function createSystemUser(array $empData, int $roleId): int|bool {
         $password = password_hash($empData['employee_no'], PASSWORD_DEFAULT);
         
         $stmt = $this->db->prepare("INSERT INTO admins (username, password, email, full_name, role_id, created_at) VALUES (?, ?, ?, ?, ?, NOW())");
