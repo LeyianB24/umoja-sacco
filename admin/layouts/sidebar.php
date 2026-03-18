@@ -319,6 +319,11 @@ if (!function_exists('is_active')) {
     border-color: #21262d;
     color: #8b949e;
 }
+
+    /* Live Status Dot */
+    .nav-live-dot { width: 6px; height: 6px; border-radius: 50%; background: #22c55e; display: inline-block; margin-left: 0.5rem; position: relative; }
+    .nav-live-dot::after { content: ''; position: absolute; inset: -3px; border-radius: 50%; background: inherit; opacity: 0.4; animation: nav-pulse-glow 2s infinite; }
+    @keyframes nav-pulse-glow { 0% { transform: scale(1); opacity: 0.5; } 100% { transform: scale(2.5); opacity: 0; } }
 </style>
 
 <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
@@ -480,12 +485,15 @@ if (!function_exists('is_active')) {
             <?php endif; ?>
         <?php endif; ?>
 
-        <?php if (has_permission('live_monitor.php') || has_permission('monitor.php') || has_permission('backups.php') || has_permission('support.php') || has_permission('settings.php')): ?>
-            <div class="hd-nav-header">System Maintenance</div>
+        <?php if (has_permission('live_monitor.php') || has_permission('monitor.php')): ?>
+            <div class="hd-nav-header">System Control Center</div>
             <?php if (has_permission('live_monitor.php')): ?>
                 <a href="<?= $base ?>/admin/pages/live_monitor.php" class="hd-nav-item <?= is_active('live_monitor.php') ?>">
                     <i class="bi bi-display-fill"></i>
-                    <span class="hd-nav-text">System Operations & Health</span>
+                    <span class="hd-nav-text">
+                        Operations &amp; Health
+                        <span class="nav-live-dot"></span>
+                    </span>
                 </a>
             <?php endif; ?>
             <?php if (has_permission('monitor.php')): ?>
@@ -494,16 +502,14 @@ if (!function_exists('is_active')) {
                     <span class="hd-nav-text">Transaction Monitor</span>
                 </a>
             <?php endif; ?>
+        <?php endif; ?>
+
+        <?php if (has_permission('backups.php') || has_permission('support.php') || has_permission('settings.php')): ?>
+            <div class="hd-nav-header">Maintenance &amp; Config</div>
             <?php if (has_permission('backups.php')): ?>
                 <a href="<?= $base ?>/admin/pages/backups.php" class="hd-nav-item <?= is_active('backups.php') ?>">
                     <i class="bi bi-database-fill-check"></i>
                     <span class="hd-nav-text">Database Backups</span>
-                </a>
-            <?php endif; ?>
-            <?php if (has_permission('audit_logs.php')): ?>
-                <a href="<?= $base ?>/admin/pages/audit_logs.php" class="hd-nav-item <?= is_active('audit_logs.php') ?>">
-                    <i class="bi bi-journal-code"></i>
-                    <span class="hd-nav-text">Activity Logs</span>
                 </a>
             <?php endif; ?>
             <?php if (has_permission('support.php')): ?>

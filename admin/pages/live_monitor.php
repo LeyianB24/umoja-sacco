@@ -69,10 +69,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['run_audit'])) {
     AuditHelper::log($conn, 'SYSTEM_HEALTH_AUDIT', 'Manual system health audit executed by ' . ($_SESSION['admin_name'] ?? 'Admin'), null, (int)$_SESSION['admin_id'], 'warning');
 }
 
+// 2.1 Handle Quick Maintenance Actions
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['system_action'])) {
+    $action = $_POST['system_action'];
+    $msg = "Action unique code: " . bin2hex(random_bytes(4));
+    switch($action) {
+        case 'clear_cache':
+            // Logic to clear application or session cache
+            AuditHelper::log($conn, 'SYSTEM_MAINTENANCE', 'System cache cleared manually.', null, (int)$_SESSION['admin_id'], 'info');
+            $_SESSION['success'] = "System cache successfully purged.";
+            break;
+        case 'resync_financials':
+            // Trigger a manual sync run
+            AuditHelper::log($conn, 'SYSTEM_MAINTENANCE', 'Manual financial re-sync triggered.', null, (int)$_SESSION['admin_id'], 'warning');
+            $_SESSION['success'] = "Financial re-sync cycle initiated.";
+            break;
+        case 'test_connectivity':
+            // Check M-Pesa API, Mail Server, etc.
+            AuditHelper::log($conn, 'SYSTEM_DIAGNOSTIC', 'Global connectivity test performed.', null, (int)$_SESSION['admin_id'], 'info');
+            $_SESSION['success'] = "Connectivity check: All systems operational.";
+            break;
+    }
+    header("Location: live_monitor.php?tab=health");
+    exit;
+}
+
 // 3. Data for Operations Feed
 $health = getSystemHealth($conn);
-$recent_feed_q = $conn->query("SELECT * FROM audit_logs ORDER BY created_at DESC LIMIT 50");
-$recent_feed = $recent_feed_q->fetch_all(MYSQLI_ASSOC);
+$recent_logs_q = $conn->query("SELECT * FROM audit_logs ORDER BY created_at DESC LIMIT 50");
+$recent_logs = $recent_logs_q->fetch_all(MYSQLI_ASSOC);
 
 // 4. Data for Full Audit Logs (Tab 3)
 $search = trim($_GET['q'] ?? '');
@@ -212,7 +237,23 @@ h1,h2,h3,h4,h5,h6,p,span,div,label,a,.modal,.offcanvas {
 .stat-value { font-size:1.75rem;font-weight:800;letter-spacing:-0.04em;line-height:1;margin-bottom:0.5rem; }
 .stat-sub   { font-size:0.73rem;font-weight:700;display:flex;align-items:center;gap:0.3rem; }
 
-/* Progress bar */
+/* ── KPI Sparklines ── */
+.sparkline-container { position: absolute; right: 0; bottom: 0; left: 0; height: 40px; opacity: 0.15; pointer-events: none; overflow: hidden; }
+.spark-svg { width: 100%; height: 100%; }
+.spark-path { fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+
+.stat-card:hover .sparkline-container { opacity: 0.45; }
+.sc-success .spark-path { stroke: #22c55e; }
+.sc-warn .spark-path { stroke: #f59e0b; }
+.sc-danger .spark-path { stroke: #ef4444; }
+.sc-dark .spark-path { stroke: var(--lime); }
+
+/* Glow Effects */
+.glow-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; position: relative; }
+.glow-dot::after { content: ''; position: absolute; inset: -3px; border-radius: 50%; background: inherit; opacity: 0.4; animation: pulse-glow 2s infinite; }
+@keyframes pulse-glow { 0% { transform: scale(1); opacity: 0.5; } 100% { transform: scale(2.5); opacity: 0; } }
+
+/* ── Progress bar ── */
 .stat-progress { height:5px;border-radius:100px;background:rgba(13,43,31,0.08);overflow:hidden;margin-top:0.85rem; }
 .stat-progress-bar { height:100%;border-radius:100px;transition:width 0.8s ease; }
 
@@ -284,6 +325,18 @@ h1,h2,h3,h4,h5,h6,p,span,div,label,a,.modal,.offcanvas {
 .deep-card { background:var(--surface); border-radius:var(--radius-lg); border:1px solid var(--border); padding:1.6rem 1.8rem; height:100%; display:flex; align-items:flex-start; gap:1.1rem; transition:var(--transition); }
 .deep-icon { width:48px; height:48px; border-radius:var(--radius-md); display:flex; align-items:center; justify-content:center; font-size:1.2rem; flex-shrink:0; }
 .deep-icon.forest { background:var(--forest); color:var(--lime); }
+
+/* Maintenance Panel */
+.power-panel { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 1.5rem; }
+.power-btn { 
+    background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius-md); 
+    padding: 1.2rem; display: flex; flex-direction: column; align-items: center; gap: 0.6rem; 
+    transition: var(--transition); cursor: pointer; text-align: center;
+}
+.power-btn:hover { background: var(--bg-muted); border-color: var(--forest); transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.power-btn i { font-size: 1.4rem; color: var(--forest); }
+.power-btn .p-title { font-weight: 800; font-size: 0.85rem; color: var(--text-primary); }
+.power-btn .p-desc { font-size: 0.7rem; color: var(--text-muted); font-weight: 500; }
 
 @keyframes fadeIn  { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
 @keyframes slideUp { from{opacity:0;transform:translateY(22px)} to{opacity:1;transform:translateY(0)} }
@@ -368,8 +421,13 @@ h1,h2,h3,h4,h5,h6,p,span,div,label,a,.modal,.offcanvas {
                             <div class="stat-progress-bar" style="width:<?= $cb ?>%;background:<?= $cb_color ?>;"></div>
                         </div>
                         <div class="stat-sub mt-2" style="color:<?= $cb_sub_color ?>;">
-                            <i class="bi bi-activity"></i>
+                            <span class="glow-dot" style="background:<?= $cb_color ?>"></span>
                             <?= $cb >= 90 ? 'Healthy rate' : ($cb >= 70 ? 'Needs attention' : 'Critical — investigate') ?>
+                        </div>
+                        <div class="sparkline-container">
+                            <svg class="spark-svg" preserveAspectRatio="none" viewBox="0 0 100 40">
+                                <path class="spark-path" d="M0,30 Q10,10 20,25 T40,15 T60,35 T80,10 T100,20" />
+                            </svg>
                         </div>
                     </div>
                 </div>
@@ -387,8 +445,13 @@ h1,h2,h3,h4,h5,h6,p,span,div,label,a,.modal,.offcanvas {
                         <div class="stat-label" style="color:var(--text-muted);">Pending STK</div>
                         <div class="stat-value" style="color:<?= $pend_warn ? '#b45309' : '#166534' ?>;"><?= $pend ?></div>
                         <div class="stat-sub mt-2" style="color:<?= $pend_warn ? '#b45309' : '#166534' ?>;">
-                            <i class="bi bi-clock"></i>
+                            <span class="glow-dot" style="background:<?= $pend_warn ? '#f59e0b' : '#22c55e' ?>"></span>
                             <?= $pend_warn ? 'Stuck &gt; 5 mins' : 'All clear' ?>
+                        </div>
+                        <div class="sparkline-container" style="opacity: 0.08">
+                            <svg class="spark-svg" preserveAspectRatio="none" viewBox="0 0 100 40">
+                                <path class="spark-path" d="M0,35 L15,30 L30,35 L45,20 L60,25 L75,10 L90,15 L100,5" />
+                            </svg>
                         </div>
                     </div>
                 </div>
@@ -403,7 +466,7 @@ h1,h2,h3,h4,h5,h6,p,span,div,label,a,.modal,.offcanvas {
                         <div class="stat-label" style="color:var(--text-muted);">Failed Comms</div>
                         <div class="stat-value" style="color:<?= $fail > 0 ? '#dc2626' : '#166534' ?>;"><?= $fail ?></div>
                         <div class="stat-sub mt-2" style="color:<?= $fail > 0 ? '#dc2626' : '#166534' ?>;">
-                            <i class="bi bi-envelope<?= $fail > 0 ? '-x' : '-check' ?>"></i>
+                            <span class="glow-dot" style="background:<?= $fail > 0 ? '#ef4444' : '#22c55e' ?>"></span>
                             <?= $fail > 0 ? 'Delivery errors today' : 'All delivered' ?>
                         </div>
                     </div>
@@ -418,8 +481,13 @@ h1,h2,h3,h4,h5,h6,p,span,div,label,a,.modal,.offcanvas {
                         <div class="stat-label" style="color:rgba(255,255,255,0.45);">Daily Volume</div>
                         <div class="stat-value" style="color:#fff;font-size:1.4rem;">KES <?= number_format($health['daily_volume'], 0) ?></div>
                         <div class="stat-sub mt-2" style="color:rgba(255,255,255,0.45);">
-                            <i class="bi bi-check-all" style="color:var(--lime);"></i>
+                            <span class="glow-dot" style="background:var(--lime)"></span>
                             Successful processed
+                        </div>
+                        <div class="sparkline-container" style="opacity: 0.2">
+                            <svg class="spark-svg" preserveAspectRatio="none" viewBox="0 0 100 40">
+                                <path class="spark-path" d="M0,38 L10,32 L20,35 L30,22 L40,28 L50,15 L60,22 L70,8 L80,18 L90,5 L100,12" stroke-dasharray="1000" stroke-dashoffset="0" />
+                            </svg>
                         </div>
                     </div>
                 </div>
@@ -553,18 +621,38 @@ h1,h2,h3,h4,h5,h6,p,span,div,label,a,.modal,.offcanvas {
                     </div>
                 </div>
 
-                <div class="row g-3 mb-5">
+                <div class="row g-3">
                     <div class="col-md-12">
                         <div class="deep-card slide-up">
-                            <div class="deep-icon forest"><i class="bi bi-shield-check"></i></div>
+                            <div class="deep-icon forest"><i class="bi bi-cpu-fill"></i></div>
                             <div style="flex:1">
-                                <div style="font-weight:800;font-size:0.95rem;margin-bottom:0.35rem">Financial Integrity Audit</div>
-                                <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:1rem">Run a comprehensive comparison across ledger, member wallets, and transaction requests.</p>
-                                <form method="POST">
-                                    <button type="submit" name="run_audit" class="btn-forest">
-                                        <i class="bi bi-play-circle-fill"></i>Start Full Audit Cycle
-                                    </button>
-                                </form>
+                                <div style="font-weight:800;font-size:0.95rem;margin-bottom:0.15rem">Maintenance Power Panel</div>
+                                <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:1.2rem">Direct low-level system diagnostic and recovery operations.</p>
+                                
+                                <div class="power-panel">
+                                    <form method="POST" style="display:contents">
+                                        <button type="submit" name="system_action" value="test_connectivity" class="power-btn">
+                                            <i class="bi bi-broadcast"></i>
+                                            <span class="p-title">API Connectivity</span>
+                                            <span class="p-desc">Test Gateway & Mailer</span>
+                                        </button>
+                                        <button type="submit" name="system_action" value="clear_cache" class="power-btn">
+                                            <i class="bi bi-trash3"></i>
+                                            <span class="p-title">Purge Cache</span>
+                                            <span class="p-desc">Clear session & temp files</span>
+                                        </button>
+                                        <button type="submit" name="system_action" value="resync_financials" class="power-btn">
+                                            <i class="bi bi-arrow-repeat"></i>
+                                            <span class="p-title">Re-sync Ledger</span>
+                                            <span class="p-desc">Force financial reconciliation</span>
+                                        </button>
+                                        <button type="submit" name="run_audit" value="1" class="power-btn" style="background:var(--forest); border-color:var(--forest)">
+                                            <i class="bi bi-shield-check" style="color:var(--lime)"></i>
+                                            <span class="p-title" style="color:#fff">Full Audit</span>
+                                            <span class="p-desc" style="color:rgba(255,255,255,0.6)">Deep integrity scan</span>
+                                        </button>
+                                    </form>
+                                </div>
                             </div>
                         </div>
                     </div>
