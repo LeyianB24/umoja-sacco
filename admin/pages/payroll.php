@@ -133,23 +133,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // ---------------------------------------------------------
 // 2. FETCH DATA
 // ---------------------------------------------------------
-$run_id     = isset($_GET['run_id']) ? intval($_GET['run_id']) : null;
-$active_run = null;
-
-if ($run_id) {
-    $active_run = $db->query("SELECT * FROM payroll_runs WHERE id = $run_id")->fetch_assoc();
-} else {
-    $active_run = $db->query("SELECT * FROM payroll_runs ORDER BY status='draft' DESC, month DESC LIMIT 1")->fetch_assoc();
-}
+$run_id      = isset($_GET['run_id']) ? intval($_GET['run_id']) : null;
+$employee_id = isset($_GET['employee_id']) ? intval($_GET['employee_id']) : null;
+$active_run  = null;
+$employee    = null;
+$view_mode   = $employee_id ? 'employee' : 'run';
 
 $payroll_items = [];
-if ($active_run) {
-    if (!$run_id) $run_id = $active_run['id'];
-    $pq = $db->query("SELECT p.*, e.full_name, e.employee_no, e.grade_id, sg.grade_name
-                      FROM payroll p JOIN employees e ON p.employee_id = e.employee_id
-                      LEFT JOIN salary_grades sg ON e.grade_id = sg.id
-                      WHERE p.payroll_run_id = $run_id ORDER BY e.employee_no ASC");
-    while ($row = $pq->fetch_assoc()) $payroll_items[] = $row;
+
+if ($view_mode === 'employee') {
+    $employee = $db->query("SELECT * FROM employees WHERE employee_id = $employee_id")->fetch_assoc();
+    if ($employee) {
+        $pq = $db->query("SELECT p.*, r.status as run_status, r.month as run_month, e.full_name, e.employee_no
+                          FROM payroll p 
+                          JOIN payroll_runs r ON p.payroll_run_id = r.id 
+                          JOIN employees e ON p.employee_id = e.employee_id
+                          WHERE p.employee_id = $employee_id 
+                          ORDER BY r.month DESC");
+        while ($row = $pq->fetch_assoc()) $payroll_items[] = $row;
+    }
+} else {
+    if ($run_id) {
+        $active_run = $db->query("SELECT * FROM payroll_runs WHERE id = $run_id")->fetch_assoc();
+    } else {
+        $active_run = $db->query("SELECT * FROM payroll_runs ORDER BY status='draft' DESC, month DESC LIMIT 1")->fetch_assoc();
+    }
+
+    if ($active_run) {
+        if (!$run_id) $run_id = $active_run['id'];
+        $pq = $db->query("SELECT p.*, e.full_name, e.employee_no, e.grade_id, sg.grade_name
+                          FROM payroll p JOIN employees e ON p.employee_id = e.employee_id
+                          LEFT JOIN salary_grades sg ON e.grade_id = sg.id
+                          WHERE p.payroll_run_id = $run_id ORDER BY e.employee_no ASC");
+        while ($row = $pq->fetch_assoc()) $payroll_items[] = $row;
+    }
 }
 
 $history_runs = $db->query("SELECT * FROM payroll_runs ORDER BY month DESC LIMIT 12");
@@ -422,41 +439,57 @@ select, input, textarea, button, table {
             <div class="hero-inner">
                 <div>
                     <div class="hero-chip"><i class="bi bi-people-fill"></i>HR · Payroll</div>
-                    <h1 class="hero-title">Payroll Management</h1>
-                    <p class="hero-sub">Disburse salaries, manage tax deductions, and generate payslips.</p>
-                    <?php if ($active_run): ?>
+                    <h1 class="hero-title"><?= $view_mode === 'employee' ? 'Employee Payroll History' : 'Payroll Management' ?></h1>
+                    <p class="hero-sub"><?= $view_mode === 'employee' ? 'Viewing payroll records for <strong>' . htmlspecialchars($employee['full_name']??'') . '</strong>' : 'Disburse salaries, manage tax deductions, and generate payslips.' ?></p>
+                    
                     <div class="hero-stats">
-                        <div class="hero-stat">
-                            <div class="hero-stat-label">Period</div>
-                            <div class="hero-stat-value"><?= date('M Y', strtotime($active_run['month'] ?? 'now')) ?></div>
-                        </div>
-                        <div class="hero-stat">
-                            <div class="hero-stat-label">Employees</div>
-                            <div class="hero-stat-value"><?= count($payroll_items) ?></div>
-                        </div>
-                        <div class="hero-stat">
-                            <div class="hero-stat-label">Total Gross</div>
-                            <div class="hero-stat-value"><?= ksh((float)($active_run['total_gross'] ?? $total_gross_sum)) ?></div>
-                        </div>
-                        <div class="hero-stat">
-                            <div class="hero-stat-label">Net Payable</div>
-                            <div class="hero-stat-value lime"><?= ksh((float)($active_run['total_net'] ?? $total_net_sum)) ?></div>
-                        </div>
+                        <?php if ($view_mode === 'employee'): ?>
+                            <div class="hero-stat">
+                                <div class="hero-stat-label">Records Found</div>
+                                <div class="hero-stat-value"><?= count($payroll_items) ?></div>
+                            </div>
+                            <div class="hero-stat">
+                                <div class="hero-stat-label">Total Net Received</div>
+                                <div class="hero-stat-value lime"><?= ksh($total_net_sum) ?></div>
+                            </div>
+                        <?php elseif ($active_run): ?>
+                            <div class="hero-stat">
+                                <div class="hero-stat-label">Period</div>
+                                <div class="hero-stat-value"><?= date('M Y', strtotime($active_run['month'] ?? 'now')) ?></div>
+                            </div>
+                            <div class="hero-stat">
+                                <div class="hero-stat-label">Employees</div>
+                                <div class="hero-stat-value"><?= count($payroll_items) ?></div>
+                            </div>
+                            <div class="hero-stat">
+                                <div class="hero-stat-label">Total Gross</div>
+                                <div class="hero-stat-value"><?= ksh((float)($active_run['total_gross'] ?? $total_gross_sum)) ?></div>
+                            </div>
+                            <div class="hero-stat">
+                                <div class="hero-stat-label">Net Payable</div>
+                                <div class="hero-stat-value lime"><?= ksh((float)($active_run['total_net'] ?? $total_net_sum)) ?></div>
+                            </div>
+                        <?php endif; ?>
                     </div>
-                    <?php endif; ?>
                 </div>
                 <div class="hero-actions">
-                    <button class="btn btn-lime rounded-pill px-4 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#newRunModal">
-                        <i class="bi bi-plus-circle-fill me-2"></i>New Pay Period
-                    </button>
-                    <button class="btn btn-outline-hero rounded-pill px-4 fw-bold" data-bs-toggle="modal" data-bs-target="#historyModal">
-                        <i class="bi bi-clock-history me-2"></i>Pay History
-                    </button>
+                    <?php if ($view_mode === 'employee'): ?>
+                        <a href="payroll.php" class="btn btn-outline-hero rounded-pill px-4 fw-bold">
+                            <i class="bi bi-arrow-left me-2"></i>Back to Overview
+                        </a>
+                    <?php else: ?>
+                        <button class="btn btn-lime rounded-pill px-4 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#newRunModal">
+                            <i class="bi bi-plus-circle-fill me-2"></i>New Pay Period
+                        </button>
+                        <button class="btn btn-outline-hero rounded-pill px-4 fw-bold" data-bs-toggle="modal" data-bs-target="#historyModal">
+                            <i class="bi bi-clock-history me-2"></i>Pay History
+                        </button>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
 
-        <?php if ($active_run): ?>
+        <?php if ($view_mode === 'run' && $active_run): ?>
 
         <!-- ═══ PERIOD + FINANCIALS STRIP ════════════════════════════════ -->
         <div class="period-strip">
@@ -551,7 +584,7 @@ select, input, textarea, button, table {
                 <table class="pay-table">
                     <thead>
                         <tr>
-                            <th style="padding-left:20px">Employee</th>
+                            <th style="padding-left:20px"><?= $view_mode === 'employee' ? 'Month' : 'Employee' ?></th>
                             <th style="text-align:right">Basic</th>
                             <th style="text-align:right">Allowances</th>
                             <th style="text-align:right">Gross</th>
@@ -575,8 +608,13 @@ select, input, textarea, button, table {
                     ?>
                         <tr>
                             <td style="padding-left:20px">
-                                <div class="emp-name"><?= htmlspecialchars($item['full_name']) ?></div>
-                                <div class="emp-no"><?= htmlspecialchars($item['employee_no']) ?></div>
+                                <?php if ($view_mode === 'employee'): ?>
+                                    <div class="emp-name"><?= date('F Y', strtotime($item['run_month']??'now')) ?></div>
+                                    <div class="emp-no"><span class="run-status-pill <?= $item['run_status']==='paid'?'rs-paid':($item['run_status']==='approved'?'rs-approved':'rs-draft') ?>" style="font-size:0.6rem;padding:2px 8px;"><?= strtoupper($item['run_status']??'draft') ?></span></div>
+                                <?php else: ?>
+                                    <div class="emp-name"><?= htmlspecialchars($item['full_name']) ?></div>
+                                    <div class="emp-no"><?= htmlspecialchars($item['employee_no']) ?></div>
+                                <?php endif; ?>
                             </td>
                             <td><div class="mono-val dim"><?= ksh((float)$item['basic_salary']) ?></div></td>
                             <td><div class="mono-val dim"><?= ksh((float)$item['allowances']) ?></div></td>
