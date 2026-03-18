@@ -15,7 +15,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
                     <a href="employees.php" class="flex-fill text-center py-3 px-4 text-decoration-none border-bottom border-4 <?= $current_page == 'employees.php' ? 'border-success text-success fw-bold' : 'border-transparent text-muted' ?> hover-bg-light transition-all">
                         <i class="bi bi-people-fill me-2"></i> Employee Directory
                     </a>
-                    <a href="staff_mgmt.php" class="flex-fill text-center py-3 px-4 text-decoration-none border-bottom border-4 <?= $current_page == 'staff_mgmt.php' ? 'border-success text-success fw-bold' : 'border-transparent text-muted' ?> hover-bg-light transition-all">
+                    <a href="users.php" class="flex-fill text-center py-3 px-4 text-decoration-none border-bottom border-4 <?= $current_page == 'users.php' ? 'border-success text-success fw-bold' : 'border-transparent text-muted' ?> hover-bg-light transition-all">
                         <i class="bi bi-shield-lock-fill me-2"></i> Admin Access
                     </a>
                     <a href="payroll.php" class="flex-fill text-center py-3 px-4 text-decoration-none border-bottom border-4 <?= $current_page == 'payroll.php' ? 'border-success text-success fw-bold' : 'border-transparent text-muted' ?> hover-bg-light transition-all">

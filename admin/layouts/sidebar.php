@@ -448,7 +448,7 @@ if (!function_exists('is_active')) {
 
         <?php if (has_permission('welfare.php') || $role === 'superadmin'): ?>
             <div class="hd-nav-header">Welfare Module</div>
-            <a href="<?= $base ?>/admin/pages/welfare.php" class="hd-nav-item <?= is_active('welfare.php', ['welfare_cases.php','welfare_support.php']) ?>">
+            <a href="<?= $base ?>/admin/pages/welfare.php" class="hd-nav-item <?= is_active('welfare.php') ?>">
                 <i class="bi bi-heart-pulse-fill"></i>
                 <span class="hd-nav-text">Welfare Management</span>
             </a>
