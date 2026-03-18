@@ -21,17 +21,28 @@ if ($my_role_id !== 1) {
 
 $where_sql = "WHERE " . implode(' AND ', $where_clauses);
 
+// 1. Core Counts
 $open_tickets = $conn->query("SELECT COUNT(*) AS c FROM support_tickets s $where_sql")->fetch_assoc()['c'] ?? 0;
 $today_logs = $conn->query("SELECT COUNT(*) AS c FROM audit_logs WHERE DATE(created_at)=CURDATE()")->fetch_assoc()['c'] ?? 0;
 
-// Total Cash Position (Sourced from Golden Ledger accounts: Cash, Bank, M-Pesa)
+// 2. Member Metrics (Active vs Total)
+$member_stats = $conn->query("SELECT COUNT(*) as total, SUM(IF(status='active', 1, 0)) as active FROM members")->fetch_assoc();
+$total_members = $member_stats['total'] ?? 0;
+$active_members = $member_stats['active'] ?? 0;
+
+// 3. Loan Metrics (Exposure & Pending)
+$loan_stats = $conn->query("SELECT COUNT(*) as pending, SUM(current_balance) as exposure FROM loans WHERE status IN ('pending', 'approved', 'disbursed')")->fetch_assoc();
+$pending_loans = $loan_stats['pending'] ?? 0;
+$total_exposure = $loan_stats['exposure'] ?? 0;
+
+// 4. Financial Status (Cash Position)
 $cash_position = 0;
 if (Auth::can('view_financials') || $my_role_id === 1) {
     $cash_res = $conn->query("SELECT SUM(current_balance) as balance FROM ledger_accounts WHERE category IN ('cash', 'bank', 'mpesa')");
     $cash_position = $cash_res->fetch_assoc()['balance'] ?? 0;
 }
 
-// Database Size (Restricted)
+// 5. Database Size
 $db_size = "N/A";
 if ($my_role_id === 1) {
     try {
@@ -41,14 +52,38 @@ if ($my_role_id === 1) {
     } catch (Exception $e) { $db_size = "0.0"; }
 }
 
-// Recent Tickets (Role-Filtered)
+// 6. Revenue Trend (Last 7 Days) for Chart.js
+$revenue_trend = [];
+$trend_res = $conn->query("
+    SELECT DATE(t.created_at) as date, SUM(e.credit) as revenue 
+    FROM ledger_entries e
+    JOIN ledger_transactions t ON e.transaction_id = t.transaction_id
+    JOIN ledger_accounts a ON e.account_id = a.account_id
+    WHERE a.account_type = 'revenue' 
+    AND t.created_at >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
+    GROUP BY DATE(t.created_at)
+    ORDER BY date ASC
+");
+while ($row = $trend_res->fetch_assoc()) {
+    $revenue_trend[$row['date']] = (float)$row['revenue'];
+}
+
+// Fill missing days with zero
+$chart_labels = [];
+$chart_data = [];
+for ($i = 6; $i >= 0; $i--) {
+    $d = date('Y-m-d', strtotime("-$i days"));
+    $chart_labels[] = date('D, M j', strtotime($d));
+    $chart_data[] = $revenue_trend[$d] ?? 0;
+}
+
+// 7. Recent Items
 $tickets = $conn->query("SELECT s.*, COALESCE(m.full_name,'Guest') AS sender FROM support_tickets s LEFT JOIN members m ON s.member_id=m.member_id $where_sql ORDER BY s.created_at DESC LIMIT 5")->fetch_all(MYSQLI_ASSOC);
 
-// LIVE SIMULATION: System Health Metrics
 require_once __DIR__ . '/../../inc/SystemHealthHelper.php';
 $health = getSystemHealth($conn);
 
-$pageTitle = "System Dashboard";
+$pageTitle = "Command Dashboard";
 ?>
 <?php $layout->header($pageTitle); ?>
 <?php $layout->sidebar(); ?>
@@ -577,24 +612,26 @@ $pageTitle = "System Dashboard";
     <!-- ─── STAT CARDS ───────────────────────────────────── -->
     <div class="row g-3 mb-4">
         <div class="col-md-3">
-            <a href="<?= BASE_URL ?>/admin/pages/support.php" class="stat-card">
+            <a href="<?= BASE_URL ?>/admin/pages/members.php" class="stat-card">
                 <div class="stat-icon bg-primary bg-opacity-10 text-primary">
-                    <i class="bi bi-ticket-perforated-fill"></i>
+                    <i class="bi bi-people-fill"></i>
                 </div>
                 <div class="stat-body">
-                    <div class="stat-label">Open Tickets</div>
-                    <div class="stat-value"><?= $open_tickets ?></div>
+                    <div class="stat-label">Total Members</div>
+                    <div class="stat-value"><?= number_format($total_members) ?></div>
+                    <div style="font-size:10px; color:#16a34a; font-weight:700;"><?= $active_members ?> Active</div>
                 </div>
             </a>
         </div>
         <div class="col-md-3">
-            <a href="<?= BASE_URL ?>/admin/pages/audit_logs.php" class="stat-card">
-                <div class="stat-icon bg-success bg-opacity-10 text-success">
-                    <i class="bi bi-activity"></i>
+            <a href="<?= BASE_URL ?>/admin/pages/loans_reviews.php" class="stat-card">
+                <div class="stat-icon bg-warning bg-opacity-10 text-warning">
+                    <i class="bi bi-cash-stack"></i>
                 </div>
                 <div class="stat-body">
-                    <div class="stat-label">Today's Logs</div>
-                    <div class="stat-value"><?= $today_logs ?></div>
+                    <div class="stat-label">Loan Exposure</div>
+                    <div class="stat-value"><?= number_format($total_exposure / 1000, 1) ?><small>K</small></div>
+                    <div style="font-size:10px; color:#d97706; font-weight:700;"><?= $pending_loans ?> Pending</div>
                 </div>
             </a>
         </div>
@@ -605,20 +642,44 @@ $pageTitle = "System Dashboard";
                 </div>
                 <div class="stat-body">
                     <div class="stat-label">Cash Position</div>
-                    <div class="stat-value"><?= number_format((float)($cash_position / 1000), 1) ?><small>K</small></div>
+                    <div class="stat-value"><?= number_format($cash_position / 1000, 1) ?><small>K</small></div>
+                    <div style="font-size:10px; color:#9ca3af; font-weight:600;">Liquid Assets</div>
                 </div>
             </a>
         </div>
         <div class="col-md-3">
-            <a href="<?= BASE_URL ?>/admin/pages/system_health.php" class="stat-card">
-                <div class="stat-icon bg-warning bg-opacity-10 text-warning">
-                    <i class="bi bi-database-fill"></i>
+            <a href="<?= BASE_URL ?>/admin/pages/live_monitor.php" class="stat-card">
+                <div class="stat-icon bg-info bg-opacity-10 text-info">
+                    <i class="bi bi-cpu-fill"></i>
                 </div>
                 <div class="stat-body">
                     <div class="stat-label">DB Storage</div>
                     <div class="stat-value"><?= $db_size ?><small>MB</small></div>
+                    <div style="font-size:10px; color:#0891b2; font-weight:700;">System Optimized</div>
                 </div>
             </a>
+        </div>
+    </div>
+
+    <!-- ─── REVENUE TREND ─────────────────────────────────── -->
+    <div class="row g-3 mb-4">
+        <div class="col-lg-12">
+            <div class="inbox-card shadow-sm" style="padding:28px;">
+                <div class="d-flex justify-content-between align-items-start mb-4">
+                    <div>
+                        <h5 class="fw-800 mb-1" style="font-family:'Plus Jakarta Sans';">Revenue Performance</h5>
+                        <p class="text-muted mb-0" style="font-size:0.85rem;">Daily income generation from all revenue streams</p>
+                    </div>
+                    <div class="text-end">
+                        <div class="badge-count px-3 py-2" style="background:rgba(163,230,53,0.1); color:#1a3a2a; border-radius:12px; font-weight:700; font-size:0.8rem;">
+                            7-Day Trend Analysis
+                        </div>
+                    </div>
+                </div>
+                <div style="height:320px; position:relative;">
+                    <canvas id="revenueChart"></canvas>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -774,15 +835,7 @@ $pageTitle = "System Dashboard";
             <?php if (Auth::can('live_monitor.php') || $my_role_id === 1): ?>
             <a href="<?= BASE_URL ?>/admin/pages/live_monitor.php" class="nav-pill-enhanced">
                 <div class="pill-icon text-danger"><i class="bi bi-broadcast"></i></div>
-                <span>Live Monitor</span>
-                <i class="bi bi-chevron-right pill-arrow"></i>
-            </a>
-            <?php endif; ?>
-
-            <?php if (Auth::can('system_health.php') || $my_role_id === 1): ?>
-            <a href="<?= BASE_URL ?>/admin/pages/system_health.php" class="nav-pill-enhanced">
-                <div class="pill-icon text-success"><i class="bi bi-heart-pulse-fill"></i></div>
-                <span>System Health</span>
+                <span>Operations &amp; Health</span>
                 <i class="bi bi-chevron-right pill-arrow"></i>
             </a>
             <?php endif; ?>
