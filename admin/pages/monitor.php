@@ -6,11 +6,52 @@ require_once __DIR__ . '/../../config/app.php';
 require_once __DIR__ . '/../../inc/Auth.php';
 require_once __DIR__ . '/../../inc/LayoutManager.php';
 
+require_once __DIR__ . '/../../inc/TransactionMonitor.php';
+require_once __DIR__ . '/../../inc/FinancialEngine.php';
+
 require_admin();
 require_permission();
 
 $layout    = LayoutManager::create('admin');
-$pageTitle = "Transaction Monitor";
+$monitorSvc = new TransactionMonitor($conn);
+$engine     = new FinancialEngine($conn);
+$pageTitle  = "Transaction & M-Pesa Monitor";
+
+$success = "";
+$error   = "";
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (isset($_POST['action'])) {
+        // From transaction_monitor.php: Manual Activation
+        if ($_POST['action'] === 'manual_activate' && isset($_POST['contribution_id'])) {
+            $cid = (int)$_POST['contribution_id'];
+            try {
+                $res = $conn->query("SELECT * FROM contributions WHERE contribution_id = $cid");
+                $contrib = $res->fetch_assoc();
+                if ($contrib && $contrib['status'] === 'pending') {
+                    $conn->begin_transaction();
+                    $conn->query("UPDATE contributions SET status = 'active' WHERE contribution_id = $cid");
+                    $action_map = ['savings' => 'savings_deposit','shares' => 'share_purchase','welfare' => 'welfare_contribution','registration' => 'revenue_inflow'];
+                    $action = $action_map[$contrib['contribution_type']] ?? 'savings_deposit';
+                    $engine->transact(['member_id' => $contrib['member_id'],'amount' => $contrib['amount'],'action_type' => $action,'reference' => $contrib['reference_no'] ?? ("MANUAL-".$cid),'notes' => "Manually activated by admin via monitor",'method' => 'mpesa']);
+                    $conn->query("UPDATE transaction_alerts SET acknowledged = 1, acknowledged_at = NOW(), acknowledged_by = " . ($_SESSION['admin_id'] ?? 0) . " WHERE contribution_id = $cid");
+                    $conn->commit();
+                    $success = "Transaction activated successfully.";
+                }
+            } catch (Exception $e) {
+                try { $conn->rollback(); } catch (Exception $re) {}
+                $error = "Failed to activate: " . $e->getMessage();
+            }
+        }
+        
+        // Alert Acknowledgment
+        if ($_POST['action'] === 'acknowledge_alert' && isset($_POST['alert_id'])) {
+            $aid = (int)$_POST['alert_id'];
+            $conn->query("UPDATE transaction_alerts SET acknowledged = 1, acknowledged_at = NOW(), acknowledged_by = " . ($_SESSION['admin_id'] ?? 0) . " WHERE id = $aid");
+            $success = "Alert acknowledged.";
+        }
+    }
+}
 
 // Fetch callback logs
 $callbacks = [];
@@ -39,6 +80,12 @@ $cb_failed     = $cb_total - $cb_success;
 $req_total     = count($requests);
 $req_completed = count(array_filter($requests, fn($r) => $r['status'] === 'completed'));
 $req_pending   = count(array_filter($requests, fn($r) => $r['status'] === 'pending'));
+
+// From transaction_monitor.php
+$stuck  = $monitorSvc->getStuckPending(5);
+$alerts = $monitorSvc->getActiveAlerts();
+$stuck_total = count($stuck);
+$alert_total = count($alerts);
 ?>
 <?php $layout->header($pageTitle); ?>
 
@@ -271,16 +318,16 @@ select, input, textarea, button, table {
                             <div class="hero-stat-value lime"><?= $cb_success ?></div>
                         </div>
                         <div class="hero-stat">
-                            <div class="hero-stat-label">Failed</div>
-                            <div class="hero-stat-value rose"><?= $cb_failed ?></div>
-                        </div>
-                        <div class="hero-stat">
                             <div class="hero-stat-label">Requests</div>
                             <div class="hero-stat-value"><?= $req_total ?></div>
                         </div>
                         <div class="hero-stat">
-                            <div class="hero-stat-label">Pending</div>
-                            <div class="hero-stat-value amber"><?= $req_pending ?></div>
+                            <div class="hero-stat-label">Stuck Txns</div>
+                            <div class="hero-stat-value <?= $stuck_total > 0 ? 'rose' : '' ?>"><?= $stuck_total ?></div>
+                        </div>
+                        <div class="hero-stat">
+                            <div class="hero-stat-label">Alerts</div>
+                            <div class="hero-stat-value <?= $alert_total > 0 ? 'amber' : '' ?>"><?= $alert_total ?></div>
                         </div>
                     </div>
                 </div>
@@ -294,14 +341,20 @@ select, input, textarea, button, table {
         <!-- ═══ TAB SWITCHER ═════════════════════════════════════════════ -->
         <div class="tab-switcher">
             <button class="tab-btn active" id="tabCallbacks" onclick="switchTab('callbacks')">
-                <i class="bi bi-arrow-down-circle-fill"></i>
-                Incoming Callbacks
+                <i class="bi bi-arrow-down-circle-fill"></i> M-Pesa Feed
                 <span class="tab-count"><?= $cb_total ?></span>
             </button>
             <button class="tab-btn" id="tabRequests" onclick="switchTab('requests')">
-                <i class="bi bi-arrow-up-circle-fill"></i>
-                Payment Requests
+                <i class="bi bi-arrow-up-circle-fill"></i> Requests
                 <span class="tab-count"><?= $req_total ?></span>
+            </button>
+            <button class="tab-btn" id="tabStuck" onclick="switchTab('stuck')">
+                <i class="bi bi-hourglass-split"></i> Stuck
+                <span class="tab-count"><?= $stuck_total ?></span>
+            </button>
+            <button class="tab-btn" id="tabAlerts" onclick="switchTab('alerts')">
+                <i class="bi bi-bell-fill"></i> Alerts
+                <span class="tab-count"><?= $alert_total ?></span>
             </button>
         </div>
 
@@ -451,6 +504,128 @@ select, input, textarea, button, table {
             </div>
         </div>
 
+        <!-- ═══ STUCK TABLE ═══════════════════════════════════════════════ -->
+        <div id="sectionStuck" class="detail-card d-none">
+            <div class="card-toolbar">
+                <div class="card-toolbar-title">
+                    <i class="bi bi-hourglass-split d-flex"></i>
+                    Stuck Pending Contributions
+                </div>
+                <?php if ($stuck_total): ?>
+                    <span class="record-count"><?= $stuck_total ?> entries</span>
+                <?php endif; ?>
+            </div>
+            <div class="table-responsive">
+                <table class="mon-table">
+                    <thead>
+                        <tr>
+                            <th style="padding-left:20px">Timestamp</th>
+                            <th>Member</th>
+                            <th>Type</th>
+                            <th>Amount</th>
+                            <th>Reference</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    <?php if (empty($stuck)): ?>
+                        <tr><td colspan="6">
+                            <div class="empty-state">
+                                <i class="bi bi-check2-all"></i>
+                                <p>No stuck transactions found.</p>
+                            </div>
+                        </td></tr>
+                    <?php else: foreach ($stuck as $s): ?>
+                        <tr>
+                            <td style="padding-left:20px">
+                                <div class="ts-val"><?= date('H:i:s', strtotime($s['created_at'])) ?></div>
+                                <div class="ts-date"><?= date('d M Y', strtotime($s['created_at'])) ?></div>
+                            </td>
+                            <td>
+                                <div class="mem-name"><?= htmlspecialchars($s['full_name']) ?></div>
+                                <div class="mem-phone"><?= htmlspecialchars($s['phone']) ?></div>
+                            </td>
+                            <td><span class="type-chip"><?= ucfirst($s['contribution_type']) ?></span></td>
+                            <td><div class="amount-val">KES <?= number_format((float)$s['amount']) ?></div></td>
+                            <td><span class="mpesa-ref"><?= htmlspecialchars($s['reference_no']) ?></span></td>
+                            <td>
+                                <form method="POST" class="d-inline" onsubmit="return confirm('Manually activate this transaction?')">
+                                    <input type="hidden" name="action" value="manual_activate">
+                                    <input type="hidden" name="contribution_id" value="<?= $s['contribution_id'] ?>">
+                                    <button type="submit" class="btn btn-sm btn-lime rounded-pill px-3 fw-bold" style="font-size:0.7rem">
+                                        <i class="bi bi-lightning-charge-fill me-1"></i> Activate
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    <?php endforeach; endif; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ═══ ALERTS TABLE ══════════════════════════════════════════════ -->
+        <div id="sectionAlerts" class="detail-card d-none">
+            <div class="card-toolbar">
+                <div class="card-toolbar-title">
+                    <i class="bi bi-bell-fill d-flex"></i>
+                    System Alerts
+                </div>
+                <?php if ($alert_total): ?>
+                    <span class="record-count"><?= $alert_total ?> alerts</span>
+                <?php endif; ?>
+            </div>
+            <div class="table-responsive">
+                <table class="mon-table">
+                    <thead>
+                        <tr>
+                            <th style="padding-left:20px">Severity</th>
+                            <th>Message</th>
+                            <th>Date / Time</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    <?php if (empty($alerts)): ?>
+                        <tr><td colspan="4">
+                            <div class="empty-state">
+                                <i class="bi bi-shield-check"></i>
+                                <p>All systems normal. No active alerts.</p>
+                            </div>
+                        </td></tr>
+                    <?php else: foreach ($alerts as $a):
+                        $sev = strtolower($a['severity'] ?? 'info');
+                        $pill_class = match($sev) {
+                            'critical' => 'sp-failed',
+                            'warning'  => 'sp-pending',
+                            default    => 'sp-completed'
+                        };
+                    ?>
+                        <tr>
+                            <td style="padding-left:20px">
+                                <span class="status-pill <?= $pill_class ?>"><?= strtoupper($sev) ?></span>
+                            </td>
+                            <td><div class="mem-name" style="font-weight:500; font-size:0.8rem"><?= htmlspecialchars($a['message']) ?></div></td>
+                            <td>
+                                <div class="ts-val"><?= date('H:i:s', strtotime($a['created_at'])) ?></div>
+                                <div class="ts-date"><?= date('d M Y', strtotime($a['created_at'])) ?></div>
+                            </td>
+                            <td>
+                                <form method="POST" class="d-inline">
+                                    <input type="hidden" name="action" value="acknowledge_alert">
+                                    <input type="hidden" name="alert_id" value="<?= $a['id'] ?>">
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary rounded-pill px-3" style="font-size:0.7rem">
+                                        Ack
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    <?php endforeach; endif; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
         <!-- ═══ PAYLOAD MODAL ════════════════════════════════════════════ -->
         <div class="modal fade" id="payloadModal" tabindex="-1">
             <div class="modal-dialog modal-dialog-centered" style="max-width:560px">
@@ -477,19 +652,29 @@ select, input, textarea, button, table {
 function switchTab(tab) {
     const cbSection  = document.getElementById('sectionCallbacks');
     const reqSection = document.getElementById('sectionRequests');
+    const stuckSection = document.getElementById('sectionStuck');
+    const alertsSection = document.getElementById('sectionAlerts');
+    
     const tabCb      = document.getElementById('tabCallbacks');
     const tabReq     = document.getElementById('tabRequests');
+    const tabStuck   = document.getElementById('tabStuck');
+    const tabAlerts  = document.getElementById('tabAlerts');
+
+    [cbSection, reqSection, stuckSection, alertsSection].forEach(s => s.classList.add('d-none'));
+    [tabCb, tabReq, tabStuck, tabAlerts].forEach(t => t.classList.remove('active'));
 
     if (tab === 'callbacks') {
         cbSection.classList.remove('d-none');
-        reqSection.classList.add('d-none');
         tabCb.classList.add('active');
-        tabReq.classList.remove('active');
-    } else {
+    } else if (tab === 'requests') {
         reqSection.classList.remove('d-none');
-        cbSection.classList.add('d-none');
         tabReq.classList.add('active');
-        tabCb.classList.remove('active');
+    } else if (tab === 'stuck') {
+        stuckSection.classList.remove('d-none');
+        tabStuck.classList.add('active');
+    } else if (tab === 'alerts') {
+        alertsSection.classList.remove('d-none');
+        tabAlerts.classList.add('active');
     }
 }
 

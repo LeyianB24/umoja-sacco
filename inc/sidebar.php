@@ -345,7 +345,7 @@ if (!function_exists('is_active')) {
                 <?php endif; ?>
                 <?php if (has_permission('monitor.php')): ?>
                     <a href="<?= $base ?>/admin/pages/monitor.php" class="hd-nav-item <?= is_active('monitor.php') ?>">
-                        <i class="bi bi-phone-vibrate"></i> <span class="hd-nav-text">M-Pesa Logs</span>
+                        <i class="bi bi-phone-vibrate"></i> <span class="hd-nav-text">Transaction Monitor</span>
                     </a>
                 <?php endif; ?>
                 <?php if (has_permission('trial_balance.php')): ?>
@@ -404,16 +404,11 @@ if (!function_exists('is_active')) {
                 <?php endif; ?>
             <?php endif; ?>
 
-            <?php if (has_permission('live_monitor.php') || has_permission('transaction_monitor.php') || has_permission('system_health.php') || has_permission('backups.php') || has_permission('audit_logs.php') || has_permission('support.php') || has_permission('settings.php')): ?>
+            <?php if (has_permission('live_monitor.php') || has_permission('monitor.php') || has_permission('system_health.php') || has_permission('backups.php') || has_permission('audit_logs.php') || has_permission('support.php') || has_permission('settings.php')): ?>
                 <div class="hd-nav-header">System Maintenance</div>
                 <?php if (has_permission('live_monitor.php')): ?>
                     <a href="<?= $base ?>/admin/pages/live_monitor.php" class="hd-nav-item <?= is_active('live_monitor.php') ?>">
                         <i class="bi bi-display"></i> <span class="hd-nav-text">Live Monitor</span>
-                    </a>
-                <?php endif; ?>
-                <?php if (has_permission('transaction_monitor.php')): ?>
-                    <a href="<?= $base ?>/admin/pages/transaction_monitor.php" class="hd-nav-item <?= is_active('transaction_monitor.php') ?>">
-                        <i class="bi bi-exclamation-triangle"></i> <span class="hd-nav-text">Transaction Recovery</span>
                     </a>
                 <?php endif; ?>
                 <?php if (has_permission('system_health.php')): ?>
