@@ -27,10 +27,11 @@ $permissions = [
     ['slug' => 'manage_staff', 'name' => 'HR & Staff', 'category' => 'operations'],
     ['slug' => 'view_reports', 'name' => 'View Reports', 'category' => 'operations'],
     ['slug' => 'manage_tickets', 'name' => 'Manage Support Tickets', 'category' => 'operations'],
+    ['slug' => 'monitor.php', 'name' => 'Transaction Monitor', 'category' => 'operations'],
     ['slug' => 'manage_users', 'name' => 'Manage Admin Users', 'category' => 'system'],
     ['slug' => 'manage_roles', 'name' => 'Manage Roles & Permissions', 'category' => 'system'],
     ['slug' => 'manage_settings', 'name' => 'Manage System Settings', 'category' => 'system'],
-    ['slug' => 'view_audit_logs', 'name' => 'View Audit Logs', 'category' => 'system'],
+    ['slug' => 'live_monitor.php', 'name' => 'System Operations & Health', 'category' => 'system'],
 ];
 
 foreach ($permissions as $perm) {

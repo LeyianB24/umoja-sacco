@@ -19,7 +19,8 @@ INSERT INTO permissions (slug, name, category, description) VALUES
 ('manage_users', 'Manage Admin Users', 'system', 'Create, edit, and delete admin accounts'),
 ('manage_roles', 'Manage Roles & Permissions', 'system', 'Configure role-based access control'),
 ('manage_settings', 'Manage System Settings', 'system', 'Configure global system settings'),
-('view_audit_logs', 'View Audit Logs', 'system', 'Access system audit trail')
+('live_monitor.php', 'System Operations & Health', 'system', 'Access system audit trail and health'),
+('monitor.php', 'Transaction Monitor', 'operations', 'Access real-time transaction logs')
 
 ON DUPLICATE KEY UPDATE 
     name = VALUES(name),
