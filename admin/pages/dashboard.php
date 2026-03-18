@@ -27,19 +27,19 @@ $today_logs = $conn->query("SELECT COUNT(*) AS c FROM audit_logs WHERE DATE(crea
 
 // 2. Member Metrics (Active vs Total)
 $member_stats = $conn->query("SELECT COUNT(*) as total, SUM(IF(status='active', 1, 0)) as active FROM members")->fetch_assoc();
-$total_members = $member_stats['total'] ?? 0;
-$active_members = $member_stats['active'] ?? 0;
+$total_members = (int)($member_stats['total'] ?? 0);
+$active_members = (int)($member_stats['active'] ?? 0);
 
 // 3. Loan Metrics (Exposure & Pending)
 $loan_stats = $conn->query("SELECT COUNT(*) as pending, SUM(current_balance) as exposure FROM loans WHERE status IN ('pending', 'approved', 'disbursed')")->fetch_assoc();
-$pending_loans = $loan_stats['pending'] ?? 0;
-$total_exposure = $loan_stats['exposure'] ?? 0;
+$pending_loans = (int)($loan_stats['pending'] ?? 0);
+$total_exposure = (float)($loan_stats['exposure'] ?? 0);
 
 // 4. Financial Status (Cash Position)
 $cash_position = 0;
 if (Auth::can('view_financials') || $my_role_id === 1) {
     $cash_res = $conn->query("SELECT SUM(current_balance) as balance FROM ledger_accounts WHERE category IN ('cash', 'bank', 'mpesa')");
-    $cash_position = $cash_res->fetch_assoc()['balance'] ?? 0;
+    $cash_position = (float)($cash_res->fetch_assoc()['balance'] ?? 0);
 }
 
 // 5. Database Size
