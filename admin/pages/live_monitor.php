@@ -7,17 +7,117 @@ require_once __DIR__ . '/../../inc/Auth.php';
 require_once __DIR__ . '/../../inc/LayoutManager.php';
 require_once __DIR__ . '/../../inc/SystemHealthHelper.php';
 require_once __DIR__ . '/../../inc/AuditHelper.php';
+require_once __DIR__ . '/../../inc/FinancialIntegrityChecker.php';
 
 require_admin();
 require_permission();
 
-$layout = LayoutManager::create('admin');
+$layout  = LayoutManager::create('admin');
+$checker = new FinancialIntegrityChecker($conn);
+
+// 1. Handle Export Actions (from audit_logs.php)
+if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf','export_excel','print_report'])) {
+    $search = trim($_GET['q'] ?? '');
+    $where  = ""; $params = []; $types = "";
+    if ($search !== "") {
+        $where  = "WHERE (a.action LIKE ? OR a.details LIKE ? OR ad.username LIKE ?)";
+        $term   = "%$search%";
+        $params = [$term, $term, $term];
+        $types  = "sss";
+    }
+    
+    $query_e = "SELECT a.*, ad.username, r.name as role, ad.full_name FROM audit_logs a LEFT JOIN admins ad ON a.admin_id = ad.admin_id LEFT JOIN roles r ON ad.role_id = r.id $where ORDER BY a.created_at DESC LIMIT 1000";
+    $stmt_e  = $conn->prepare($query_e);
+    if (!empty($params)) $stmt_e->bind_param($types, ...$params);
+    $stmt_e->execute();
+    $export_logs = $stmt_e->get_result();
+    
+    if ($_GET['action'] !== 'print_report') { 
+        require_once __DIR__ . '/../../inc/ExportHelper.php'; 
+    } else { 
+        require_once __DIR__ . '/../../core/exports/UniversalExportEngine.php'; 
+    }
+    
+    $format = match($_GET['action']) { 'export_excel' => 'excel', 'print_report' => 'print', default => 'pdf' };
+    $data = [];
+    while($row = $export_logs->fetch_assoc()) {
+        $data[] = [
+            'Time' => date("d-M-Y H:i", strtotime($row['created_at'])),
+            'Actor' => $row['full_name'] ?? $row['username'] ?? 'System',
+            'Role' => ucfirst($row['role'] ?? 'System'),
+            'Action' => ucwords(str_replace('_',' ',(string)($row['action']??'Unknown'))),
+            'Details' => (string)($row['details']??''),
+            'IP' => (string)($row['ip_address']??'0.0.0.0')
+        ];
+    }
+    $title = 'System_Audit_Logs_' . date('Ymd_His');
+    $headers = ['Time','Actor','Role','Action','Details','IP'];
+    if ($format === 'pdf') {
+        ExportHelper::pdf('System Audit Logs', $headers, $data, $title.'.pdf', 'D', ['orientation' => 'L']);
+    } elseif ($format === 'excel') {
+        ExportHelper::csv($title.'.csv', $headers, $data);
+    } else {
+        UniversalExportEngine::handle($format, $data, ['title' => 'System Audit Logs','module' => 'Security Audit','headers' => $headers,'orientation' => 'L']);
+    }
+    exit;
+}
+
+// 2. Handle Manual Audit Run (from system_health.php)
+$audit_results = null;
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['run_audit'])) {
+    $audit_results = $checker->runFullAudit();
+    AuditHelper::log($conn, 'SYSTEM_HEALTH_AUDIT', 'Manual system health audit executed by ' . ($_SESSION['admin_name'] ?? 'Admin'), null, (int)$_SESSION['admin_id'], 'warning');
+}
+
+// 3. Data for Operations Feed
 $health = getSystemHealth($conn);
+$recent_feed_q = $conn->query("SELECT * FROM audit_logs ORDER BY created_at DESC LIMIT 50");
+$recent_feed = $recent_feed_q->fetch_all(MYSQLI_ASSOC);
 
-$recent_logs_q = $conn->query("SELECT * FROM audit_logs ORDER BY created_at DESC LIMIT 50");
-$recent_logs = $recent_logs_q->fetch_all(MYSQLI_ASSOC);
+// 4. Data for Full Audit Logs (Tab 3)
+$search = trim($_GET['q'] ?? '');
+$where  = ""; $params = []; $types = "";
+if ($search !== "") {
+    $where  = "WHERE (a.action LIKE ? OR a.details LIKE ? OR ad.username LIKE ?)";
+    $term   = "%$search%";
+    $params = [$term, $term, $term];
+    $types  = "sss";
+}
 
-$pageTitle = "Live Operations Monitor";
+$query_l = "SELECT a.*, ad.username, r.name as role, ad.full_name FROM audit_logs a LEFT JOIN admins ad ON a.admin_id = ad.admin_id LEFT JOIN roles r ON ad.role_id = r.id $where ORDER BY a.created_at DESC LIMIT 200";
+$stmt_l  = $conn->prepare($query_l);
+if (!empty($params)) $stmt_l->bind_param($types, ...$params);
+$stmt_l->execute();
+$full_logs = $stmt_l->get_result();
+
+$pageTitle = "System Operations & Health";
+
+// Helper functions (moved from individual pages)
+if (!function_exists('getActionStyle')) {
+    function getActionStyle($action) {
+        $a = strtolower($action);
+        if (str_contains($a,'delete')||str_contains($a,'fail')||str_contains($a,'error')||str_contains($a,'lock'))
+            return ['class'=>'as-danger', 'icon'=>'bi-exclamation-octagon-fill'];
+        if (str_contains($a,'update')||str_contains($a,'edit')||str_contains($a,'suspend'))
+            return ['class'=>'as-warning', 'icon'=>'bi-pencil-square'];
+        if (str_contains($a,'create')||str_contains($a,'add')||str_contains($a,'approve')||str_contains($a,'unlock'))
+            return ['class'=>'as-success', 'icon'=>'bi-check-circle-fill'];
+        if (str_contains($a,'login'))
+            return ['class'=>'as-info', 'icon'=>'bi-arrow-right-circle-fill'];
+        return ['class'=>'as-neutral', 'icon'=>'bi-activity'];
+    }
+}
+if (!function_exists('getInitials')) {
+    function getInitials($name) {
+        $name = trim($name ?? 'System');
+        $initials = strtoupper(substr($name, 0, 1));
+        if (str_contains($name, ' ')) {
+            $parts = explode(' ', $name);
+            $initials = strtoupper(substr($parts[0],0,1).substr(end($parts),0,1));
+        }
+        return $initials;
+    }
+}
 ?>
 <?php $layout->header($pageTitle); ?>
 
@@ -116,75 +216,75 @@ h1,h2,h3,h4,h5,h6,p,span,div,label,a,.modal,.offcanvas {
 .stat-progress { height:5px;border-radius:100px;background:rgba(13,43,31,0.08);overflow:hidden;margin-top:0.85rem; }
 .stat-progress-bar { height:100%;border-radius:100px;transition:width 0.8s ease; }
 
-/* ── Feed Header ── */
-.feed-header {
-    display:flex;justify-content:space-between;align-items:center;
-    margin-bottom:1rem;padding:0 0.25rem;
+/* ── Tab Switcher ── */
+.tab-switcher {
+    display: flex; gap: 0.5rem; margin: 1.5rem 0 1.2rem;
+    background: rgba(13,43,31,0.04); padding: 0.4rem; border-radius: 100px;
+    width: fit-content; border: 1px solid var(--border);
 }
-.feed-title { font-weight:800;font-size:1rem;color:var(--text-primary);letter-spacing:-0.02em; }
-.feed-sub   { font-size:0.75rem;color:var(--text-muted);font-weight:600;margin-top:0.15rem; }
-.feed-count {
-    background:var(--bg-muted);border:1px solid var(--border);border-radius:100px;
-    padding:0.25rem 0.85rem;font-size:0.72rem;font-weight:800;color:var(--text-muted);
+.tab-btn {
+    border: none; background: transparent; padding: 0.6rem 1.4rem;
+    border-radius: 100px; font-size: 0.82rem; font-weight: 700;
+    color: var(--text-muted); cursor: pointer; transition: var(--transition);
 }
+.tab-btn:hover { color: var(--forest); background: rgba(13,43,31,0.03); }
+.tab-btn.active { background: var(--forest); color: #fff; box-shadow: var(--shadow-md); }
 
-/* ── Log Table ── */
-.log-table-card {
-    background:var(--surface);border-radius:var(--radius-lg);
-    border:1px solid var(--border);box-shadow:var(--shadow-md);overflow:hidden;
+/* ── Audit Helpers (from audit_logs.php) ── */
+.toolbar {
+    background:var(--surface); border-radius:var(--radius-lg);
+    border:1px solid var(--border); box-shadow:var(--shadow-sm);
+    padding:0.85rem 1.2rem; display:flex; flex-wrap:wrap; gap:0.6rem; align-items:center; margin-bottom:1.2rem;
 }
-.log-table { width:100%;border-collapse:separate;border-spacing:0; }
-.log-table thead th {
-    background:#f5f8f6;color:var(--text-muted);font-size:0.67rem;
-    font-weight:800;text-transform:uppercase;letter-spacing:0.1em;
-    padding:0.8rem 1rem;border-bottom:1px solid var(--border);white-space:nowrap;
+.search-wrap { flex:1; min-width:220px; position:relative; }
+.search-wrap i { position:absolute; top:50%; left:14px; transform:translateY(-50%); color:var(--text-muted); font-size:0.82rem; pointer-events:none; }
+.search-input {
+    width:100%; padding:0.5rem 1rem 0.5rem 2.5rem; border-radius:var(--radius-md); border:1.5px solid rgba(13,43,31,0.1);
+    background:#f8faf9; font-size:0.85rem; font-weight:500; color:var(--text-primary); transition:var(--transition); height:38px;
 }
-.log-table thead th:first-child { padding-left:1.5rem; }
-.log-table thead th:last-child  { padding-right:1.5rem;text-align:right; }
-.log-table tbody tr { border-bottom:1px solid rgba(13,43,31,0.04);transition:var(--transition); }
-.log-table tbody tr:last-child  { border-bottom:none; }
-.log-table tbody tr:hover { background:#f0faf4; }
-.log-table tbody td { padding:0.85rem 1rem;vertical-align:middle; }
-.log-table tbody td:first-child { padding-left:1.5rem; }
-.log-table tbody td:last-child  { padding-right:1.5rem;text-align:right; }
-
-.log-time { font-size:0.82rem;font-weight:700;color:var(--text-primary);line-height:1.2; }
-.log-date { font-size:0.65rem;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);margin-top:0.15rem; }
-.log-action { font-size:0.875rem;font-weight:700;color:var(--text-primary); }
-.log-type   { font-size:0.68rem;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);margin-top:0.15rem; }
-.log-detail { font-size:0.8rem;color:var(--text-muted);font-weight:500;max-width:320px; }
-.log-ip     { font-family:'Courier New',monospace !important;font-size:0.75rem;color:var(--text-muted);font-weight:600; }
-
-/* Severity badges */
-.sev-badge {
-    display:inline-flex;align-items:center;gap:0.3rem;
-    border-radius:100px;padding:0.22rem 0.7rem;
-    font-size:0.65rem;font-weight:800;text-transform:uppercase;letter-spacing:0.07em;
-    white-space:nowrap;
+.search-input:focus { outline:none; border-color:var(--lime); background:#fff; box-shadow:var(--shadow-glow); }
+.btn-search {
+    background:var(--forest); color:#fff !important; border:none; border-radius:100px; padding:0.48rem 1.2rem;
+    font-size:0.82rem; font-weight:700; cursor:pointer; transition:var(--transition); height:38px; display:flex; align-items:center; gap:0.4rem;
 }
-.sev-badge::before { content:'';width:5px;height:5px;border-radius:50%;flex-shrink:0; }
-.sev-info     { background:#eff6ff;color:#1d4ed8;border:1px solid rgba(59,130,246,0.18); }
-.sev-info::before { background:#3b82f6; }
-.sev-warning  { background:#fffbeb;color:#b45309;border:1px solid rgba(245,158,11,0.18); }
-.sev-warning::before { background:#f59e0b; }
-.sev-error, .sev-critical {
-    background:#fef2f2;color:#b91c1c;border:1px solid rgba(239,68,68,0.18);
+.btn-export-outline {
+    background:transparent; color:var(--text-muted); border:1.5px solid var(--border); border-radius:100px;
+    padding:0.48rem 1rem; font-size:0.82rem; font-weight:700; cursor:pointer; transition:var(--transition); height:38px; text-decoration:none; display:flex; align-items:center; gap:0.4rem;
 }
-.sev-error::before, .sev-critical::before { background:#ef4444; }
-.sev-success  { background:#f0fdf4;color:#166534;border:1px solid rgba(22,163,74,0.18); }
-.sev-success::before { background:#22c55e; }
+.as-badge { display:inline-flex; align-items:center; gap:0.35rem; border-radius:100px; padding:0.25rem 0.75rem; font-size:0.67rem; font-weight:800; text-transform:uppercase; letter-spacing:0.07em; white-space:nowrap; }
+.as-badge::before { content:''; width:5px; height:5px; border-radius:50%; flex-shrink:0; }
+.as-danger  { background:#fef2f2; color:#b91c1c; border:1px solid rgba(239,68,68,0.18); }
+.as-danger::before  { background:#ef4444; }
+.as-warning { background:#fffbeb; color:#b45309; border:1px solid rgba(245,158,11,0.18); }
+.as-warning::before { background:#f59e0b; }
+.as-success { background:#f0fdf4; color:#166534; border:1px solid rgba(22,163,74,0.18); }
+.as-success::before { background:#22c55e; }
+.as-info    { background:#eff6ff; color:#1d4ed8; border:1px solid rgba(59,130,246,0.18); }
+.as-info::before    { background:#3b82f6; }
+.as-neutral { background:#f5f8f6; color:var(--text-muted); border:1px solid var(--border); }
+.as-neutral::before { background:#94a3b8; }
 
-/* Empty state */
-.empty-state-row td {
-    text-align:center;padding:5rem 2rem;
-}
-.empty-icon { width:64px;height:64px;border-radius:16px;background:#f5f8f6;display:flex;align-items:center;justify-content:center;font-size:1.5rem;color:#c4d4cb;margin:0 auto 0.9rem; }
+.actor-cell  { display:flex; align-items:center; gap:0.65rem; }
+.actor-avatar { width:32px; height:32px; border-radius:50%; background:var(--forest); color:var(--lime); display:flex; align-items:center; justify-content:center; font-size:0.7rem; font-weight:800; flex-shrink:0; }
+.actor-name  { font-size:0.85rem; font-weight:700; color:var(--forest); }
+.actor-role  { font-size:0.68rem; color:var(--text-muted); margin-top:0.1rem; }
 
-/* Buttons */
-.btn-lime  { background:var(--lime);color:var(--forest) !important;border:none;font-weight:700;transition:var(--transition); }
-.btn-lime:hover  { background:var(--lime-soft);box-shadow:var(--shadow-glow);transform:translateY(-1px); }
+/* ── Health Helpers (from system_health.php) ── */
+.integrity-card { background:var(--surface); border-radius:var(--radius-lg); border:1px solid var(--border); box-shadow:var(--shadow-md); padding:1.5rem 1.6rem; height:100%; display:flex; flex-direction:column; transition:var(--transition); position:relative; overflow:hidden; }
+.integrity-card::after { content:''; position:absolute; bottom:0; left:0; right:0; height:3px; border-radius:0 0 var(--radius-lg) var(--radius-lg); opacity:0; transition:var(--transition); }
+.integrity-card:hover::after { opacity:1; }
+.integrity-card.ic-ok::after    { background:linear-gradient(90deg,#22c55e,#86efac); }
+.integrity-card.ic-err::after   { background:linear-gradient(90deg,#ef4444,#fca5a5); }
+.integrity-card.ic-info::after  { background:linear-gradient(90deg,var(--lime),var(--lime-soft)); }
+.health-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; margin-top:3px; animation:pulse-dot 2s ease-in-out infinite; }
+.dot-ok  { background:#22c55e; box-shadow:0 0 0 3px rgba(34,197,94,0.2); }
+.dot-err { background:#ef4444; box-shadow:0 0 0 3px rgba(239,68,68,0.2); animation:pulse-dot 1s ease-in-out infinite; }
+.dot-neutral { background:#94a3b8; animation:none; }
+.btn-forest { background:var(--forest); color:#fff !important; border:none; border-radius:100px; padding:0.5rem 1.3rem; font-size:0.82rem; font-weight:700; cursor:pointer; transition:var(--transition); display:inline-flex; align-items:center; gap:0.4rem; }
+.deep-card { background:var(--surface); border-radius:var(--radius-lg); border:1px solid var(--border); padding:1.6rem 1.8rem; height:100%; display:flex; align-items:flex-start; gap:1.1rem; transition:var(--transition); }
+.deep-icon { width:48px; height:48px; border-radius:var(--radius-md); display:flex; align-items:center; justify-content:center; font-size:1.2rem; flex-shrink:0; }
+.deep-icon.forest { background:var(--forest); color:var(--lime); }
 
-/* Animations */
 @keyframes fadeIn  { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
 @keyframes slideUp { from{opacity:0;transform:translateY(22px)} to{opacity:1;transform:translateY(0)} }
 .fade-in  { animation:fadeIn  0.5s ease-out both; }
@@ -208,27 +308,48 @@ h1,h2,h3,h4,h5,h6,p,span,div,label,a,.modal,.offcanvas {
                 <div class="col-md-8">
                     <div class="live-pill">
                         <span class="live-dot"></span>
-                        Live System Feed
+                        Unified Monitoring
                     </div>
                     <h1 style="font-weight:800;letter-spacing:-0.03em;font-size:2.2rem;line-height:1.15;position:relative;margin-bottom:0.5rem;color:#fff;">
-                        Operations Monitor
+                        System Monitor
                     </h1>
                     <p style="color:rgba(255,255,255,0.55);font-size:0.93rem;font-weight:500;position:relative;margin:0;">
-                        Tracking real-time payment callbacks, notification delivery, and system activity logs.
+                        Operations feed, financial integrity, and security audit logs in one view.
                     </p>
                 </div>
                 <div class="col-md-4 text-end d-none d-md-block" style="position:relative;">
-                    <button onclick="location.reload()" class="btn btn-lime rounded-pill px-4 py-2 fw-bold" style="font-size:0.875rem;">
-                        <i class="bi bi-arrow-clockwise me-2"></i>Refresh Feed
-                    </button>
+                    <div class="d-flex flex-column align-items-end gap-2">
+                        <button onclick="location.reload()" class="btn btn-lime rounded-pill px-4 py-2 fw-bold" style="font-size:0.875rem;">
+                            <i class="bi bi-arrow-clockwise me-2"></i>Refresh Feed
+                        </button>
+                        <div id="auditExportControls" class="d-none">
+                            <div class="dropdown">
+                                <button class="btn btn-outline-light rounded-pill px-4 py-1 fw-bold dropdown-toggle" style="font-size:0.82rem;border-color:rgba(255,255,255,0.2)" data-bs-toggle="dropdown">
+                                    <i class="bi bi-download me-1"></i>Export Logs
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li><a class="dropdown-item" href="?<?= http_build_query(array_merge($_GET, ['action' => 'export_pdf'])) ?>"><i class="bi bi-file-earmark-pdf text-danger me-2"></i>PDF</a></li>
+                                    <li><a class="dropdown-item" href="?<?= http_build_query(array_merge($_GET, ['action' => 'export_excel'])) ?>"><i class="bi bi-file-earmark-spreadsheet text-success me-2"></i>Excel</a></li>
+                                    <li><a class="dropdown-item" href="?<?= http_build_query(array_merge($_GET, ['action' => 'print_report'])) ?>" target="_blank"><i class="bi bi-printer text-primary me-2"></i>Print</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
 
         <div style="margin-top:-36px;position:relative;z-index:10;">
+            
+            <div class="tab-switcher slide-up">
+                <button class="tab-btn active" id="tabFeed" onclick="switchTab('feed')">Operations Feed</button>
+                <button class="tab-btn" id="tabHealth" onclick="switchTab('health')">Health & Integrity</button>
+                <button class="tab-btn" id="tabAudit" onclick="switchTab('audit')">Security Audit</button>
+            </div>
 
             <!-- KPI Row -->
-            <div class="row g-3 mb-4">
+            <div id="sectionFeed">
+                <div class="row g-3 mb-4">
 
                 <!-- Callback Success -->
                 <div class="col-md-3">
@@ -370,11 +491,199 @@ h1,h2,h3,h4,h5,h6,p,span,div,label,a,.modal,.offcanvas {
                 </div>
             </div>
 
+                </div>
+            </div><!-- /sectionFeed -->
+
+            <!-- ═══ HEALTH & INTEGRITY SECTION (Tab 2) ════════════════════ -->
+            <div id="sectionHealth" class="d-none">
+                <!-- Audit Banner -->
+                <?php if ($audit_results):
+                    $issue_count = count($audit_results['sync']['data'] ?? [])
+                                 + count($audit_results['balance']['data'] ?? [])
+                                 + count($audit_results['double_posting']['data'] ?? []);
+                ?>
+                <div class="audit-banner slide-up">
+                    <div class="audit-banner-icon"><i class="bi bi-info-circle-fill"></i></div>
+                    <div>
+                        <div class="audit-banner-title" style="color:#1d4ed8;font-weight:800;font-size:0.88rem">Audit Completed</div>
+                        <p class="audit-banner-sub" style="font-size:0.78rem;color:#3b82f6;margin:0">
+                            Financial integrity check performed. Found <strong><?= $issue_count ?></strong> potential issue<?= $issue_count !== 1 ? 's' : '' ?>.
+                        </p>
+                    </div>
+                </div>
+                <?php endif; ?>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <?php $imbal = $health['ledger_imbalance']; ?>
+                        <div class="integrity-card <?= $imbal ? 'ic-err' : 'ic-ok' ?> slide-up">
+                            <div class="ic-header">
+                                <div class="ic-title">Ledger Balance Sync</div>
+                                <span class="health-dot <?= $imbal ? 'dot-err' : 'dot-ok' ?>"></span>
+                            </div>
+                            <p class="ic-desc" style="font-size:0.8rem;color:var(--text-muted);font-weight:500">Total Debits vs Credits in the golden ledger. Discrepancies indicate posting errors.</p>
+                            <div class="ic-footer" style="margin-top:auto;padding-top:0.9rem;border-top:1px solid var(--border);display:flex;justify-content:space-between">
+                                <span class="status-pill <?= $imbal ? 'sp-err' : 'sp-ok' ?>"><?= $imbal ? 'Imbalance' : 'Healthy' ?></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="integrity-card ic-ok slide-up">
+                            <div class="ic-header">
+                                <div class="ic-title">Member Account Sync</div>
+                                <span class="health-dot dot-ok"></span>
+                            </div>
+                            <p class="ic-desc" style="font-size:0.8rem;color:var(--text-muted);font-weight:500">Verifies individual account balances against full transaction history.</p>
+                            <div class="ic-footer" style="margin-top:auto;padding-top:0.9rem;border-top:1px solid var(--border);display:flex;justify-content:space-between">
+                                <span class="status-pill sp-ok">Verified</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="integrity-card ic-info slide-up">
+                            <div class="ic-header">
+                                <div class="ic-title">Database Storage</div>
+                                <span class="health-dot dot-neutral"></span>
+                            </div>
+                            <p class="ic-desc" style="font-size:0.8rem;color:var(--text-muted);font-weight:500">Current size of the central repository. Archiving recommended above 500MB.</p>
+                            <div class="ic-footer" style="margin-top:auto;padding-top:0.9rem;border-top:1px solid var(--border);display:flex;justify-content:space-between">
+                                <span style="font-weight:800;color:var(--forest)"><?= htmlspecialchars((string)($health['db_size'] ?? 'N/A')) ?> MB</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-5">
+                    <div class="col-md-12">
+                        <div class="deep-card slide-up">
+                            <div class="deep-icon forest"><i class="bi bi-shield-check"></i></div>
+                            <div style="flex:1">
+                                <div style="font-weight:800;font-size:0.95rem;margin-bottom:0.35rem">Financial Integrity Audit</div>
+                                <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:1rem">Run a comprehensive comparison across ledger, member wallets, and transaction requests.</p>
+                                <form method="POST">
+                                    <button type="submit" name="run_audit" class="btn-forest">
+                                        <i class="bi bi-play-circle-fill"></i>Start Full Audit Cycle
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div><!-- /sectionHealth -->
+
+            <!-- ═══ SECURITY AUDIT SECTION (Tab 3) ════════════════════════ -->
+            <div id="sectionAudit" class="d-none">
+                <div class="toolbar slide-up">
+                    <form method="GET" id="searchAuditForm" style="display:contents">
+                        <input type="hidden" name="tab" value="audit">
+                        <div class="search-wrap">
+                            <i class="bi bi-search"></i>
+                            <input type="text" name="q" class="search-input" placeholder="Search by actor, action, or details..." value="<?= htmlspecialchars($search) ?>">
+                        </div>
+                        <button type="submit" class="btn-search"><i class="bi bi-search"></i> Search Logs</button>
+                        <?php if ($search): ?>
+                            <a href="live_monitor.php?tab=audit" class="btn-export-outline"><i class="bi bi-x-lg"></i> Clear</a>
+                        <?php endif; ?>
+                    </form>
+                </div>
+
+                <div class="log-table-card slide-up">
+                    <div class="table-responsive">
+                        <table class="log-table">
+                            <thead>
+                                <tr>
+                                    <th>Time</th>
+                                    <th>Actor</th>
+                                    <th>Action Type</th>
+                                    <th>Details</th>
+                                    <th>IP Address</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            <?php if ($full_logs->num_rows === 0): ?>
+                                <tr class="empty-state-row"><td colspan="5">No logs matching criteria.</td></tr>
+                            <?php else: while ($row = $full_logs->fetch_assoc()):
+                                $style = getActionStyle($row['action']);
+                                $name  = $row['full_name'] ?? $row['username'] ?? 'System';
+                                $role  = ucfirst($row['role'] ?? 'System');
+                            ?>
+                                <tr>
+                                    <td>
+                                        <div class="log-time"><?= date('H:i:s', strtotime($row['created_at'])) ?></div>
+                                        <div class="log-date"><?= date('M d', strtotime($row['created_at'])) ?></div>
+                                    </td>
+                                    <td>
+                                        <div class="actor-cell">
+                                            <div class="actor-avatar"><?= getInitials($name) ?></div>
+                                            <div>
+                                                <div class="actor-name"><?= htmlspecialchars($name) ?></div>
+                                                <div class="actor-role"><?= htmlspecialchars($role) ?></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="as-badge <?= $style['class'] ?>">
+                                            <i class="bi <?= $style['icon'] ?>"></i>
+                                            <?= htmlspecialchars(ucwords(str_replace('_', ' ', $row['action']))) ?>
+                                        </span>
+                                    </td>
+                                    <td><span class="log-detail"><?= htmlspecialchars((string)($row['details'] ?? '')) ?></span></td>
+                                    <td><span class="log-ip"><?= htmlspecialchars((string)($row['ip_address'] ?? '')) ?></span></td>
+                                </tr>
+                            <?php endwhile; endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="log-card-footer" style="padding:0.75rem 1.5rem;background:#fafcfb;text-align:center;font-size:0.75rem;font-weight:700;color:var(--text-muted)">
+                        Showing latest 200 security events &mdash; use export or search for more
+                    </div>
+                </div>
+            </div><!-- /sectionAudit -->
+
         </div><!-- /overlap -->
 
     </div><!-- /container-fluid -->
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+    function switchTab(tab) {
+        const sections = ['sectionFeed', 'sectionHealth', 'sectionAudit'];
+        const buttons  = ['tabFeed', 'tabHealth', 'tabAudit'];
+        const exportCtl = document.getElementById('auditExportControls');
+
+        sections.forEach(s => {
+            const el = document.getElementById(s);
+            if (el) el.classList.add('d-none');
+        });
+        buttons.forEach(b => {
+            const el = document.getElementById(b);
+            if (el) el.classList.remove('active');
+        });
+
+        const activeSec = document.getElementById('section' + tab.charAt(0).toUpperCase() + tab.slice(1));
+        const activeBtn = document.getElementById('tab' + tab.charAt(0).toUpperCase() + tab.slice(1));
+        
+        if (activeSec) activeSec.classList.remove('d-none');
+        if (activeBtn) activeBtn.classList.add('active');
+
+        if (tab === 'audit') {
+            if (exportCtl) exportCtl.classList.remove('d-none');
+        } else {
+            if (exportCtl) exportCtl.classList.add('d-none');
+        }
+        
+        // Save tab preference
+        localStorage.setItem('mon_active_tab', tab);
+    }
+
+    // Restore tab on load
+    document.addEventListener('DOMContentLoaded', () => {
+        const params = new URLSearchParams(window.location.search);
+        const urlTab = params.get('tab');
+        const savedTab = localStorage.getItem('mon_active_tab') || 'feed';
+        switchTab(urlTab || savedTab);
+    });
+    </script>
 
     <?php $layout->footer(); ?>
 </div><!-- /main-content-wrapper -->

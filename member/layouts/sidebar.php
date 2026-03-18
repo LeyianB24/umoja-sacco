@@ -586,10 +586,6 @@ main {
                             <span class="hd-nav-icon"><i class="bi bi-journal-text"></i></span>
                             <span class="hd-nav-text">Live Ledger View</span>
                         </a>
-                        <a href="<?= $base ?>/admin/pages/monitor.php" class="hd-nav-link <?= is_active('monitor.php') ?>">
-                            <span class="hd-nav-icon"><i class="bi bi-phone-vibrate-fill"></i></span>
-                            <span class="hd-nav-text">M-Pesa Logs</span>
-                        </a>
                         <a href="<?= $base ?>/admin/pages/trial_balance.php" class="hd-nav-link <?= is_active('trial_balance.php') ?>">
                             <span class="hd-nav-icon"><i class="bi bi-scale"></i></span>
                             <span class="hd-nav-text">Trial Balance</span>
@@ -645,16 +641,16 @@ main {
                     </a>
                 <?php endif; ?>
 
-                <?php if (\USMS\Middleware\AuthMiddleware::hasModulePermission('settings') || \USMS\Middleware\AuthMiddleware::hasModulePermission('support')): ?>
+                <?php if (\USMS\Middleware\AuthMiddleware::hasModulePermission('settings') || \USMS\Middleware\AuthMiddleware::hasModulePermission('finance') || \USMS\Middleware\AuthMiddleware::hasModulePermission('support')): ?>
                     <span class="hd-section-label">System Maintenance</span>
                     <?php if (\USMS\Middleware\AuthMiddleware::hasModulePermission('settings')): ?>
                         <a href="<?= $base ?>/admin/pages/live_monitor.php" class="hd-nav-link <?= is_active('live_monitor.php') ?>">
                             <span class="hd-nav-icon"><i class="bi bi-display-fill"></i></span>
                             <span class="hd-nav-text">Live Monitor</span>
                         </a>
-                        <a href="<?= $base ?>/admin/pages/transaction_monitor.php" class="hd-nav-link <?= is_active('transaction_monitor.php') ?>">
-                            <span class="hd-nav-icon"><i class="bi bi-exclamation-triangle-fill"></i></span>
-                            <span class="hd-nav-text">Transaction Recovery</span>
+                        <a href="<?= $base ?>/admin/pages/monitor.php" class="hd-nav-link <?= is_active('monitor.php') ?>">
+                            <span class="hd-nav-icon"><i class="bi bi-phone-vibrate-fill"></i></span>
+                            <span class="hd-nav-text">Transaction Monitor</span>
                         </a>
                         <a href="<?= $base ?>/admin/pages/system_health.php" class="hd-nav-link <?= is_active('system_health.php') ?>">
                             <span class="hd-nav-icon"><i class="bi bi-activity"></i></span>
