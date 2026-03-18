@@ -599,7 +599,7 @@ select, input, textarea, button, table {
                             <div class="empty-state">
                                 <i class="bi bi-calculator"></i>
                                 <h5>No Payroll Data</h5>
-                                <p>Click <strong>(Re)Calculate</strong> to generate payroll entries.</p>
+                                <p><?= $view_mode === 'employee' ? 'This employee has no payroll history recorded.' : 'Click <strong>(Re)Calculate</strong> to generate payroll entries.' ?></p>
                             </div>
                         </td></tr>
                     <?php else: foreach ($payroll_items as $item):
@@ -609,7 +609,7 @@ select, input, textarea, button, table {
                         <tr>
                             <td style="padding-left:20px">
                                 <?php if ($view_mode === 'employee'): ?>
-                                    <div class="emp-name"><?= date('F Y', strtotime($item['run_month']??'now')) ?></div>
+                                    <div class="emp-name"><a href="payroll.php?run_id=<?= $item['payroll_run_id'] ?>" style="text-decoration:none;color:inherit;"><?= date('F Y', strtotime($item['run_month']??'now')) ?></a></div>
                                     <div class="emp-no"><span class="run-status-pill <?= $item['run_status']==='paid'?'rs-paid':($item['run_status']==='approved'?'rs-approved':'rs-draft') ?>" style="font-size:0.6rem;padding:2px 8px;"><?= strtoupper($item['run_status']??'draft') ?></span></div>
                                 <?php else: ?>
                                     <div class="emp-name"><?= htmlspecialchars($item['full_name']) ?></div>
