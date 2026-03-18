@@ -399,6 +399,7 @@ select, input, textarea, button, table {
                             <th>Reference</th>
                             <th>Checkout ID</th>
                             <th>Status</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -431,6 +432,17 @@ select, input, textarea, button, table {
                                 };
                                 ?>
                                 <span class="status-pill <?= $sp[0] ?>"><?= $sp[1] ?></span>
+                            </td>
+                            <td>
+                                <?php if ($r['status'] === 'pending'): ?>
+                                    <button class="btn btn-sm" 
+                                            style="background:var(--lime-glow);color:var(--forest);font-weight:700;border-radius:8px;padding:4px 10px;font-size:0.75rem;border:1px solid rgba(168,224,99,0.3)"
+                                            onclick="activateRequest('<?= $r['checkout_request_id'] ?>', this)">
+                                        <i class="bi bi-lightning-fill me-1"></i> Activate
+                                    </button>
+                                <?php else: ?>
+                                    <span class="text-muted" style="font-size:0.7rem;font-weight:600">No Action</span>
+                                <?php endif; ?>
                             </td>
                         </tr>
                     <?php endforeach; endif; ?>
@@ -489,6 +501,38 @@ function showPayload(raw) {
         el.textContent = raw;
     }
     new bootstrap.Modal(document.getElementById('payloadModal')).show();
+}
+
+async function activateRequest(checkoutID, btn) {
+    if (!confirm('Simulate receiving M-Pesa payment for this request?')) return;
+    
+    const originalContent = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Processing...';
+    
+    try {
+        const response = await fetch('../api/simulate_mpesa_callback.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ checkout_request_id: checkoutID })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Success feel: Confetti or just a nice alert
+            alert('Success! ' + result.message);
+            location.reload();
+        } else {
+            alert('Error: ' + result.message);
+            btn.disabled = false;
+            btn.innerHTML = originalContent;
+        }
+    } catch (err) {
+        alert('Simulation failed: ' + err.message);
+        btn.disabled = false;
+        btn.innerHTML = originalContent;
+    }
 }
 </script>
 </body>

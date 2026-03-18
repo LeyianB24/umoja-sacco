@@ -131,12 +131,12 @@ function get_notification_content($type, $name, $data) {
             'sms_message' => "Dear $name, your withdrawal of KES $amount has been received and is being processed. Ref: $ref"
         ],
         'payment_request' => [
-            'email_subject' => 'Payment Action Required',
+            'email_subject' => 'Payment Received [Processing]',
             'email_body' => "<p>Dear <strong>$name</strong>,</p>
-                            <p>A payment request of <strong>KES $amount</strong> has been initiated via M-Pesa.</p>
-                            <p>Please check your phone for an STK push and enter your M-Pesa PIN to authorize.</p>
-                            <p>Reference: <strong>$ref</strong></p>",
-            'sms_message' => "Dear $name, please check your phone for an M-Pesa STK push of KES $amount. Ref: $ref"
+                            <p>We have received your payment request of <strong>KES $amount</strong> via M-Pesa. To finalize, please authorize the transaction on your phone (STK Push).</p>
+                            <p>Reference: <strong>$ref</strong></p>
+                            <p>Your account will be updated automatically once confirmed.</p>",
+            'sms_message' => "Dear $name, we have received your payment request of KES $amount. Please authorize via STK Push. Ref: $ref"
         ],
         'loan_applied' => [
             'email_subject' => 'Loan Application Received',
