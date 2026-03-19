@@ -47,7 +47,7 @@ if (!defined('TAGLINE'))         define('TAGLINE',         SITE_TAGLINE);
 // 4.1 BRANDING & ASSETS
 if (!defined('SITE_LOGO'))        define('SITE_LOGO',        ASSET_BASE . '/images/people_logo.png');
 if (!defined('SITE_FAVICON'))     define('SITE_FAVICON',     ASSET_BASE . '/images/people_logo.png');
-if (!defined('BACKGROUND_IMAGE')) define('BACKGROUND_IMAGE', ASSET_BASE . '/images/sacco4.jpg');
+if (!defined('BACKGROUND_IMAGE')) define('BACKGROUND_IMAGE', ASSET_BASE . '/images/sacco12.jpg');
 
 // 4.2 SUPPORT ROUTING
 if (!defined('SUPPORT_ROUTING_MAP')) {
