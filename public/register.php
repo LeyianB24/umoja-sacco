@@ -55,24 +55,66 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $hashed = password_hash($password, PASSWORD_DEFAULT);
         $reg_no = generate_member_no($conn);
         $status = 'inactive';
-        $insertSql = "INSERT INTO members (member_reg_no, full_name, national_id, phone, email, password, join_date, status, reg_fee_paid, gender, dob, occupation, address, next_of_kin_name, next_of_kin_phone, kyc_status) VALUES (?, ?, ?, ?, ?, ?, NOW(), ?, 0, ?, ?, ?, ?, ?, ?, 'not_submitted')";
-        if ($ins = $conn->prepare($insertSql)) {
-            $ins->bind_param("sssssssssssss", $reg_no, $full_name, $national_id, $phone, $email, $hashed, $status, $gender, $dob, $occupation, $address, $nok_name, $nok_phone);
-            if ($ins->execute()) {
-                $newMemberId = $ins->insert_id;
-                session_regenerate_id(true);
-                $_SESSION['member_id'] = $newMemberId;
-                $_SESSION['member_name'] = $full_name;
-                $_SESSION['reg_no'] = $reg_no;
-                $_SESSION['email'] = $email;
-                $_SESSION['role'] = 'member';
-                $_SESSION['status'] = $status;
-                $_SESSION['gender'] = $gender;
-                require_once __DIR__ . '/../inc/notification_helpers.php';
-                send_notification($conn, (int)$newMemberId, 'registration_success', ['member_no' => $reg_no]);
-                header("Location: ../member/pages/pay_registration.php"); exit;
-            } else { $errors[] = "Registration failed: " . htmlspecialchars($ins->error); }
-            $ins->close();
+        $kyc_status = 'pending';
+        
+        $conn->begin_transaction();
+        try {
+            $insertSql = "INSERT INTO members (member_reg_no, full_name, national_id, phone, email, password, join_date, status, reg_fee_paid, gender, dob, occupation, address, next_of_kin_name, next_of_kin_phone, kyc_status) VALUES (?, ?, ?, ?, ?, ?, NOW(), ?, 0, ?, ?, ?, ?, ?, ?, ?)";
+            if ($ins = $conn->prepare($insertSql)) {
+                $ins->bind_param("ssssssssssssss", $reg_no, $full_name, $national_id, $phone, $email, $hashed, $status, $gender, $dob, $occupation, $address, $nok_name, $nok_phone, $kyc_status);
+                if ($ins->execute()) {
+                    $newMemberId = $ins->insert_id;
+                    
+                    // Handle KYC Uploads
+                    $upload_dir = __DIR__ . '/../uploads/kyc/';
+                    if (!is_dir($upload_dir)) mkdir($upload_dir, 0777, true);
+                    
+                    $files_to_process = [
+                        'passport_photo'    => 'passport_photo',
+                        'national_id_front' => 'national_id_front',
+                        'national_id_back'  => 'national_id_back'
+                    ];
+
+                    foreach ($files_to_process as $input_name => $doc_type) {
+                        if (!empty($_FILES[$input_name]['name']) && $_FILES[$input_name]['error'] === UPLOAD_ERR_OK) {
+                            $ext      = pathinfo($_FILES[$input_name]['name'], PATHINFO_EXTENSION);
+                            $filename = "{$doc_type}_{$newMemberId}_" . time() . ".$ext";
+                            $target   = $upload_dir . $filename;
+                            if (move_uploaded_file($_FILES[$input_name]['tmp_name'], $target)) {
+                                $doc_stmt = $conn->prepare("INSERT INTO member_documents (member_id, document_type, file_path, status) VALUES (?, ?, ?, 'pending')");
+                                $doc_stmt->bind_param("iss", $newMemberId, $doc_type, $filename);
+                                $doc_stmt->execute();
+                                $doc_stmt->close();
+                            }
+                        } else {
+                            throw new Exception("Please upload all required KYC documents.");
+                        }
+                    }
+
+                    $conn->commit();
+                    
+                    session_regenerate_id(true);
+                    $_SESSION['member_id'] = $newMemberId;
+                    $_SESSION['member_name'] = $full_name;
+                    $_SESSION['reg_no'] = $reg_no;
+                    $_SESSION['email'] = $email;
+                    $_SESSION['role'] = 'member';
+                    $_SESSION['status'] = $status;
+                    $_SESSION['gender'] = $gender;
+                    
+                    require_once __DIR__ . '/../inc/notification_helpers.php';
+                    send_notification($conn, (int)$newMemberId, 'registration_success', ['member_no' => $reg_no]);
+                    
+                    $ins->close();
+                    header("Location: ../member/pages/pay_registration.php"); exit;
+                } else { 
+                    $ins->close();
+                    throw new Exception("Registration failed: " . $ins->error); 
+                }
+            }
+        } catch (Exception $e) {
+            $conn->rollback();
+            $errors[] = $e->getMessage();
         }
     }
 }
@@ -510,7 +552,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
         <?php endif; ?>
 
-        <form method="POST" action="" id="regForm">
+        <form method="POST" action="" id="regForm" enctype="multipart/form-data">
             <?php csrf_field(); ?>
 
             <!-- Personal Info -->
@@ -572,6 +614,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <label class="rr-label">Phone Number <span style="color:#dc2626">*</span></label>
                     <input type="text" name="nok_phone" class="rr-input" required
                         value="<?= htmlspecialchars($nok_phone) ?>" placeholder="07xxxxxxxx">
+                </div>
+            </div>
+
+            <!-- KYC Documents -->
+            <div class="rr-section">
+                <div class="rr-section-icon rr-section-icon-b" style="background: #FFFBEB; color: #92400E;"><i class="bi bi-file-earmark-medical-fill"></i></div>
+                <span class="rr-section-name">KYC Documents</span>
+            </div>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="rr-label">Passport Photo <span style="color:#dc2626">*</span></label>
+                    <input type="file" name="passport_photo" class="rr-input" required accept="image/*">
+                </div>
+                <div class="col-md-4">
+                    <label class="rr-label">National ID (Front) <span style="color:#dc2626">*</span></label>
+                    <input type="file" name="national_id_front" class="rr-input" required accept="image/*">
+                </div>
+                <div class="col-md-4">
+                    <label class="rr-label">National ID (Back) <span style="color:#dc2626">*</span></label>
+                    <input type="file" name="national_id_back" class="rr-input" required accept="image/*">
                 </div>
             </div>
 
