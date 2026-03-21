@@ -2,13 +2,8 @@
 require_once 'c:/xampp/htdocs/usms/config/app.php';
 
 // 1. Find or create a test member/loan
-$res = $conn->query("SELECT loan_id, member_id FROM loans WHERE status = 'disbursed' LIMIT 1");
-if ($res->num_rows === 0) {
-    die("No disbursed loans found for testing. Please disburse a loan first.\n");
-}
-$loan = $res->fetch_assoc();
-$loan_id = $loan['loan_id'];
-
+$loan_id = 26;
+$member_id = 2;
 echo "Testing with Loan ID: $loan_id\n";
 
 // 2. Test Daily Fines
