@@ -52,9 +52,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             elseif ($action === 'send_bulk_reminders') {
                 require_once __DIR__ . '/../../core/Services/CronService.php';
+                require_once __DIR__ . '/../../core/Services/EmailQueueService.php';
+                
                 $cron = new \USMS\Services\CronService();
                 $count = $cron->sendBulkLateReminders();
-                flash_set("Successfully queued $count late payment reminders for all overdue loans.", "success");
+                
+                if ($count > 0) {
+                    // Trigger immediate processing for this batch
+                    set_time_limit(300); // 5 minutes max
+                    $emailService = new \USMS\Services\EmailQueueService();
+                    $res = $emailService->processPendingEmails($count);
+                    flash_set("Successfully sent {$res['sent']} late payment reminders immediately.", "success");
+                } else {
+                    flash_set("No overdue loans found to remind.", "info");
+                }
             }
             elseif ($action === 'disburse' && $can_disburse) {
                 $fallback_ref = "DSB-" . date('Ymd') . "-" . rand(1000, 9999);
