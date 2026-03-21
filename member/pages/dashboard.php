@@ -12,9 +12,9 @@ $layout = LayoutManager::create('member');
 require_member();
 $layout = LayoutManager::create('member');
 
-$member_id = (int) $_SESSION['member_id'];
+$member_id = (int)$_SESSION['member_id'];
 
-/* ── Member basics ─────────────────────────────── */
+// Member basics
 $stmt = $conn->prepare("SELECT full_name, member_reg_no, created_at FROM members WHERE member_id=?");
 $stmt->bind_param("i", $member_id); $stmt->execute();
 $md = $stmt->get_result()->fetch_assoc(); $stmt->close();
@@ -24,92 +24,49 @@ $join_date   = date('M Y', strtotime($md['created_at'] ?? 'now'));
 $_SESSION['reg_no'] = $reg_no;
 $first_name  = htmlspecialchars(explode(' ', $member_name)[0]);
 
-/* ── Engine balances ───────────────────────────── */
+// Balances
 require_once __DIR__ . '/../../inc/FinancialEngine.php';
-$engine       = new FinancialEngine($conn);
-$balances     = $engine->getBalances($member_id);
-$cur_bal      = (float)$balances['wallet'];
-$total_savings= (float)$balances['savings'];
-$total_shares = (float)$balances['shares'];
-$active_loans = (float)$balances['loans'];
-$net_worth    = $total_savings + $total_shares - $active_loans;
-$loan_limit   = 500000;
-$loan_pct     = $loan_limit > 0 ? min(100, ($active_loans / $loan_limit) * 100) : 0;
+$engine        = new FinancialEngine($conn);
+$balances      = $engine->getBalances($member_id);
+$cur_bal       = (float)$balances['wallet'];
+$total_savings = (float)$balances['savings'];
+$total_shares  = (float)$balances['shares'];
+$active_loans  = (float)$balances['loans'];
+$net_worth     = $total_savings + $total_shares - $active_loans;
+$loan_limit    = 500000;
+$loan_pct      = $loan_limit > 0 ? min(100, ($active_loans / $loan_limit) * 100) : 0;
 
-/* ── 12-month arrays ───────────────────────────── */
-$mo_labels = $sav_arr = $ctb_arr = $rep_arr = $wdr_arr = [];
+// 12-month arrays
+$mo_labels = $sav_arr = $ctb_arr = $rep_arr = [];
 for ($i = 11; $i >= 0; $i--) {
     $ms = date('Y-m-01', strtotime("-$i months"));
     $me = date('Y-m-t',  strtotime("-$i months"));
     $mo_labels[] = date('M', strtotime($ms));
-
     $stmt = $conn->prepare("SELECT COALESCE(SUM(le.credit-le.debit),0) FROM ledger_entries le JOIN ledger_accounts la ON le.account_id=la.account_id WHERE la.member_id=? AND la.category='savings' AND le.created_at BETWEEN ? AND ?");
     $stmt->bind_param("iss", $member_id, $ms, $me); $stmt->execute();
     $sav_arr[] = (float)$stmt->get_result()->fetch_row()[0]; $stmt->close();
-
-    foreach (['contribution'=>&$ctb_arr, 'loan_repayment'=>&$rep_arr, 'withdrawal'=>&$wdr_arr] as $type => &$arr) {
+    foreach (['contribution'=>&$ctb_arr, 'loan_repayment'=>&$rep_arr] as $type => &$arr) {
         $stmt = $conn->prepare("SELECT COALESCE(SUM(amount),0) FROM transactions WHERE member_id=? AND transaction_type=? AND created_at BETWEEN ? AND ?");
         $stmt->bind_param("isss", $member_id, $type, $ms, $me); $stmt->execute();
         $arr[] = (float)$stmt->get_result()->fetch_row()[0]; $stmt->close();
     }
 }
 
-/* ── 6-month income vs outflow ─────────────────── */
+// 6-month income vs outflow
 $inc_labels = $inc_arr = $exp_arr = [];
 for ($i = 5; $i >= 0; $i--) {
     $ms = date('Y-m-01', strtotime("-$i months"));
     $me = date('Y-m-t',  strtotime("-$i months"));
     $inc_labels[] = date('M', strtotime($ms));
-
     $stmt = $conn->prepare("SELECT COALESCE(SUM(amount),0) FROM transactions WHERE member_id=? AND transaction_type IN('deposit','contribution') AND created_at BETWEEN ? AND ?");
     $stmt->bind_param("iss", $member_id, $ms, $me); $stmt->execute();
     $inc_arr[] = (float)$stmt->get_result()->fetch_row()[0]; $stmt->close();
-
     $stmt = $conn->prepare("SELECT COALESCE(SUM(amount),0) FROM transactions WHERE member_id=? AND transaction_type IN('withdrawal','loan_repayment') AND created_at BETWEEN ? AND ?");
     $stmt->bind_param("iss", $member_id, $ms, $me); $stmt->execute();
     $exp_arr[] = (float)$stmt->get_result()->fetch_row()[0]; $stmt->close();
 }
 
-/* ── Daily last 30 days ────────────────────────── */
-$day_labels = $day_in = $day_out = [];
-for ($i = 29; $i >= 0; $i--) {
-    $day = date('Y-m-d', strtotime("-$i days"));
-    $day_labels[] = date('d/m', strtotime($day));
-
-    $stmt = $conn->prepare("SELECT COALESCE(SUM(amount),0) FROM transactions WHERE member_id=? AND transaction_type IN('deposit','contribution') AND DATE(created_at)=?");
-    $stmt->bind_param("is", $member_id, $day); $stmt->execute();
-    $day_in[] = (float)$stmt->get_result()->fetch_row()[0]; $stmt->close();
-
-    $stmt = $conn->prepare("SELECT COALESCE(SUM(amount),0) FROM transactions WHERE member_id=? AND transaction_type IN('withdrawal','loan_repayment') AND DATE(created_at)=?");
-    $stmt->bind_param("is", $member_id, $day); $stmt->execute();
-    $day_out[] = (float)$stmt->get_result()->fetch_row()[0]; $stmt->close();
-}
-
-/* ── Wallet running balance ────────────────────── */
-$wal_labels = $wal_arr = [];
-$running = 0;
-for ($i = 11; $i >= 0; $i--) {
-    $ms = date('Y-m-01', strtotime("-$i months"));
-    $me = date('Y-m-t',  strtotime("-$i months"));
-    $wal_labels[] = date('M y', strtotime($ms));
-    $stmt = $conn->prepare("SELECT COALESCE(SUM(CASE WHEN transaction_type IN('deposit','contribution') THEN amount ELSE -amount END),0) FROM transactions WHERE member_id=? AND created_at BETWEEN ? AND ?");
-    $stmt->bind_param("iss", $member_id, $ms, $me); $stmt->execute();
-    $running += (float)$stmt->get_result()->fetch_row()[0]; $stmt->close();
-    $wal_arr[] = max(0, $running);
-}
-
-/* ── Transaction type totals ───────────────────── */
-$txn_type_labels = $txn_type_vals = [];
-$stmt = $conn->prepare("SELECT transaction_type, COALESCE(SUM(amount),0) as total FROM transactions WHERE member_id=? GROUP BY transaction_type ORDER BY total DESC LIMIT 7");
-$stmt->bind_param("i", $member_id); $stmt->execute();
-$res = $stmt->get_result();
-while ($r = $res->fetch_assoc()) {
-    $txn_type_labels[] = ucfirst(str_replace('_', ' ', $r['transaction_type']));
-    $txn_type_vals[]   = (float)$r['total'];
-}
-$stmt->close();
-
-/* ── Extra stats ───────────────────────────────── */
+// Extra stats
 $stmt = $conn->prepare("SELECT COALESCE(SUM(amount),0) FROM transactions WHERE member_id=? AND transaction_type='contribution' AND MONTH(created_at)=MONTH(NOW())");
 $stmt->bind_param("i",$member_id); $stmt->execute();
 $month_contrib = (float)$stmt->get_result()->fetch_row()[0]; $stmt->close();
@@ -130,7 +87,7 @@ $stmt = $conn->prepare("SELECT COUNT(*) FROM loans WHERE member_id=? AND status=
 $stmt->bind_param("i",$member_id); $stmt->execute();
 $pending_loans = (int)$stmt->get_result()->fetch_row()[0]; $stmt->close();
 
-/* ── Recent transactions ───────────────────────── */
+// Recent transactions
 $recent_txn = [];
 $stmt = $conn->prepare("SELECT transaction_type, amount, created_at, reference_no FROM transactions WHERE member_id=? ORDER BY created_at DESC LIMIT 8");
 $stmt->bind_param("i",$member_id); $stmt->execute();
@@ -138,7 +95,7 @@ $res = $stmt->get_result();
 while ($r = $res->fetch_assoc()) $recent_txn[] = $r;
 $stmt->close();
 
-/* ── Health score ──────────────────────────────── */
+// Health score
 $health = max(0, round(100
     - min(30, ($loan_pct/100)*30)
     - ($month_contrib == 0 ? 15 : 0)
@@ -146,20 +103,20 @@ $health = max(0, round(100
     - ($pending_loans > 0 ? 5 : 0)
 ));
 
-/* ── Radar dimensions ──────────────────────────── */
+// Radar dimensions
 $radar = [
     min(100, ($total_savings  / 100000) * 100),
     min(100, ($total_shares   / 50000)  * 100),
-    max(0,  100 - $loan_pct),
+    max(0,   100 - $loan_pct),
     min(100, ($month_contrib  / 5000)   * 100),
     min(100, ($welfare_total  / 10000)  * 100),
     min(100, ($cur_bal        / 20000)  * 100),
 ];
 
 function ks(float $n): string {
-    if ($n >= 1000000) return 'KES ' . number_format($n/1000000, 2) . 'M';
-    if ($n >= 1000)    return 'KES ' . number_format($n/1000, 1) . 'K';
-    return 'KES ' . number_format($n, 2);
+    if ($n >= 1_000_000) return 'KES '.number_format($n/1_000_000, 2).'M';
+    if ($n >= 1_000)     return 'KES '.number_format($n/1_000, 1).'K';
+    return 'KES '.number_format($n, 2);
 }
 
 $pageTitle = 'Dashboard';
@@ -170,1022 +127,473 @@ $pageTitle = 'Dashboard';
 <script>(function(){var s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Dashboard · <?= $member_name ?></title>
+<title>Dashboard &middot; <?= $member_name ?></title>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-/* ─── TOKENS ──────────────────────────────────── */
-:root {
-    --forest:   #1a3a2a; --forest-mid:#234d38; --forest-lt:#2e6347;
-    --lime:     #a8e063; --lime-s:rgba(168,224,99,.13);
-    --blue:     #4481eb; --blue-s:rgba(68,129,235,.12);
-    --green:    #1aa053; --green-s:rgba(26,160,83,.12);
-    --amber:    #f0a500; --amber-s:rgba(240,165,0,.11);
-    --red:      #e63757; --red-s:rgba(230,55,87,.11);
-    --teal:     #20c997; --teal-s:rgba(32,201,151,.11);
-    --purple:   #7c4dff; --purple-s:rgba(124,77,255,.11);
-    --bg:       #eef2f7;
-    --surf:     #ffffff; --surf2:#f7fafc;
-    --bdr:      #e0e8f0;
-    --ink:      #1a2b4a; --muted:#6b7c93; --faint:#b0bec5;
-    --r:16px; --r-sm:10px;
-    --t:all .22s cubic-bezier(.4,0,.2,1);
-    --mono:'JetBrains Mono',monospace;
-    --font:'Plus Jakarta Sans',sans-serif;
-    --shd:0 2px 16px rgba(26,42,74,.06);
-    --shd-h:0 8px 32px rgba(26,42,74,.13);
+/* TOKEN MATCH: savings / shares / welfare / sidebar / topbar */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+    --f:#0b2419;--fm:#154330;--fs:#1d6044;
+    --lime:#a3e635;--lt:#6a9a1a;--lg:rgba(163,230,53,.14);
+    --bg:#eff5f1;--bg2:#e8f1ec;--surf:#fff;--surf2:#f7fbf8;
+    --bdr:rgba(11,36,25,.07);--bdr2:rgba(11,36,25,.04);
+    --t1:#0b2419;--t2:#456859;--t3:#8fada0;
+    --grn:#16a34a;--red:#dc2626;--amb:#d97706;--blu:#2563eb;
+    --grn-bg:rgba(22,163,74,.08);--red-bg:rgba(220,38,38,.08);
+    --amb-bg:rgba(217,119,6,.08);--blu-bg:rgba(37,99,235,.08);
+    --r:20px;--rsm:12px;
+    --ease:cubic-bezier(.16,1,.3,1);--spring:cubic-bezier(.34,1.56,.64,1);
+    --sh:0 1px 3px rgba(11,36,25,.05),0 6px 20px rgba(11,36,25,.08);
+    --sh-lg:0 4px 8px rgba(11,36,25,.07),0 20px 56px rgba(11,36,25,.13);
 }
-[data-bs-theme="dark"] {
-    --bg:#0b1520; --surf:#0f1e2d; --surf2:#132233;
-    --bdr:rgba(255,255,255,.07); --ink:#dce8f4;
-    --muted:#5a7a96; --faint:rgba(255,255,255,.18);
-    --shd:0 2px 16px rgba(0,0,0,.3); --shd-h:0 8px 32px rgba(0,0,0,.45);
+[data-bs-theme="dark"]{
+    --bg:#070e0b;--bg2:#0a1510;--surf:#0d1d14;--surf2:#0a1810;
+    --bdr:rgba(255,255,255,.07);--bdr2:rgba(255,255,255,.04);
+    --t1:#d8eee2;--t2:#4d7a60;--t3:#2a4d38;
 }
-*,*::before,*::after{box-sizing:border-box;}
-body{font-family:var(--font);background:var(--bg);color:var(--ink);margin:0;}
-.main-content-wrapper{margin-left:282px;min-height:100vh;transition:var(--t);}
-body.sb-collapsed .main-content-wrapper{margin-left:70px;}
-@media(max-width:991px){.main-content-wrapper{margin-left:0;}}
-.dash{padding:22px 22px 52px;}
-@media(max-width:768px){.dash{padding:14px 12px 40px;}}
+body,*{font-family:'Plus Jakarta Sans',sans-serif!important;-webkit-font-smoothing:antialiased}
+body{background:var(--bg);color:var(--t1)}
+.main-content-wrapper{margin-left:272px;min-height:100vh;transition:margin-left .3s var(--ease)}
+body.sb-collapsed .main-content-wrapper{margin-left:72px}
+@media(max-width:991px){.main-content-wrapper{margin-left:0}}
+.dash{padding:28px 28px 72px}
+@media(max-width:768px){.dash{padding:16px 14px 48px}}
 
-/* ─── HERO ────────────────────────────────────── */
-.hero{background:linear-gradient(128deg,var(--forest) 0%,var(--forest-lt) 55%,#387a56 100%);
-    border-radius:var(--r);padding:24px 30px;margin-bottom:20px;
-    position:relative;overflow:hidden;color:#fff;}
-.hero::before{content:'';position:absolute;top:-70px;right:-70px;width:300px;height:300px;
-    border-radius:50%;background:radial-gradient(circle,rgba(168,224,99,.18) 0%,transparent 65%);pointer-events:none;}
-.hero-ring{position:absolute;top:-90px;right:-90px;width:380px;height:380px;border-radius:50%;
-    border:1.5px solid rgba(168,224,99,.1);pointer-events:none;}
-.hero-ring2{position:absolute;top:-130px;right:-130px;width:490px;height:490px;border-radius:50%;
-    border:1px solid rgba(168,224,99,.06);pointer-events:none;}
-.hero-chip{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.1);
-    border:1px solid rgba(255,255,255,.18);border-radius:100px;padding:3px 12px;
-    font-size:.6rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--lime);margin-bottom:10px;}
-.hero h1{font-size:1.55rem;font-weight:800;color:#fff;letter-spacing:-.4px;margin:0 0 5px;}
-.hero-sub{font-size:.76rem;color:rgba(255,255,255,.55);margin:0 0 18px;}
-.hero-sub strong{color:var(--lime);}
-.hm-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
-.hm{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.14);
-    border-radius:var(--r-sm);padding:9px 15px;min-width:96px;transition:var(--t);}
-.hm:hover{background:rgba(255,255,255,.18);transform:translateY(-2px);}
-.hm-v{font-family:var(--mono);font-size:.88rem;font-weight:600;color:#fff;letter-spacing:-.4px;line-height:1.1;}
-.hm-l{font-size:.55rem;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:rgba(255,255,255,.45);margin-top:2px;}
-.hero-btns{display:flex;gap:7px;flex-wrap:wrap;}
-.hbtn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:var(--r-sm);
-    font-family:var(--font);font-size:.79rem;font-weight:800;text-decoration:none;
-    transition:var(--t);border:none;cursor:pointer;}
-.hbtn-lime{background:var(--lime);color:var(--forest);box-shadow:0 4px 14px rgba(168,224,99,.4);}
-.hbtn-lime:hover{background:#baea78;color:var(--forest);transform:translateY(-1px);}
-.hbtn-ghost{background:rgba(255,255,255,.12);color:#fff;border:1.5px solid rgba(255,255,255,.22);}
-.hbtn-ghost:hover{background:rgba(255,255,255,.2);color:#fff;}
+/* HERO */
+.hero{background:linear-gradient(135deg,var(--f) 0%,var(--fm) 55%,var(--fs) 100%);border-radius:var(--r);padding:40px 48px 96px;position:relative;overflow:hidden;color:#fff;margin-bottom:0;animation:fadeUp .7s var(--ease) both}
+.hero-mesh{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 60% 80% at 105% -5%,rgba(163,230,53,.11) 0%,transparent 55%),radial-gradient(ellipse 35% 45% at -8% 105%,rgba(163,230,53,.07) 0%,transparent 55%)}
+.hero-dots{position:absolute;inset:0;pointer-events:none;background-image:radial-gradient(rgba(255,255,255,.05) 1px,transparent 1px);background-size:20px 20px}
+.hero-ring{position:absolute;border-radius:50%;pointer-events:none;border:1px solid rgba(163,230,53,.07)}
+.hero-ring.r1{width:420px;height:420px;top:-140px;right:-100px}
+.hero-ring.r2{width:620px;height:620px;top:-220px;right:-200px}
+.hero-inner{position:relative;z-index:2}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:7px;background:rgba(163,230,53,.12);border:1px solid rgba(163,230,53,.2);border-radius:50px;padding:4px 14px;margin-bottom:14px;font-size:10px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#bff060}
+.eyebrow-dot{width:5px;height:5px;border-radius:50%;background:var(--lime);animation:pulse 1.8s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(1.8)}}
+.hero h1{font-size:clamp(1.8rem,4vw,2.8rem);font-weight:800;color:#fff;letter-spacing:-.6px;line-height:1.1;margin-bottom:8px}
+.hero-sub{font-size:.8rem;color:rgba(255,255,255,.45);margin-bottom:24px;font-weight:500}
+.hero-sub strong{color:rgba(255,255,255,.75);font-weight:700}
+.hero-bubbles{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:28px}
+.hbub{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.14);border-radius:14px;padding:11px 16px;transition:all .22s var(--spring);min-width:100px}
+.hbub:hover{background:rgba(255,255,255,.18);transform:translateY(-2px)}
+.hbub-val{font-size:.9rem;font-weight:800;color:#fff;letter-spacing:-.3px;line-height:1.1}
+.hbub-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:rgba(255,255,255,.4);margin-top:3px}
+.hero-ctas{display:flex;gap:9px;flex-wrap:wrap}
+.btn-lime{display:inline-flex;align-items:center;gap:8px;background:var(--lime);color:var(--f);font-size:.875rem;font-weight:800;padding:11px 24px;border-radius:50px;border:none;cursor:pointer;text-decoration:none;box-shadow:0 2px 14px rgba(163,230,53,.28);transition:all .25s var(--spring)}
+.btn-lime:hover{transform:translateY(-2px) scale(1.03);box-shadow:0 10px 28px rgba(163,230,53,.4);color:var(--f)}
+.btn-ghost{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.8);font-size:.875rem;font-weight:700;padding:11px 20px;border-radius:50px;cursor:pointer;text-decoration:none;transition:all .22s ease}
+.btn-ghost:hover{background:rgba(255,255,255,.17);color:#fff;transform:translateY(-2px)}
+.hero-grade{text-align:right;position:relative;z-index:2;animation:fadeUp .8s var(--ease) .15s both}
+.grade-big{font-size:4rem;font-weight:800;color:#fff;letter-spacing:-3px;line-height:1}
+.grade-label{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:6px}
+.grade-sub{font-size:.6rem;color:rgba(255,255,255,.35);margin-bottom:12px}
+.loan-bar-wrap{background:rgba(255,255,255,.1);border-radius:10px;padding:10px 14px;display:inline-block;min-width:160px}
+.loan-bar-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:rgba(255,255,255,.4);margin-bottom:6px}
+.loan-bar-track{background:rgba(255,255,255,.15);height:5px;border-radius:99px;overflow:hidden}
+.loan-bar-fill{height:100%;border-radius:99px;background:var(--lime);transition:width 1s var(--ease)}
+.loan-bar-pct{font-size:.6rem;color:rgba(255,255,255,.4);margin-top:4px}
 
-/* ─── SPARKLINE ROW ───────────────────────────── */
-.spk-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
-@media(max-width:767px){.spk-row{grid-template-columns:repeat(2,1fr);}}
-.spk-panel{background:var(--surf);border:1px solid var(--bdr);border-radius:var(--r-sm);
-    padding:14px 16px 10px;position:relative;overflow:hidden;box-shadow:var(--shd);transition:var(--t);}
-.spk-panel:hover{box-shadow:var(--shd-h);transform:translateY(-2px);}
-.spk-panel::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3.5px;border-radius:3px 0 0 3px;}
-.spk-g::before{background:var(--green);}
-.spk-b::before{background:var(--blue);}
-.spk-a::before{background:var(--amber);}
-.spk-r::before{background:var(--red);}
-.spk-lbl{font-size:.57rem;font-weight:800;text-transform:uppercase;letter-spacing:.9px;color:var(--muted);margin-bottom:3px;}
-.spk-val{font-family:var(--mono);font-size:1.05rem;font-weight:600;color:var(--ink);letter-spacing:-.5px;line-height:1.1;}
-.spk-chg{font-size:.62rem;font-weight:700;margin-top:3px;}
-.spk-chg.up{color:var(--green);} .spk-chg.dn{color:var(--red);}
-.spk-canvas-wrap{height:38px;margin-top:8px;position:relative;}
+/* FLOATING STAT CARDS */
+.stats-float{margin-top:-56px;position:relative;z-index:10;padding:0 28px;animation:floatUp .8s var(--ease) .4s both}
+@media(max-width:767px){.stats-float{padding:0 14px}}
+.sc{background:var(--surf);border-radius:var(--r);padding:22px 24px;border:1px solid var(--bdr);box-shadow:var(--sh-lg);height:100%;position:relative;overflow:hidden;transition:transform .28s var(--ease),box-shadow .28s ease}
+.sc:hover{transform:translateY(-4px);box-shadow:0 8px 20px rgba(11,36,25,.09),0 32px 64px rgba(11,36,25,.14)}
+.sc::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2.5px;border-radius:0 0 var(--r) var(--r);transform:scaleX(0);transform-origin:left;transition:transform .38s var(--ease)}
+.sc:hover::after{transform:scaleX(1)}
+.sc-g::after{background:linear-gradient(90deg,#16a34a,#4ade80)}
+.sc-r::after{background:linear-gradient(90deg,#dc2626,#f87171)}
+.sc-a::after{background:linear-gradient(90deg,#d97706,#fbbf24)}
+.sc-b::after{background:linear-gradient(90deg,#2563eb,#60a5fa)}
+.sc-ico{width:44px;height:44px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;margin-bottom:16px;transition:transform .3s var(--spring)}
+.sc:hover .sc-ico{transform:scale(1.12) rotate(7deg)}
+.sc-lbl{font-size:10px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--t3);margin-bottom:5px}
+.sc-val{font-size:1.5rem;font-weight:800;color:var(--t1);letter-spacing:-.8px;line-height:1.1;margin-bottom:14px}
+.sc-bar{height:4px;border-radius:99px;background:var(--bg);overflow:hidden;margin-bottom:9px}
+.sc-bar-fill{height:100%;border-radius:99px;width:0;transition:width 1.4s var(--ease)}
+.sc-meta{font-size:.72rem;font-weight:600;color:var(--t3)}
+.sa1{animation:floatUp .7s var(--ease) .45s both}
+.sa2{animation:floatUp .7s var(--ease) .53s both}
+.sa3{animation:floatUp .7s var(--ease) .61s both}
+.sa4{animation:floatUp .7s var(--ease) .69s both}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes floatUp{from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:translateY(0)}}
 
-/* ─── GRAPH PANELS ────────────────────────────── */
-.gp{background:var(--surf);border:1px solid var(--bdr);border-radius:var(--r);
-    padding:20px 22px;height:100%;box-shadow:var(--shd);transition:var(--t);
-    display:flex;flex-direction:column;}
-.gp:hover{box-shadow:var(--shd-h);}
-.gp-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;gap:8px;flex-wrap:wrap;}
-.gp-title{font-size:.86rem;font-weight:800;color:var(--ink);margin:0 0 2px;}
-.gp-sub{font-size:.62rem;font-weight:600;color:var(--muted);}
-.gp-tabs{display:flex;gap:3px;background:var(--surf2);border-radius:8px;padding:3px;}
-.gp-tab{padding:4px 11px;border-radius:6px;font-size:.7rem;font-weight:700;
-    color:var(--muted);cursor:pointer;transition:var(--t);border:none;background:none;font-family:var(--font);}
-.gp-tab.active{background:var(--surf);color:var(--ink);box-shadow:0 1px 6px rgba(0,0,0,.08);}
-.gp-stat-row{display:flex;gap:14px;margin-bottom:12px;flex-wrap:wrap;}
-.gp-stat{display:flex;flex-direction:column;gap:1px;}
-.gp-sv{font-family:var(--mono);font-size:.88rem;font-weight:600;color:var(--ink);letter-spacing:-.4px;}
-.gp-sl{font-size:.57rem;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);}
-.gp-divider{width:1px;height:30px;background:var(--bdr);align-self:center;}
-.chart-box{position:relative;flex:1;min-height:0;}
-.leg{display:flex;gap:12px;flex-wrap:wrap;margin-top:10px;}
-.leg-i{display:flex;align-items:center;gap:5px;font-size:.66rem;font-weight:600;color:var(--muted);}
-.leg-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+/* CHART CARDS */
+.pg-body{padding:32px 28px 0}
+@media(max-width:767px){.pg-body{padding:24px 14px 0}}
+.chart-card{background:var(--surf);border-radius:var(--r);padding:24px 26px;border:1px solid var(--bdr);box-shadow:var(--sh);height:100%;display:flex;flex-direction:column;animation:floatUp .7s var(--ease) both}
+.cc-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px;gap:10px}
+.cc-title{font-size:.9rem;font-weight:800;color:var(--t1);letter-spacing:-.2px}
+.cc-sub{font-size:.7rem;font-weight:500;color:var(--t3);margin-top:2px}
+.cc-stats{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:14px}
+.cc-stat-val{font-size:.88rem;font-weight:800;color:var(--t1);letter-spacing:-.3px;line-height:1.1}
+.cc-stat-lbl{font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--t3);margin-top:2px}
+.cc-stat-div{width:1px;height:28px;background:var(--bdr);align-self:center}
+.chart-box{position:relative;flex:1}
+.leg{display:flex;gap:12px;flex-wrap:wrap;margin-top:10px}
+.leg-i{display:flex;align-items:center;gap:5px;font-size:.68rem;font-weight:700;color:var(--t3)}
+.leg-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 
-/* ─── HEATMAP ─────────────────────────────────── */
-.hmap-labels{display:grid;grid-template-columns:repeat(12,1fr);gap:4px;margin-bottom:4px;}
-.hmap-lbl{font-size:.54rem;font-weight:700;color:var(--muted);text-align:center;}
-.hmap-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:4px;}
-.hmap-cell{height:26px;border-radius:5px;transition:var(--t);cursor:default;position:relative;}
-.hmap-cell:hover{transform:scale(1.12);z-index:5;box-shadow:0 4px 12px rgba(26,58,42,.2);}
-.hmap-scale{display:flex;align-items:center;gap:6px;margin-top:10px;font-size:.58rem;font-weight:600;color:var(--muted);}
-.hmap-scale-cells{display:flex;gap:3px;}
+/* HEALTH */
+.gauge-half{position:relative;width:180px;height:90px;margin:0 auto 12px;overflow:hidden}
+.hf{display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid var(--bdr2)}
+.hf:last-child{border:none}
+.hf-ico{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.72rem;flex-shrink:0}
+.hf-ok{background:var(--grn-bg);color:var(--grn)}
+.hf-fail{background:var(--red-bg);color:var(--red)}
+.hf-lbl{font-size:.75rem;font-weight:700;color:var(--t1);flex:1}
+.hf-val{font-size:.65rem;font-weight:600;color:var(--t3)}
 
-/* ─── TXN FEED ────────────────────────────────── */
-.txn-feed{list-style:none;margin:0;padding:0;flex:1;overflow:auto;}
-.txn-item{display:flex;align-items:center;justify-content:space-between;
-    padding:9px 0;border-bottom:1px solid var(--bdr);gap:8px;}
-.txn-item:last-child{border-bottom:none;}
-.txn-ico{width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:.8rem;flex-shrink:0;}
-.ti-in{background:rgba(26,160,83,.1);color:var(--green);}
-.ti-out{background:rgba(230,55,87,.1);color:var(--red);}
-.ti-loan{background:rgba(240,165,0,.1);color:var(--amber);}
-.txn-name{font-size:.78rem;font-weight:700;color:var(--ink);text-transform:capitalize;margin-bottom:1px;}
-.txn-date{font-size:.61rem;font-weight:600;color:var(--faint);}
-.t-in{font-family:var(--mono);font-size:.78rem;font-weight:600;color:var(--green);}
-.t-out{font-family:var(--mono);font-size:.78rem;font-weight:600;color:var(--red);}
-.txn-ref{font-size:.55rem;color:var(--muted);background:var(--surf2);padding:1px 6px;
-    border-radius:5px;margin-top:2px;display:block;text-align:right;}
-.btn-all{display:flex;align-items:center;justify-content:center;gap:5px;width:100%;
-    padding:9px;border-radius:var(--r-sm);background:var(--surf2);border:1.5px solid var(--bdr);
-    font-family:var(--font);font-size:.73rem;font-weight:700;color:var(--muted);
-    text-decoration:none;margin-top:10px;transition:var(--t);}
-.btn-all:hover{border-color:var(--lime);color:var(--forest);background:var(--lime-s);}
-
-/* ─── HEALTH FACTORS ──────────────────────────── */
-.hf{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--bdr);}
-.hf:last-child{border:none;}
-.hf-ico{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.75rem;flex-shrink:0;}
-.hf-ok{background:rgba(26,160,83,.12);color:var(--green);}
-.hf-fail{background:rgba(230,55,87,.1);color:var(--red);}
-.hf-lbl{font-size:.73rem;font-weight:700;color:var(--ink);flex:1;}
-.hf-val{font-size:.64rem;font-weight:600;color:var(--muted);}
-
-/* ─── GAUGE ───────────────────────────────────── */
-.gauge-wrap{position:relative;width:180px;height:100px;margin:4px auto 10px;overflow:hidden;}
-
-/* ─── RECEIPT MODAL ───────────────────────────── */
-.rmodal .modal-content{border:none;border-radius:var(--r);box-shadow:0 28px 60px rgba(0,0,0,.2);overflow:hidden;}
-.rh{background:linear-gradient(135deg,var(--forest),var(--forest-lt));color:#fff;padding:32px 26px 24px;text-align:center;position:relative;}
-.rh::before{content:'';position:absolute;top:-40px;right:-40px;width:150px;height:150px;border-radius:50%;
-    background:radial-gradient(circle,rgba(168,224,99,.12) 0%,transparent 65%);}
-.rh-ico{width:60px;height:60px;border-radius:16px;background:rgba(168,224,99,.15);
-    border:1px solid rgba(168,224,99,.25);display:flex;align-items:center;justify-content:center;
-    color:var(--lime);font-size:1.5rem;margin:0 auto 12px;position:relative;z-index:1;}
-.rh h4{font-weight:800;margin:0 0 4px;font-size:1rem;position:relative;z-index:1;}
-.rh p{opacity:.5;font-size:.75rem;margin:0;position:relative;z-index:1;}
-.rb{padding:24px;background:var(--surf);}
-.r-amt{font-family:var(--mono);font-size:1.9rem;font-weight:600;color:var(--green);letter-spacing:-.5px;margin-bottom:4px;}
-.r-stamp{display:inline-block;border:2.5px solid var(--green);color:var(--green);padding:2px 12px;
-    border-radius:7px;font-weight:800;font-size:.68rem;text-transform:uppercase;
-    letter-spacing:1px;transform:rotate(-10deg);margin-top:5px;}
-.r-div{border:none;border-top:2px dashed var(--bdr);margin:16px 0;}
-.r-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-size:.8rem;}
-.r-lbl{color:var(--muted);font-weight:600;} .r-val{font-weight:800;color:var(--ink);}
-.btn-rc{width:100%;padding:11px;border-radius:var(--r-sm);background:linear-gradient(135deg,var(--forest),var(--forest-lt));
-    color:#fff;border:none;font-family:var(--font);font-size:.85rem;font-weight:800;
-    cursor:pointer;transition:var(--t);margin-top:16px;}
-.btn-rc:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(26,58,42,.3);}
-
-/* ─── ANIMATIONS ──────────────────────────────── */
-@keyframes fadeUp{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:none;}}
-.a1{animation:fadeUp .38s .04s both;} .a2{animation:fadeUp .38s .10s both;}
-.a3{animation:fadeUp .38s .16s both;} .a4{animation:fadeUp .38s .22s both;}
-.a5{animation:fadeUp .38s .28s both;} .a6{animation:fadeUp .38s .34s both;}
-.a7{animation:fadeUp .38s .40s both;} .a8{animation:fadeUp .38s .46s both;}
+/* TRANSACTION FEED */
+.txn-feed{list-style:none;margin:0;padding:0}
+.txn-row{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--bdr2);gap:10px;position:relative}
+.txn-row:last-child{border-bottom:none}
+.txn-row::before{content:'';position:absolute;left:0;top:20%;bottom:20%;width:2.5px;border-radius:0 3px 3px 0;opacity:0;transition:opacity .18s ease}
+.txn-row:hover{background:rgba(11,36,25,.015);margin:0 -14px;padding:11px 14px}
+.txn-row:hover::before{opacity:1}
+.txn-row.ti-in:hover::before{background:var(--grn)}
+.txn-row.ti-out:hover::before{background:var(--red)}
+.txn-row.ti-loan:hover::before{background:var(--amb)}
+.txn-ico{width:36px;height:36px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0;transition:transform .25s var(--spring)}
+.txn-row:hover .txn-ico{transform:scale(1.1) rotate(5deg)}
+.ico-in{background:var(--grn-bg);color:var(--grn)}
+.ico-out{background:var(--red-bg);color:var(--red)}
+.ico-loan{background:var(--amb-bg);color:var(--amb)}
+.txn-name{font-size:.82rem;font-weight:700;color:var(--t1);text-transform:capitalize;margin-bottom:2px}
+.txn-date{font-size:.65rem;font-weight:500;color:var(--t3)}
+.txn-amt-in{font-size:.82rem;font-weight:800;color:var(--grn)}
+.txn-amt-out{font-size:.82rem;font-weight:800;color:var(--red)}
+.txn-ref{display:block;font-size:.58rem;color:var(--t3);background:var(--bg);padding:1px 7px;border-radius:5px;margin-top:3px;text-align:right;font-family:monospace}
+.btn-view-all{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:10px;border-radius:var(--rsm);background:var(--bg);border:1.5px solid var(--bdr);font-size:.75rem;font-weight:700;color:var(--t2);text-decoration:none;margin-top:12px;transition:all .2s ease}
+.btn-view-all:hover{border-color:rgba(11,36,25,.18);color:var(--f);background:var(--surf)}
+.empty-well{display:flex;flex-direction:column;align-items:center;padding:48px 20px;text-align:center}
+.ew-ico{width:64px;height:64px;border-radius:18px;background:var(--bg);border:1px solid var(--bdr);display:flex;align-items:center;justify-content:center;font-size:1.6rem;color:var(--t3);margin-bottom:14px}
+.ew-title{font-size:.88rem;font-weight:800;color:var(--t1);margin-bottom:4px}
+.ew-sub{font-size:.76rem;color:var(--t3)}
 </style>
 </head>
 <body>
-<div class="d-flex">
 <?php $layout->sidebar(); ?>
-<div class="flex-fill main-content-wrapper">
+<div class="main-content-wrapper">
 <?php $layout->topbar($pageTitle ?? ''); ?>
 <div class="dash">
 
-<!-- ══════════════════════════════════════
-     HERO
-══════════════════════════════════════ -->
-<div class="hero a1">
-    <div class="hero-ring"></div><div class="hero-ring2"></div>
-    <div class="row align-items-center gy-3">
-        <div class="col-lg-8">
-            <div class="hero-chip"><i class="bi bi-shield-check-fill"></i> Verified Member</div>
-            <h1>Good day, <?= $first_name ?>! 👋</h1>
-            <p class="hero-sub">
-                Member <strong><?= $reg_no ?></strong> &nbsp;·&nbsp;
-                Since <strong><?= $join_date ?></strong> &nbsp;·&nbsp;
-                Health Score <strong style="color:#fff"><?= $health ?>/100</strong>
-            </p>
-            <div class="hm-row">
-                <div class="hm"><div class="hm-v"><?= ks($total_savings) ?></div><div class="hm-l">Savings</div></div>
-                <div class="hm"><div class="hm-v"><?= ks($total_shares) ?></div><div class="hm-l">Shares</div></div>
-                <div class="hm"><div class="hm-v" style="color:<?= $active_loans>0 ? '#f87171' : '#a8e063' ?>"><?= ks($active_loans) ?></div><div class="hm-l">Loans</div></div>
-                <div class="hm"><div class="hm-v" style="color:<?= $net_worth>=0 ? '#a8e063' : '#f87171' ?>"><?= ks(abs($net_worth)) ?></div><div class="hm-l">Net Worth</div></div>
-                <div class="hm"><div class="hm-v"><?= ks($cur_bal) ?></div><div class="hm-l">Wallet</div></div>
-            </div>
-            <div class="hero-btns">
-                <a href="mpesa_request.php" class="hbtn hbtn-lime"><i class="bi bi-plus-lg"></i> Deposit</a>
-                <?php if ($cur_bal > 0): ?><a href="withdraw.php" class="hbtn hbtn-ghost"><i class="bi bi-arrow-up-right"></i> Withdraw</a><?php endif; ?>
-                <a href="loans.php" class="hbtn hbtn-ghost"><i class="bi bi-bank"></i> Apply Loan</a>
-                <a href="transactions.php" class="hbtn hbtn-ghost"><i class="bi bi-list-ul"></i> Transactions</a>
-            </div>
-        </div>
-        <div class="col-lg-4 d-none d-lg-block text-end" style="position:relative;z-index:2;">
-            <div style="font-size:.58rem;font-weight:700;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:1px;">Credit Grade</div>
-            <div style="font-family:var(--mono);font-size:3.8rem;font-weight:600;color:#fff;letter-spacing:-3px;line-height:1;">
-                <?= $loan_pct<30?'AAA':($loan_pct<50?'AA+':($loan_pct<70?'A+':'B+')) ?>
-            </div>
-            <div style="font-size:.6rem;color:rgba(255,255,255,.4);margin-bottom:10px;">Loan utilization grade</div>
-            <div style="background:rgba(255,255,255,.1);border-radius:8px;padding:8px 14px;display:inline-block;min-width:150px;">
-                <div style="font-size:.58rem;color:rgba(255,255,255,.45);font-weight:700;text-transform:uppercase;letter-spacing:.8px;margin-bottom:5px;">Loan Limit Used</div>
-                <div style="background:rgba(255,255,255,.15);height:6px;border-radius:100px;overflow:hidden;">
-                    <div style="height:100%;width:<?= $loan_pct ?>%;background:var(--lime);border-radius:100px;"></div>
+<!-- HERO -->
+<div class="hero">
+    <div class="hero-mesh"></div><div class="hero-dots"></div>
+    <div class="hero-ring r1"></div><div class="hero-ring r2"></div>
+    <div class="hero-inner">
+        <div class="row align-items-end gy-4">
+            <div class="col-lg-8">
+                <div class="hero-eyebrow"><span class="eyebrow-dot"></span> Verified Member</div>
+                <h1>Good day, <?= $first_name ?>! 👋</h1>
+                <p class="hero-sub">
+                    Member <strong><?= $reg_no ?></strong> &nbsp;&middot;&nbsp;
+                    Since <strong><?= $join_date ?></strong> &nbsp;&middot;&nbsp;
+                    Health <strong style="color:#fff"><?= $health ?>/100</strong>
+                </p>
+                <div class="hero-bubbles">
+                    <div class="hbub"><div class="hbub-val"><?= ks($total_savings) ?></div><div class="hbub-lbl">Savings</div></div>
+                    <div class="hbub"><div class="hbub-val"><?= ks($total_shares) ?></div><div class="hbub-lbl">Shares</div></div>
+                    <div class="hbub"><div class="hbub-val" style="color:<?= $active_loans>0?'#fca5a5':'#a3e635' ?>"><?= ks($active_loans) ?></div><div class="hbub-lbl">Loans</div></div>
+                    <div class="hbub"><div class="hbub-val" style="color:<?= $net_worth>=0?'#a3e635':'#fca5a5' ?>"><?= ks(abs($net_worth)) ?></div><div class="hbub-lbl">Net Worth</div></div>
+                    <div class="hbub"><div class="hbub-val"><?= ks($cur_bal) ?></div><div class="hbub-lbl">Wallet</div></div>
                 </div>
-                <div style="font-size:.6rem;color:rgba(255,255,255,.5);margin-top:4px;"><?= number_format($loan_pct, 1) ?>% of KES 500K</div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- ══════════════════════════════════════
-     SPARKLINE ROW
-══════════════════════════════════════ -->
-<div class="spk-row a2">
-    <div class="spk-panel spk-g">
-        <div class="spk-lbl">Total Savings</div>
-        <div class="spk-val"><?= ks($total_savings) ?></div>
-        <div class="spk-chg up"><i class="bi bi-arrow-up-short"></i> Active account</div>
-        <div class="spk-canvas-wrap"><canvas id="spk1"></canvas></div>
-    </div>
-    <div class="spk-panel spk-b">
-        <div class="spk-lbl">Monthly Contributions</div>
-        <div class="spk-val"><?= ks($month_contrib) ?></div>
-        <div class="spk-chg <?= $month_contrib > 0 ? 'up' : 'dn' ?>">
-            <i class="bi bi-<?= $month_contrib > 0 ? 'arrow-up' : 'exclamation' ?>-short"></i>
-            <?= $month_contrib > 0 ? 'This month' : 'Not yet made' ?>
-        </div>
-        <div class="spk-canvas-wrap"><canvas id="spk2"></canvas></div>
-    </div>
-    <div class="spk-panel spk-a">
-        <div class="spk-lbl">Total Deposits</div>
-        <div class="spk-val"><?= ks($total_deposits) ?></div>
-        <div class="spk-chg up"><i class="bi bi-arrow-up-short"></i> All time</div>
-        <div class="spk-canvas-wrap"><canvas id="spk3"></canvas></div>
-    </div>
-    <div class="spk-panel spk-r">
-        <div class="spk-lbl">Total Withdrawals</div>
-        <div class="spk-val"><?= ks($total_withdrawals) ?></div>
-        <div class="spk-chg dn"><i class="bi bi-arrow-down-short"></i> All time</div>
-        <div class="spk-canvas-wrap"><canvas id="spk4"></canvas></div>
-    </div>
-</div>
-
-<!-- ══════════════════════════════════════
-     ROW 1: Stacked Bar + Area Line
-══════════════════════════════════════ -->
-<div class="row g-3 mb-3 a3">
-    <div class="col-xl-7">
-        <div class="gp">
-            <div class="gp-head">
-                <div>
-                    <div class="gp-title">12-Month Financial Activity</div>
-                    <div class="gp-sub">Savings · Contributions · Repayments — stacked bar</div>
-                </div>
-                <div class="gp-stat-row" style="margin-bottom:0;">
-                    <div class="gp-stat"><div class="gp-sv"><?= ks($total_savings) ?></div><div class="gp-sl">Net Savings</div></div>
-                    <div class="gp-divider"></div>
-                    <div class="gp-stat"><div class="gp-sv"><?= ks(array_sum($ctb_arr)) ?></div><div class="gp-sl">Total Contrib</div></div>
+                <div class="hero-ctas">
+                    <a href="mpesa_request.php" class="btn-lime"><i class="bi bi-plus-circle-fill"></i> Deposit</a>
+                    <?php if ($cur_bal > 0): ?><a href="withdraw.php" class="btn-ghost"><i class="bi bi-arrow-up-right-circle"></i> Withdraw</a><?php endif; ?>
+                    <a href="loans.php" class="btn-ghost"><i class="bi bi-bank2"></i> Apply Loan</a>
+                    <a href="transactions.php" class="btn-ghost"><i class="bi bi-list-ul"></i> Transactions</a>
                 </div>
             </div>
-            <div class="leg">
-                <div class="leg-i"><span class="leg-dot" style="background:#1a3a2a"></span>Savings</div>
-                <div class="leg-i"><span class="leg-dot" style="background:#a8e063"></span>Contributions</div>
-                <div class="leg-i"><span class="leg-dot" style="background:#4481eb"></span>Repayments</div>
-            </div>
-            <div class="chart-box" style="height:260px;margin-top:10px;">
-                <canvas id="chartStackedBar"></canvas>
-            </div>
-        </div>
-    </div>
-    <div class="col-xl-5">
-        <div class="gp">
-            <div class="gp-head">
-                <div>
-                    <div class="gp-title">Wallet Balance Trajectory</div>
-                    <div class="gp-sub">Cumulative running balance — area chart</div>
+            <div class="col-lg-4 d-none d-lg-block">
+                <div class="hero-grade">
+                    <div class="grade-label">Credit Grade</div>
+                    <div class="grade-big"><?= $loan_pct<30?'AAA':($loan_pct<50?'AA+':($loan_pct<70?'A+':'B+')) ?></div>
+                    <div class="grade-sub">Based on loan utilization</div>
+                    <div class="loan-bar-wrap">
+                        <div class="loan-bar-label">Loan Limit Used</div>
+                        <div class="loan-bar-track"><div class="loan-bar-fill" style="width:<?= $loan_pct ?>%"></div></div>
+                        <div class="loan-bar-pct"><?= number_format($loan_pct,1) ?>% of KES 500K</div>
+                    </div>
                 </div>
-            </div>
-            <div class="gp-stat-row">
-                <div class="gp-stat"><div class="gp-sv"><?= ks($cur_bal) ?></div><div class="gp-sl">Current</div></div>
-                <div class="gp-divider"></div>
-                <div class="gp-stat"><div class="gp-sv"><?= ks(max($wal_arr ?: [0])) ?></div><div class="gp-sl">Peak</div></div>
-            </div>
-            <div class="chart-box" style="height:240px;">
-                <canvas id="chartWalletArea"></canvas>
             </div>
         </div>
     </div>
 </div>
 
-<!-- ══════════════════════════════════════
-     ROW 2: Grouped Bar + Doughnut + Gauge
-══════════════════════════════════════ -->
-<div class="row g-3 mb-3 a4">
-    <div class="col-xl-5">
-        <div class="gp">
-            <div class="gp-head">
-                <div>
-                    <div class="gp-title">Income vs Outflow</div>
-                    <div class="gp-sub">Deposits &amp; withdrawals — grouped bar</div>
-                </div>
-            </div>
-            <div class="leg" style="margin-bottom:8px;">
-                <div class="leg-i"><span class="leg-dot" style="background:#1aa053"></span>Income</div>
-                <div class="leg-i"><span class="leg-dot" style="background:#e63757"></span>Outflow</div>
-            </div>
-            <div class="chart-box" style="height:240px;">
-                <canvas id="chartGrouped"></canvas>
+<!-- STAT CARDS -->
+<div class="stats-float">
+    <div class="row g-3">
+        <div class="col-md-3 sa1">
+            <div class="sc sc-g">
+                <div class="sc-ico" style="background:var(--grn-bg);color:var(--grn)"><i class="bi bi-piggy-bank-fill"></i></div>
+                <div class="sc-lbl">Total Savings</div>
+                <div class="sc-val"><?= ks($total_savings) ?></div>
+                <div class="sc-bar"><div class="sc-bar-fill" style="background:var(--grn)" data-w="100"></div></div>
+                <div class="sc-meta">Active savings account</div>
             </div>
         </div>
-    </div>
-    <div class="col-xl-4">
-        <div class="gp">
-            <div class="gp-head">
-                <div>
-                    <div class="gp-title">Portfolio Composition</div>
-                    <div class="gp-sub">Asset vs liability — doughnut chart</div>
-                </div>
+        <div class="col-md-3 sa2">
+            <div class="sc sc-b">
+                <div class="sc-ico" style="background:var(--blu-bg);color:var(--blu)"><i class="bi bi-calendar-check-fill"></i></div>
+                <div class="sc-lbl">This Month</div>
+                <div class="sc-val"><?= ks($month_contrib) ?></div>
+                <div class="sc-bar"><div class="sc-bar-fill" style="background:var(--blu)" data-w="<?= $month_contrib>0?75:0 ?>"></div></div>
+                <div class="sc-meta"><?= $month_contrib>0?'Contribution made':'Not yet contributed' ?></div>
             </div>
-            <div style="position:relative;width:160px;height:160px;margin:8px auto 14px;">
-                <canvas id="chartDonut" width="160" height="160"></canvas>
-                <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;pointer-events:none;">
-                    <div style="font-family:var(--mono);font-size:.9rem;font-weight:600;color:var(--ink);letter-spacing:-.4px;line-height:1.1;"><?= ks($total_savings + $total_shares) ?></div>
-                    <div style="font-size:.54rem;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);margin-top:2px;">Total Assets</div>
-                </div>
-            </div>
-            <?php foreach ([['Savings','#1a3a2a',$total_savings],['Shares','#a8e063',$total_shares],['Loans','#e63757',$active_loans],['Wallet','#4481eb',$cur_bal]] as $d): ?>
-            <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bdr);font-size:.72rem;">
-                <span style="display:flex;align-items:center;gap:7px;font-weight:600;color:var(--muted);">
-                    <span style="width:8px;height:8px;border-radius:50%;background:<?= $d[1] ?>;flex-shrink:0;"></span><?= $d[0] ?>
-                </span>
-                <span style="font-family:var(--mono);font-weight:600;color:var(--ink);font-size:.7rem;"><?= ks($d[2]) ?></span>
-            </div>
-            <?php endforeach; ?>
         </div>
-    </div>
-    <div class="col-xl-3">
-        <div class="gp">
-            <div class="gp-head">
-                <div>
-                    <div class="gp-title">Account Health</div>
-                    <div class="gp-sub">Composite score — gauge</div>
-                </div>
+        <div class="col-md-3 sa3">
+            <div class="sc sc-a">
+                <div class="sc-ico" style="background:var(--amb-bg);color:var(--amb)"><i class="bi bi-graph-up-arrow"></i></div>
+                <div class="sc-lbl">Total Deposits</div>
+                <div class="sc-val"><?= ks($total_deposits) ?></div>
+                <div class="sc-bar"><div class="sc-bar-fill" style="background:var(--amb)" data-w="100"></div></div>
+                <div class="sc-meta">All-time deposits</div>
             </div>
-            <div class="gauge-wrap">
-                <canvas id="chartGauge" width="180" height="180" style="margin-top:-45px;"></canvas>
+        </div>
+        <div class="col-md-3 sa4">
+            <div class="sc sc-r">
+                <div class="sc-ico" style="background:var(--red-bg);color:var(--red)"><i class="bi bi-arrow-up-right-square-fill"></i></div>
+                <div class="sc-lbl">Total Withdrawn</div>
+                <div class="sc-val"><?= ks($total_withdrawals) ?></div>
+                <?php $wPct=$total_deposits>0?min(100,($total_withdrawals/$total_deposits)*100):0; ?>
+                <div class="sc-bar"><div class="sc-bar-fill" style="background:var(--red)" data-w="<?= round($wPct) ?>"></div></div>
+                <div class="sc-meta"><?= round($wPct) ?>% of deposits</div>
             </div>
-            <div style="text-align:center;margin-bottom:14px;">
-                <div style="font-family:var(--mono);font-size:2rem;font-weight:600;color:var(--ink);letter-spacing:-1px;"><?= $health ?></div>
-                <?php $hc = $health>=80?'#1aa053':($health>=60?'#4481eb':'#f0a500'); ?>
-                <div style="display:inline-flex;align-items:center;gap:4px;background:<?= $hc ?>22;color:<?= $hc ?>;border-radius:100px;padding:3px 12px;font-size:.68rem;font-weight:800;">
-                    <?= $health>=80?'Excellent':($health>=60?'Good':'Fair') ?>
-                </div>
-            </div>
-            <?php foreach ([
-                ['Loan Utilization',  $loan_pct<50,       'bi-bank',             number_format($loan_pct,0).'% used'],
-                ['Monthly Contrib',   $month_contrib>0,   'bi-calendar-check-fill', ks($month_contrib)],
-                ['Savings Balance',   $total_savings>=5000,'bi-piggy-bank-fill', ks($total_savings)],
-                ['Welfare Active',    $welfare_total>0,   'bi-heart-pulse-fill', ks($welfare_total)],
-            ] as $hf): ?>
-            <div class="hf">
-                <div class="hf-ico <?= $hf[1]?'hf-ok':'hf-fail' ?>"><i class="bi <?= $hf[2] ?>"></i></div>
-                <div class="hf-lbl"><?= $hf[0] ?></div>
-                <div class="hf-val"><?= $hf[3] ?></div>
-                <i class="bi bi-<?= $hf[1]?'check-circle-fill':'x-circle-fill' ?>" style="font-size:.8rem;color:<?= $hf[1]?'#1aa053':'#e63757' ?>"></i>
-            </div>
-            <?php endforeach; ?>
         </div>
     </div>
 </div>
 
-<!-- ══════════════════════════════════════
-     ROW 3: Daily Line + Radar + Polar
-══════════════════════════════════════ -->
-<div class="row g-3 mb-3 a5">
-    <div class="col-xl-6">
-        <div class="gp">
-            <div class="gp-head">
-                <div>
-                    <div class="gp-title">Daily Cash Flow — Last 30 Days</div>
-                    <div class="gp-sub">Inflows vs outflows per day — dual line chart</div>
+<!-- BODY -->
+<div class="pg-body">
+
+    <!-- Row 1: Stacked bar + Income vs Outflow -->
+    <div class="row g-3 mb-3">
+        <div class="col-xl-7">
+            <div class="chart-card" style="animation-delay:.72s">
+                <div class="cc-head">
+                    <div><div class="cc-title">12-Month Financial Activity</div><div class="cc-sub">Savings · Contributions · Repayments</div></div>
+                    <div class="cc-stats">
+                        <div><div class="cc-stat-val"><?= ks($total_savings) ?></div><div class="cc-stat-lbl">Net Savings</div></div>
+                        <div class="cc-stat-div"></div>
+                        <div><div class="cc-stat-val"><?= ks(array_sum($ctb_arr)) ?></div><div class="cc-stat-lbl">Total Contributions</div></div>
+                    </div>
                 </div>
-                <div class="gp-stat-row" style="margin-bottom:0;">
-                    <div class="gp-stat"><div class="gp-sv"><?= ks(array_sum($day_in)) ?></div><div class="gp-sl">30-day In</div></div>
-                    <div class="gp-divider"></div>
-                    <div class="gp-stat"><div class="gp-sv"><?= ks(array_sum($day_out)) ?></div><div class="gp-sl">30-day Out</div></div>
+                <div class="leg">
+                    <div class="leg-i"><span class="leg-dot" style="background:var(--f)"></span>Savings</div>
+                    <div class="leg-i"><span class="leg-dot" style="background:var(--lime)"></span>Contributions</div>
+                    <div class="leg-i"><span class="leg-dot" style="background:var(--blu)"></span>Repayments</div>
                 </div>
+                <div class="chart-box" style="height:260px;margin-top:12px"><canvas id="chartStackedBar"></canvas></div>
             </div>
-            <div class="leg" style="margin-bottom:8px;">
-                <div class="leg-i"><span class="leg-dot" style="background:#1aa053"></span>Inflow</div>
-                <div class="leg-i"><span class="leg-dot" style="background:#e63757"></span>Outflow</div>
-            </div>
-            <div class="chart-box" style="height:240px;">
-                <canvas id="chartDailyLine"></canvas>
+        </div>
+        <div class="col-xl-5">
+            <div class="chart-card" style="animation-delay:.78s">
+                <div class="cc-head"><div><div class="cc-title">Income vs Outflow</div><div class="cc-sub">6-month deposits vs withdrawals</div></div></div>
+                <div class="cc-stats">
+                    <div><div class="cc-stat-val"><?= ks(array_sum($inc_arr)) ?></div><div class="cc-stat-lbl">Total In</div></div>
+                    <div class="cc-stat-div"></div>
+                    <div><div class="cc-stat-val"><?= ks(array_sum($exp_arr)) ?></div><div class="cc-stat-lbl">Total Out</div></div>
+                </div>
+                <div class="leg">
+                    <div class="leg-i"><span class="leg-dot" style="background:var(--grn)"></span>Income</div>
+                    <div class="leg-i"><span class="leg-dot" style="background:var(--red)"></span>Outflow</div>
+                </div>
+                <div class="chart-box" style="height:230px;margin-top:10px"><canvas id="chartGrouped"></canvas></div>
             </div>
         </div>
     </div>
-    <div class="col-xl-3">
-        <div class="gp">
-            <div class="gp-head">
-                <div>
-                    <div class="gp-title">Financial Radar</div>
-                    <div class="gp-sub">Multi-dimension performance</div>
+
+    <!-- Row 2: Portfolio + Health + Transactions -->
+    <div class="row g-3 mb-3">
+
+        <!-- Portfolio Doughnut -->
+        <div class="col-xl-4">
+            <div class="chart-card" style="animation-delay:.84s">
+                <div class="cc-head"><div><div class="cc-title">Portfolio Composition</div><div class="cc-sub">Asset vs liability breakdown</div></div></div>
+                <div style="position:relative;width:160px;height:160px;margin:8px auto 18px">
+                    <canvas id="chartDonut" width="160" height="160"></canvas>
+                    <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;pointer-events:none">
+                        <div style="font-size:.88rem;font-weight:800;color:var(--t1);letter-spacing:-.3px;line-height:1.1"><?= ks($total_savings+$total_shares) ?></div>
+                        <div style="font-size:.58rem;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--t3);margin-top:2px">Total Assets</div>
+                    </div>
                 </div>
-            </div>
-            <div class="chart-box" style="height:270px;">
-                <canvas id="chartRadar"></canvas>
-            </div>
-        </div>
-    </div>
-    <div class="col-xl-3">
-        <div class="gp">
-            <div class="gp-head">
-                <div>
-                    <div class="gp-title">Transaction Types</div>
-                    <div class="gp-sub">Volume by category — polar area</div>
+                <?php foreach ([['Savings','var(--f)',$total_savings],['Shares','var(--lime)',$total_shares],['Loans','var(--red)',$active_loans],['Wallet','var(--blu)',$cur_bal]] as $d): ?>
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--bdr2);font-size:.76rem">
+                    <span style="display:flex;align-items:center;gap:8px;font-weight:600;color:var(--t2)">
+                        <span style="width:8px;height:8px;border-radius:50%;background:<?= $d[1] ?>;flex-shrink:0"></span><?= $d[0] ?>
+                    </span>
+                    <span style="font-weight:800;color:var(--t1)"><?= ks($d[2]) ?></span>
                 </div>
-            </div>
-            <div class="chart-box" style="height:200px;">
-                <canvas id="chartPolar"></canvas>
-            </div>
-            <div class="leg" style="margin-top:8px;flex-wrap:wrap;">
-                <?php
-                $pc = ['#1a3a2a','#a8e063','#4481eb','#e63757','#20c997','#f0a500','#7c4dff'];
-                foreach ($txn_type_labels as $i => $lbl): ?>
-                <div class="leg-i"><span class="leg-dot" style="background:<?= $pc[$i % count($pc)] ?>"></span><?= $lbl ?></div>
                 <?php endforeach; ?>
             </div>
         </div>
-    </div>
-</div>
 
-<!-- ══════════════════════════════════════
-     ROW 4: Heatmap + Waterfall + Txn Feed
-══════════════════════════════════════ -->
-<div class="row g-3 mb-3 a6">
-    <div class="col-xl-5">
-        <div class="gp">
-            <div class="gp-head">
-                <div>
-                    <div class="gp-title">Monthly Activity Heatmap</div>
-                    <div class="gp-sub">Transaction volume intensity — last 12 months</div>
+        <!-- Health Gauge -->
+        <div class="col-xl-4">
+            <div class="chart-card" style="animation-delay:.90s">
+                <div class="cc-head"><div><div class="cc-title">Account Health</div><div class="cc-sub">Composite financial score</div></div></div>
+                <div class="gauge-half"><canvas id="chartGauge" width="180" height="180" style="margin-top:-45px"></canvas></div>
+                <div style="text-align:center;margin-bottom:16px">
+                    <div style="font-size:2rem;font-weight:800;color:var(--t1);letter-spacing:-1px;line-height:1"><?= $health ?></div>
+                    <?php $hc=$health>=80?'var(--grn)':($health>=60?'var(--blu)':'var(--amb)'); $hbg=$health>=80?'var(--grn-bg)':($health>=60?'var(--blu-bg)':'var(--amb-bg)'); ?>
+                    <div style="display:inline-flex;align-items:center;gap:5px;background:<?= $hbg ?>;color:<?= $hc ?>;border-radius:50px;padding:3px 12px;font-size:.7rem;font-weight:800;margin-top:5px">
+                        <?= $health>=80?'Excellent':($health>=60?'Good':'Fair') ?>
+                    </div>
                 </div>
-            </div>
-            <div class="hmap-labels" id="hmapLabels"></div>
-            <div class="hmap-grid" id="hmapGrid"></div>
-            <div class="hmap-scale">
-                <span>Low</span>
-                <div class="hmap-scale-cells" id="hmapScale"></div>
-                <span>High</span>
+                <?php foreach ([
+                    ['Loan Utilization', $loan_pct<50,      'bi-bank2',             number_format($loan_pct,0).'% used'],
+                    ['Monthly Contrib',  $month_contrib>0,  'bi-calendar-check-fill',ks($month_contrib)],
+                    ['Savings Balance',  $total_savings>=5000,'bi-piggy-bank-fill', ks($total_savings)],
+                    ['Welfare Active',   $welfare_total>0,  'bi-heart-pulse-fill',   ks($welfare_total)],
+                ] as $hf): ?>
+                <div class="hf">
+                    <div class="hf-ico <?= $hf[1]?'hf-ok':'hf-fail' ?>"><i class="bi <?= $hf[2] ?>"></i></div>
+                    <div class="hf-lbl"><?= $hf[0] ?></div>
+                    <div class="hf-val"><?= $hf[3] ?></div>
+                    <i class="bi bi-<?= $hf[1]?'check-circle-fill':'x-circle-fill' ?>" style="font-size:.8rem;color:<?= $hf[1]?'var(--grn)':'var(--red)' ?>"></i>
+                </div>
+                <?php endforeach; ?>
             </div>
         </div>
-    </div>
-    <div class="col-xl-4">
-        <div class="gp">
-            <div class="gp-head">
-                <div>
-                    <div class="gp-title">Net Position Waterfall</div>
-                    <div class="gp-sub">How your net worth is constructed</div>
-                </div>
-            </div>
-            <div class="chart-box" style="height:270px;">
-                <canvas id="chartWaterfall"></canvas>
-            </div>
-            <div style="text-align:center;font-size:.65rem;font-weight:600;color:var(--muted);margin-top:8px;">
-                Net Worth: <strong style="color:<?= $net_worth>=0 ? '#1aa053' : '#e63757' ?>"><?= ks($net_worth) ?></strong>
-            </div>
-        </div>
-    </div>
-    <div class="col-xl-3">
-        <div class="gp">
-            <div class="gp-head">
-                <div>
-                    <div class="gp-title">Recent Transactions</div>
-                    <div class="gp-sub">Latest 8 entries</div>
-                </div>
-            </div>
-            <?php if (empty($recent_txn)): ?>
-            <div style="text-align:center;padding:40px 0;color:var(--faint);">
-                <i class="bi bi-inbox" style="font-size:2rem;display:block;opacity:.3;margin-bottom:8px;"></i>
-                <p style="font-size:.75rem;font-weight:600;margin:0;">No transactions yet</p>
-            </div>
-            <?php else: ?>
-            <ul class="txn-feed">
-                <?php foreach ($recent_txn as $t):
-                    $is_in  = in_array($t['transaction_type'], ['deposit','income','contribution','revenue_inflow']);
-                    $is_loan= str_contains($t['transaction_type'], 'loan');
-                    $ic     = $is_loan ? 'ti-loan' : ($is_in ? 'ti-in' : 'ti-out');
-                    $ib     = $is_loan ? 'bi-bank'  : ($is_in ? 'bi-arrow-down-left' : 'bi-arrow-up-right');
-                ?>
-                <li class="txn-item">
-                    <div style="display:flex;align-items:center;gap:8px;">
-                        <div class="txn-ico <?= $ic ?>"><i class="bi <?= $ib ?>"></i></div>
-                        <div>
-                            <div class="txn-name"><?= htmlspecialchars($t['transaction_type']) ?></div>
-                            <div class="txn-date"><?= date('d M, h:i A', strtotime($t['created_at'])) ?></div>
+
+        <!-- Transaction Feed -->
+        <div class="col-xl-4">
+            <div class="chart-card" style="animation-delay:.96s">
+                <div class="cc-head"><div><div class="cc-title">Recent Transactions</div><div class="cc-sub">Latest 8 entries</div></div></div>
+                <?php if (empty($recent_txn)): ?>
+                <div class="empty-well"><div class="ew-ico"><i class="bi bi-inbox"></i></div><div class="ew-title">No Transactions Yet</div><div class="ew-sub">Your activity will appear here.</div></div>
+                <?php else: ?>
+                <ul class="txn-feed">
+                    <?php foreach ($recent_txn as $t):
+                        $is_in   = in_array($t['transaction_type'],['deposit','income','contribution','revenue_inflow']);
+                        $is_loan = str_contains($t['transaction_type'],'loan');
+                        $tr_cls  = $is_loan?'ti-loan':($is_in?'ti-in':'ti-out');
+                        $ic_cls  = $is_loan?'ico-loan':($is_in?'ico-in':'ico-out');
+                        $ib      = $is_loan?'bi-bank2':($is_in?'bi-arrow-down-circle-fill':'bi-arrow-up-circle-fill');
+                    ?>
+                    <li class="txn-row <?= $tr_cls ?>">
+                        <div style="display:flex;align-items:center;gap:9px">
+                            <div class="txn-ico <?= $ic_cls ?>"><i class="bi <?= $ib ?>"></i></div>
+                            <div><div class="txn-name"><?= htmlspecialchars($t['transaction_type']) ?></div><div class="txn-date"><?= date('d M, h:i A', strtotime($t['created_at'])) ?></div></div>
                         </div>
-                    </div>
-                    <div style="text-align:right;">
-                        <div class="<?= $is_in ? 't-in' : 't-out' ?>"><?= $is_in ? '+' : '-' ?><?= number_format((float)$t['amount'], 2) ?></div>
-                        <span class="txn-ref"><?= strtoupper(htmlspecialchars($t['reference_no'])) ?></span>
-                    </div>
-                </li>
-                <?php endforeach; ?>
-            </ul>
-            <?php endif; ?>
-            <a href="transactions.php" class="btn-all"><i class="bi bi-list-ul"></i> View All</a>
+                        <div style="text-align:right;flex-shrink:0">
+                            <div class="<?= $is_in?'txn-amt-in':'txn-amt-out' ?>"><?= $is_in?'+':'−' ?> <?= number_format((float)$t['amount'],2) ?></div>
+                            <span class="txn-ref"><?= strtoupper(htmlspecialchars($t['reference_no'])) ?></span>
+                        </div>
+                    </li>
+                    <?php endforeach; ?>
+                </ul>
+                <?php endif; ?>
+                <a href="transactions.php" class="btn-view-all"><i class="bi bi-list-ul"></i> View All Transactions</a>
+            </div>
         </div>
-    </div>
-</div>
 
-<!-- ══════════════════════════════════════
-     ROW 5: Bubble + Horizontal Bar
-══════════════════════════════════════ -->
-<div class="row g-3 a7">
-    <div class="col-xl-7">
-        <div class="gp">
-            <div class="gp-head">
-                <div>
-                    <div class="gp-title">Savings vs Contributions — Bubble Chart</div>
-                    <div class="gp-sub">Each bubble = 1 month · X=contributions · Y=savings · Size=repayment</div>
+    </div>
+
+    <!-- Row 3: Radar + Quick Actions -->
+    <div class="row g-3 mb-3">
+        <div class="col-xl-5">
+            <div class="chart-card" style="animation-delay:1.02s">
+                <div class="cc-head"><div><div class="cc-title">Financial Radar</div><div class="cc-sub">Multi-dimension performance score</div></div></div>
+                <div class="chart-box" style="height:260px"><canvas id="chartRadar"></canvas></div>
+            </div>
+        </div>
+        <div class="col-xl-7">
+            <div class="chart-card" style="animation-delay:1.08s">
+                <div class="cc-head"><div><div class="cc-title">Quick Actions</div><div class="cc-sub">Common financial operations</div></div></div>
+                <div class="row g-3 mt-1">
+                    <?php foreach ([
+                        ['bi-plus-circle-fill',  'var(--grn-bg)','var(--grn)','Add Funds',   'Deposit via M-Pesa',   'mpesa_request.php?type=savings'],
+                        ['bi-pie-chart-fill',    'var(--lg)',    'var(--lt)', 'Buy Shares',  'Invest in equity',     'mpesa_request.php?type=shares'],
+                        ['bi-heart-fill',        'var(--red-bg)','var(--red)','Contribute',  'Welfare fund deposit', 'mpesa_request.php?type=welfare'],
+                        ['bi-bank2',             'var(--amb-bg)','var(--amb)','Apply Loan',  'Request financing',    'loans.php'],
+                        ['bi-wallet2',           'var(--blu-bg)','var(--blu)','Withdraw',    'Transfer to M-Pesa',   'withdraw.php'],
+                        ['bi-file-earmark-text', 'var(--bdr)',   'var(--t2)', 'Statement',   'Download PDF report',  'savings.php'],
+                    ] as $a): ?>
+                    <div class="col-md-4">
+                        <a href="<?= $a[5] ?>" style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--surf2);border:1px solid var(--bdr);border-radius:14px;text-decoration:none;transition:all .2s var(--ease)"
+                           onmouseover="this.style.borderColor='rgba(11,36,25,.18)';this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 20px rgba(11,36,25,.09)'"
+                           onmouseout="this.style.borderColor='var(--bdr)';this.style.transform='';this.style.boxShadow=''">
+                            <div style="width:38px;height:38px;border-radius:11px;background:<?= $a[1] ?>;color:<?= $a[2] ?>;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0"><i class="bi <?= $a[0] ?>"></i></div>
+                            <div>
+                                <div style="font-size:.83rem;font-weight:800;color:var(--t1);margin-bottom:2px"><?= $a[3] ?></div>
+                                <div style="font-size:.68rem;font-weight:500;color:var(--t3)"><?= $a[4] ?></div>
+                            </div>
+                        </a>
+                    </div>
+                    <?php endforeach; ?>
                 </div>
             </div>
-            <div class="chart-box" style="height:270px;">
-                <canvas id="chartBubble"></canvas>
-            </div>
         </div>
     </div>
-    <div class="col-xl-5">
-        <div class="gp">
-            <div class="gp-head">
-                <div>
-                    <div class="gp-title">Transaction Totals by Type</div>
-                    <div class="gp-sub">Cumulative KES per category — horizontal bar</div>
-                </div>
-            </div>
-            <div class="chart-box" style="height:270px;">
-                <canvas id="chartHBar"></canvas>
-            </div>
-        </div>
-    </div>
-</div>
 
+</div><!-- /pg-body -->
 </div><!-- /dash -->
 
-<!-- RECEIPT MODAL -->
-<div class="modal fade rmodal" id="receiptModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" style="max-width:390px;">
-        <div class="modal-content">
-            <div class="rh">
-                <div class="rh-ico"><i class="bi bi-check-lg"></i></div>
-                <h4>Transaction Successful</h4><p>Receipt generated automatically</p>
-            </div>
-            <div class="rb">
-                <div style="text-align:center;margin-bottom:6px;">
-                    <div class="r-amt" id="receiptAmount">KES 0.00</div>
-                    <div class="r-stamp">Verified</div>
-                </div>
-                <hr class="r-div">
-                <div class="r-row"><span class="r-lbl">Receipt No.</span><span class="r-val" id="receiptNo">—</span></div>
-                <div class="r-row"><span class="r-lbl">Account</span><span class="r-val" id="receiptAccount">—</span></div>
-                <div class="r-row"><span class="r-lbl">Reference</span><span class="r-val" id="receiptRef">—</span></div>
-                <div class="r-row"><span class="r-lbl">Date &amp; Time</span><span class="r-val" id="receiptDate"><?= date('d M, Y H:i:s') ?></span></div>
-                <hr class="r-div">
-                <button type="button" class="btn-rc" data-bs-dismiss="modal">Close Receipt</button>
-            </div>
-        </div>
-    </div>
-</div>
-
 <?php $layout->footer(); ?>
-</div>
-</div>
+</div><!-- /main-content-wrapper -->
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 <script>
-/* ── PHP → JS DATA ──────────────────────────── */
-const MO_LABELS = <?= json_encode($mo_labels) ?>;
-const SAV_DATA  = <?= json_encode($sav_arr) ?>;
-const CTB_DATA  = <?= json_encode($ctb_arr) ?>;
-const REP_DATA  = <?= json_encode($rep_arr) ?>;
-const WDR_DATA  = <?= json_encode($wdr_arr) ?>;
-const WAL_LABELS= <?= json_encode($wal_labels) ?>;
-const WAL_DATA  = <?= json_encode($wal_arr) ?>;
-const INC_LABELS= <?= json_encode($inc_labels) ?>;
-const INC_DATA  = <?= json_encode($inc_arr) ?>;
-const EXP_DATA  = <?= json_encode($exp_arr) ?>;
-const DAY_LABELS= <?= json_encode($day_labels) ?>;
-const DAY_IN    = <?= json_encode($day_in) ?>;
-const DAY_OUT   = <?= json_encode($day_out) ?>;
-const TXN_LBLS  = <?= json_encode($txn_type_labels) ?>;
-const TXN_VALS  = <?= json_encode($txn_type_vals) ?>;
-const RADAR_D   = <?= json_encode($radar) ?>;
+const MO_LABELS=<?= json_encode($mo_labels) ?>;
+const SAV_DATA =<?= json_encode($sav_arr) ?>;
+const CTB_DATA =<?= json_encode($ctb_arr) ?>;
+const REP_DATA =<?= json_encode($rep_arr) ?>;
+const INC_LABELS=<?= json_encode($inc_labels) ?>;
+const INC_DATA =<?= json_encode($inc_arr) ?>;
+const EXP_DATA =<?= json_encode($exp_arr) ?>;
+const RADAR_D  =<?= json_encode($radar) ?>;
+const TOTAL_SAV=<?= $total_savings ?>;
+const TOTAL_SHR=<?= $total_shares ?>;
+const LOANS_BAL=<?= $active_loans ?>;
+const WAL_BAL  =<?= $cur_bal ?>;
+const HEALTH   =<?= $health ?>;
 
-const TOTAL_SAV = <?= $total_savings ?>;
-const TOTAL_SHR = <?= $total_shares ?>;
-const LOANS_BAL = <?= $active_loans ?>;
-const WAL_BAL   = <?= $cur_bal ?>;
-const TOT_DEP   = <?= $total_deposits ?>;
-const TOT_WDR   = <?= $total_withdrawals ?>;
-const NET_WORTH = <?= $net_worth ?>;
-const HEALTH    = <?= $health ?>;
+const dark=document.documentElement.getAttribute('data-bs-theme')==='dark';
+const GRID=dark?'rgba(255,255,255,.05)':'rgba(11,36,25,.05)';
+const TICK=dark?'#3a6050':'#8fada0';
+const SURF=dark?'#0d1d14':'#ffffff';
 
-/* ── THEME ──────────────────────────────────── */
-const dark   = document.documentElement.getAttribute('data-bs-theme') === 'dark';
-const GRID   = dark ? 'rgba(255,255,255,.05)' : 'rgba(26,42,74,.05)';
-const TICK   = dark ? '#3a5a76' : '#8a9fb0';
-const SURF   = dark ? '#0f1e2d' : '#ffffff';
+const TT={backgroundColor:dark?'#0d1d14':'#0b2419',titleColor:'#a3e635',bodyColor:'#fff',padding:12,cornerRadius:10,borderColor:'rgba(163,230,53,.2)',borderWidth:1,titleFont:{family:"'Plus Jakarta Sans',sans-serif",weight:'800',size:12},bodyFont:{family:"'Plus Jakarta Sans',sans-serif",size:11}};
+const XS={grid:{display:false},ticks:{color:TICK,font:{family:"'Plus Jakarta Sans',sans-serif",size:10}}};
+const YS={grid:{color:GRID},ticks:{color:TICK,font:{family:"'Plus Jakarta Sans',sans-serif",size:10}}};
 
-/* ── SHARED TOOLTIP STYLE ───────────────────── */
-const TT = {
-    backgroundColor: dark ? '#0f1e2d' : '#1a3a2a',
-    titleColor: '#a8e063', bodyColor: '#fff',
-    padding: 12, cornerRadius: 10,
-    borderColor: 'rgba(168,224,99,.2)', borderWidth: 1,
-    titleFont: { family:"'Plus Jakarta Sans',sans-serif", weight:'800', size:12 },
-    bodyFont:  { family:"'JetBrains Mono',monospace", size:11 },
-};
-
-/* ── SHARED SCALE DEFAULTS ──────────────────── */
-const XSCALE = { grid:{ display:false }, ticks:{ color:TICK, font:{ family:"'Plus Jakarta Sans',sans-serif", size:10 } } };
-const YSCALE = { grid:{ color:GRID },    ticks:{ color:TICK, font:{ family:"'Plus Jakarta Sans',sans-serif", size:10 } } };
-
-/* ══════════════════════════════════════════════
-   1. SPARKLINES
-══════════════════════════════════════════════ */
-function sparkline(id, data, color) {
-    const canvas = document.getElementById(id);
-    if (!canvas) return;
-    canvas.width  = canvas.parentElement.offsetWidth || 200;
-    canvas.height = 38;
-    new Chart(canvas, {
-        type: 'line',
-        data: {
-            labels: MO_LABELS.slice(-data.length),
-            datasets: [{ data, borderColor: color, borderWidth: 2,
-                fill: true, backgroundColor: color + '28',
-                tension: .5, pointRadius: 0 }]
-        },
-        options: {
-            responsive: false, animation: { duration: 900 },
-            plugins: { legend:{ display:false }, tooltip:{ enabled:false } },
-            scales: { x:{ display:false }, y:{ display:false } }
-        }
-    });
-}
-sparkline('spk1', SAV_DATA.slice(-6), '#1aa053');
-sparkline('spk2', CTB_DATA.slice(-6), '#4481eb');
-sparkline('spk3', INC_DATA,           '#f0a500');
-sparkline('spk4', EXP_DATA,           '#e63757');
-
-/* ══════════════════════════════════════════════
-   2. STACKED BAR — 12-month activity
-══════════════════════════════════════════════ */
-new Chart(document.getElementById('chartStackedBar'), {
-    type: 'bar',
-    data: {
-        labels: MO_LABELS,
-        datasets: [
-            { label:'Savings',       data:SAV_DATA, backgroundColor:'#1a3a2acc', borderRadius:5, barPercentage:.75 },
-            { label:'Contributions', data:CTB_DATA, backgroundColor:'#a8e063cc', borderRadius:5, barPercentage:.75 },
-            { label:'Repayments',    data:REP_DATA, backgroundColor:'#4481ebcc', borderRadius:5, barPercentage:.75 },
-        ]
-    },
-    options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: { legend:{ display:false }, tooltip:{ ...TT,
-            callbacks: { label: c => ' ' + c.dataset.label + ': KES ' + c.parsed.y.toLocaleString() }
-        }},
-        scales: { x:{ ...XSCALE, stacked:true }, y:{ ...YSCALE, stacked:true } }
-    }
+document.addEventListener('DOMContentLoaded',()=>{
+    setTimeout(()=>{ document.querySelectorAll('[data-w]').forEach(el=>{el.style.width=el.dataset.w+'%'}); },460);
 });
 
-/* ══════════════════════════════════════════════
-   3. AREA LINE — Wallet running balance
-══════════════════════════════════════════════ */
-(function() {
-    const ctx = document.getElementById('chartWalletArea').getContext('2d');
-    const g = ctx.createLinearGradient(0, 0, 0, 240);
-    g.addColorStop(0, '#1a3a2a55'); g.addColorStop(1, '#1a3a2a00');
-    new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: WAL_LABELS,
-            datasets: [{ label:'Balance', data:WAL_DATA,
-                borderColor:'#1a3a2a', borderWidth:2.5,
-                backgroundColor:g, fill:true, tension:.45,
-                pointRadius:4, pointBackgroundColor:'#1a3a2a',
-                pointBorderColor:SURF, pointBorderWidth:2
-            }]
-        },
-        options: { responsive:true, maintainAspectRatio:false,
-            plugins:{ legend:{ display:false }, tooltip:{ ...TT,
-                callbacks:{ label:c=>' KES '+c.parsed.y.toLocaleString() }
-            }},
-            scales:{ x:XSCALE, y:YSCALE }
-        }
-    });
-})();
+// 1. Stacked Bar
+new Chart(document.getElementById('chartStackedBar'),{type:'bar',data:{labels:MO_LABELS,datasets:[
+    {label:'Savings',data:SAV_DATA,backgroundColor:'#0b2419cc',borderRadius:5,barPercentage:.75},
+    {label:'Contributions',data:CTB_DATA,backgroundColor:'#a3e635cc',borderRadius:5,barPercentage:.75},
+    {label:'Repayments',data:REP_DATA,backgroundColor:'#2563ebcc',borderRadius:5,barPercentage:.75},
+]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>' '+c.dataset.label+': KES '+c.parsed.y.toLocaleString()}}},scales:{x:{...XS,stacked:true},y:{...YS,stacked:true}}}});
 
-/* ══════════════════════════════════════════════
-   4. GROUPED BAR — Income vs Outflow 6mo
-══════════════════════════════════════════════ */
-new Chart(document.getElementById('chartGrouped'), {
-    type: 'bar',
-    data: {
-        labels: INC_LABELS,
-        datasets: [
-            { label:'Income',  data:INC_DATA, backgroundColor:'#1aa053cc', borderRadius:7, barPercentage:.7 },
-            { label:'Outflow', data:EXP_DATA, backgroundColor:'#e63757cc', borderRadius:7, barPercentage:.7 },
-        ]
-    },
-    options: { responsive:true, maintainAspectRatio:false,
-        plugins:{ legend:{ display:false }, tooltip:TT },
-        scales:{ x:XSCALE, y:YSCALE }
-    }
-});
+// 2. Grouped Bar
+new Chart(document.getElementById('chartGrouped'),{type:'bar',data:{labels:INC_LABELS,datasets:[
+    {label:'Income',data:INC_DATA,backgroundColor:'#16a34acc',borderRadius:8,barPercentage:.72},
+    {label:'Outflow',data:EXP_DATA,backgroundColor:'#dc2626cc',borderRadius:8,barPercentage:.72},
+]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>' '+c.dataset.label+': KES '+c.parsed.y.toLocaleString()}}},scales:{x:XS,y:YS}}});
 
-/* ══════════════════════════════════════════════
-   5. DOUGHNUT — Portfolio breakdown
-══════════════════════════════════════════════ */
-new Chart(document.getElementById('chartDonut'), {
-    type: 'doughnut',
-    data: {
-        labels: ['Savings','Shares','Loans','Wallet'],
-        datasets: [{ data:[TOTAL_SAV, TOTAL_SHR, LOANS_BAL, WAL_BAL],
-            backgroundColor:['#1a3a2a','#a8e063','#e63757','#4481eb'],
-            borderWidth:0, hoverOffset:7
-        }]
-    },
-    options: { cutout:'72%', responsive:false,
-        plugins:{ legend:{ display:false }, tooltip:{ ...TT,
-            callbacks:{ label:c=>' KES '+c.parsed.toLocaleString() }
-        }}
-    }
-});
+// 3. Doughnut
+new Chart(document.getElementById('chartDonut'),{type:'doughnut',data:{labels:['Savings','Shares','Loans','Wallet'],datasets:[{data:[TOTAL_SAV,TOTAL_SHR,LOANS_BAL,WAL_BAL],backgroundColor:['#0b2419','#a3e635','#dc2626','#2563eb'],borderWidth:0,hoverOffset:7}]},options:{cutout:'72%',responsive:false,plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>' KES '+c.parsed.toLocaleString()}}}}});
 
-/* ══════════════════════════════════════════════
-   6. GAUGE — Account health (half doughnut)
-══════════════════════════════════════════════ */
-(function() {
-    const hc = HEALTH >= 80 ? '#1aa053' : HEALTH >= 60 ? '#4481eb' : '#f0a500';
-    new Chart(document.getElementById('chartGauge'), {
-        type: 'doughnut',
-        data: { datasets:[{
-            data:[HEALTH, 100 - HEALTH],
-            backgroundColor:[hc, dark ? 'rgba(255,255,255,.07)' : 'rgba(26,58,42,.06)'],
-            borderWidth:0, circumference:180, rotation:270
-        }]},
-        options: { responsive:false, cutout:'70%',
-            plugins:{ legend:{ display:false }, tooltip:{ enabled:false } }
-        }
-    });
-})();
+// 4. Gauge
+(function(){const hc=HEALTH>=80?'#16a34a':HEALTH>=60?'#2563eb':'#d97706';
+new Chart(document.getElementById('chartGauge'),{type:'doughnut',data:{datasets:[{data:[HEALTH,100-HEALTH],backgroundColor:[hc,dark?'rgba(255,255,255,.07)':'rgba(11,36,25,.06)'],borderWidth:0,circumference:180,rotation:270}]},options:{responsive:false,cutout:'70%',plugins:{legend:{display:false},tooltip:{enabled:false}}}});})();
 
-/* ══════════════════════════════════════════════
-   7. DUAL LINE — Daily Cash Flow 30 days
-══════════════════════════════════════════════ */
-(function() {
-    const ctx = document.getElementById('chartDailyLine').getContext('2d');
-    const gi = ctx.createLinearGradient(0, 0, 0, 240);
-    gi.addColorStop(0, '#1aa05344'); gi.addColorStop(1, '#1aa05300');
-    const go = ctx.createLinearGradient(0, 0, 0, 240);
-    go.addColorStop(0, '#e6375744'); go.addColorStop(1, '#e6375700');
+// 5. Radar
+new Chart(document.getElementById('chartRadar'),{type:'radar',data:{labels:['Savings','Shares','Loan Health','Contributions','Welfare','Wallet'],datasets:[{label:'Score',data:RADAR_D,borderColor:'#a3e635',borderWidth:2,backgroundColor:'rgba(163,230,53,.12)',pointBackgroundColor:'#a3e635',pointBorderColor:SURF,pointBorderWidth:2,pointRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>' '+c.parsed.r.toFixed(0)+'%'}}},scales:{r:{grid:{color:GRID},ticks:{display:false},min:0,max:100,pointLabels:{color:TICK,font:{family:"'Plus Jakarta Sans',sans-serif",size:10,weight:'700'}}}}}});
 
-    // Sample every 3rd day to reduce clutter
-    const step = 3;
-    const labels = DAY_LABELS.filter((_,i) => i % step === 0);
-    const din    = DAY_IN.filter((_,i)    => i % step === 0);
-    const dout   = DAY_OUT.filter((_,i)   => i % step === 0);
-
-    new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels,
-            datasets: [
-                { label:'Inflow',  data:din,  borderColor:'#1aa053', borderWidth:2.5,
-                  backgroundColor:gi, fill:true, tension:.4,
-                  pointRadius:3, pointBackgroundColor:'#1aa053', pointBorderColor:SURF, pointBorderWidth:1.5 },
-                { label:'Outflow', data:dout, borderColor:'#e63757', borderWidth:2.5,
-                  backgroundColor:go, fill:true, tension:.4,
-                  pointRadius:3, pointBackgroundColor:'#e63757', pointBorderColor:SURF, pointBorderWidth:1.5 }
-            ]
-        },
-        options: { responsive:true, maintainAspectRatio:false,
-            plugins:{ legend:{ display:false }, tooltip:{ ...TT,
-                callbacks:{ label:c=>' '+c.dataset.label+': KES '+c.parsed.y.toLocaleString() }
-            }},
-            scales:{ x:XSCALE, y:YSCALE }
-        }
-    });
-})();
-
-/* ══════════════════════════════════════════════
-   8. RADAR — Financial dimensions
-══════════════════════════════════════════════ */
-new Chart(document.getElementById('chartRadar'), {
-    type: 'radar',
-    data: {
-        labels: ['Savings','Shares','Loan Health','Contributions','Welfare','Wallet'],
-        datasets: [{ label:'Score',
-            data: RADAR_D,
-            borderColor: '#a8e063', borderWidth: 2,
-            backgroundColor: 'rgba(168,224,99,.12)',
-            pointBackgroundColor: '#a8e063',
-            pointBorderColor: SURF, pointBorderWidth: 2, pointRadius: 4
-        }]
-    },
-    options: { responsive:true, maintainAspectRatio:false,
-        plugins:{ legend:{ display:false }, tooltip:{ ...TT,
-            callbacks:{ label:c=>' '+c.parsed.r.toFixed(0)+'%' }
-        }},
-        scales:{ r:{
-            grid:{ color:dark?'rgba(255,255,255,.07)':'rgba(26,42,74,.07)' },
-            ticks:{ display:false }, min:0, max:100,
-            pointLabels:{ color:TICK, font:{ family:"'Plus Jakarta Sans',sans-serif", size:10, weight:'700' } }
-        }}
-    }
-});
-
-/* ══════════════════════════════════════════════
-   9. POLAR AREA — Transaction type volumes
-══════════════════════════════════════════════ */
-new Chart(document.getElementById('chartPolar'), {
-    type: 'polarArea',
-    data: {
-        labels: TXN_LBLS,
-        datasets: [{ data: TXN_VALS,
-            backgroundColor: ['#1a3a2acc','#a8e063cc','#4481ebcc','#e63757cc','#20c997cc','#f0a500cc','#7c4dffcc'],
-            borderWidth: 0
-        }]
-    },
-    options: { responsive:true, maintainAspectRatio:false,
-        plugins:{ legend:{ display:false }, tooltip:{ ...TT,
-            callbacks:{ label:c=>' KES '+c.parsed.r.toLocaleString() }
-        }},
-        scales:{ r:{ grid:{ color:dark?'rgba(255,255,255,.06)':'rgba(26,42,74,.06)' }, ticks:{ display:false } } }
-    }
-});
-
-/* ══════════════════════════════════════════════
-   10. HEATMAP — Monthly intensity (CSS-driven)
-══════════════════════════════════════════════ */
-(function() {
-    // Build monthly totals from day_in + day_out chunked into 12 groups
-    const monthlyTotals = MO_LABELS.map((_, mi) => {
-        const daysPerMonth = Math.floor(DAY_IN.length / 12);
-        const start = mi * daysPerMonth;
-        const end   = start + daysPerMonth;
-        return DAY_IN.slice(start, end).reduce((a, b) => a + b, 0)
-             + DAY_OUT.slice(start, end).reduce((a, b) => a + b, 0);
-    });
-    const maxVal = Math.max(...monthlyTotals, 1);
-
-    // Labels
-    const labelsEl = document.getElementById('hmapLabels');
-    MO_LABELS.forEach(m => {
-        const d = document.createElement('div');
-        d.className = 'hmap-lbl'; d.textContent = m;
-        labelsEl.appendChild(d);
-    });
-
-    // Cells
-    const gridEl = document.getElementById('hmapGrid');
-    monthlyTotals.forEach((v, i) => {
-        const intensity = v / maxVal;
-        const alpha     = 0.07 + intensity * 0.83;
-        const cell      = document.createElement('div');
-        cell.className  = 'hmap-cell';
-        cell.style.background = `rgba(26,58,42,${alpha.toFixed(2)})`;
-        cell.title = `${MO_LABELS[i]}: KES ${v.toLocaleString()}`;
-        gridEl.appendChild(cell);
-    });
-
-    // Scale
-    const scaleEl = document.getElementById('hmapScale');
-    for (let l = 1; l <= 5; l++) {
-        const d = document.createElement('div');
-        d.style.cssText = `width:20px;height:16px;border-radius:4px;background:rgba(26,58,42,${(0.07 + l * 0.17).toFixed(2)})`;
-        scaleEl.appendChild(d);
-    }
-})();
-
-/* ══════════════════════════════════════════════
-   11. WATERFALL — Net position breakdown
-══════════════════════════════════════════════ */
-(function() {
-    const labels = ['Deposits','Savings','Shares','Loans','Withdrawals','Net Worth'];
-    const values = [TOT_DEP, TOTAL_SAV, TOTAL_SHR, LOANS_BAL, TOT_WDR, Math.abs(NET_WORTH)];
-    const colors = ['#1aa053cc','#1a3a2acc','#a8e063cc','#e63757cc','#f0a500cc',
-        NET_WORTH >= 0 ? '#1aa053cc' : '#e63757cc'];
-    new Chart(document.getElementById('chartWaterfall'), {
-        type: 'bar',
-        data: { labels, datasets:[{
-            data: values,
-            backgroundColor: colors,
-            borderRadius: 8, barPercentage: .65
-        }]},
-        options: { responsive:true, maintainAspectRatio:false,
-            plugins:{ legend:{ display:false }, tooltip:{ ...TT,
-                callbacks:{ label:c=>' KES '+c.parsed.y.toLocaleString() }
-            }},
-            scales:{ x:XSCALE, y:YSCALE }
-        }
-    });
-})();
-
-/* ══════════════════════════════════════════════
-   12. BUBBLE — Savings vs Contributions
-══════════════════════════════════════════════ */
-new Chart(document.getElementById('chartBubble'), {
-    type: 'bubble',
-    data: { datasets:[{
-        label: 'Monthly Data',
-        data: SAV_DATA.map((s, i) => ({
-            x: CTB_DATA[i],
-            y: s,
-            r: Math.min(22, Math.max(4, (REP_DATA[i] / 3000)))
-        })),
-        backgroundColor: SAV_DATA.map((_, i) =>
-            `hsla(${130 + i * 10}, 48%, 28%, 0.68)`
-        ),
-        borderColor: '#a8e063', borderWidth: 1.5
-    }]},
-    options: { responsive:true, maintainAspectRatio:false,
-        plugins:{ legend:{ display:false }, tooltip:{ ...TT,
-            callbacks:{ label:c=>[
-                ' Savings: KES '      + c.parsed.y.toLocaleString(),
-                ' Contributions: KES '+ c.parsed.x.toLocaleString(),
-                ' Repaid bubble size'
-            ]}
-        }},
-        scales: {
-            x: { ...YSCALE, title:{ display:true, text:'Contributions (KES)', color:TICK, font:{ size:10 } } },
-            y: { ...YSCALE, title:{ display:true, text:'Savings (KES)',        color:TICK, font:{ size:10 } } }
-        }
-    }
-});
-
-/* ══════════════════════════════════════════════
-   13. HORIZONTAL BAR — Transaction type totals
-══════════════════════════════════════════════ */
-new Chart(document.getElementById('chartHBar'), {
-    type: 'bar',
-    data: {
-        labels: TXN_LBLS,
-        datasets:[{ label:'KES Total', data:TXN_VALS,
-            backgroundColor:['#1a3a2acc','#a8e063cc','#4481ebcc','#e63757cc','#20c997cc','#f0a500cc','#7c4dffcc'],
-            borderRadius: 8, barPercentage: .65
-        }]
-    },
-    options: { indexAxis:'y', responsive:true, maintainAspectRatio:false,
-        plugins:{ legend:{ display:false }, tooltip:{ ...TT,
-            callbacks:{ label:c=>' KES '+c.parsed.x.toLocaleString() }
-        }},
-        scales:{
-            x:{ ...YSCALE },
-            y:{ grid:{ display:false }, ticks:{ color:TICK, font:{ family:"'Plus Jakarta Sans',sans-serif", size:10 } } }
-        }
-    }
-});
-
-/* ── SESSION FLASH ──────────────────────────── */
-<?php if (isset($_SESSION['success'])): ?>
-    typeof showToast !== 'undefined' && showToast(<?= json_encode($_SESSION['success']) ?>, 'success');
-    <?php unset($_SESSION['success']); ?>
-<?php endif; ?>
-<?php if (isset($_SESSION['error'])): ?>
-    typeof showToast !== 'undefined' && showToast(<?= json_encode($_SESSION['error']) ?>, 'error');
-    <?php unset($_SESSION['error']); ?>
-<?php endif; ?>
-
-/* ── RECEIPT MODAL TRIGGER ──────────────────── */
-<?php if (isset($_SESSION['payment_success_trigger'])):
-    $tid = (int)$_SESSION['payment_success_trigger'];
-    unset($_SESSION['payment_success_trigger']);
-    $sr = $conn->prepare("SELECT * FROM transactions WHERE transaction_id=? AND member_id=?");
-    $sr->bind_param("ii", $tid, $member_id); $sr->execute();
-    $td = $sr->get_result()->fetch_assoc(); $sr->close();
-    if ($td): ?>
-document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('receiptAmount').innerText  = 'KES <?= number_format((float)$td['amount'], 2) ?>';
-    document.getElementById('receiptNo').innerText      = '<?= $td['reference_no'] ?>';
-    document.getElementById('receiptAccount').innerText = '<?= ucfirst($td['transaction_type']) ?> Account';
-    document.getElementById('receiptRef').innerText     = 'TXN-<?= strtoupper(substr(bin2hex(random_bytes(4)), 0, 8)) ?>';
-    new bootstrap.Modal(document.getElementById('receiptModal')).show();
-});
-<?php endif; endif; ?>
+<?php if(isset($_SESSION['success'])):?>typeof showToast!=='undefined'&&showToast(<?=json_encode($_SESSION['success'])?>, 'success');<?php unset($_SESSION['success']);endif;?>
+<?php if(isset($_SESSION['error'])):?>typeof showToast!=='undefined'&&showToast(<?=json_encode($_SESSION['error'])?>,'error');<?php unset($_SESSION['error']);endif;?>
 </script>
 </body>
 </html>
