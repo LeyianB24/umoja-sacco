@@ -49,8 +49,12 @@ class CronService {
         $stmt = $this->db->prepare($sql);
         $stmt->execute([$today, $today]);
         
+        $loans = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        file_put_contents('c:/xampp/htdocs/usms/debug_cron.log', "[" . date('Y-m-d H:i:s') . "] LOG: Found " . count($loans) . " loans to process\n", FILE_APPEND);
+        
         $processedCount = 0;
-        while ($loan = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        foreach ($loans as $loan) {
+            file_put_contents('c:/xampp/htdocs/usms/debug_cron.log', "[" . date('Y-m-d H:i:s') . "] LOG: Processing Loan #{$loan['loan_id']}\n", FILE_APPEND);
             $this->db->beginTransaction();
             try {
                 // 1. Record in fines table
@@ -100,6 +104,7 @@ class CronService {
                     $this->db->rollBack();
                 }
                 error_log("Failed to apply fine to loan #{$loan['loan_id']}: " . $e->getMessage());
+                file_put_contents('c:/xampp/htdocs/usms/debug_cron.log', "[" . date('Y-m-d H:i:s') . "] ERROR: " . $e->getMessage() . "\n", FILE_APPEND);
             }
         }
         return $processedCount;
