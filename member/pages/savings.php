@@ -20,14 +20,15 @@ $typeFilter = $_GET['type']       ?? '';
 $startDate  = $_GET['start_date'] ?? '';
 $endDate    = $_GET['end_date']   ?? '';
 
-$where  = "WHERE member_id = ?";
+$allowedTypes = ['deposit', 'contribution', 'savings_deposit', 'withdrawal', 'withdrawal_initiate', 'withdrawal_finalize'];
+$where  = "WHERE member_id = ? AND transaction_type IN ('" . implode("','", $allowedTypes) . "')";
 $params = [$member_id];
 $types  = "i";
 
-if ($typeFilter && in_array($typeFilter, ['deposit', 'withdrawal', 'contribution'])) {
-    $where   .= " AND transaction_type = ?";
-    $params[] = $typeFilter;
-    $types   .= "s";
+if ($typeFilter === 'deposit') {
+    $where .= " AND transaction_type IN ('deposit', 'contribution', 'savings_deposit')";
+} elseif ($typeFilter === 'withdrawal') {
+    $where .= " AND transaction_type IN ('withdrawal', 'withdrawal_initiate', 'withdrawal_finalize')";
 }
 if ($startDate && $endDate) {
     $where   .= " AND DATE(created_at) BETWEEN ? AND ?";
@@ -576,10 +577,9 @@ $pageTitle = "My Savings";
 
                 <form method="GET" class="filter-card">
                     <select name="type" class="filter-select">
-                        <option value="">All Types</option>
-                        <option value="deposit"      <?= $typeFilter === 'deposit'      ? 'selected' : '' ?>>Deposits</option>
-                        <option value="withdrawal"   <?= $typeFilter === 'withdrawal'   ? 'selected' : '' ?>>Withdrawals</option>
-                        <option value="contribution" <?= $typeFilter === 'contribution' ? 'selected' : '' ?>>Contributions</option>
+                        <option value="">All Savings & Withdrawals</option>
+                        <option value="deposit"    <?= $typeFilter === 'deposit'    ? 'selected' : '' ?>>All Deposits</option>
+                        <option value="withdrawal" <?= $typeFilter === 'withdrawal' ? 'selected' : '' ?>>All Withdrawals</option>
                     </select>
                     <div class="filter-sep"></div>
                     <input type="date" name="start_date" value="<?= htmlspecialchars($startDate) ?>" class="filter-input" placeholder="From">
