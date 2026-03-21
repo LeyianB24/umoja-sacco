@@ -127,6 +127,9 @@ if ($active_loan) {
         $progress_percent = ($repaid_amount / $total_payable) * 100;
         if($progress_percent > 100) $progress_percent = 100;
     }
+
+    // Check if overdue
+    $is_overdue = (!empty($active_loan['next_repayment_date']) && strtotime($active_loan['next_repayment_date']) < time());
 }
 
 // D. Fetch History
@@ -430,6 +433,18 @@ $pageTitle = "My Loans";
                             <div>
                                 <h6 class="fw-bold text-warning-emphasis mb-1">Application In Review</h6>
                                 <span class="small text-secondary">Your request for <strong>KES <?= number_format((float)$pending_loan['amount']) ?></strong> is currently status: <strong><?= ucfirst($pending_loan['status']) ?></strong>.</span>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+
+                    <?php if ($active_loan && $is_overdue): ?>
+                        <div class="alert bg-danger bg-opacity-10 border-danger border-opacity-25 rounded-4 d-flex align-items-center p-4 mb-4">
+                            <div class="icon-box bg-danger bg-opacity-25 text-danger me-3" style="width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                                <i class="bi bi-exclamation-triangle-fill fs-4"></i>
+                            </div>
+                            <div>
+                                <h6 class="fw-bold text-danger mb-1">Overdue Repayment Detected</h6>
+                                <p class="small text-secondary mb-0">Your loan repayment was due on <strong><?= date('d M Y', strtotime($active_loan['next_repayment_date'])) ?></strong>. Please make a repayment to avoid further daily fines.</p>
                             </div>
                         </div>
                     <?php endif; ?>
