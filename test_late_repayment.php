@@ -2,8 +2,12 @@
 require_once 'c:/xampp/htdocs/usms/config/app.php';
 
 // 1. Find or create a test member/loan
+require_once 'c:/xampp/htdocs/usms/core/Database/Database.php';
+use USMS\Database\Database;
+$pdo = Database::getInstance()->getPdo();
+
 $loan_id = 26;
-$member_id = 2;
+$member_id = 2; // Bezalel Leyian
 echo "Testing with Loan ID: $loan_id\n";
 
 // 2. Test Daily Fines
