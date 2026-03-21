@@ -58,7 +58,12 @@ class FinancialService {
             return (int)$existing['transaction_id'];
         }
 
-        $this->db->beginTransaction();
+        $transactionStarted = false;
+        if (!$this->db->inTransaction()) {
+            $this->db->beginTransaction();
+            $transactionStarted = true;
+        }
+
         try {
             // 1. Create Transaction Shell
             $txn_id = $this->createTransactionShell($reference, $action_type, $notes);
@@ -211,10 +216,14 @@ class FinancialService {
 
             $this->syncLegacyTransactions($txn_id, $member_id, $amount, $action_type, $reference, $notes, $related_id, $related_table);
 
-            $this->db->commit();
+            if ($transactionStarted && $this->db->inTransaction()) {
+                $this->db->commit();
+            }
             return $txn_id;
         } catch (Exception $e) {
-            $this->db->rollBack();
+            if ($transactionStarted && $this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
             throw $e;
         }
     }
