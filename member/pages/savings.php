@@ -124,8 +124,6 @@ $pageTitle = "My Savings";
         font-family: 'Plus Jakarta Sans', sans-serif;
         background: var(--body-bg);
         color: var(--text-dark);
-        opacity: 0;
-        animation: fadeIn 0.6s ease-out forwards;
     }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 
@@ -134,6 +132,8 @@ $pageTitle = "My Savings";
         margin-left: 272px;
         transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         min-height: 100vh;
+        opacity: 0;
+        animation: fadeIn 0.6s ease-out forwards;
     }
     body.sb-collapsed .main-content-wrapper { margin-left: 76px; }
     @media (max-width: 991px) { .main-content-wrapper { margin-left: 0; } }
