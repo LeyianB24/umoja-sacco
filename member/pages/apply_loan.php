@@ -59,10 +59,10 @@ $stmt_existing->close();
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     // A. Sanitize Input
-    $loan_type = filter_input(INPUT_POST, 'loan_type', FILTER_SANITIZE_STRING);
+    $loan_type = filter_input(INPUT_POST, 'loan_type', FILTER_SANITIZE_SPECIAL_CHARS);
     $amount = filter_input(INPUT_POST, 'amount', FILTER_VALIDATE_FLOAT);
     $duration = filter_input(INPUT_POST, 'duration_months', FILTER_VALIDATE_INT);
-    $purpose = filter_input(INPUT_POST, 'notes', FILTER_SANITIZE_STRING);
+    $purpose = filter_input(INPUT_POST, 'notes', FILTER_SANITIZE_SPECIAL_CHARS);
     $g1 = filter_input(INPUT_POST, 'guarantor_1', FILTER_VALIDATE_INT);
     $g2 = filter_input(INPUT_POST, 'guarantor_2', FILTER_VALIDATE_INT);
 
