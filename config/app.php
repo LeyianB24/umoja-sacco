@@ -11,6 +11,8 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+if (!defined('APP_START_TIME')) define('APP_START_TIME', microtime(true));
+
 // 1. BASE PATHS
 if (!defined('BASE_PATH')) define('BASE_PATH', dirname(__DIR__));
 if (!defined('BASE_URL'))  define('BASE_URL', '/usms');
