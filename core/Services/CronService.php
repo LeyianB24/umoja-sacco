@@ -20,7 +20,6 @@ class CronService {
     private EmailQueueService $emailService;
 
     public function __construct() {
-        echo "LOG: CronService constructor called\n";
         $this->db = Database::getInstance()->getPdo();
         $this->txService = new TransactionService();
         $this->settingsService = new SettingsService();
@@ -31,7 +30,6 @@ class CronService {
      * Identifies overdue loans and applies daily fines
      */
     public function applyDailyFines(): int {
-        file_put_contents('c:/xampp/htdocs/usms/debug_cron.log', "[" . date('Y-m-d H:i:s') . "] LOG: Called applyDailyFines\n", FILE_APPEND);
         $fineAmount = (float)$this->settingsService->get('late_payment_fine_daily', 50.00);
         $today = date('Y-m-d');
 
@@ -40,7 +38,7 @@ class CronService {
         $sql = "SELECT l.loan_id, l.member_id, l.next_repayment_date, l.current_balance 
                 FROM loans l
                 WHERE l.status IN ('active', 'disbursed') 
-                AND l.next_repayment_date < ? 
+                AND DATE(l.next_repayment_date) < ? 
                 AND NOT EXISTS (
                     SELECT 1 FROM fines f 
                     WHERE f.loan_id = l.loan_id AND f.date_applied = ?
@@ -50,12 +48,9 @@ class CronService {
         $stmt->execute([$today, $today]);
         
         $loans = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        file_put_contents('c:/xampp/htdocs/usms/debug_cron.log', "[" . date('Y-m-d H:i:s') . "] LOG: Found " . count($loans) . " loans to process\n", FILE_APPEND);
         
         $processedCount = 0;
         foreach ($loans as $loan) {
-            file_put_contents('c:/xampp/htdocs/usms/debug_cron.log', "[" . date('Y-m-d H:i:s') . "] LOG: Processing Loan #{$loan['loan_id']}\n", FILE_APPEND);
-            
             $transactionStarted = false;
             if (!$this->db->inTransaction()) {
                 $this->db->beginTransaction();
@@ -112,7 +107,6 @@ class CronService {
                     $this->db->rollBack();
                 }
                 error_log("Failed to apply fine to loan #{$loan['loan_id']}: " . $e->getMessage());
-                file_put_contents('c:/xampp/htdocs/usms/debug_cron.log', "[" . date('Y-m-d H:i:s') . "] ERROR: " . $e->getMessage() . "\n", FILE_APPEND);
             }
         }
         return $processedCount;
@@ -124,7 +118,7 @@ class CronService {
     public function sendRepaymentReminders(): int {
         $targetDate = date('Y-m-d', strtotime('+3 days'));
         
-        $sql = "SELECT l.loan_id, l.member_id, l.next_repayment_date, l.current_balance, m.first_name, m.email 
+        $sql = "SELECT l.loan_id, l.member_id, l.next_repayment_date, l.current_balance, m.full_name, m.email 
                 FROM loans l
                 JOIN members m ON l.member_id = m.member_id
                 WHERE l.status IN ('active', 'disbursed') 
@@ -137,13 +131,13 @@ class CronService {
         $sentCount = 0;
         while ($loan = $stmt->fetch(PDO::FETCH_ASSOC)) {
             $subject = "Repayment Reminder - Loan #{$loan['loan_id']}";
-            $body = "<p>Dear {$loan['first_name']},</p>
+            $body = "<p>Dear {$loan['full_name']},</p>
                      <p>This is a friendly reminder that your loan repayment (#{$loan['loan_id']}) is due on <b>{$loan['next_repayment_date']}</b>.</p>
                      <p>Current outstanding balance: <b>KES " . number_format((float)$loan['current_balance'], 2) . "</b>.</p>
                      <p>Please ensure you have sufficient funds to avoid late payment penalties.</p>
                      <p>Thank you for being a valued member of Umoja Drivers Sacco.</p>";
             
-            $this->emailService->queueEmail($loan['email'], $loan['first_name'], $subject, $body);
+            $this->emailService->queueEmail($loan['email'], $loan['full_name'], $subject, $body);
             $sentCount++;
         }
 
