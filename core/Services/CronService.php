@@ -17,11 +17,13 @@ class CronService {
     private PDO $db;
     private TransactionService $txService;
     private SettingsService $settingsService;
+    private EmailQueueService $emailService;
 
     public function __construct() {
         $this->db = Database::getInstance()->getPdo();
         $this->txService = new TransactionService();
         $this->settingsService = new SettingsService();
+        $this->emailService = new EmailQueueService();
     }
 
     /**
@@ -75,6 +77,22 @@ class CronService {
 
                 $this->db->commit();
                 $processedCount++;
+
+                // 4. Send Email Notification
+                $stmtMember = $this->db->prepare("SELECT first_name, email FROM members WHERE member_id = ?");
+                $stmtMember->execute([$loan['member_id']]);
+                $member = $stmtMember->fetch(PDO::FETCH_ASSOC);
+
+                if ($member && $member['email']) {
+                    $subject = "Late Payment Penalty Applied - Loan #{$loan['loan_id']}";
+                    $body = "<p>Dear {$member['first_name']},</p>
+                             <p>A daily late payment penalty of <b>KES " . number_format($fineAmount, 2) . "</b> has been applied to your loan account (#{$loan['loan_id']}) because your repayment was due on {$loan['next_repayment_date']}.</p>
+                             <p>Your current outstanding balance is <b>KES " . number_format((float)$loan['current_balance'] + $fineAmount, 2) . "</b>.</p>
+                             <p>Please make your payment promptly to avoid further penalties.</p>
+                             <p>Thank you for choosing Umoja Drivers Sacco.</p>";
+                    
+                    $this->emailService->queueEmail($member['email'], $member['first_name'], $subject, $body);
+                }
             } catch (Exception $e) {
                 if ($this->db->inTransaction()) {
                     $this->db->rollBack();
@@ -82,7 +100,38 @@ class CronService {
                 error_log("Failed to apply fine to loan #{$loan['loan_id']}: " . $e->getMessage());
             }
         }
-
         return $processedCount;
+    }
+
+    /**
+     * Sends reminders for repayments due in exactly 3 days
+     */
+    public function sendRepaymentReminders(): int {
+        $targetDate = date('Y-m-d', strtotime('+3 days'));
+        
+        $sql = "SELECT l.loan_id, l.member_id, l.next_repayment_date, l.current_balance, m.first_name, m.email 
+                FROM loans l
+                JOIN members m ON l.member_id = m.member_id
+                WHERE l.status IN ('active', 'disbursed') 
+                AND DATE(l.next_repayment_date) = ?
+                AND m.email IS NOT NULL";
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([$targetDate]);
+        
+        $sentCount = 0;
+        while ($loan = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $subject = "Repayment Reminder - Loan #{$loan['loan_id']}";
+            $body = "<p>Dear {$loan['first_name']},</p>
+                     <p>This is a friendly reminder that your loan repayment (#{$loan['loan_id']}) is due on <b>{$loan['next_repayment_date']}</b>.</p>
+                     <p>Current outstanding balance: <b>KES " . number_format((float)$loan['current_balance'], 2) . "</b>.</p>
+                     <p>Please ensure you have sufficient funds to avoid late payment penalties.</p>
+                     <p>Thank you for being a valued member of Umoja Drivers Sacco.</p>";
+            
+            $this->emailService->queueEmail($loan['email'], $loan['first_name'], $subject, $body);
+            $sentCount++;
+        }
+
+        return $sentCount;
     }
 }

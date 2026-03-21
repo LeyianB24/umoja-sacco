@@ -22,6 +22,7 @@ class JobRunner
         'reconcile_ledger'      => \USMS\Cron\Jobs\ReconcileLedgerJob::class,
         'process_email_queue'   => \USMS\Cron\Jobs\ProcessEmailQueueJob::class,
         'dividend_distribution' => \USMS\Cron\Jobs\DividendDistributionJob::class,
+        'repayment_reminders'   => \USMS\Cron\Jobs\RepaymentRemindersJob::class,
     ];
 
     /**

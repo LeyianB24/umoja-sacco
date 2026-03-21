@@ -116,7 +116,7 @@ class FinancialService {
                     $this->postEntry($txn_id, $this->getMemberAccount($member_id, self::CAT_WALLET), 0, $amount);
                     
                     if ($related_table === 'loans' && $related_id) {
-                        $this->db->prepare("UPDATE loans SET status = 'disbursed', disbursed_date = NOW(), disbursed_amount = ?, current_balance = total_payable WHERE loan_id = ?")
+                        $this->db->prepare("UPDATE loans SET status = 'disbursed', disbursed_date = NOW(), last_repayment_date = NULL, next_repayment_date = DATE_ADD(NOW(), INTERVAL 1 MONTH), disbursed_amount = ?, current_balance = total_payable WHERE loan_id = ?")
                                  ->execute([$amount, $related_id]);
                     }
                     break;
