@@ -20,6 +20,7 @@ class CronService {
     private EmailQueueService $emailService;
 
     public function __construct() {
+        echo "LOG: CronService constructor called\n";
         $this->db = Database::getInstance()->getPdo();
         $this->txService = new TransactionService();
         $this->settingsService = new SettingsService();
