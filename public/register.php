@@ -482,7 +482,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <!-- Left Panel -->
 <div class="reg-left">
-    <div class="rl-brand">
+    <a href="<?= BASE_URL ?>/public/index.php" class="rl-brand text-decoration-none">
         <div class="rl-brand-logo">
             <img src="<?= SITE_LOGO ?>" alt="<?= SITE_NAME ?>">
         </div>
@@ -490,7 +490,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="rl-brand-name"><?= htmlspecialchars(SITE_NAME) ?></div>
             <div class="rl-brand-sub">Member Portal</div>
         </div>
-    </div>
+    </a>
 
     <div class="rl-hero">
         <div class="rl-eyebrow">

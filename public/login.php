@@ -500,7 +500,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <!-- Left Panel -->
 <div class="login-left">
-    <div class="ll-brand">
+    <a href="<?= BASE_URL ?>/public/index.php" class="ll-brand text-decoration-none">
         <div class="ll-brand-logo">
             <img src="<?= SITE_LOGO ?>" alt="<?= SITE_NAME ?>">
         </div>
@@ -508,7 +508,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="ll-brand-name"><?= htmlspecialchars(SITE_NAME) ?></div>
             <div class="ll-brand-sub">Unified Management System</div>
         </div>
-    </div>
+    </a>
 
     <div class="ll-hero">
         <div class="ll-eyebrow">

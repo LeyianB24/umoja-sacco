@@ -415,7 +415,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <!-- Left Panel -->
 <div class="fp-left">
-    <div class="fl-brand">
+    <a href="<?= BASE_URL ?>/public/index.php" class="fl-brand text-decoration-none">
         <div class="fl-brand-logo">
             <img src="<?= SITE_LOGO ?>" alt="<?= SITE_NAME ?>">
         </div>
@@ -423,7 +423,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="fl-brand-name"><?= htmlspecialchars(SITE_NAME) ?></div>
             <div class="fl-brand-sub">Unified Management System</div>
         </div>
-    </div>
+    </a>
 
     <div class="fl-hero">
         <div class="fl-icon-wrap">

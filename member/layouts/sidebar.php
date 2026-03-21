@@ -435,7 +435,7 @@ main {
 <aside class="hd-sidebar" id="sidebar" role="navigation" aria-label="Main Navigation">
 
     <!-- ── Brand ──────────────────────────────────────────── -->
-    <div class="hd-brand">
+    <a href="<?= $base ?>/public/index.php" class="hd-brand text-decoration-none">
         <div class="hd-brand-inner">
             <div class="hd-logo-wrap">
                 <img src="<?= $assets ?>/images/people_logo.png" alt="<?= defined('SITE_NAME') ? htmlspecialchars(SITE_NAME) : 'Logo' ?>">
@@ -447,7 +447,7 @@ main {
                 </div>
             </div>
         </div>
-    </div>
+    </a>
 
     <!-- ── Scroll area ────────────────────────────────────── -->
     <div class="hd-scroll-wrapper">

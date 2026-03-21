@@ -335,7 +335,7 @@ if (!function_exists('is_active')) {
 <aside class="hd-sidebar" id="sidebar">
 
     <!-- ─── Brand ── -->
-    <a href="<?= $base ?>/admin/pages/dashboard.php" class="hd-brand">
+    <a href="<?= $base ?>/public/index.php" class="hd-brand">
         <img src="<?= $assets ?>/images/people_logo.png" alt="Logo" class="hd-logo-img">
         <div class="hd-brand-text">
             <div class="hd-brand-name"><?= defined('SITE_NAME') ? htmlspecialchars(SITE_NAME) : 'UMOJA SACCO' ?></div>
