@@ -78,7 +78,7 @@ class CronService {
                     'related_id'    => (int)$loan['loan_id'],
                     'related_table' => 'loans',
                     'update_member_balance' => false,
-                    'method'        => 'system'
+                    'method'        => 'cash'
                 ]);
 
                 if (!$ok) throw new Exception("Ledger entry failed");

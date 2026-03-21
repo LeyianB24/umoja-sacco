@@ -206,7 +206,7 @@ class FinancialService {
                     break;
 
                 case 'loan_penalty':
-                    $this->postEntry($txn_id, $this->getSystemAccount($method), $amount, 0);
+                    $this->postEntry($txn_id, $this->getMemberAccount($member_id, self::CAT_LOANS), $amount, 0);
                     $this->postEntry($txn_id, $this->getSystemAccount('income'), 0, $amount);
                     break;
 
