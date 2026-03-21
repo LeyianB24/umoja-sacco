@@ -30,12 +30,11 @@ class CronService {
      * Identifies overdue loans and applies daily fines
      */
     public function applyDailyFines(): int {
-        $fineAmount = (float)$this->settingsService->get('late_payment_fine_daily', 50.00);
         $today = date('Y-m-d');
 
         // Logic: Active/Disbursed loans where next_repayment_date is in the past
         // and a fine hasn't already been applied today for this loan.
-        $sql = "SELECT l.loan_id, l.member_id, l.next_repayment_date, l.current_balance 
+        $sql = "SELECT l.loan_id, l.member_id, l.next_repayment_date, l.current_balance, l.amount 
                 FROM loans l
                 WHERE l.status IN ('active', 'disbursed') 
                 AND DATE(l.next_repayment_date) < ? 
@@ -51,6 +50,10 @@ class CronService {
         
         $processedCount = 0;
         foreach ($loans as $loan) {
+            // Calculate 0.05% fine based on original loan amount
+            $fineAmount = round((float)$loan['amount'] * 0.0005, 2);
+            if ($fineAmount < 1.0) $fineAmount = 1.0; // Minimum fine floor
+
             $transactionStarted = false;
             if (!$this->db->inTransaction()) {
                 $this->db->beginTransaction();
@@ -142,5 +145,65 @@ class CronService {
         }
 
         return $sentCount;
+    }
+
+    /**
+     * Sends manual late payment reminders to ALL overdue members at once.
+     */
+    public function sendBulkLateReminders(): int {
+        $sql = "SELECT l.loan_id, l.member_id, l.next_repayment_date, l.current_balance, m.full_name, m.email 
+                FROM loans l
+                JOIN members m ON l.member_id = m.member_id
+                WHERE l.status IN ('active', 'disbursed') 
+                AND DATE(l.next_repayment_date) < CURDATE()
+                AND m.email IS NOT NULL";
+        
+        $stmt = $this->db->query($sql);
+        $overdueLoans = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        $sentCount = 0;
+        foreach ($overdueLoans as $loan) {
+            $subject = "Urgent: Late Repayment Reminder - Loan #{$loan['loan_id']}";
+            $body = "<p>Dear <b>{$loan['full_name']}</b>,</p>
+                     <p>This is a formal reminder regarding your outstanding loan <b>#{$loan['loan_id']}</b>.</p>
+                     <p>Our records show your repayment was due on <b>" . date('d M Y', strtotime($loan['next_repayment_date'])) . "</b> and is currently overdue.</p>
+                     <p><b>Outstanding Balance:</b> KES " . number_format((float)$loan['current_balance'], 2) . "</p>
+                     <p>Please settle the outstanding amount immediately to stop further daily late fines from accumulating.</p>
+                     <p>You can pay via the Member Portal or M-Pesa Paybill.</p>
+                     <p>Best regards,<br>Umoja Drivers Sacco Management</p>";
+            
+            if ($this->emailService->queueEmail($loan['email'], $loan['full_name'], $subject, $body) > 0) {
+                $sentCount++;
+            }
+        }
+        return $sentCount;
+    }
+
+    /**
+     * Sends a manual late payment reminder to a specific member
+     */
+    public function sendManualLateReminder(int $loan_id): bool {
+        $sql = "SELECT l.loan_id, l.member_id, l.next_repayment_date, l.current_balance, m.full_name, m.email 
+                FROM loans l
+                JOIN members m ON l.member_id = m.member_id
+                WHERE l.loan_id = ? AND m.email IS NOT NULL";
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([$loan_id]);
+        $loan = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$loan) return false;
+
+        $subject = "Urgent: Late Repayment Reminder - Loan #{$loan['loan_id']}";
+        $body = "<p>Dear <b>{$loan['full_name']}</b>,</p>
+                 <p>This is a formal reminder regarding your outstanding loan <b>#{$loan['loan_id']}</b>.</p>
+                 <p>Our records show your repayment was due on <b>" . date('d M Y', strtotime($loan['next_repayment_date'])) . "</b> and is currently overdue.</p>
+                 <p><b>Outstanding Balance:</b> KES " . number_format((float)$loan['current_balance'], 2) . "</p>
+                 <p>Please settle the outstanding amount immediately to stop further daily late fines from accumulating.</p>
+                 <p>You can pay via the Member Portal or M-Pesa Paybill.</p>
+                 <p>If you have already made the payment, please ignore this email.</p>
+                 <p>Best regards,<br>Umoja Drivers Sacco Management</p>";
+        
+        return $this->emailService->queueEmail($loan['email'], $loan['full_name'], $subject, $body) > 0;
     }
 }

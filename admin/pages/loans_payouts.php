@@ -41,36 +41,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($loan_id > 0) {
         $conn->begin_transaction();
         try {
-            if ($action === 'approve' && $can_approve) {
-                $stmt = $conn->prepare("UPDATE loans SET status='approved', approved_by=?, approval_date=NOW() WHERE loan_id=?");
-                $stmt->bind_param("ii", $admin_id, $loan_id);
-                $stmt->execute();
-
-                require_once __DIR__ . '/../../inc/notification_helpers.php';
-                $res_l = $conn->query("SELECT member_id, amount, reference_no FROM loans WHERE loan_id = $loan_id");
-                if ($l_row = $res_l->fetch_assoc()) {
-                    send_notification($conn, (int)$l_row['member_id'], 'loan_approved', ['amount' => $l_row['amount'], 'ref' => $l_row['reference_no']]);
+            if ($action === 'send_reminder' && $loan_id > 0) {
+                require_once __DIR__ . '/../../core/Services/CronService.php';
+                $cron = new \USMS\Services\CronService();
+                if ($cron->sendManualLateReminder($loan_id)) {
+                    flash_set("Manual late payment reminder queued for Loan #$loan_id.", "success");
+                } else {
+                    flash_set("Failed to queue reminder. Member might not have an email address.", "warning");
                 }
-
-                flash_set("Loan #$loan_id Approved successfully.", "success");
-            } 
-            elseif ($action === 'reject' && $can_reject) {
-                $reason = $conn->real_escape_string($_POST['rejection_reason'] ?? '');
-                $stmt = $conn->prepare("UPDATE loans SET status='rejected', notes=CONCAT(IFNULL(notes,''), ' [Rejected: ?]') WHERE loan_id=?");
-                $stmt->bind_param("si", $reason, $loan_id);
-                $stmt->execute();
-                
-                $stmt = $conn->prepare("UPDATE loan_guarantors SET status='rejected' WHERE loan_id=?");
-                $stmt->bind_param("i", $loan_id);
-                $stmt->execute();
-
-                require_once __DIR__ . '/../../inc/notification_helpers.php';
-                $res_l = $conn->query("SELECT member_id, amount, reference_no FROM loans WHERE loan_id = $loan_id");
-                if ($l_row = $res_l->fetch_assoc()) {
-                    send_notification($conn, (int)$l_row['member_id'], 'loan_rejected', ['amount' => $l_row['amount'], 'rejection_reason' => $reason, 'ref' => $l_row['reference_no']]);
-                }
-
-                flash_set("Loan #$loan_id Rejected.", "warning");
+            }
+            elseif ($action === 'send_bulk_reminders') {
+                require_once __DIR__ . '/../../core/Services/CronService.php';
+                $cron = new \USMS\Services\CronService();
+                $count = $cron->sendBulkLateReminders();
+                flash_set("Successfully queued $count late payment reminders for all overdue loans.", "success");
             }
             elseif ($action === 'disburse' && $can_disburse) {
                 $fallback_ref = "DSB-" . date('Ymd') . "-" . rand(1000, 9999);
@@ -141,7 +125,7 @@ $sql = "SELECT l.*, m.full_name, m.national_id, m.phone,
         JOIN members m ON l.member_id = m.member_id 
         LEFT JOIN admins a ON l.approved_by = a.admin_id
         WHERE $where 
-        ORDER BY FIELD(l.status, 'approved', 'pending', 'disbursed', 'rejected'), l.created_at DESC";
+        ORDER BY FIELD(l.status, 'approved', 'disbursed', 'pending', 'rejected'), l.created_at DESC";
 
 $stmt = $conn->prepare($sql);
 if (!empty($params)) { $stmt->bind_param($types, ...$params); }
@@ -1122,6 +1106,11 @@ h1, h2, h3, h4, h5, h6, p, span, div, label, a {
                             <option value="disbursed" <?= ($_GET['status'] ?? '') === 'disbursed' ? 'selected' : '' ?>>Disbursed</option>
                             <option value="overdue"   <?= ($_GET['status'] ?? '') === 'overdue'   ? 'selected' : '' ?>>Overdue</option>
                         </select>
+                        <?php if (($_GET['status'] ?? '') === 'overdue' && ($stats['overdue_count'] ?? 0) > 0): ?>
+                            <button type="button" onclick="sendBulkReminders()" class="btn btn-warning fw-bold px-3 border-0 shadow-sm" style="background:#f59e0b; color:white;">
+                                <i class="bi bi-send-check-fill me-1"></i>Remind All
+                            </button>
+                        <?php endif; ?>
                         <?php if (!empty($_GET['search']) || !empty($_GET['status'])): ?>
                             <a href="loans_payouts.php" class="btn btn-finalized" style="cursor:pointer; text-decoration:none; white-space:nowrap;">
                                 <i class="bi bi-x-lg me-1"></i>Clear
@@ -1199,19 +1188,12 @@ h1, h2, h3, h4, h5, h6, p, span, div, label, a {
                                 </td>
                                 <td onclick="event.stopPropagation()">
                                     <div class="action-zone">
-                                        <?php if ($row['status'] === 'pending' && $can_approve): ?>
-                                            <button onclick="confirmAction('approve', <?= $row['loan_id'] ?>)" class="btn-action-approve">
-                                                <i class="bi bi-check2 me-1"></i>Approve
-                                            </button>
-                                            <button onclick="openRejectModal(<?= $row['loan_id'] ?>)" class="btn-action-reject">
-                                                Reject
-                                            </button>
-                                        <?php elseif ($row['status'] === 'approved' && $can_disburse): ?>
+                                        <?php if ($row['status'] === 'approved' && $can_disburse): ?>
                                             <button onclick="openDisburseModal(<?= $row['loan_id'] ?>, <?= $row['amount'] ?>)" class="btn-action-disburse">
                                                 Process Payout <i class="bi bi-send-fill" style="font-size:0.7rem;"></i>
                                             </button>
                                         <?php else: ?>
-                                            <span class="btn-finalized">Finalized</span>
+                                            <span class="btn-finalized"><?= ucfirst($row['status']) ?></span>
                                         <?php endif; ?>
                                     </div>
                                 </td>
@@ -1298,48 +1280,7 @@ h1, h2, h3, h4, h5, h6, p, span, div, label, a {
     </div>
 
 
-    <!-- ═══════════════════════════════════════════
-         REJECT MODAL
-    ═══════════════════════════════════════════ -->
-    <div class="modal fade" id="rejectModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered" style="max-width:440px;">
-            <div class="modal-content">
-                <form method="POST">
-                    <?= csrf_field() ?>
-                    <input type="hidden" name="action" value="reject">
-                    <input type="hidden" name="loan_id" id="reject_loan_id">
-
-                    <div class="modal-reject-header d-flex justify-content-between align-items-center">
-                        <div class="d-flex align-items-center gap-2">
-                            <div style="width:32px; height:32px; border-radius:8px; background:rgba(255,255,255,0.15); display:flex; align-items:center; justify-content:center;">
-                                <i class="bi bi-x-circle-fill" style="font-size:0.9rem;"></i>
-                            </div>
-                            <h5 class="modal-reject-header">Reject Application</h5>
-                        </div>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                    </div>
-
-                    <div class="modal-body-pad">
-                        <label>Rejection Reason <span style="color:#dc2626;">*</span></label>
-                        <textarea name="rejection_reason" rows="4" required
-                                  placeholder="e.g. Insufficient guarantor coverage, credit history concerns..."></textarea>
-                        <p style="font-size:0.73rem; color:var(--text-muted); margin-top:0.6rem; margin-bottom:0;">
-                            <i class="bi bi-info-circle me-1"></i>This reason will be visible to the member in their notification.
-                        </p>
-                    </div>
-
-                    <div class="modal-footer-pad">
-                        <button type="button" style="background:none; border:1.5px solid rgba(13,43,31,0.1); border-radius:100px; padding:0.5rem 1.2rem; font-weight:700; font-size:0.85rem; cursor:pointer;" data-bs-dismiss="modal">
-                            Cancel
-                        </button>
-                        <button type="submit" style="background:#dc2626; color:#fff; border:none; border-radius:100px; padding:0.5rem 1.6rem; font-weight:700; font-size:0.85rem; cursor:pointer; box-shadow:0 4px 14px rgba(220,38,38,0.3);">
-                            Confirm Reject
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
+    <!-- (Reject Modal Removed per Requirement: Disbursement only) -->
 
 
     <!-- ═══════════════════════════════════════════
@@ -1431,6 +1372,14 @@ function openDisburseModal(id, amount) {
 
 function handleRefGeneration() {
     document.getElementById('ref_no_input').value = 'DSB-' + Date.now();
+}
+
+function sendBulkReminders() {
+    if (!confirm('This will queue late payment reminders for ALL overdue loans. Proceed?')) return;
+    
+    document.getElementById('form_action').value = 'send_bulk_reminders';
+    document.getElementById('form_loan_id').value = '0';
+    document.getElementById('actionForm').submit();
 }
 
 function openLoanDrawer(data) {
