@@ -757,6 +757,7 @@ $pageTitle = "My Loans";
   </div>
 </div>
 
+<?php if ($active_loan): ?>
 <div class="modal fade" id="repayWalletModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content overflow-hidden">
@@ -793,6 +794,8 @@ $pageTitle = "My Loans";
         </div>
     </div>
 </div>
+<?php endif; ?>
+
 
 <!-- Repayment History Drawer -->
 <div class="offcanvas offcanvas-end" tabindex="-1" id="repaymentDrawer" style="width: 450px;">
