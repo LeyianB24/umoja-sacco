@@ -10,7 +10,6 @@ require_once __DIR__ . '/../../inc/Auth.php';
 require_once __DIR__ . '/../../inc/LayoutManager.php';
 $layout = LayoutManager::create('member');
 require_member();
-$layout = LayoutManager::create('member');
 
 $member_id = (int)$_SESSION['member_id'];
 

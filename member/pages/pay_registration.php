@@ -8,7 +8,6 @@ require_once __DIR__ . '/../../inc/LayoutManager.php';
 
 $layout = LayoutManager::create('member');
 // usms/member/pay_registration.php
-if (session_status() === PHP_SESSION_NONE) session_start();
 require_once __DIR__ . '/../../inc/functions.php';
 require_once __DIR__ . '/../../inc/RegistrationHelper.php';
 require_once __DIR__ . '/../layouts/includes/auth_check.php';

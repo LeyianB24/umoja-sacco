@@ -9,7 +9,6 @@ require_once __DIR__ . '/../../inc/functions.php';
 
 $layout = LayoutManager::create('member');
 // Initialize Layout Manager
-$layout = LayoutManager::create('member');
 // member/loans.php
 // UI: Forest Green Premium | Layout: Grid System
 // V15 Financial Integration: Dynamic Balance & Ledger Logic

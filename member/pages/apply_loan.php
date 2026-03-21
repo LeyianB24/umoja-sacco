@@ -8,7 +8,6 @@ require_once __DIR__ . '/../../inc/LayoutManager.php';
 
 $layout = LayoutManager::create('member');
 // member/apply_loan.php
-session_start();
 require_once __DIR__ . '/../../inc/SettingsHelper.php';
 require_once __DIR__ . '/../../inc/functions.php';
 
