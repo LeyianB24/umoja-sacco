@@ -93,19 +93,19 @@ class CronService {
                 $processedCount++;
 
                 // 4. Send Email Notification
-                $stmtMember = $this->db->prepare("SELECT first_name, email FROM members WHERE member_id = ?");
+                $stmtMember = $this->db->prepare("SELECT email, full_name FROM members WHERE member_id = ?");
                 $stmtMember->execute([$loan['member_id']]);
                 $member = $stmtMember->fetch(PDO::FETCH_ASSOC);
 
                 if ($member && $member['email']) {
                     $subject = "Late Payment Penalty Applied - Loan #{$loan['loan_id']}";
-                    $body = "<p>Dear {$member['first_name']},</p>
+                    $body = "<p>Dear {$member['full_name']},</p>
                              <p>A daily late payment penalty of <b>KES " . number_format($fineAmount, 2) . "</b> has been applied to your loan account (#{$loan['loan_id']}) because your repayment was due on {$loan['next_repayment_date']}.</p>
                              <p>Your current outstanding balance is <b>KES " . number_format((float)$loan['current_balance'] + $fineAmount, 2) . "</b>.</p>
                              <p>Please make your payment promptly to avoid further penalties.</p>
                              <p>Thank you for choosing Umoja Drivers Sacco.</p>";
                     
-                    $this->emailService->queueEmail($member['email'], $member['first_name'], $subject, $body);
+                    $this->emailService->queueEmail($member['email'], $member['full_name'], $subject, $body);
                 }
             } catch (Exception $e) {
                 if ($transactionStarted && $this->db->inTransaction()) {
