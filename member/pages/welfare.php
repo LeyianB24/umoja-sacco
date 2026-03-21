@@ -381,7 +381,7 @@ body.sb-collapsed .main-content-wrapper { margin-left:76px; }
 .case-card-title { font-size:.88rem; font-weight:800; color:#fff; line-height:1.3; }
 
 .case-card-body { padding:18px 20px; }
-.case-desc { font-size:.78rem; color:var(--t3); line-height:1.5; margin-bottom:14px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.case-desc { font-size:.78rem; color:var(--t3); line-height:1.5; margin-bottom:14px; display:-webkit-box; -webkit-line-clamp:2; line-clamp: 2; -webkit-box-orient:vertical; overflow:hidden; }
 
 .case-progress-row { display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
 .case-raised { font-size:.82rem; font-weight:800; color:var(--t1); }

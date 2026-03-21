@@ -14,8 +14,8 @@ require_once __DIR__ . '/sms.php';
  * @param array $data - Additional data for the notification
  */
 function send_notification($conn, $member_id, $type, $data = []) {
-    // Fetch member details
-    $stmt = $conn->prepare("SELECT full_name, email, phone FROM members WHERE member_id = ?");
+    // Fetch member details including RegNo and Savings Balance
+    $stmt = $conn->prepare("SELECT full_name, email, phone, member_reg_no, savings_balance FROM members WHERE member_id = ?");
     $stmt->bind_param("i", $member_id);
     $stmt->execute();
     $member = $stmt->get_result()->fetch_assoc();
@@ -35,8 +35,15 @@ function send_notification($conn, $member_id, $type, $data = []) {
     // Send Email & App Notification (Unified)
     if (EMAIL_ENABLED && !empty($email)) {
         try {
+            // Prepare metadata for the email template
+            $metadata = [
+                'trx_id'  => $data['trx_id'] ?? $data['ref'] ?? $data['reference'] ?? 'N/A',
+                'reg_no'  => $member['member_reg_no'] ?? 'N/A',
+                'balance' => $data['balance'] ?? $member['savings_balance'] ?? null
+            ];
+            
             // This now handles both SMTP and Database Notification insertion
-            sendEmail($email, $notification['email_subject'], $notification['email_body'], $member_id);
+            sendEmail($email, $notification['email_subject'], $notification['email_body'], $member_id, null, $metadata);
         } catch (Throwable $e) {
             error_log("Notification system failed: " . $e->getMessage());
             $success = false;

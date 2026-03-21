@@ -58,6 +58,11 @@ function sendEmailWithNotification($to_email, $subject, $body_content, $member_i
         </div>
         <div style='background:#f8fafc; padding:25px; text-align:center; font-size:11px; color:#94a3b8; border-top:1px solid #f1f5f9;'>
             <p style='margin:0;'>&copy; " . date('Y') . " {$site_name}. All Rights Reserved.</p>
+            <p style='margin:5px 0;'>
+                " . (defined('COMPANY_PHONE') ? COMPANY_PHONE : '') . " | 
+                " . (defined('COMPANY_EMAIL') ? COMPANY_EMAIL : '') . " | 
+                " . (defined('COMPANY_ADDRESS') ? COMPANY_ADDRESS : '') . "
+            </p>
             <p style='margin:5px 0;'>This is an automated message. Do not reply.</p>
             <div style='margin-top:10px;'>
                 <a href='{$site_url}' style='color:#39B54A; text-decoration:none;'>Home</a> | 
@@ -70,15 +75,15 @@ function sendEmailWithNotification($to_email, $subject, $body_content, $member_i
     $mail = new PHPMailer(true);
     try {
         $mail->isSMTP();
-        $mail->Host       = 'smtp.gmail.com';
+        $mail->Host       = defined('SMTP_HOST') ? SMTP_HOST : 'smtp.gmail.com';
         $mail->SMTPAuth   = true;
-        $mail->Username   = 'leyianbeza24@gmail.com'; 
-        $mail->Password   = 'duzb mbqt fnsz ipkg';    
-        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS; 
-        $mail->Port       = 587;
+        $mail->Username   = defined('SMTP_USERNAME') ? SMTP_USERNAME : 'leyianbeza24@gmail.com'; 
+        $mail->Password   = defined('SMTP_PASSWORD') ? SMTP_PASSWORD : 'duzb mbqt fnsz ipkg';    
+        $mail->SMTPSecure = defined('SMTP_SECURE') ? (SMTP_SECURE === 'tls' ? PHPMailer::ENCRYPTION_STARTTLS : PHPMailer::ENCRYPTION_SMTPS) : PHPMailer::ENCRYPTION_STARTTLS; 
+        $mail->Port       = defined('SMTP_PORT') ? (int)SMTP_PORT : 587;
         $mail->SMTPOptions = ['ssl' => ['verify_peer' => false, 'verify_peer_name' => false, 'allow_self_signed' => true]];
 
-        $mail->setFrom('leyianbeza24@gmail.com', $site_name);
+        $mail->setFrom(defined('SMTP_USERNAME') ? SMTP_USERNAME : 'info@umojadrivers.co.ke', $site_name);
         $mail->addAddress($to_email);
         $mail->isHTML(true);
         $mail->Subject = $subject;
@@ -122,8 +127,8 @@ function sendEmailWithNotification($to_email, $subject, $body_content, $member_i
 }
 
 // Backward-compatible alias
-function sendEmail($to_email, $subject, $body_html, $member_id = null, $admin_id = null)
+function sendEmail($to_email, $subject, $body_html, $member_id = null, $admin_id = null, $metadata = [])
 {
-    return sendEmailWithNotification($to_email, $subject, $body_html, $member_id, $admin_id);
+    return sendEmailWithNotification($to_email, $subject, $body_html, $member_id, $admin_id, $metadata);
 }
 

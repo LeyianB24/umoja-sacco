@@ -50,7 +50,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['pay_fee'])) {
     $ref = 'REG-' . strtoupper(bin2hex(random_bytes(4)));
     $method = $_POST['payment_method'] ?? 'mpesa';
 
-    if (RegistrationHelper::markAsPaid($member_id, $amount, $ref, $conn)) {
+    require_once __DIR__ . '/../../core/Services/RegistrationService.php';
+    $regService = new \USMS\Services\RegistrationService();
+    if ($regService->markAsPaid((int)$member_id, (float)$amount, $ref)) {
         $_SESSION['registration_fee_status'] = 'paid';
         unset($_SESSION['pending_pay']);
         $success = true;
