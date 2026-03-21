@@ -55,7 +55,13 @@ class CronService {
         $processedCount = 0;
         foreach ($loans as $loan) {
             file_put_contents('c:/xampp/htdocs/usms/debug_cron.log', "[" . date('Y-m-d H:i:s') . "] LOG: Processing Loan #{$loan['loan_id']}\n", FILE_APPEND);
-            $this->db->beginTransaction();
+            
+            $transactionStarted = false;
+            if (!$this->db->inTransaction()) {
+                $this->db->beginTransaction();
+                $transactionStarted = true;
+            }
+
             try {
                 // 1. Record in fines table
                 $stmtFine = $this->db->prepare("INSERT INTO fines (loan_id, amount, date_applied) VALUES (?, ?, ?)");
@@ -81,7 +87,9 @@ class CronService {
                 $stmtUpdate = $this->db->prepare("UPDATE loans SET current_balance = current_balance + ? WHERE loan_id = ?");
                 $stmtUpdate->execute([$fineAmount, $loan['loan_id']]);
 
-                $this->db->commit();
+                if ($transactionStarted && $this->db->inTransaction()) {
+                    $this->db->commit();
+                }
                 $processedCount++;
 
                 // 4. Send Email Notification
@@ -100,7 +108,7 @@ class CronService {
                     $this->emailService->queueEmail($member['email'], $member['first_name'], $subject, $body);
                 }
             } catch (Exception $e) {
-                if ($this->db->inTransaction()) {
+                if ($transactionStarted && $this->db->inTransaction()) {
                     $this->db->rollBack();
                 }
                 error_log("Failed to apply fine to loan #{$loan['loan_id']}: " . $e->getMessage());
