@@ -34,21 +34,18 @@ $stmt_stats = $conn->prepare("SELECT
     FROM contributions WHERE member_id = ?");
 $stmt_stats->bind_param("i", $member_id);
 $stmt_stats->execute();
-$stats        = $stmt_stats->get_result()->fetch_assoc();
-$savings_val  = (float)($stats['total_savings'] ?? 0);
-$shares_val   = (float)($stats['total_shares']  ?? 0);
-$welfare_val  = (float)($stats['total_welfare'] ?? 0);
-$grand_total  = (float)($stats['grand_total']   ?? 0);
-$total_count  = (int)($stats['total_count']     ?? 0);
-$cnt_savings  = (int)($stats['count_savings']   ?? 0);
-$cnt_shares   = (int)($stats['count_shares']    ?? 0);
-$cnt_welfare  = (int)($stats['count_welfare']   ?? 0);
+$stats       = $stmt_stats->get_result()->fetch_assoc();
+$savings_val = (float)($stats['total_savings'] ?? 0);
+$shares_val  = (float)($stats['total_shares']  ?? 0);
+$welfare_val = (float)($stats['total_welfare'] ?? 0);
+$grand_total = (float)($stats['grand_total']   ?? 0);
+$total_count = (int)($stats['total_count']     ?? 0);
+$cnt_savings = (int)($stats['count_savings']   ?? 0);
+$cnt_shares  = (int)($stats['count_shares']    ?? 0);
+$cnt_welfare = (int)($stats['count_welfare']   ?? 0);
 
 // ── Monthly trend – last 7 months ──────────────────────────
-$trend_labels   = [];
-$trend_savings  = [];
-$trend_shares   = [];
-$trend_welfare  = [];
+$trend_labels  = $trend_savings = $trend_shares = $trend_welfare = [];
 for ($i = 6; $i >= 0; $i--) {
     $ms = date('Y-m-01', strtotime("-$i months"));
     $me = date('Y-m-t',  strtotime("-$i months"));
@@ -58,8 +55,7 @@ for ($i = 6; $i >= 0; $i--) {
         COALESCE(SUM(CASE WHEN contribution_type='shares'  THEN amount ELSE 0 END),0) as sh,
         COALESCE(SUM(CASE WHEN contribution_type='welfare' THEN amount ELSE 0 END),0) as wf
         FROM contributions WHERE member_id=? AND DATE(created_at) BETWEEN ? AND ?");
-    $stmt_t->bind_param("iss", $member_id, $ms, $me);
-    $stmt_t->execute();
+    $stmt_t->bind_param("iss", $member_id, $ms, $me); $stmt_t->execute();
     $tr = $stmt_t->get_result()->fetch_assoc();
     $trend_savings[] = round((float)$tr['sv'], 2);
     $trend_shares[]  = round((float)$tr['sh'], 2);
@@ -67,10 +63,9 @@ for ($i = 6; $i >= 0; $i--) {
     $stmt_t->close();
 }
 
-// ── Recent streak (days with activity in last 30 days) ─────
+// ── Active days streak ─────────────────────────────────────
 $stmt_streak = $conn->prepare("SELECT COUNT(DISTINCT DATE(created_at)) as active_days FROM contributions WHERE member_id=? AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)");
-$stmt_streak->bind_param("i", $member_id);
-$stmt_streak->execute();
+$stmt_streak->bind_param("i", $member_id); $stmt_streak->execute();
 $active_days = (int)($stmt_streak->get_result()->fetch_assoc()['active_days'] ?? 0);
 
 // ── Base query ─────────────────────────────────────────────
@@ -80,14 +75,14 @@ if (!empty($filter_type)) { $sql_base .= " AND contribution_type = ?"; $params[]
 if (!empty($filter_from) && !empty($filter_to)) { $sql_base .= " AND DATE(created_at) BETWEEN ? AND ?"; $params[] = $filter_from; $params[] = $filter_to; $types .= "ss"; }
 
 $stmt_count = $conn->prepare("SELECT COUNT(*) as total " . $sql_base);
-$ref_params = []; foreach($params as $k => $v) $ref_params[$k] = &$params[$k];
+$ref_params = []; foreach ($params as $k => $v) $ref_params[$k] = &$params[$k];
 $stmt_count->bind_param($types, ...$ref_params); $stmt_count->execute();
 $total_rows  = $stmt_count->get_result()->fetch_assoc()['total'];
 $total_pages = (int)ceil($total_rows / $records_per_page);
 
 $stmt = $conn->prepare("SELECT contribution_id, reference_no, contribution_type, amount, payment_method, created_at, status " . $sql_base . " ORDER BY created_at DESC LIMIT ?, ?");
 $all_params = array_merge($params, [$offset, $records_per_page]);
-$final_refs = []; foreach($all_params as $k => $v) $final_refs[$k] = &$all_params[$k];
+$final_refs = []; foreach ($all_params as $k => $v) $final_refs[$k] = &$all_params[$k];
 $stmt->bind_param($types . "ii", ...$final_refs);
 $stmt->execute();
 $result = $stmt->get_result();
@@ -95,766 +90,775 @@ $result = $stmt->get_result();
 // ── Export ─────────────────────────────────────────────────
 if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf','export_excel','print_report'])) {
     require_once __DIR__ . '/../../core/exports/UniversalExportEngine.php';
-    $format = $_GET['action'] === 'export_excel' ? 'excel' : ($_GET['action'] === 'print_report' ? 'print' : 'pdf');
+    $format  = $_GET['action'] === 'export_excel' ? 'excel' : ($_GET['action'] === 'print_report' ? 'print' : 'pdf');
     $stmt_ex = $conn->prepare("SELECT reference_no, contribution_type, amount, payment_method, created_at, status " . $sql_base . " ORDER BY created_at DESC");
     $stmt_ex->bind_param($types, ...$params); $stmt_ex->execute();
     $res_ex = $stmt_ex->get_result();
-    $data = [];
-    while ($row = $res_ex->fetch_assoc()) {
+    $data   = [];
+    while ($row = $res_ex->fetch_assoc())
         $data[] = ['Date'=>date('d-M-Y H:i',strtotime($row['created_at'])),'Type'=>ucwords(str_replace('_',' ',$row['contribution_type'])),'Reference'=>$row['reference_no']?:'-','Method'=>$row['payment_method']?:'M-Pesa','Amount'=>'+ '.number_format((float)$row['amount'],2),'Status'=>ucfirst($row['status'])];
-    }
     $stmt_ex->close();
-    UniversalExportEngine::handle($format, $data, ['title'=>'Contribution History','module'=>'Member Portal','headers'=>['Date','Type','Reference','Method','Amount','Status']]);
+    UniversalExportEngine::handle($format,$data,['title'=>'Contribution History','module'=>'Member Portal','headers'=>['Date','Type','Reference','Method','Amount','Status']]);
     exit;
 }
 
 $pageTitle = "My Contributions";
 $safe_gt   = $grand_total ?: 1;
+
+function ks(float $n): string {
+    if ($n >= 1_000_000) return 'KES '.number_format($n/1_000_000, 2).'M';
+    if ($n >= 1_000)     return 'KES '.number_format($n/1_000, 1).'K';
+    return 'KES '.number_format($n, 2);
+}
 ?>
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="light">
 <head>
-    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= htmlspecialchars($pageTitle) ?> — <?= defined('SITE_NAME') ? htmlspecialchars(SITE_NAME) : 'SACCO' ?></title>
+<script>(function(){var s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title><?= htmlspecialchars($pageTitle) ?> · <?= defined('SITE_NAME') ? htmlspecialchars(SITE_NAME) : 'SACCO' ?></title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════════════
+   CONTRIBUTIONS · HD EDITION · Forest & Lime
+═══════════════════════════════════════════════════════════ */
+*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+:root {
+    --f:      #0b2419;  --fm: #154330;  --fs: #1d6044;
+    --lime:   #a3e635;  --lt: #6a9a1a;  --lg: rgba(163,230,53,.14);
+    --bg:     #eff5f1;  --bg2: #e8f1ec;
+    --surf:   #ffffff;  --surf2: #f7fbf8;
+    --bdr:    rgba(11,36,25,.07);  --bdr2: rgba(11,36,25,.04);
+    --t1: #0b2419;  --t2: #456859;  --t3: #8fada0;
+    --grn:    #16a34a;  --red: #dc2626;  --amb: #d97706;  --blu: #2563eb;  --pur: #7c4dff;
+    --grn-bg: rgba(22,163,74,.08);    --red-bg: rgba(220,38,38,.08);
+    --amb-bg: rgba(217,119,6,.08);    --blu-bg: rgba(37,99,235,.08);
+    --pur-bg: rgba(124,77,255,.08);
+    --c-sav: #16a34a;  --c-sha: #2563eb;  --c-wel: #dc2626;
+    --r:   20px;  --rsm: 12px;
+    --ease:   cubic-bezier(.16,1,.3,1);
+    --spring: cubic-bezier(.34,1.56,.64,1);
+    --sh:     0 1px 3px rgba(11,36,25,.05), 0 6px 20px rgba(11,36,25,.08);
+    --sh-lg:  0 4px 8px rgba(11,36,25,.07), 0 20px 56px rgba(11,36,25,.13);
+}
 
-    <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+[data-bs-theme="dark"] {
+    --bg:   #070e0b;  --bg2:  #0a1510;
+    --surf: #0d1d14;  --surf2: #0a1810;
+    --bdr:  rgba(255,255,255,.07);  --bdr2: rgba(255,255,255,.04);
+    --t1:   #d8eee2;  --t2: #4d7a60;  --t3: #2a4d38;
+}
 
-    /* ── Design tokens ────────────────────────────────── */
-    :root {
-        --forest:       #0F392B;
-        --forest-mid:   #1a5c43;
-        --forest-deep:  #0d2e22;
-        --lime:         #A3E635;
-        --lime-bright:  #bde32a;
-        --lime-soft:    rgba(163,230,53,.1);
-        --body-bg:      #F2F7F5;
-        --card-bg:      #ffffff;
-        --card-border:  #E3EDE9;
-        --text-dark:    #0F392B;
-        --text-body:    #587a6c;
-        --text-muted:   #9eb8ae;
-        --radius:       22px;
-        --radius-sm:    14px;
-        --radius-xs:    9px;
-        --c-savings:    #059669;
-        --c-shares:     #6366f1;
-        --c-welfare:    #f43f5e;
-        --shadow-card:  0 2px 18px rgba(15,57,43,.07);
-        --shadow-hover: 0 10px 32px rgba(15,57,43,.13);
-    }
-    [data-bs-theme="dark"] {
-        --body-bg:     #0B1E17;
-        --card-bg:     #0d2018;
-        --card-border: rgba(255,255,255,.07);
-        --text-dark:   #d8ede4;
-        --text-body:   #6a9880;
-        --text-muted:  #3d6050;
-        --shadow-card: 0 2px 18px rgba(0,0,0,.3);
-        --shadow-hover:0 10px 32px rgba(0,0,0,.4);
-    }
+body,* { font-family:'Plus Jakarta Sans',sans-serif !important; -webkit-font-smoothing:antialiased; }
+body   { background:var(--bg); color:var(--t1); }
 
-    /* ── Base ─────────────────────────────────────────── */
-    body { font-family:'Plus Jakarta Sans',sans-serif; background:var(--body-bg); color:var(--text-dark); overflow-x:hidden; }
-    .main-content-wrapper { margin-left:272px; transition:margin-left .28s cubic-bezier(.4,0,.2,1); min-height:100vh; }
-    body.sb-collapsed .main-content-wrapper { margin-left:76px; }
-    @media (max-width:991px) { .main-content-wrapper { margin-left:0; } }
-    .page-inner { padding:0 0 60px; }
+.main-content-wrapper { margin-left:272px; min-height:100vh; transition:margin-left .3s var(--ease); }
+body.sb-collapsed .main-content-wrapper { margin-left:72px; }
+@media(max-width:991px){ .main-content-wrapper{margin-left:0} }
+.dash { padding:0 0 72px; }
 
-    /* ── Scroll reveal ────────────────────────────────── */
-    .sr { opacity:0; transform:translateY(22px); transition:opacity .5s ease, transform .5s ease; }
-    .sr.in { opacity:1; transform:none; }
-    .sr-d1 { transition-delay:.06s; }
-    .sr-d2 { transition-delay:.12s; }
-    .sr-d3 { transition-delay:.18s; }
-    .sr-d4 { transition-delay:.24s; }
+/* ─────────────────────────────────────────────
+   HERO
+───────────────────────────────────────────── */
+.hero {
+    background:linear-gradient(135deg,var(--f) 0%,var(--fm) 55%,var(--fs) 100%);
+    position:relative; overflow:hidden; color:#fff;
+    animation:fadeUp .7s var(--ease) both;
+}
+.hero-mesh { position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 60% 80% at 108% -5%,rgba(163,230,53,.11) 0%,transparent 55%),radial-gradient(ellipse 40% 55% at -8% 110%,rgba(163,230,53,.07) 0%,transparent 55%); }
+.hero-dots { position:absolute;inset:0;pointer-events:none;background-image:radial-gradient(rgba(255,255,255,.05) 1px,transparent 1px);background-size:20px 20px; }
+.hero-ring { position:absolute;border-radius:50%;pointer-events:none;border:1px solid rgba(163,230,53,.07); }
+.hero-ring.r1{width:480px;height:480px;top:-160px;right:-120px}
+.hero-ring.r2{width:700px;height:700px;top:-260px;right:-230px}
 
-    /* ══════════════════════════════════════════════════
-       HERO BANNER
-    ══════════════════════════════════════════════════ */
-    .hero-banner {
-        background: linear-gradient(135deg, #0F392B 0%, #1a5c43 55%, #0d2e22 100%);
-        padding: 36px 32px 0;
-        position: relative;
-        overflow: hidden;
-        margin-bottom: 0;
-    }
-    .hero-banner::before {
-        content: '';
-        position: absolute;
-        top: -80px; right: -80px;
-        width: 340px; height: 340px;
-        background: radial-gradient(circle, rgba(163,230,53,.14) 0%, transparent 65%);
-        border-radius: 50%;
-        pointer-events: none;
-    }
-    .hero-banner::after {
-        content: '';
-        position: absolute;
-        bottom: -40px; left: 30%;
-        width: 220px; height: 220px;
-        background: radial-gradient(circle, rgba(163,230,53,.06) 0%, transparent 65%);
-        border-radius: 50%;
-        pointer-events: none;
-    }
-    /* SVG mesh texture */
-    .hero-mesh {
-        position: absolute;
-        inset: 0;
-        opacity: .04;
-        background-image:
-            repeating-linear-gradient(0deg,   transparent, transparent 40px, rgba(163,230,53,1) 40px, rgba(163,230,53,1) 41px),
-            repeating-linear-gradient(90deg,  transparent, transparent 40px, rgba(163,230,53,1) 40px, rgba(163,230,53,1) 41px);
-        pointer-events: none;
-    }
+.hero-top { position:relative;z-index:2; padding:44px 52px 32px; display:flex;align-items:flex-start;justify-content:space-between;gap:20px;flex-wrap:wrap; }
+@media(max-width:767px){ .hero-top{padding:28px 20px 22px} }
 
-    .hero-top { display:flex; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; gap:20px; position:relative; z-index:1; }
-    .hero-eyebrow { display:inline-flex; align-items:center; gap:7px; background:rgba(163,230,53,.12); border:1px solid rgba(163,230,53,.22); border-radius:100px; padding:4px 13px; font-size:.62rem; font-weight:800; text-transform:uppercase; letter-spacing:1px; color:rgba(255,255,255,.7); margin-bottom:10px; }
-    .hero-eyebrow-dot { width:6px; height:6px; border-radius:50%; background:var(--lime); animation:pulse-d 2s ease infinite; }
-    @keyframes pulse-d { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.5);opacity:.5} }
-    .hero-title { font-size:1.75rem; font-weight:800; color:#fff; letter-spacing:-.5px; line-height:1.15; margin-bottom:5px; }
-    .hero-sub   { font-size:.8rem; font-weight:500; color:rgba(255,255,255,.5); }
-    .hero-actions { display:flex; gap:9px; align-items:center; flex-wrap:wrap; }
-    .btn-hero-primary { display:inline-flex; align-items:center; gap:7px; padding:10px 22px; border-radius:var(--radius-sm); background:var(--lime); color:var(--forest); border:none; font-family:'Plus Jakarta Sans',sans-serif; font-size:.82rem; font-weight:800; cursor:pointer; transition:all .2s; text-decoration:none; box-shadow:0 4px 18px rgba(163,230,53,.35); }
-    .btn-hero-primary:hover { transform:translateY(-2px); box-shadow:0 8px 26px rgba(163,230,53,.45); color:var(--forest); }
-    .btn-hero-ghost { display:inline-flex; align-items:center; gap:7px; padding:9px 18px; border-radius:var(--radius-sm); background:rgba(255,255,255,.08); border:1.5px solid rgba(255,255,255,.18); color:#fff; font-family:'Plus Jakarta Sans',sans-serif; font-size:.82rem; font-weight:700; cursor:pointer; transition:all .2s; text-decoration:none; }
-    .btn-hero-ghost:hover { background:rgba(255,255,255,.14); color:#fff; }
-    .export-dd { border:1.5px solid var(--card-border) !important; border-radius:15px !important; box-shadow:0 14px 48px rgba(15,57,43,.14) !important; padding:7px !important; font-family:'Plus Jakarta Sans',sans-serif; background:var(--card-bg) !important; min-width:185px; }
-    .export-dd-item { display:flex; align-items:center; gap:10px; padding:8px 12px; border-radius:10px; font-size:.8rem; font-weight:700; color:var(--text-dark); text-decoration:none; transition:background .14s; }
-    .export-dd-item:hover { background:var(--body-bg); }
-    .export-dd-icon { width:28px; height:28px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:.78rem; flex-shrink:0; }
+.hero-eyebrow { display:inline-flex;align-items:center;gap:7px;background:rgba(163,230,53,.12);border:1px solid rgba(163,230,53,.2);border-radius:50px;padding:4px 14px;margin-bottom:14px;font-size:10px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#bff060; }
+.eyebrow-dot  { width:5px;height:5px;border-radius:50%;background:var(--lime);animation:pulse 1.8s ease-in-out infinite; }
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(1.8)}}
 
-    /* ── Hero stat band ────────────────────────────────── */
-    .hero-stat-band {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 1px;
-        background: rgba(255,255,255,.07);
-        border-radius: var(--radius) var(--radius) 0 0;
-        overflow: hidden;
-        margin-top: 28px;
-        position: relative;
-        z-index: 1;
-    }
-    @media (max-width:900px) { .hero-stat-band { grid-template-columns: repeat(2,1fr); } }
-    @media (max-width:560px) { .hero-stat-band { grid-template-columns: 1fr; } }
+.hero h1 { font-size:clamp(1.8rem,3.8vw,2.6rem);font-weight:800;color:#fff;letter-spacing:-.6px;line-height:1.1;margin-bottom:6px; }
+.hero-sub { font-size:.8rem;color:rgba(255,255,255,.45);font-weight:500; }
 
-    .hero-stat-cell {
-        background: rgba(255,255,255,.04);
-        padding: 22px 24px;
-        transition: background .2s;
-    }
-    .hero-stat-cell:hover { background: rgba(255,255,255,.08); }
-    .hero-stat-cell:first-child { border-radius: var(--radius) 0 0 0; }
-    .hero-stat-cell:last-child  { border-radius: 0 var(--radius) 0 0; }
+/* hero CTA buttons */
+.hero-ctas { display:flex;gap:9px;flex-wrap:wrap; }
+.btn-lime  { display:inline-flex;align-items:center;gap:8px;background:var(--lime);color:var(--f);font-size:.875rem;font-weight:800;padding:11px 24px;border-radius:50px;border:none;cursor:pointer;text-decoration:none;box-shadow:0 2px 14px rgba(163,230,53,.28);transition:all .25s var(--spring); }
+.btn-lime:hover { transform:translateY(-2px) scale(1.03);box-shadow:0 10px 28px rgba(163,230,53,.4);color:var(--f); }
+.btn-ghost { display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.8);font-size:.875rem;font-weight:700;padding:11px 20px;border-radius:50px;cursor:pointer;text-decoration:none;transition:all .22s ease; }
+.btn-ghost:hover { background:rgba(255,255,255,.17);color:#fff;transform:translateY(-2px); }
 
-    .hsc-label { font-size:.6rem; font-weight:800; text-transform:uppercase; letter-spacing:1px; color:rgba(255,255,255,.38); margin-bottom:8px; display:flex; align-items:center; gap:7px; }
-    .hsc-icon  { width:22px; height:22px; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:.68rem; }
-    .hsc-value { font-size:1.55rem; font-weight:800; color:#fff; letter-spacing:-.4px; line-height:1; margin-bottom:6px; }
-    .hsc-sub   { font-size:.68rem; font-weight:600; color:rgba(255,255,255,.35); display:flex; align-items:center; gap:5px; }
-    .hsc-badge { background:rgba(163,230,53,.18); color:var(--lime); font-size:.62rem; font-weight:800; padding:2px 8px; border-radius:100px; }
+/* export dropdown */
+.exp-dd { border-radius:16px !important;padding:7px !important;border-color:var(--bdr) !important;box-shadow:var(--sh-lg) !important;background:var(--surf) !important;min-width:185px; }
+.dd-item { display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;text-decoration:none;font-size:.82rem;font-weight:600;color:var(--t1);transition:background .14s ease; }
+.dd-item:hover { background:var(--bg);color:var(--t1); }
+.dd-ic { width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:.88rem;flex-shrink:0; }
 
-    /* ── Content area ─────────────────────────────────── */
-    .content-area { padding: 28px 28px 0; }
-    @media (max-width:768px) { .content-area { padding:16px 14px 0; } }
+/* ─────────────────────────────────────────────
+   HERO STAT BAND (bottom of hero)
+───────────────────────────────────────────── */
+.hero-band {
+    display:grid; grid-template-columns:repeat(4,1fr);
+    gap:1px; background:rgba(255,255,255,.07);
+    position:relative; z-index:2;
+}
+@media(max-width:900px){ .hero-band{grid-template-columns:repeat(2,1fr)} }
+@media(max-width:520px){ .hero-band{grid-template-columns:1fr} }
 
-    /* ══════════════════════════════════════════════════
-       DUAL PANEL — Charts + Breakdown
-    ══════════════════════════════════════════════════ */
-    .dual-panel { display:grid; grid-template-columns:1fr 340px; gap:20px; margin-bottom:22px; }
-    @media (max-width:1080px) { .dual-panel { grid-template-columns:1fr; } }
+.hb-cell { background:rgba(255,255,255,.04); padding:24px 28px; transition:background .2s; }
+.hb-cell:hover { background:rgba(255,255,255,.09); }
+@media(max-width:767px){ .hb-cell{padding:18px 20px} }
 
-    /* Trend chart card */
-    .chart-card { background:var(--card-bg); border:1.5px solid var(--card-border); border-radius:var(--radius); padding:22px 22px 12px; box-shadow:var(--shadow-card); }
-    .chart-card-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:4px; flex-wrap:wrap; gap:10px; }
-    .chart-card-title { font-size:.88rem; font-weight:800; color:var(--text-dark); }
-    .chart-card-sub   { font-size:.7rem; font-weight:600; color:var(--text-muted); margin-top:2px; }
-    .chart-legend { display:flex; gap:14px; flex-wrap:wrap; }
-    .chart-legend-item { display:flex; align-items:center; gap:6px; font-size:.7rem; font-weight:700; color:var(--text-body); }
-    .cl-dot { width:8px; height:8px; border-radius:2px; }
+.hbc-eyebrow { display:flex;align-items:center;gap:7px;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,.35);margin-bottom:10px; }
+.hbc-ico { width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:.65rem; }
+.hbc-val { font-size:1.6rem;font-weight:800;color:#fff;letter-spacing:-.5px;line-height:1;margin-bottom:6px; }
+.hbc-meta { display:flex;align-items:center;gap:7px;font-size:.68rem;font-weight:600;color:rgba(255,255,255,.32); }
+.hbc-pill { background:rgba(163,230,53,.18);color:var(--lime);font-size:.62rem;font-weight:800;padding:2px 8px;border-radius:50px; }
 
-    /* Breakdown ring card */
-    .ring-card { background:var(--card-bg); border:1.5px solid var(--card-border); border-radius:var(--radius); padding:22px; box-shadow:var(--shadow-card); display:flex; flex-direction:column; }
-    .ring-card-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; }
-    .ring-card-title { font-size:.88rem; font-weight:800; color:var(--text-dark); }
-    .ring-center-label { text-align:center; margin-bottom:16px; }
-    .rcl-total { font-size:1.3rem; font-weight:800; color:var(--text-dark); letter-spacing:-.3px; }
-    .rcl-sub   { font-size:.65rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.8px; }
-    .ring-breakdown { display:flex; flex-direction:column; gap:10px; margin-top:6px; }
-    .rb-item { display:grid; grid-template-columns:1fr auto; align-items:center; gap:8px; }
-    .rb-left { display:flex; align-items:center; gap:8px; min-width:0; }
-    .rb-icon  { width:28px; height:28px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:.72rem; flex-shrink:0; }
-    .rb-name  { font-size:.75rem; font-weight:700; color:var(--text-body); white-space:nowrap; }
-    .rb-val   { font-size:.8rem; font-weight:800; color:var(--text-dark); }
-    .rb-bar-wrap { height:3px; background:var(--body-bg); border-radius:100px; overflow:hidden; grid-column:1/-1; margin-top:-2px; }
-    .rb-bar { height:100%; border-radius:100px; transition:width 1.4s cubic-bezier(.4,0,.2,1); }
+@keyframes fadeUp  { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+@keyframes floatUp { from{opacity:0;transform:translateY(28px)} to{opacity:1;transform:translateY(0)} }
 
-    /* ══════════════════════════════════════════════════
-       FILTER + TAB ROW
-    ══════════════════════════════════════════════════ */
-    .filter-tab-row { display:flex; align-items:center; justify-content:space-between; gap:14px; margin-bottom:16px; flex-wrap:wrap; }
+/* ─────────────────────────────────────────────
+   FLOATING STAT CARDS
+───────────────────────────────────────────── */
+.stats-float { margin-top:-56px;position:relative;z-index:10;padding:0 52px;animation:floatUp .8s var(--ease) .4s both; }
+@media(max-width:767px){ .stats-float{padding:0 16px} }
 
-    /* Tab pills */
-    .type-tabs { display:flex; gap:6px; flex-wrap:wrap; }
-    .type-tab { display:inline-flex; align-items:center; gap:6px; padding:7px 15px; border-radius:100px; font-family:'Plus Jakarta Sans',sans-serif; font-size:.75rem; font-weight:800; cursor:pointer; text-decoration:none; transition:all .2s; border:1.5px solid var(--card-border); background:var(--card-bg); color:var(--text-body); }
-    .type-tab:hover { border-color:var(--forest); color:var(--forest); }
-    .type-tab.active-all      { background:linear-gradient(135deg,#0F392B,#1a5c43); color:#fff; border-color:transparent; box-shadow:0 4px 12px rgba(15,57,43,.25); }
-    .type-tab.active-savings  { background:linear-gradient(135deg,#047857,#059669); color:#fff; border-color:transparent; box-shadow:0 4px 12px rgba(5,150,105,.3); }
-    .type-tab.active-shares   { background:linear-gradient(135deg,#4f46e5,#6366f1); color:#fff; border-color:transparent; box-shadow:0 4px 12px rgba(99,102,241,.3); }
-    .type-tab.active-welfare  { background:linear-gradient(135deg,#be123c,#f43f5e); color:#fff; border-color:transparent; box-shadow:0 4px 12px rgba(244,63,94,.3); }
-    .tab-count { font-size:.6rem; background:rgba(255,255,255,.25); padding:1px 6px; border-radius:100px; font-weight:800; }
-    .type-tab:not([class*="active"]) .tab-count { background:var(--body-bg); color:var(--text-muted); }
+.sc { background:var(--surf);border-radius:var(--r);padding:22px 24px;border:1px solid var(--bdr);box-shadow:var(--sh-lg);height:100%;position:relative;overflow:hidden;transition:transform .28s var(--ease),box-shadow .28s ease; }
+.sc:hover { transform:translateY(-5px);box-shadow:0 8px 20px rgba(11,36,25,.09),0 36px 70px rgba(11,36,25,.14); }
+.sc::after { content:'';position:absolute;bottom:0;left:0;right:0;height:2.5px;border-radius:0 0 var(--r) var(--r);transform:scaleX(0);transform-origin:left;transition:transform .38s var(--ease); }
+.sc:hover::after { transform:scaleX(1); }
+.sc-g::after { background:linear-gradient(90deg,#16a34a,#4ade80); }
+.sc-b::after { background:linear-gradient(90deg,#2563eb,#60a5fa); }
+.sc-r::after { background:linear-gradient(90deg,#dc2626,#f87171); }
+.sc-l::after { background:linear-gradient(90deg,var(--lime),#d4f98a); }
+.sc-ico { width:46px;height:46px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:1.15rem;margin-bottom:16px;transition:transform .3s var(--spring); }
+.sc:hover .sc-ico { transform:scale(1.12) rotate(7deg); }
+.sc-lbl { font-size:10px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--t3);margin-bottom:5px; }
+.sc-val { font-size:1.5rem;font-weight:800;color:var(--t1);letter-spacing:-.8px;line-height:1.1;margin-bottom:14px; }
+.sc-bar { height:4px;border-radius:99px;background:var(--bg);overflow:hidden;margin-bottom:9px; }
+.sc-bar-fill { height:100%;border-radius:99px;width:0;transition:width 1.4s var(--ease); }
+.sc-meta { font-size:.72rem;font-weight:600;color:var(--t3); }
+.sa1{animation:floatUp .7s var(--ease) .45s both}
+.sa2{animation:floatUp .7s var(--ease) .53s both}
+.sa3{animation:floatUp .7s var(--ease) .61s both}
+.sa4{animation:floatUp .7s var(--ease) .69s both}
 
-    /* Date filter inline */
-    .date-filter-row { display:flex; align-items:flex-end; gap:8px; flex-wrap:wrap; }
-    .df-group { display:flex; flex-direction:column; gap:4px; }
-    .df-label { font-size:.58rem; font-weight:800; text-transform:uppercase; letter-spacing:.9px; color:var(--text-muted); }
-    .df-input { background:var(--card-bg); border:1.5px solid var(--card-border); border-radius:var(--radius-xs); padding:7px 11px; font-family:'Plus Jakarta Sans',sans-serif; font-size:.78rem; font-weight:600; color:var(--text-dark); outline:none; transition:border-color .2s; }
-    .df-input:focus { border-color:var(--forest); }
-    .df-btn { display:inline-flex; align-items:center; gap:5px; padding:8px 16px; border-radius:var(--radius-xs); background:linear-gradient(135deg,#0F392B,#1a5c43); color:#fff; border:none; font-family:'Plus Jakarta Sans',sans-serif; font-size:.78rem; font-weight:800; cursor:pointer; transition:all .2s; height:36px; }
-    .df-btn:hover { transform:translateY(-1px); box-shadow:0 4px 12px rgba(15,57,43,.3); }
-    .df-clear { display:inline-flex; align-items:center; justify-content:center; width:36px; height:36px; border-radius:var(--radius-xs); background:var(--card-bg); border:1.5px solid var(--card-border); color:var(--text-muted); text-decoration:none; transition:all .2s; }
-    .df-clear:hover { border-color:#dc2626; color:#dc2626; }
+/* ─────────────────────────────────────────────
+   PAGE BODY
+───────────────────────────────────────────── */
+.pg-body { padding:32px 52px 0; }
+@media(max-width:767px){ .pg-body{padding:24px 16px 0} }
 
-    /* Active filter pills */
-    .active-pills { display:flex; gap:7px; flex-wrap:wrap; align-items:center; margin-bottom:12px; }
-    .ap-label { font-size:.6rem; font-weight:800; text-transform:uppercase; letter-spacing:.9px; color:var(--text-muted); }
-    .ap-pill  { display:inline-flex; align-items:center; gap:5px; background:var(--lime-soft); border:1px solid rgba(163,230,53,.22); border-radius:100px; padding:3px 11px; font-size:.7rem; font-weight:700; color:var(--forest); }
-    [data-bs-theme="dark"] .ap-pill { color:var(--lime); }
-    .ap-pill span { opacity:.6; }
+/* ── DUAL PANEL ── */
+.dual-panel { display:grid;grid-template-columns:1fr 320px;gap:18px;margin-bottom:20px; }
+@media(max-width:1080px){ .dual-panel{grid-template-columns:1fr} }
 
-    /* ══════════════════════════════════════════════════
-       TRANSACTION TABLE PANEL
-    ══════════════════════════════════════════════════ */
-    .tx-panel { background:var(--card-bg); border:1.5px solid var(--card-border); border-radius:var(--radius); overflow:hidden; box-shadow:var(--shadow-card); }
-    .tx-panel-head { display:flex; align-items:center; justify-content:space-between; padding:18px 22px 16px; border-bottom:1px solid var(--card-border); gap:10px; flex-wrap:wrap; }
-    .tx-panel-title { font-size:.92rem; font-weight:800; color:var(--text-dark); }
-    .tx-panel-meta  { display:flex; align-items:center; gap:10px; }
-    .tx-badge { background:var(--lime-soft); color:var(--forest); font-size:.65rem; font-weight:800; padding:3px 10px; border-radius:100px; }
-    [data-bs-theme="dark"] .tx-badge { color:var(--lime); }
-    .tx-page-info { font-size:.7rem; font-weight:600; color:var(--text-muted); }
+/* Chart card */
+.chart-card { background:var(--surf);border-radius:var(--r);padding:24px 26px;border:1px solid var(--bdr);box-shadow:var(--sh);display:flex;flex-direction:column;animation:floatUp .7s var(--ease) .72s both; }
+.cc-head { display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:16px;flex-wrap:wrap; }
+.cc-title { font-size:.9rem;font-weight:800;color:var(--t1);letter-spacing:-.2px; }
+.cc-sub   { font-size:.7rem;font-weight:500;color:var(--t3);margin-top:2px; }
+.chart-box { position:relative;flex:1;height:240px; }
 
-    /* Table */
-    .tx-table { width:100%; border-collapse:collapse; }
-    .tx-table thead th {
-        font-size:.59rem; font-weight:800; text-transform:uppercase; letter-spacing:1px;
-        color:var(--text-muted); padding:9px 18px; background:var(--body-bg);
-        border-bottom:1px solid var(--card-border); white-space:nowrap;
-    }
+.leg { display:flex;gap:12px;flex-wrap:wrap;margin-top:10px; }
+.leg-i { display:flex;align-items:center;gap:5px;font-size:.68rem;font-weight:700;color:var(--t3); }
+.leg-dot { width:8px;height:8px;border-radius:50%;flex-shrink:0; }
 
-    /* Date separator row */
-    .tx-sep-row td { padding:10px 22px 6px; background:var(--body-bg); border-top:1px solid var(--card-border); border-bottom:1px solid var(--card-border); }
-    .tx-sep-row:first-child td { border-top:none; }
-    .tx-sep-inner { font-size:.6rem; font-weight:800; text-transform:uppercase; letter-spacing:1px; color:var(--text-muted); display:flex; align-items:center; gap:10px; }
-    .tx-sep-inner::after { content:''; flex:1; height:1px; background:var(--card-border); }
-    .tx-sep-today { color:var(--forest); }
-    [data-bs-theme="dark"] .tx-sep-today { color:var(--lime); }
+/* Ring card */
+.ring-card { background:var(--surf);border-radius:var(--r);padding:24px 26px;border:1px solid var(--bdr);box-shadow:var(--sh);display:flex;flex-direction:column;animation:floatUp .7s var(--ease) .78s both; }
+.ring-box { position:relative;width:160px;height:160px;margin:0 auto 14px; }
+.ring-center { position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;pointer-events:none; }
+.ring-center-val { font-size:.9rem;font-weight:800;color:var(--t1);letter-spacing:-.3px;line-height:1.1; }
+.ring-center-sub { font-size:.58rem;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--t3);margin-top:2px; }
 
-    /* Data rows */
-    .tx-row { transition:background .13s; cursor:default; }
-    .tx-row:hover { background:var(--body-bg); }
-    .tx-row td { padding:12px 18px; border-bottom:1px solid var(--card-border); vertical-align:middle; }
-    .tx-row:last-child td { border-bottom:none; }
+/* Ring breakdown bars */
+.rb-list { display:flex;flex-direction:column;gap:12px; }
+.rb-row  { display:grid;grid-template-columns:1fr auto;align-items:center;gap:8px; }
+.rb-left { display:flex;align-items:center;gap:8px; }
+.rb-ico  { width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.72rem;flex-shrink:0; }
+.rb-name { font-size:.76rem;font-weight:700;color:var(--t2); }
+.rb-val  { font-size:.8rem;font-weight:800;color:var(--t1); }
+.rb-bar-wrap { height:3px;background:var(--bg);border-radius:99px;overflow:hidden;grid-column:1/-1;margin-top:-4px; }
+.rb-bar-fill { height:100%;border-radius:99px;width:0;transition:width 1.4s var(--ease); }
 
-    /* Colored left stripe per type */
-    .tx-row td:first-child { position:relative; }
-    .tx-row.type-savings td:first-child { box-shadow:inset 3px 0 0 var(--c-savings); }
-    .tx-row.type-shares  td:first-child { box-shadow:inset 3px 0 0 var(--c-shares); }
-    .tx-row.type-welfare td:first-child { box-shadow:inset 3px 0 0 var(--c-welfare); }
+/* ── FILTER / TAB ROW ── */
+.filter-row { display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:14px;flex-wrap:wrap;animation:floatUp .7s var(--ease) .84s both; }
 
-    /* Icon */
-    .tx-icon { width:38px; height:38px; border-radius:11px; display:flex; align-items:center; justify-content:center; font-size:.88rem; flex-shrink:0; }
-    .txi-savings { background:rgba(5,150,105,.1);  color:var(--c-savings); }
-    .txi-shares  { background:rgba(99,102,241,.1); color:var(--c-shares); }
-    .txi-welfare { background:rgba(244,63,94,.1);  color:var(--c-welfare); }
-    .txi-default { background:var(--body-bg); color:var(--text-body); }
+.type-tabs { display:flex;gap:6px;flex-wrap:wrap; }
+.type-tab { display:inline-flex;align-items:center;gap:6px;padding:7px 16px;border-radius:50px;font-size:.76rem;font-weight:800;text-decoration:none;border:1.5px solid var(--bdr);background:var(--surf);color:var(--t2);transition:all .2s var(--ease); }
+.type-tab:hover { border-color:rgba(11,36,25,.18);color:var(--t1); }
+.tc-badge { font-size:.6rem;background:var(--bg);color:var(--t3);padding:1px 7px;border-radius:50px;font-weight:800; }
 
-    .tx-name   { font-size:.83rem; font-weight:700; color:var(--text-dark); text-transform:capitalize; }
-    .tx-method { font-size:.68rem; font-weight:600; color:var(--text-muted); margin-top:2px; display:flex; align-items:center; gap:4px; }
-    .tx-method-sep { width:3px; height:3px; border-radius:50%; background:var(--text-muted); display:inline-block; }
+.tt-all     .type-tab.act { background:var(--f);color:#fff;border-color:transparent;box-shadow:0 4px 14px rgba(11,36,25,.2); }
+.tt-all     .type-tab.act .tc-badge { background:rgba(255,255,255,.18);color:rgba(255,255,255,.7); }
+.tt-savings .type-tab.act { background:var(--grn);color:#fff;border-color:transparent;box-shadow:0 4px 14px rgba(22,163,74,.3); }
+.tt-shares  .type-tab.act { background:var(--blu);color:#fff;border-color:transparent;box-shadow:0 4px 14px rgba(37,99,235,.3); }
+.tt-welfare .type-tab.act { background:var(--red);color:#fff;border-color:transparent;box-shadow:0 4px 14px rgba(220,38,38,.3); }
 
-    .tx-date { font-size:.78rem; font-weight:700; color:var(--text-dark); }
-    .tx-time { font-size:.66rem; font-weight:600; color:var(--text-muted); margin-top:2px; }
+/* date filter */
+.date-form { display:flex;align-items:flex-end;gap:8px;flex-wrap:wrap; }
+.df-grp { display:flex;flex-direction:column;gap:4px; }
+.df-lbl { font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.9px;color:var(--t3); }
+.df-ctrl { background:var(--surf);border:1px solid var(--bdr);border-radius:var(--rsm);padding:8px 12px;font-size:.78rem;font-weight:600;color:var(--t1);outline:none;transition:border-color .18s ease; }
+.df-ctrl:focus { border-color:rgba(11,36,25,.28); }
+.btn-filter { display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:50px;background:var(--f);color:#fff;border:none;font-size:.78rem;font-weight:800;cursor:pointer;transition:all .22s var(--ease); }
+.btn-filter:hover { background:var(--fm);transform:translateY(-1px);box-shadow:0 5px 14px rgba(11,36,25,.18); }
+.btn-clear { display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50px;background:var(--surf);border:1px solid var(--bdr);color:var(--t3);text-decoration:none;transition:all .18s ease; }
+.btn-clear:hover { border-color:rgba(220,38,38,.3);color:var(--red); }
 
-    .tx-ref { font-family:monospace; font-size:.68rem; color:var(--text-muted); background:var(--body-bg); padding:3px 8px; border-radius:7px; border:1px solid var(--card-border); display:inline-block; letter-spacing:.2px; }
+/* active filter pills */
+.active-filter-pills { display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin-bottom:12px; }
+.afp-lbl  { font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.9px;color:var(--t3); }
+.afp-pill { display:inline-flex;align-items:center;gap:5px;background:var(--lg);border:1px solid rgba(163,230,53,.22);border-radius:50px;padding:3px 11px;font-size:.72rem;font-weight:700;color:var(--lt); }
+[data-bs-theme="dark"] .afp-pill { color:var(--lime); }
+.afp-pill span { opacity:.6; }
+.afp-clear { font-size:.72rem;font-weight:700;color:var(--t3);text-decoration:none;margin-left:4px;transition:color .15s ease; }
+.afp-clear:hover { color:var(--red); }
 
-    /* Status pill */
-    .sp { display:inline-flex; align-items:center; gap:5px; font-size:.62rem; font-weight:800; padding:3px 10px; border-radius:100px; text-transform:uppercase; letter-spacing:.5px; }
-    .sp::before { content:''; width:5px; height:5px; border-radius:50%; }
-    .sp-ok  { background:#D1FAE5; color:#065f46; } .sp-ok::before  { background:#059669; }
-    .sp-pnd { background:#FEF3C7; color:#92400e; } .sp-pnd::before { background:#d97706; }
-    .sp-err { background:#FEE2E2; color:#991b1b; } .sp-err::before { background:#dc2626; }
+/* ── LEDGER TABLE CARD ── */
+.ledger-card { background:var(--surf);border-radius:var(--r);border:1px solid var(--bdr);box-shadow:var(--sh);overflow:hidden;animation:floatUp .7s var(--ease) .88s both; }
+.lc-head { display:flex;align-items:center;justify-content:space-between;padding:18px 26px;border-bottom:1px solid var(--bdr2);background:var(--surf2);flex-wrap:wrap;gap:12px; }
+.lc-title { font-size:.88rem;font-weight:800;color:var(--t1); }
+.lc-meta  { display:flex;align-items:center;gap:10px; }
+.lc-badge { display:inline-flex;align-items:center;gap:4px;background:var(--lg);border:1px solid rgba(163,230,53,.25);border-radius:50px;padding:3px 10px;font-size:9.5px;font-weight:800;color:var(--lt); }
+[data-bs-theme="dark"] .lc-badge { color:var(--lime); }
+.lc-pg { font-size:.7rem;font-weight:600;color:var(--t3); }
 
-    .tx-amount     { font-size:.92rem; font-weight:800; color:#059669; white-space:nowrap; }
-    .tx-amount-sub { font-size:.62rem; font-weight:600; color:var(--text-muted); text-align:right; margin-top:2px; }
+/* Table */
+.ct { width:100%;border-collapse:collapse; }
+.ct thead th { background:var(--surf2);font-size:9.5px;font-weight:800;letter-spacing:.7px;text-transform:uppercase;color:var(--t3);padding:11px 18px;border:none;border-bottom:1px solid var(--bdr2);white-space:nowrap; }
 
-    /* Row entrance animation */
-    @keyframes row-in { from { opacity:0; transform:translateX(-8px); } to { opacity:1; transform:none; } }
-    .tx-row { animation: row-in .28s ease both; }
-    <?php for($ri=1;$ri<=10;$ri++) echo ".tx-row:nth-child($ri){animation-delay:".($ri*0.04)."s}"; ?>
+/* date separator */
+.ct-sep td { padding:9px 26px 6px;background:var(--bg2);border-top:1px solid var(--bdr2);border-bottom:1px solid var(--bdr2); }
+.ct-sep-inner { display:flex;align-items:center;gap:10px;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--t3); }
+.ct-sep-inner::after { content:'';flex:1;height:1px;background:var(--bdr); }
+.ct-sep-today .ct-sep-inner { color:var(--grn); }
+.ct-today-badge { background:var(--grn-bg);color:var(--grn);font-size:9px;font-weight:800;padding:2px 8px;border-radius:50px; }
 
-    /* ── Empty state ───────────────────────────────── */
-    .empty-wrap { padding:64px 24px; text-align:center; }
-    .empty-icon-box { width:72px; height:72px; border-radius:20px; background:var(--body-bg); display:flex; align-items:center; justify-content:center; margin:0 auto 18px; font-size:2rem; color:var(--text-muted); opacity:.5; }
-    .empty-wrap h6 { font-size:.92rem; font-weight:800; color:var(--text-dark); margin-bottom:6px; }
-    .empty-wrap p  { font-size:.78rem; font-weight:500; color:var(--text-muted); margin-bottom:18px; }
-    .btn-empty-act { display:inline-flex; align-items:center; gap:6px; padding:9px 20px; border-radius:var(--radius-sm); background:linear-gradient(135deg,#0F392B,#1a5c43); color:#fff; text-decoration:none; font-size:.8rem; font-weight:800; box-shadow:0 4px 14px rgba(15,57,43,.25); transition:all .2s; }
-    .btn-empty-act:hover { transform:translateY(-2px); color:#fff; }
+/* data rows */
+.ct-row { border-bottom:1px solid var(--bdr2);transition:background .13s ease; }
+.ct-row:last-child { border-bottom:none; }
+.ct-row:hover { background:rgba(11,36,25,.018); }
+.ct-row td { padding:13px 18px;vertical-align:middle; }
 
-    /* ── Pagination ─────────────────────────────────── */
-    .tx-pagination { display:flex; align-items:center; justify-content:space-between; padding:14px 22px; border-top:1px solid var(--card-border); gap:10px; flex-wrap:wrap; }
-    .pag-info { font-size:.7rem; font-weight:600; color:var(--text-muted); }
-    .pag-btns { display:flex; gap:4px; }
-    .pag-btn { width:32px; height:32px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:.76rem; font-weight:700; text-decoration:none; color:var(--text-body); background:var(--body-bg); border:1.5px solid var(--card-border); transition:all .18s; }
-    .pag-btn:hover:not(.pag-active):not(.pag-dis) { border-color:var(--forest); color:var(--forest); }
-    .pag-active { background:linear-gradient(135deg,#0F392B,#1a5c43); color:#fff !important; border-color:transparent; box-shadow:0 4px 12px rgba(15,57,43,.3); }
-    .pag-dis { opacity:.3; pointer-events:none; }
+/* type left stripe */
+.ct-row.t-sav td:first-child { box-shadow:inset 3px 0 0 var(--c-sav); }
+.ct-row.t-sha td:first-child { box-shadow:inset 3px 0 0 var(--c-sha); }
+.ct-row.t-wel td:first-child { box-shadow:inset 3px 0 0 var(--c-wel); }
 
-    @media print { .no-print { display:none !important; } body { background:#fff; } }
-    </style>
+/* icon puck */
+.ct-ico { width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0;transition:transform .25s var(--spring); }
+.ct-row:hover .ct-ico { transform:scale(1.1) rotate(5deg); }
+.ico-sav { background:var(--grn-bg);color:var(--grn); }
+.ico-sha { background:var(--blu-bg);color:var(--blu); }
+.ico-wel { background:var(--red-bg);color:var(--red); }
+.ico-def { background:var(--bg);color:var(--t2); }
+
+.ct-name   { font-size:.85rem;font-weight:700;color:var(--t1);text-transform:capitalize; }
+.ct-method { font-size:.68rem;font-weight:600;color:var(--t3);margin-top:2px;display:flex;align-items:center;gap:4px; }
+.ct-method-dot { width:3px;height:3px;border-radius:50%;background:var(--t3); }
+
+.ct-date { font-size:.82rem;font-weight:700;color:var(--t1); }
+.ct-time { font-size:.65rem;font-weight:500;color:var(--t3);margin-top:2px; }
+
+.ct-ref { font-family:monospace;font-size:.7rem;color:var(--t3);background:var(--bg);border:1px solid var(--bdr);border-radius:7px;padding:3px 9px;display:inline-block; }
+
+/* status chips */
+.sc-chip { display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:7px;font-size:9.5px;font-weight:800;letter-spacing:.3px; }
+.sc-chip::before { content:'';width:4px;height:4px;border-radius:50%;background:currentColor; }
+.chip-ok  { background:var(--grn-bg);color:var(--grn); }
+.chip-pnd { background:var(--amb-bg);color:var(--amb); }
+.chip-err { background:var(--red-bg);color:var(--red); }
+
+.ct-amount     { font-size:.9rem;font-weight:800;color:var(--grn); }
+.ct-amount-sub { font-size:.62rem;font-weight:600;color:var(--t3);text-align:right;margin-top:2px; }
+
+/* row animation */
+@keyframes rowIn { from{opacity:0;transform:translateX(-8px)} to{opacity:1;transform:none} }
+.ct-row { animation:rowIn .28s var(--ease) both; }
+<?php for($ri=1;$ri<=10;$ri++) echo ".ct-row:nth-child($ri){animation-delay:".($ri*0.035)."s}"; ?>
+
+/* empty state */
+.empty-well { display:flex;flex-direction:column;align-items:center;padding:64px 24px;text-align:center; }
+.ew-ico { width:72px;height:72px;border-radius:20px;background:var(--bg);border:1px solid var(--bdr);display:flex;align-items:center;justify-content:center;font-size:1.8rem;color:var(--t3);margin-bottom:18px; }
+.ew-title { font-size:.9rem;font-weight:800;color:var(--t1);margin-bottom:5px; }
+.ew-sub   { font-size:.78rem;color:var(--t3);margin-bottom:18px; }
+.btn-deposit { display:inline-flex;align-items:center;gap:7px;background:var(--f);color:#fff;font-size:.82rem;font-weight:800;padding:11px 22px;border-radius:50px;text-decoration:none;box-shadow:0 3px 14px rgba(11,36,25,.2);transition:all .22s var(--ease); }
+.btn-deposit:hover { background:var(--fm);transform:translateY(-2px);box-shadow:0 8px 20px rgba(11,36,25,.25);color:#fff; }
+
+/* ── PAGINATION ── */
+.lc-footer { display:flex;align-items:center;justify-content:space-between;padding:14px 26px;border-top:1px solid var(--bdr2);flex-wrap:wrap;gap:10px; }
+.pag-info  { font-size:.7rem;font-weight:600;color:var(--t3); }
+.pag-btns  { display:flex;gap:4px; }
+.pag-btn   { width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:.76rem;font-weight:700;text-decoration:none;color:var(--t2);background:var(--bg);border:1px solid var(--bdr);transition:all .18s ease; }
+.pag-btn:hover:not(.pag-active):not(.pag-dis) { border-color:rgba(11,36,25,.2);color:var(--t1); }
+.pag-active { background:var(--f);color:#fff !important;border-color:transparent;box-shadow:0 3px 10px rgba(11,36,25,.2); }
+.pag-dis    { opacity:.3;pointer-events:none; }
+
+@media print { .no-print{display:none !important} body{background:#fff} }
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:99px}
+</style>
 </head>
 <body>
-<div class="d-flex">
-    <?php $layout->sidebar(); ?>
+<?php $layout->sidebar(); ?>
+<div class="main-content-wrapper">
+<?php $layout->topbar($pageTitle ?? ''); ?>
+<div class="dash">
 
-    <div class="flex-fill main-content-wrapper">
-        <?php $layout->topbar($pageTitle ?? ''); ?>
+<!-- ══════════════════════════════
+     HERO
+══════════════════════════════ -->
+<div class="hero">
+    <div class="hero-mesh"></div>
+    <div class="hero-dots"></div>
+    <div class="hero-ring r1"></div>
+    <div class="hero-ring r2"></div>
 
-        <div class="page-inner">
+    <!-- Top row -->
+    <div class="hero-top">
+        <div>
+            <div class="hero-eyebrow"><span class="eyebrow-dot"></span> Financial Record</div>
+            <h1>My Contributions</h1>
+            <p class="hero-sub">Complete history of your savings, shares &amp; welfare deposits</p>
+        </div>
+        <div class="hero-ctas no-print">
+            <div class="dropdown">
+                <button class="btn-ghost dropdown-toggle" data-bs-toggle="dropdown">
+                    <i class="bi bi-cloud-download-fill"></i> Export
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end exp-dd mt-2">
+                    <li><a class="dd-item" href="?<?= http_build_query(array_merge($_GET,['action'=>'export_pdf'])) ?>"><div class="dd-ic" style="background:rgba(220,38,38,.09);color:#dc2626"><i class="bi bi-file-pdf-fill"></i></div> Export PDF</a></li>
+                    <li><a class="dd-item" href="?<?= http_build_query(array_merge($_GET,['action'=>'export_excel'])) ?>"><div class="dd-ic" style="background:rgba(5,150,105,.09);color:#059669"><i class="bi bi-file-earmark-spreadsheet-fill"></i></div> Export Excel</a></li>
+                    <li><a class="dd-item" href="?<?= http_build_query(array_merge($_GET,['action'=>'print_report'])) ?>" target="_blank"><div class="dd-ic" style="background:rgba(99,102,241,.09);color:#6366f1"><i class="bi bi-printer-fill"></i></div> Print Statement</a></li>
+                </ul>
+            </div>
+            <a href="<?= BASE_URL ?>/member/pages/mpesa_request.php" class="btn-lime">
+                <i class="bi bi-plus-circle-fill"></i> New Deposit
+            </a>
+        </div>
+    </div>
 
-            <!-- ══ HERO BANNER ══════════════════════════════ -->
-            <div class="hero-banner sr">
-                <div class="hero-mesh"></div>
-
-                <div class="hero-top">
-                    <div>
-                        <div class="hero-eyebrow"><span class="hero-eyebrow-dot"></span> Financial Record</div>
-                        <div class="hero-title">My Contributions</div>
-                        <div class="hero-sub">Complete history of your savings, shares &amp; welfare deposits.</div>
-                    </div>
-                    <div class="hero-actions no-print">
-                        <div class="dropdown">
-                            <button class="btn-hero-ghost dropdown-toggle" data-bs-toggle="dropdown">
-                                <i class="bi bi-download"></i> Export
-                            </button>
-                            <ul class="dropdown-menu export-dd">
-                                <li><a class="export-dd-item" href="?<?= http_build_query(array_merge($_GET,['action'=>'export_pdf'])) ?>"><span class="export-dd-icon" style="background:#FEE2E2;color:#dc2626;"><i class="bi bi-file-pdf-fill"></i></span>Export PDF</a></li>
-                                <li><a class="export-dd-item" href="?<?= http_build_query(array_merge($_GET,['action'=>'export_excel'])) ?>"><span class="export-dd-icon" style="background:#D1FAE5;color:#059669;"><i class="bi bi-file-earmark-spreadsheet-fill"></i></span>Export Excel</a></li>
-                                <li><a class="export-dd-item" href="?<?= http_build_query(array_merge($_GET,['action'=>'print_report'])) ?>" target="_blank"><span class="export-dd-icon" style="background:#EEF2FF;color:#6366f1;"><i class="bi bi-printer-fill"></i></span>Print Statement</a></li>
-                            </ul>
-                        </div>
-                        <a href="<?= BASE_URL ?>/member/pages/mpesa_request.php" class="btn-hero-primary">
-                            <i class="bi bi-plus-lg"></i> New Deposit
-                        </a>
-                    </div>
-                </div>
-
-                <!-- Hero stat band -->
-                <div class="hero-stat-band">
-                    <!-- Grand total -->
-                    <div class="hero-stat-cell">
-                        <div class="hsc-label">
-                            <span class="hsc-icon" style="background:rgba(163,230,53,.15);color:var(--lime);"><i class="bi bi-layers-fill"></i></span>
-                            Portfolio Total
-                        </div>
-                        <div class="hsc-value" data-counter="<?= $grand_total ?>" data-prefix="KES " data-decimals="0">KES 0</div>
-                        <div class="hsc-sub"><?= $total_count ?> transactions <span class="hsc-badge">All time</span></div>
-                    </div>
-                    <!-- Savings -->
-                    <div class="hero-stat-cell">
-                        <div class="hsc-label">
-                            <span class="hsc-icon" style="background:rgba(163,230,53,.15);color:var(--lime);"><i class="bi bi-wallet2"></i></span>
-                            Savings
-                        </div>
-                        <div class="hsc-value" data-counter="<?= $savings_val ?>" data-prefix="KES " data-decimals="0">KES 0</div>
-                        <div class="hsc-sub"><?= $cnt_savings ?> deposits <span class="hsc-badge"><?= $grand_total > 0 ? round(($savings_val/$safe_gt)*100) : 0 ?>%</span></div>
-                    </div>
-                    <!-- Shares -->
-                    <div class="hero-stat-cell">
-                        <div class="hsc-label">
-                            <span class="hsc-icon" style="background:rgba(163,230,53,.15);color:var(--lime);"><i class="bi bi-pie-chart-fill"></i></span>
-                            Shares Capital
-                        </div>
-                        <div class="hsc-value" data-counter="<?= $shares_val ?>" data-prefix="KES " data-decimals="0">KES 0</div>
-                        <div class="hsc-sub"><?= $cnt_shares ?> deposits <span class="hsc-badge"><?= $grand_total > 0 ? round(($shares_val/$safe_gt)*100) : 0 ?>%</span></div>
-                    </div>
-                    <!-- Welfare / Activity -->
-                    <div class="hero-stat-cell">
-                        <div class="hsc-label">
-                            <span class="hsc-icon" style="background:rgba(163,230,53,.15);color:var(--lime);"><i class="bi bi-heart-pulse-fill"></i></span>
-                            Welfare Fund
-                        </div>
-                        <div class="hsc-value" data-counter="<?= $welfare_val ?>" data-prefix="KES " data-decimals="0">KES 0</div>
-                        <div class="hsc-sub"><?= $active_days ?> active days <span class="hsc-badge">30d</span></div>
-                    </div>
-                </div>
-            </div><!-- /hero-banner -->
-
-            <!-- ══ CONTENT AREA ════════════════════════════ -->
-            <div class="content-area">
-
-                <!-- Dual panel: trend chart + ring breakdown -->
-                <div class="dual-panel sr sr-d1">
-
-                    <!-- Trend Chart -->
-                    <div class="chart-card">
-                        <div class="chart-card-head">
-                            <div>
-                                <div class="chart-card-title">Contribution Trend</div>
-                                <div class="chart-card-sub">Monthly breakdown — last 7 months</div>
-                            </div>
-                            <div class="chart-legend">
-                                <div class="chart-legend-item"><span class="cl-dot" style="background:#059669;"></span>Savings</div>
-                                <div class="chart-legend-item"><span class="cl-dot" style="background:#6366f1;"></span>Shares</div>
-                                <div class="chart-legend-item"><span class="cl-dot" style="background:#f43f5e;"></span>Welfare</div>
-                            </div>
-                        </div>
-                        <div id="trendChart"></div>
-                    </div>
-
-                    <!-- Ring Breakdown -->
-                    <div class="ring-card">
-                        <div class="ring-card-head">
-                            <div class="ring-card-title">Portfolio Mix</div>
-                        </div>
-                        <div id="ringChart"></div>
-                        <div class="ring-center-label">
-                            <div class="rcl-total">KES <?= number_format($grand_total, 0) ?></div>
-                            <div class="rcl-sub">Total Contributed</div>
-                        </div>
-                        <div class="ring-breakdown">
-                            <?php
-                            $rb = [
-                                ['Savings', $savings_val, 'txi-savings', 'bi-wallet2',        'rgba(5,150,105,.1)',  '#059669', 'linear-gradient(90deg,#047857,#34d399)'],
-                                ['Shares',  $shares_val,  'txi-shares',  'bi-pie-chart-fill', 'rgba(99,102,241,.1)','#6366f1', 'linear-gradient(90deg,#4f46e5,#a5b4fc)'],
-                                ['Welfare', $welfare_val, 'txi-welfare', 'bi-heart-pulse-fill','rgba(244,63,94,.1)', '#f43f5e', 'linear-gradient(90deg,#be123c,#fda4af)'],
-                            ];
-                            foreach ($rb as [$name, $val, $icls, $iname, $ibg, $icol, $grad]):
-                                $pct = $grand_total > 0 ? round(($val/$safe_gt)*100) : 0;
-                            ?>
-                            <div>
-                                <div class="rb-item">
-                                    <div class="rb-left">
-                                        <div class="rb-icon" style="background:<?= $ibg ?>;color:<?= $icol ?>;"><i class="bi <?= $iname ?>"></i></div>
-                                        <span class="rb-name"><?= $name ?></span>
-                                    </div>
-                                    <span class="rb-val">KES <?= number_format($val, 0) ?></span>
-                                </div>
-                                <div class="rb-bar-wrap">
-                                    <div class="rb-bar" style="width:0%;background:<?= $grad ?>;" data-width="<?= $pct ?>%"></div>
-                                </div>
-                            </div>
-                            <?php endforeach; ?>
-                        </div>
-                    </div>
-
-                </div><!-- /dual-panel -->
-
-                <!-- ══ FILTER + TABS ════════════════════════ -->
-                <div class="filter-tab-row sr sr-d2 no-print">
-                    <!-- Type tab pills -->
-                    <div class="type-tabs">
-                        <?php
-                        $tabs = [
-                            ['', 'All', 'active-all', $total_count],
-                            ['savings', 'Savings', 'active-savings', $cnt_savings],
-                            ['shares',  'Shares',  'active-shares',  $cnt_shares],
-                            ['welfare', 'Welfare', 'active-welfare', $cnt_welfare],
-                        ];
-                        foreach ($tabs as [$val, $label, $acls, $cnt]):
-                            $isActive = ($filter_type === $val);
-                            $qp = http_build_query(['type'=>$val,'from'=>$filter_from,'to'=>$filter_to,'page'=>1]);
-                        ?>
-                        <a href="?<?= $qp ?>"
-                           class="type-tab<?= $isActive ? ' '.$acls : '' ?>">
-                            <?= $label ?> <span class="tab-count"><?= $cnt ?></span>
-                        </a>
-                        <?php endforeach; ?>
-                    </div>
-
-                    <!-- Date range -->
-                    <form method="GET" class="date-filter-row">
-                        <input type="hidden" name="type" value="<?= htmlspecialchars($filter_type) ?>">
-                        <div class="df-group">
-                            <label class="df-label">From</label>
-                            <input type="date" name="from" value="<?= htmlspecialchars($filter_from) ?>" class="df-input">
-                        </div>
-                        <div class="df-group">
-                            <label class="df-label">To</label>
-                            <input type="date" name="to" value="<?= htmlspecialchars($filter_to) ?>" class="df-input">
-                        </div>
-                        <button type="submit" class="df-btn"><i class="bi bi-funnel"></i> Apply</button>
-                        <?php if (!empty($filter_from)): ?>
-                        <a href="?type=<?= urlencode($filter_type) ?>" class="df-clear" title="Clear dates"><i class="bi bi-x-lg"></i></a>
-                        <?php endif; ?>
-                    </form>
-                </div>
-
-                <!-- Active filter pills -->
-                <?php if (!empty($filter_type) || !empty($filter_from)): ?>
-                <div class="active-pills no-print sr sr-d2">
-                    <span class="ap-label">Filtering:</span>
-                    <?php if (!empty($filter_type)): ?>
-                    <span class="ap-pill"><span>Type:</span> <?= ucfirst($filter_type) ?></span>
-                    <?php endif; ?>
-                    <?php if (!empty($filter_from) && !empty($filter_to)): ?>
-                    <span class="ap-pill"><span>Date:</span> <?= htmlspecialchars($filter_from) ?> → <?= htmlspecialchars($filter_to) ?></span>
-                    <?php endif; ?>
-                    <a href="contributions.php" style="font-size:.7rem;font-weight:700;color:var(--text-muted);text-decoration:none;margin-left:4px;">✕ Clear all</a>
-                </div>
-                <?php endif; ?>
-
-                <!-- ══ TRANSACTION PANEL ═════════════════════ -->
-                <div class="tx-panel sr sr-d3">
-                    <div class="tx-panel-head">
-                        <div class="tx-panel-title">Transaction History</div>
-                        <div class="tx-panel-meta">
-                            <span class="tx-badge"><?= $total_rows ?> records</span>
-                            <span class="tx-page-info">Page <?= $page ?> / <?= max(1,$total_pages) ?></span>
-                        </div>
-                    </div>
-
-                    <div class="table-responsive">
-                        <table class="tx-table">
-                            <thead>
-                                <tr>
-                                    <th style="padding-left:22px;width:34%;">Contribution</th>
-                                    <th style="width:14%;">Date &amp; Time</th>
-                                    <th style="width:20%;">Reference No.</th>
-                                    <th style="width:12%;">Status</th>
-                                    <th style="text-align:right;padding-right:22px;width:20%;">Amount</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                            <?php
-                            if ($result->num_rows > 0):
-                                $prev_date = null;
-                                while ($row = $result->fetch_assoc()):
-                                    $type   = $row['contribution_type'];
-                                    $status = strtolower($row['status'] ?? 'completed');
-                                    $dt     = new DateTime($row['created_at']);
-                                    $dk     = $dt->format('Y-m-d');
-                                    $today  = date('Y-m-d');
-                                    $yest   = date('Y-m-d', strtotime('-1 day'));
-
-                                    // Date separator
-                                    if ($dk !== $prev_date):
-                                        $prev_date = $dk;
-                                        $grp = match($dk) {
-                                            $today => ['Today', true],
-                                            $yest  => ['Yesterday', false],
-                                            default => [$dt->format('l, d M Y'), false],
-                                        };
-                            ?>
-                            <tr class="tx-sep-row">
-                                <td colspan="5">
-                                    <div class="tx-sep-inner<?= $grp[1] ? ' tx-sep-today' : '' ?>">
-                                        <?= $grp[0] ?>
-                                        <?php if ($grp[1]): ?><span style="background:var(--lime-soft);color:var(--forest);font-size:.58rem;padding:2px 7px;border-radius:100px;"><?= $dt->format('d M Y') ?></span><?php endif; ?>
-                                    </div>
-                                </td>
-                            </tr>
-                            <?php endif;
-
-                                    $icls  = match($type) { 'savings'=>'txi-savings','shares'=>'txi-shares','welfare'=>'txi-welfare',default=>'txi-default' };
-                                    $iname = match($type) { 'savings'=>'bi-wallet2','shares'=>'bi-pie-chart-fill','welfare'=>'bi-heart-pulse-fill',default=>'bi-cash-stack' };
-                                    $sc    = match($status) { 'completed','active'=>'sp-ok','pending'=>'sp-pnd',default=>'sp-err' };
-                            ?>
-                            <tr class="tx-row type-<?= htmlspecialchars($type) ?>">
-                                <td style="padding-left:22px;">
-                                    <div style="display:flex;align-items:center;gap:12px;">
-                                        <div class="tx-icon <?= $icls ?>"><i class="bi <?= $iname ?>"></i></div>
-                                        <div>
-                                            <div class="tx-name"><?= ucfirst(str_replace('_',' ',$type)) ?></div>
-                                            <div class="tx-method">
-                                                <span class="tx-method-sep"></span>
-                                                <?= htmlspecialchars($row['payment_method'] ?? 'M-Pesa') ?>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="tx-date"><?= $dt->format('M d, Y') ?></div>
-                                    <div class="tx-time"><?= $dt->format('h:i A') ?></div>
-                                </td>
-                                <td><span class="tx-ref"><?= htmlspecialchars($row['reference_no'] ?? '—') ?></span></td>
-                                <td><span class="sp <?= $sc ?>"><?= ucfirst($status) ?></span></td>
-                                <td style="text-align:right;padding-right:22px;">
-                                    <div class="tx-amount">+ KES <?= number_format((float)$row['amount'], 2) ?></div>
-                                    <div class="tx-amount-sub"><?= ucfirst($type) ?></div>
-                                </td>
-                            </tr>
-                            <?php endwhile;
-                            else: ?>
-                            <tr><td colspan="5">
-                                <div class="empty-wrap">
-                                    <div class="empty-icon-box"><i class="bi bi-receipt-cutoff"></i></div>
-                                    <h6>No transactions found</h6>
-                                    <p>Try changing your filters or make your first deposit.</p>
-                                    <?php if (!empty($filter_type)||!empty($filter_from)): ?>
-                                    <a href="contributions.php" class="btn-empty-act">Clear Filters</a>
-                                    <?php else: ?>
-                                    <a href="<?= BASE_URL ?>/member/pages/mpesa_request.php" class="btn-empty-act"><i class="bi bi-plus-lg"></i> Make a Deposit</a>
-                                    <?php endif; ?>
-                                </div>
-                            </td></tr>
-                            <?php endif; ?>
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <!-- Pagination -->
-                    <?php if ($total_pages > 1): ?>
-                    <div class="tx-pagination no-print">
-                        <span class="pag-info">Showing <?= $offset+1 ?>–<?= min($offset+$records_per_page,$total_rows) ?> of <?= $total_rows ?></span>
-                        <div class="pag-btns">
-                            <a class="pag-btn <?= $page<=1?'pag-dis':'' ?>" href="?page=<?= $page-1 ?>&type=<?= urlencode($filter_type) ?>&from=<?= $filter_from ?>&to=<?= $filter_to ?>"><i class="bi bi-chevron-left"></i></a>
-                            <?php
-                            $pstart = max(1, $page-2);
-                            $pend   = min($total_pages, $page+2);
-                            if ($pstart > 1) echo '<span class="pag-btn pag-dis" style="border:none;background:transparent;">…</span>';
-                            for ($pi=$pstart; $pi<=$pend; $pi++):
-                            ?>
-                            <a class="pag-btn <?= $page==$pi?'pag-active':'' ?>" href="?page=<?= $pi ?>&type=<?= urlencode($filter_type) ?>&from=<?= $filter_from ?>&to=<?= $filter_to ?>"><?= $pi ?></a>
-                            <?php endfor;
-                            if ($pend < $total_pages) echo '<span class="pag-btn pag-dis" style="border:none;background:transparent;">…</span>';
-                            ?>
-                            <a class="pag-btn <?= $page>=$total_pages?'pag-dis':'' ?>" href="?page=<?= $page+1 ?>&type=<?= urlencode($filter_type) ?>&from=<?= $filter_from ?>&to=<?= $filter_to ?>"><i class="bi bi-chevron-right"></i></a>
-                        </div>
-                    </div>
-                    <?php endif; ?>
-                </div><!-- /tx-panel -->
-
-            </div><!-- /content-area -->
-        </div><!-- /page-inner -->
-        <?php $layout->footer(); ?>
+    <!-- Stat band -->
+    <div class="hero-band">
+        <div class="hb-cell">
+            <div class="hbc-eyebrow">
+                <div class="hbc-ico" style="background:rgba(163,230,53,.15);color:var(--lime)"><i class="bi bi-layers-fill"></i></div>
+                Portfolio Total
+            </div>
+            <div class="hbc-val" id="ctr-total"><?= ks($grand_total) ?></div>
+            <div class="hbc-meta"><?= number_format($total_count) ?> transactions <span class="hbc-pill">All time</span></div>
+        </div>
+        <div class="hb-cell">
+            <div class="hbc-eyebrow">
+                <div class="hbc-ico" style="background:rgba(163,230,53,.15);color:var(--lime)"><i class="bi bi-piggy-bank-fill"></i></div>
+                Savings
+            </div>
+            <div class="hbc-val" id="ctr-sav"><?= ks($savings_val) ?></div>
+            <div class="hbc-meta"><?= $cnt_savings ?> deposits <span class="hbc-pill"><?= $grand_total>0?round(($savings_val/$safe_gt)*100):0 ?>%</span></div>
+        </div>
+        <div class="hb-cell">
+            <div class="hbc-eyebrow">
+                <div class="hbc-ico" style="background:rgba(163,230,53,.15);color:var(--lime)"><i class="bi bi-pie-chart-fill"></i></div>
+                Shares Capital
+            </div>
+            <div class="hbc-val" id="ctr-sha"><?= ks($shares_val) ?></div>
+            <div class="hbc-meta"><?= $cnt_shares ?> deposits <span class="hbc-pill"><?= $grand_total>0?round(($shares_val/$safe_gt)*100):0 ?>%</span></div>
+        </div>
+        <div class="hb-cell">
+            <div class="hbc-eyebrow">
+                <div class="hbc-ico" style="background:rgba(163,230,53,.15);color:var(--lime)"><i class="bi bi-heart-pulse-fill"></i></div>
+                Welfare Fund
+            </div>
+            <div class="hbc-val" id="ctr-wel"><?= ks($welfare_val) ?></div>
+            <div class="hbc-meta"><?= $active_days ?> active days <span class="hbc-pill">30d</span></div>
+        </div>
     </div>
 </div>
 
+<!-- ══════════════════════════════
+     FLOATING STAT CARDS
+══════════════════════════════ -->
+<div class="stats-float">
+    <div class="row g-3">
+        <div class="col-md-3 sa1">
+            <div class="sc sc-g">
+                <div class="sc-ico" style="background:var(--grn-bg);color:var(--grn)"><i class="bi bi-piggy-bank-fill"></i></div>
+                <div class="sc-lbl">Total Savings</div>
+                <div class="sc-val"><?= ks($savings_val) ?></div>
+                <div class="sc-bar"><div class="sc-bar-fill" style="background:var(--grn)" data-w="100"></div></div>
+                <div class="sc-meta"><?= $cnt_savings ?> deposits all time</div>
+            </div>
+        </div>
+        <div class="col-md-3 sa2">
+            <div class="sc sc-b">
+                <div class="sc-ico" style="background:var(--blu-bg);color:var(--blu)"><i class="bi bi-pie-chart-fill"></i></div>
+                <div class="sc-lbl">Shares Capital</div>
+                <div class="sc-val"><?= ks($shares_val) ?></div>
+                <?php $sPct = $grand_total>0?round(($shares_val/$safe_gt)*100):0; ?>
+                <div class="sc-bar"><div class="sc-bar-fill" style="background:var(--blu)" data-w="<?= $sPct ?>"></div></div>
+                <div class="sc-meta"><?= $sPct ?>% of total portfolio</div>
+            </div>
+        </div>
+        <div class="col-md-3 sa3">
+            <div class="sc sc-r">
+                <div class="sc-ico" style="background:var(--red-bg);color:var(--red)"><i class="bi bi-heart-pulse-fill"></i></div>
+                <div class="sc-lbl">Welfare Fund</div>
+                <div class="sc-val"><?= ks($welfare_val) ?></div>
+                <?php $wPct = $grand_total>0?round(($welfare_val/$safe_gt)*100):0; ?>
+                <div class="sc-bar"><div class="sc-bar-fill" style="background:var(--red)" data-w="<?= $wPct ?>"></div></div>
+                <div class="sc-meta"><?= $wPct ?>% of total portfolio</div>
+            </div>
+        </div>
+        <div class="col-md-3 sa4">
+            <div class="sc sc-l">
+                <div class="sc-ico" style="background:var(--lg);color:var(--lt)"><i class="bi bi-calendar-check-fill"></i></div>
+                <div class="sc-lbl">Active Days</div>
+                <div class="sc-val"><?= $active_days ?></div>
+                <div class="sc-bar"><div class="sc-bar-fill" style="background:var(--lime)" data-w="<?= min(100, $active_days/30*100) ?>"></div></div>
+                <div class="sc-meta">In the last 30 days</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════
+     BODY
+══════════════════════════════ -->
+<div class="pg-body">
+
+    <!-- Dual panel: trend chart + ring -->
+    <div class="dual-panel">
+
+        <!-- Trend Chart -->
+        <div class="chart-card">
+            <div class="cc-head">
+                <div>
+                    <div class="cc-title">Contribution Trend</div>
+                    <div class="cc-sub">Monthly breakdown — last 7 months</div>
+                </div>
+            </div>
+            <div class="leg">
+                <div class="leg-i"><span class="leg-dot" style="background:var(--grn)"></span>Savings</div>
+                <div class="leg-i"><span class="leg-dot" style="background:var(--blu)"></span>Shares</div>
+                <div class="leg-i"><span class="leg-dot" style="background:var(--red)"></span>Welfare</div>
+            </div>
+            <div class="chart-box" style="margin-top:12px">
+                <canvas id="trendChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Ring card -->
+        <div class="ring-card">
+            <div class="cc-head">
+                <div>
+                    <div class="cc-title">Portfolio Mix</div>
+                    <div class="cc-sub">Contribution breakdown</div>
+                </div>
+            </div>
+            <div class="ring-box">
+                <canvas id="ringChart" width="160" height="160"></canvas>
+                <div class="ring-center">
+                    <div class="ring-center-val"><?= ks($grand_total) ?></div>
+                    <div class="ring-center-sub">Total</div>
+                </div>
+            </div>
+            <div class="rb-list">
+                <?php foreach ([
+                    ['Savings', $savings_val, 'bi-piggy-bank-fill', 'var(--grn-bg)', 'var(--grn)', 'linear-gradient(90deg,#15803d,#4ade80)'],
+                    ['Shares',  $shares_val,  'bi-pie-chart-fill',  'var(--blu-bg)', 'var(--blu)', 'linear-gradient(90deg,#1d4ed8,#93c5fd)'],
+                    ['Welfare', $welfare_val, 'bi-heart-pulse-fill','var(--red-bg)', 'var(--red)', 'linear-gradient(90deg,#b91c1c,#fca5a5)'],
+                ] as [$name,$val,$ico,$bg,$col,$grad]):
+                    $pct = $grand_total > 0 ? round(($val/$safe_gt)*100) : 0;
+                ?>
+                <div>
+                    <div class="rb-row">
+                        <div class="rb-left">
+                            <div class="rb-ico" style="background:<?= $bg ?>;color:<?= $col ?>"><i class="bi <?= $ico ?>"></i></div>
+                            <span class="rb-name"><?= $name ?></span>
+                        </div>
+                        <span class="rb-val"><?= ks($val) ?></span>
+                    </div>
+                    <div class="rb-bar-wrap">
+                        <div class="rb-bar-fill" style="background:<?= $grad ?>" data-w="<?= $pct ?>%"></div>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+
+    </div><!-- /dual-panel -->
+
+    <!-- ── FILTER ROW ── -->
+    <div class="filter-row no-print">
+        <!-- Type tabs -->
+        <div class="type-tabs">
+            <?php
+            $tabs = [
+                ['','All','all',$total_count],
+                ['savings','Savings','savings',$cnt_savings],
+                ['shares','Shares','shares',$cnt_shares],
+                ['welfare','Welfare','welfare',$cnt_welfare],
+            ];
+            foreach ($tabs as [$val,$lbl,$cls,$cnt]):
+                $isAct = $filter_type === $val;
+                $qp    = http_build_query(['type'=>$val,'from'=>$filter_from,'to'=>$filter_to,'page'=>1]);
+            ?>
+            <div class="tt-<?= $cls ?>">
+                <a href="?<?= $qp ?>" class="type-tab<?= $isAct?' act':'' ?>">
+                    <?= $lbl ?> <span class="tc-badge"><?= number_format($cnt) ?></span>
+                </a>
+            </div>
+            <?php endforeach; ?>
+        </div>
+
+        <!-- Date filter -->
+        <form method="GET" class="date-form">
+            <input type="hidden" name="type" value="<?= htmlspecialchars($filter_type) ?>">
+            <div class="df-grp">
+                <label class="df-lbl">From</label>
+                <input type="date" name="from" value="<?= htmlspecialchars($filter_from) ?>" class="df-ctrl">
+            </div>
+            <div class="df-grp">
+                <label class="df-lbl">To</label>
+                <input type="date" name="to" value="<?= htmlspecialchars($filter_to) ?>" class="df-ctrl">
+            </div>
+            <button type="submit" class="btn-filter"><i class="bi bi-funnel"></i> Apply</button>
+            <?php if (!empty($filter_from)): ?>
+            <a href="?type=<?= urlencode($filter_type) ?>" class="btn-clear" title="Clear dates"><i class="bi bi-x-lg"></i></a>
+            <?php endif; ?>
+        </form>
+    </div>
+
+    <!-- Active filter pills -->
+    <?php if (!empty($filter_type) || !empty($filter_from)): ?>
+    <div class="active-filter-pills no-print">
+        <span class="afp-lbl">Filtering:</span>
+        <?php if (!empty($filter_type)): ?><span class="afp-pill"><span>Type:</span> <?= ucfirst($filter_type) ?></span><?php endif; ?>
+        <?php if (!empty($filter_from) && !empty($filter_to)): ?><span class="afp-pill"><span>Date:</span> <?= htmlspecialchars($filter_from) ?> → <?= htmlspecialchars($filter_to) ?></span><?php endif; ?>
+        <a href="contributions.php" class="afp-clear">✕ Clear all</a>
+    </div>
+    <?php endif; ?>
+
+    <!-- ── LEDGER TABLE ── -->
+    <div class="ledger-card">
+        <div class="lc-head">
+            <div class="lc-title">Transaction History</div>
+            <div class="lc-meta">
+                <span class="lc-badge"><i class="bi bi-list-ul"></i> <?= number_format($total_rows) ?> records</span>
+                <span class="lc-pg">Page <?= $page ?> / <?= max(1,$total_pages) ?></span>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="ct">
+                <thead>
+                    <tr>
+                        <th style="padding-left:26px;width:34%">Contribution</th>
+                        <th style="width:14%">Date &amp; Time</th>
+                        <th style="width:20%">Reference</th>
+                        <th style="width:12%">Status</th>
+                        <th style="text-align:right;padding-right:26px;width:20%">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                <?php
+                if ($result->num_rows > 0):
+                    $prev_date = null;
+                    while ($row = $result->fetch_assoc()):
+                        $type   = $row['contribution_type'];
+                        $status = strtolower($row['status'] ?? 'completed');
+                        $dt     = new DateTime($row['created_at']);
+                        $dk     = $dt->format('Y-m-d');
+                        $today  = date('Y-m-d');
+                        $yest   = date('Y-m-d', strtotime('-1 day'));
+
+                        if ($dk !== $prev_date):
+                            $prev_date = $dk;
+                            $isToday   = ($dk === $today);
+                            $grpLabel  = match($dk) {
+                                $today => 'Today',
+                                $yest  => 'Yesterday',
+                                default => $dt->format('l, d M Y'),
+                            };
+                ?>
+                <tr class="ct-sep<?= $isToday?' ct-sep-today':'' ?>">
+                    <td colspan="5">
+                        <div class="ct-sep-inner">
+                            <?= $grpLabel ?>
+                            <?php if ($isToday): ?><span class="ct-today-badge"><?= $dt->format('d M Y') ?></span><?php endif; ?>
+                        </div>
+                    </td>
+                </tr>
+                <?php endif;
+
+                        $tcls  = match($type) { 'savings'=>'t-sav','shares'=>'t-sha','welfare'=>'t-wel',default=>'' };
+                        $icls  = match($type) { 'savings'=>'ico-sav','shares'=>'ico-sha','welfare'=>'ico-wel',default=>'ico-def' };
+                        $iname = match($type) { 'savings'=>'bi-piggy-bank-fill','shares'=>'bi-pie-chart-fill','welfare'=>'bi-heart-pulse-fill',default=>'bi-cash-stack' };
+                        $stcls = match($status) { 'completed','active'=>'chip-ok','pending'=>'chip-pnd',default=>'chip-err' };
+                ?>
+                <tr class="ct-row <?= $tcls ?>">
+                    <td style="padding-left:26px">
+                        <div style="display:flex;align-items:center;gap:12px">
+                            <div class="ct-ico <?= $icls ?>"><i class="bi <?= $iname ?>"></i></div>
+                            <div>
+                                <div class="ct-name"><?= ucfirst(str_replace('_',' ',$type)) ?></div>
+                                <div class="ct-method">
+                                    <span class="ct-method-dot"></span>
+                                    <?= htmlspecialchars($row['payment_method'] ?? 'M-Pesa') ?>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="ct-date"><?= $dt->format('M d, Y') ?></div>
+                        <div class="ct-time"><?= $dt->format('h:i A') ?></div>
+                    </td>
+                    <td><span class="ct-ref"><?= htmlspecialchars($row['reference_no'] ?? '—') ?></span></td>
+                    <td><span class="sc-chip <?= $stcls ?>"><?= ucfirst($status) ?></span></td>
+                    <td style="text-align:right;padding-right:26px">
+                        <div class="ct-amount">+ KES <?= number_format((float)$row['amount'], 2) ?></div>
+                        <div class="ct-amount-sub"><?= ucfirst($type) ?></div>
+                    </td>
+                </tr>
+                <?php endwhile;
+                else: ?>
+                <tr><td colspan="5">
+                    <div class="empty-well">
+                        <div class="ew-ico"><i class="bi bi-receipt-cutoff"></i></div>
+                        <div class="ew-title">No Contributions Found</div>
+                        <div class="ew-sub"><?= (!empty($filter_type)||!empty($filter_from)) ? 'Try adjusting your filters.' : 'Make your first deposit to get started.' ?></div>
+                        <?php if (!empty($filter_type)||!empty($filter_from)): ?>
+                        <a href="contributions.php" class="btn-deposit"><i class="bi bi-x-circle-fill"></i> Clear Filters</a>
+                        <?php else: ?>
+                        <a href="<?= BASE_URL ?>/member/pages/mpesa_request.php" class="btn-deposit"><i class="bi bi-plus-circle-fill"></i> Make a Deposit</a>
+                        <?php endif; ?>
+                    </div>
+                </td></tr>
+                <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        <?php if ($total_pages > 1): ?>
+        <div class="lc-footer no-print">
+            <span class="pag-info">Showing <?= $offset+1 ?>–<?= min($offset+$records_per_page,$total_rows) ?> of <?= number_format($total_rows) ?></span>
+            <div class="pag-btns">
+                <a class="pag-btn <?= $page<=1?'pag-dis':'' ?>" href="?page=<?= $page-1 ?>&type=<?= urlencode($filter_type) ?>&from=<?= $filter_from ?>&to=<?= $filter_to ?>">
+                    <i class="bi bi-chevron-left"></i>
+                </a>
+                <?php
+                $pstart = max(1,$page-2); $pend = min($total_pages,$page+2);
+                if ($pstart>1) echo '<span class="pag-btn pag-dis" style="border:none;background:transparent">…</span>';
+                for ($pi=$pstart;$pi<=$pend;$pi++):
+                ?>
+                <a class="pag-btn <?= $page==$pi?'pag-active':'' ?>"
+                   href="?page=<?= $pi ?>&type=<?= urlencode($filter_type) ?>&from=<?= $filter_from ?>&to=<?= $filter_to ?>">
+                    <?= $pi ?>
+                </a>
+                <?php endfor;
+                if ($pend<$total_pages) echo '<span class="pag-btn pag-dis" style="border:none;background:transparent">…</span>';
+                ?>
+                <a class="pag-btn <?= $page>=$total_pages?'pag-dis':'' ?>" href="?page=<?= $page+1 ?>&type=<?= urlencode($filter_type) ?>&from=<?= $filter_from ?>&to=<?= $filter_to ?>">
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+            </div>
+        </div>
+        <?php endif; ?>
+
+    </div><!-- /ledger-card -->
+
+</div><!-- /pg-body -->
+</div><!-- /dash -->
+
+<?php $layout->footer(); ?>
+</div><!-- /main-content-wrapper -->
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 <script>
-(function () {
-    'use strict';
+/* ── PHP → JS ── */
+const TREND_LABELS  = <?= json_encode($trend_labels) ?>;
+const TREND_SAVINGS = <?= json_encode($trend_savings) ?>;
+const TREND_SHARES  = <?= json_encode($trend_shares) ?>;
+const TREND_WELFARE = <?= json_encode($trend_welfare) ?>;
+const TOTAL_SAV = <?= $savings_val ?>;
+const TOTAL_SHA = <?= $shares_val ?>;
+const TOTAL_WEL = <?= $welfare_val ?>;
 
-    const isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
-    const textMuted = isDark ? '#3d6050' : '#9eb8ae';
-    const textDark  = isDark ? '#d8ede4' : '#0F392B';
-    const gridColor = isDark ? 'rgba(255,255,255,.05)' : 'rgba(15,57,43,.06)';
-    const fontFam   = "'Plus Jakarta Sans', sans-serif";
+const dark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+const GRID = dark ? 'rgba(255,255,255,.05)' : 'rgba(11,36,25,.05)';
+const TICK = dark ? '#3a6050' : '#8fada0';
+const SURF = dark ? '#0d1d14' : '#ffffff';
 
-    // ── Scroll reveal ────────────────────────────────────
-    const srEls = document.querySelectorAll('.sr');
-    const obs = new IntersectionObserver(entries => {
-        entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); obs.unobserve(e.target); } });
-    }, { threshold: 0.07 });
-    srEls.forEach(el => obs.observe(el));
+const TT = {
+    backgroundColor: dark?'#0d1d14':'#0b2419',
+    titleColor:'#a3e635', bodyColor:'#fff',
+    padding:12, cornerRadius:10,
+    borderColor:'rgba(163,230,53,.2)', borderWidth:1,
+    titleFont:{ family:"'Plus Jakarta Sans',sans-serif", weight:'800', size:12 },
+    bodyFont: { family:"'Plus Jakarta Sans',sans-serif", size:11 },
+};
+const XS = { grid:{display:false}, ticks:{color:TICK,font:{family:"'Plus Jakarta Sans',sans-serif",size:10}} };
+const YS = { grid:{color:GRID},    ticks:{color:TICK,font:{family:"'Plus Jakarta Sans',sans-serif",size:10},
+    callback: v => v >= 1000 ? 'K'+(v/1000).toFixed(0) : v } };
 
-    // ── Animated counters ────────────────────────────────
-    function animateCounter(el) {
-        const target   = parseFloat(el.dataset.counter) || 0;
-        const prefix   = el.dataset.prefix || '';
-        const decimals = parseInt(el.dataset.decimals || '0');
-        const dur      = 1400;
-        const start    = performance.now();
-        function step(now) {
-            const p   = Math.min((now - start) / dur, 1);
-            const ease = 1 - Math.pow(1 - p, 3);
-            const val  = target * ease;
-            el.textContent = prefix + val.toLocaleString('en-KE', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
-            if (p < 1) requestAnimationFrame(step);
-        }
-        requestAnimationFrame(step);
-    }
-    const counterObs = new IntersectionObserver(entries => {
-        entries.forEach(e => {
-            if (e.isIntersecting) { animateCounter(e.target); counterObs.unobserve(e.target); }
-        });
-    }, { threshold: 0.3 });
-    document.querySelectorAll('[data-counter]').forEach(el => counterObs.observe(el));
-
-    // ── Animate ring card progress bars ─────────────────
+/* Animate stat bars */
+document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => {
-        document.querySelectorAll('.rb-bar').forEach(b => { b.style.width = b.dataset.width; });
-    }, 500);
+        document.querySelectorAll('[data-w]').forEach(el => { el.style.width = el.dataset.w; });
+        document.querySelectorAll('.rb-bar-fill').forEach(el => { el.style.width = el.dataset.w; });
+    }, 480);
+});
 
-    // ── Trend Chart ──────────────────────────────────────
-    new ApexCharts(document.querySelector('#trendChart'), {
-        series: [
-            { name: 'Savings',  data: <?= json_encode($trend_savings) ?> },
-            { name: 'Shares',   data: <?= json_encode($trend_shares)  ?> },
-            { name: 'Welfare',  data: <?= json_encode($trend_welfare) ?> },
-        ],
-        chart: {
-            type: 'area', height: 220,
-            background: 'transparent',
-            toolbar: { show: false },
-            animations: { speed: 700, easing: 'easeinout' },
-            fontFamily: fontFam,
-        },
-        colors: ['#059669', '#6366f1', '#f43f5e'],
-        stroke: { curve: 'smooth', width: [2.5, 2.5, 2.5] },
-        fill: {
-            type: 'gradient',
-            gradient: { shadeIntensity: 1, opacityFrom: 0.22, opacityTo: 0.02, stops: [0, 95] }
-        },
-        xaxis: {
-            categories: <?= json_encode($trend_labels) ?>,
-            labels: { style: { fontSize: '0.65rem', fontWeight: 700, colors: Array(7).fill(textMuted) } },
-            axisBorder: { show: false }, axisTicks: { show: false },
-        },
-        yaxis: {
-            labels: {
-                style: { fontSize: '0.65rem', fontWeight: 700, colors: [textMuted] },
-                formatter: v => v >= 1000 ? 'K' + Math.round(v/1000) : v
-            }
-        },
-        grid: { borderColor: gridColor, strokeDashArray: 5, xaxis: { lines: { show: false } } },
-        dataLabels: { enabled: false },
-        legend: { show: false },
-        tooltip: {
-            theme: isDark ? 'dark' : 'light',
-            style: { fontSize: '0.78rem', fontFamily: fontFam },
-            y: { formatter: v => 'KES ' + v.toLocaleString() }
-        },
-        markers: { size: 3, strokeWidth: 0, hover: { size: 5 } },
-    }).render();
+/* ── Trend Chart — stacked area ── */
+(function() {
+    const ctx = document.getElementById('trendChart').getContext('2d');
 
-    // ── Ring / Donut Chart ───────────────────────────────
-    new ApexCharts(document.querySelector('#ringChart'), {
-        series: [<?= $savings_val ?>, <?= $shares_val ?>, <?= $welfare_val ?>],
-        labels: ['Savings', 'Shares', 'Welfare'],
-        chart: {
-            type: 'donut', height: 180,
-            background: 'transparent',
-            animations: { speed: 700 },
-            fontFamily: fontFam,
-        },
-        colors: ['#059669', '#6366f1', '#f43f5e'],
-        stroke: { width: 3, colors: [isDark ? '#0d2018' : '#ffffff'] },
-        dataLabels: { enabled: false },
-        legend: { show: false },
-        plotOptions: {
-            pie: { donut: { size: '72%',
-                labels: { show: false }
-            }}
-        },
-        tooltip: {
-            theme: isDark ? 'dark' : 'light',
-            style: { fontSize: '0.78rem', fontFamily: fontFam },
-            y: { formatter: v => 'KES ' + v.toLocaleString() }
-        },
-    }).render();
+    const gSav = ctx.createLinearGradient(0,0,0,240);
+    gSav.addColorStop(0,'rgba(22,163,74,.22)'); gSav.addColorStop(1,'rgba(22,163,74,0)');
+    const gSha = ctx.createLinearGradient(0,0,0,240);
+    gSha.addColorStop(0,'rgba(37,99,235,.18)'); gSha.addColorStop(1,'rgba(37,99,235,0)');
+    const gWel = ctx.createLinearGradient(0,0,0,240);
+    gWel.addColorStop(0,'rgba(220,38,38,.15)'); gWel.addColorStop(1,'rgba(220,38,38,0)');
 
+    new Chart(ctx, {
+        type:'line',
+        data:{ labels:TREND_LABELS, datasets:[
+            { label:'Savings',  data:TREND_SAVINGS, borderColor:'#16a34a', borderWidth:2.5, backgroundColor:gSav, fill:true, tension:.42, pointRadius:4, pointBackgroundColor:'#16a34a', pointBorderColor:SURF, pointBorderWidth:2 },
+            { label:'Shares',   data:TREND_SHARES,  borderColor:'#2563eb', borderWidth:2.5, backgroundColor:gSha, fill:true, tension:.42, pointRadius:4, pointBackgroundColor:'#2563eb', pointBorderColor:SURF, pointBorderWidth:2 },
+            { label:'Welfare',  data:TREND_WELFARE, borderColor:'#dc2626', borderWidth:2.5, backgroundColor:gWel, fill:true, tension:.42, pointRadius:4, pointBackgroundColor:'#dc2626', pointBorderColor:SURF, pointBorderWidth:2 },
+        ]},
+        options:{
+            responsive:true, maintainAspectRatio:false,
+            plugins:{ legend:{display:false}, tooltip:{...TT, callbacks:{label:c=>' '+c.dataset.label+': KES '+c.parsed.y.toLocaleString()}} },
+            scales:{ x:XS, y:YS }
+        }
+    });
 })();
+
+/* ── Ring Donut ── */
+new Chart(document.getElementById('ringChart'), {
+    type:'doughnut',
+    data:{ labels:['Savings','Shares','Welfare'], datasets:[{
+        data:[TOTAL_SAV,TOTAL_SHA,TOTAL_WEL],
+        backgroundColor:['#16a34a','#2563eb','#dc2626'],
+        borderWidth:4, borderColor: SURF, hoverOffset:7
+    }]},
+    options:{
+        cutout:'72%', responsive:false,
+        plugins:{ legend:{display:false}, tooltip:{...TT, callbacks:{label:c=>' KES '+c.parsed.toLocaleString()}} }
+    }
+});
 </script>
 </body>
 </html>
