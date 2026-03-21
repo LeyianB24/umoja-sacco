@@ -121,8 +121,12 @@ $params = [];
 $types = "";
 
 if (!empty($_GET['status'])) {
-    $where .= " AND l.status = ?";
-    $params[] = $_GET['status']; $types .= "s";
+    if ($_GET['status'] === 'overdue') {
+        $where .= " AND l.status = 'disbursed' AND DATE(l.next_repayment_date) < CURDATE()";
+    } else {
+        $where .= " AND l.status = ?";
+        $params[] = $_GET['status']; $types .= "s";
+    }
 }
 if (!empty($_GET['search'])) {
     $s = "%" . $_GET['search'] . "%";
@@ -150,11 +154,13 @@ $stats_query = "SELECT
     COUNT(CASE WHEN status='approved' THEN 1 END) as approved_count,
     SUM(CASE WHEN status='approved' THEN amount ELSE 0 END) as approved_val,
     COUNT(CASE WHEN status='disbursed' THEN 1 END) as active_count,
-    SUM(CASE WHEN status='disbursed' THEN current_balance ELSE 0 END) as active_portfolio
+    SUM(CASE WHEN status='disbursed' THEN current_balance ELSE 0 END) as active_portfolio,
+    COUNT(CASE WHEN status='disbursed' AND DATE(next_repayment_date) < CURDATE() THEN 1 END) as overdue_count,
+    SUM(CASE WHEN status='disbursed' AND DATE(next_repayment_date) < CURDATE() THEN current_balance ELSE 0 END) as overdue_val
     FROM loans";
 $stats_result = $conn->query($stats_query);
 $stats = $stats_result ? $stats_result->fetch_assoc() : [
-    'pending_count' => 0, 'pending_val' => 0, 'approved_count' => 0, 'approved_val' => 0, 'active_count' => 0, 'active_portfolio' => 0
+    'pending_count' => 0, 'pending_val' => 0, 'approved_count' => 0, 'approved_val' => 0, 'active_count' => 0, 'active_portfolio' => 0, 'overdue_count' => 0, 'overdue_val' => 0
 ];
 
 // --- 5. Export Handler ---
