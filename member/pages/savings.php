@@ -496,10 +496,9 @@ $pageTitle = "My Savings";
 </head>
 <body>
 
-<div class="d-flex">
-    <?php $layout->sidebar(); ?>
+<?php $layout->sidebar(); ?>
 
-    <div class="flex-fill main-content-wrapper">
+<div class="main-content-wrapper">
         <?php $layout->topbar($pageTitle ?? ''); ?>
 
         <div class="page-inner">
@@ -697,7 +696,6 @@ $pageTitle = "My Savings";
 
         <?php $layout->footer(); ?>
     </div>
-</div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
