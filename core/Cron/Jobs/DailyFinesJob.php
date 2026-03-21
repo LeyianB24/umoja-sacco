@@ -31,6 +31,7 @@ class DailyFinesJob extends CronJob
         require_once $helperPath;
 
         $helper = new \CronHelper($this->db);
+        $this->log("DEBUG: Helper class is " . get_class($helper));
 
         if ($dryRun) {
             // Identify overdue loans count without writing anything

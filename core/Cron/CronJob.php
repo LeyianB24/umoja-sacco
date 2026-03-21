@@ -66,6 +66,7 @@ abstract class CronJob
             ob_start();
             $processed = $this->handle($args);
             $output = (string) ob_get_clean();
+            echo $output; // DEBUG: Print the captured output to console
 
             $elapsed = (int) round((microtime(true) - $this->startTime) * 1000);
             $this->log("=== Finished: {$processed} record(s) processed in {$elapsed}ms ===");
