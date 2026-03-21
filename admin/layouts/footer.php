@@ -21,13 +21,14 @@ $perf_color = $execution_time < 0.5 ? '#16a34a' : ($execution_time < 1.5 ? '#d97
         <div class="footer-inner">
 
             <!-- Left: Brand -->
-            <div class="footer-brand">
+            <a href="<?= BASE_URL ?>/public/index.php" class="footer-brand text-decoration-none">
                 <div class="brand-line">
+                    <img src="<?= SITE_LOGO ?>" alt="Logo" style="width: 24px; height: 24px; object-fit: contain; margin-right: 8px;">
                     <span class="brand-name"><?= defined('SITE_NAME') ? SITE_NAME : 'Umoja Sacco' ?></span>
                     <span class="version-chip">v1.0 Pro</span>
                 </div>
                 <div class="brand-tagline">Empowering Financial Growth &mdash; &copy; <?= date('Y') ?></div>
-            </div>
+            </a>
 
             <!-- Centre: System Status -->
             <div class="footer-status">

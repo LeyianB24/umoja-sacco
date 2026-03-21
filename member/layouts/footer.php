@@ -220,13 +220,15 @@ if (session_status() === PHP_SESSION_NONE) session_start();
 
             <!-- ── Brand ─────────────────────────────────────── -->
             <div class="col-lg-4 col-md-6">
-                <div class="mf-brand-row">
-                    <div class="mf-brand-icon"><i class="bi bi-shield-check-fill"></i></div>
+                <a href="<?= BASE_URL ?>/public/index.php" class="mf-brand-row text-decoration-none">
+                    <div class="mf-brand-icon">
+                        <img src="<?= SITE_LOGO ?>" alt="Logo" style="width: 100%; height: 100%; object-fit: contain; padding: 4px;">
+                    </div>
                     <div>
                         <div class="mf-brand-name"><?= defined('SITE_NAME') ? htmlspecialchars(SITE_NAME) : 'Umoja Sacco' ?></div>
                         <div class="mf-brand-tagline">Trusted Financial Partner</div>
                     </div>
-                </div>
+                </a>
                 <p class="mf-desc">
                     <?= defined('SITE_TAGLINE') ? htmlspecialchars(SITE_TAGLINE) : 'Empowering our drivers and partners with financial stability.' ?>
                     Save, borrow, and grow with a trusted community partner.
