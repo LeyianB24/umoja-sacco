@@ -78,7 +78,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $method = $_POST['payment_method'] ?? 'cash';
 
                 require_once __DIR__ . '/../../inc/FinancialEngine.php';
-                $engine = new FinancialEngine($conn, $admin_id);
+                $engine = new FinancialEngine($conn);
                 
                 $stmt = $conn->prepare("SELECT amount, member_id FROM loans WHERE loan_id=?");
                 $stmt->bind_param("i", $loan_id);
@@ -1031,7 +1031,7 @@ h1, h2, h3, h4, h5, h6, p, span, div, label, a {
 
             <!-- KPI Cards -->
             <div class="row g-3 mb-4">
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <div class="glass-stat slide-up" style="animation-delay: 0.05s">
                         <div class="d-flex align-items-start gap-3">
                             <div class="glass-stat-icon" style="background:#fffbeb; color:#b45309;">
@@ -1047,7 +1047,7 @@ h1, h2, h3, h4, h5, h6, p, span, div, label, a {
                         </div>
                     </div>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <div class="glass-stat slide-up" style="animation-delay: 0.12s">
                         <div class="d-flex align-items-start gap-3">
                             <div class="glass-stat-icon" style="background:#eff6ff; color:#1d4ed8;">
@@ -1063,7 +1063,7 @@ h1, h2, h3, h4, h5, h6, p, span, div, label, a {
                         </div>
                     </div>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <div class="glass-stat slide-up" style="animation-delay: 0.19s">
                         <div class="d-flex align-items-start gap-3">
                             <div class="glass-stat-icon" style="background:#f0fdf4; color:#166534;">
@@ -1074,6 +1074,23 @@ h1, h2, h3, h4, h5, h6, p, span, div, label, a {
                                 <div class="glass-stat-value"><?= number_format((int)$stats['active_count']) ?></div>
                                 <div class="glass-stat-trend">
                                     <span style="color:#166534; font-weight:700;">KES <?= number_format((float)$stats['active_portfolio']) ?></span> outstanding
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Overdue Portfolio Card -->
+                <div class="col-md-3">
+                    <div class="glass-stat slide-up" style="animation-delay: 0.23s; border-bottom: 3px solid #ef4444;">
+                        <div class="d-flex align-items-start gap-3">
+                            <div class="glass-stat-icon" style="background:#fef2f2; color:#ef4444;">
+                                <i class="bi bi-clock-history"></i>
+                            </div>
+                            <div>
+                                <div class="glass-stat-label">Overdue Items</div>
+                                <div class="glass-stat-value"><?= number_format((int)($stats['overdue_count'] ?? 0)) ?></div>
+                                <div class="glass-stat-trend">
+                                    <span style="color:#ef4444; font-weight:700;">KES <?= number_format((float)($stats['overdue_val'] ?? 0)) ?></span> late
                                 </div>
                             </div>
                         </div>
@@ -1103,6 +1120,7 @@ h1, h2, h3, h4, h5, h6, p, span, div, label, a {
                             <option value="pending"   <?= ($_GET['status'] ?? '') === 'pending'   ? 'selected' : '' ?>>Review Queue</option>
                             <option value="approved"  <?= ($_GET['status'] ?? '') === 'approved'  ? 'selected' : '' ?>>Payout Queue</option>
                             <option value="disbursed" <?= ($_GET['status'] ?? '') === 'disbursed' ? 'selected' : '' ?>>Disbursed</option>
+                            <option value="overdue"   <?= ($_GET['status'] ?? '') === 'overdue'   ? 'selected' : '' ?>>Overdue</option>
                         </select>
                         <?php if (!empty($_GET['search']) || !empty($_GET['status'])): ?>
                             <a href="loans_payouts.php" class="btn btn-finalized" style="cursor:pointer; text-decoration:none; white-space:nowrap;">
@@ -1132,8 +1150,9 @@ h1, h2, h3, h4, h5, h6, p, span, div, label, a {
                                 while ($row = $loans->fetch_assoc()):
                                     $g_count = (int)$row['guarantor_count'];
                                     $g_full  = $g_count >= 2;
+                                    $is_overdue = ($row['status'] === 'disbursed' && !empty($row['next_repayment_date']) && strtotime($row['next_repayment_date']) < time());
                             ?>
-                            <tr onclick="openLoanDrawer(<?= htmlspecialchars(json_encode($row)) ?>)">
+                            <tr onclick="openLoanDrawer(<?= htmlspecialchars(json_encode($row)) ?>)" style="<?= $is_overdue ? 'background-color: #fff5f5;' : '' ?>">
                                 <td>
                                     <div class="member-cell">
                                         <div class="member-avatar">
@@ -1172,6 +1191,11 @@ h1, h2, h3, h4, h5, h6, p, span, div, label, a {
                                     <span class="status-badge <?= $sc ?>">
                                         <?= strtoupper($row['status']) ?>
                                     </span>
+                                    <?php if ($is_overdue): ?>
+                                        <span class="status-badge bg-danger text-white border-0 ms-1" style="font-size: 0.6rem; padding: 0.2rem 0.5rem;">
+                                            LATE
+                                        </span>
+                                    <?php endif; ?>
                                 </td>
                                 <td onclick="event.stopPropagation()">
                                     <div class="action-zone">
