@@ -136,7 +136,7 @@ class FinancialService {
                         $new_bal = max(0, (float)$loan['current_balance'] - $amount);
                         $status = ($new_bal <= 0) ? 'completed' : 'disbursed';
                         
-                        $this->db->prepare("UPDATE loans SET current_balance = ?, status = ? WHERE loan_id = ?")
+                        $this->db->prepare("UPDATE loans SET current_balance = ?, status = ?, last_repayment_date = NOW(), next_repayment_date = DATE_ADD(NOW(), INTERVAL 1 MONTH) WHERE loan_id = ?")
                                  ->execute([$new_bal, $status, $related_id]);
                         
                         $this->db->prepare("INSERT INTO loan_repayments (loan_id, amount_paid, payment_date, payment_method, reference_no, remaining_balance, status) VALUES (?, ?, CURDATE(), ?, ?, ?, 'Completed')")
