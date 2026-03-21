@@ -6,6 +6,9 @@ declare(strict_types=1);
 require_once __DIR__ . '/../config/app.php';
 require_once __DIR__ . '/email.php';
 require_once __DIR__ . '/sms.php';
+require_once __DIR__ . '/../core/Services/FinancialService.php';
+
+use USMS\Services\FinancialService;
 
 /**
  * Send notification (both email and SMS)
@@ -30,6 +33,11 @@ function send_notification($conn, $member_id, $type, $data = []) {
     // Generate notification content based on type
     $notification = get_notification_content($type, $name, $data);
     
+    // Fetch current balances via FinancialService
+    $finService = new FinancialService();
+    $balances = $finService->getBalances($member_id);
+    $savings_bal = $balances['savings'] ?? 0;
+    
     $success = true;
     
     // Send Email & App Notification (Unified)
@@ -39,7 +47,7 @@ function send_notification($conn, $member_id, $type, $data = []) {
             $metadata = [
                 'trx_id'  => $data['trx_id'] ?? $data['ref'] ?? $data['reference'] ?? 'N/A',
                 'reg_no'  => $member['member_reg_no'] ?? 'N/A',
-                'balance' => $data['balance'] ?? $member['savings_balance'] ?? null
+                'balance' => $data['balance'] ?? $savings_bal
             ];
             
             // This now handles both SMTP and Database Notification insertion
