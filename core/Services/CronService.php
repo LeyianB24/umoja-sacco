@@ -30,6 +30,7 @@ class CronService {
      * Identifies overdue loans and applies daily fines
      */
     public function applyDailyFines(): int {
+        echo "LOG: Called applyDailyFines\n";
         $fineAmount = (float)$this->settingsService->get('late_payment_fine_daily', 50.00);
         $today = date('Y-m-d');
 
