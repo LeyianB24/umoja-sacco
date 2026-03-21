@@ -34,15 +34,15 @@ if ($res->num_rows > 0) {
     echo "FAILURE: Email NOT queued for fine.\n";
 }
 
-// 3. Test Repayment Reminders
-echo "\nSetting next_repayment_date to 3 days in the future...\n";
-$threeDays = date('Y-m-d H:i:s', strtotime('+3 days'));
-$conn->query("UPDATE loans SET next_repayment_date = '$threeDays' WHERE loan_id = $loan_id");
+// --- TEST 2: REPAYMENT REMINDERS ---
+echo "\n--- TEST 2: REPAYMENT REMINDERS ---\n";
+$threeDaysFromNow = date('Y-m-d', strtotime('+3 days'));
+$pdo->prepare("UPDATE loans SET next_repayment_date = ?, status = 'disbursed' WHERE loan_id = 26")
+    ->execute([$threeDaysFromNow]);
 
 echo "Running repayment_reminders job...\n";
 passthru("php c:/xampp/htdocs/usms/cron/run.php repayment_reminders");
 
-// Check email queue
 $res = $conn->query("SELECT * FROM email_queue WHERE subject LIKE '%Repayment Reminder%' ORDER BY created_at DESC LIMIT 1");
 if ($res->num_rows > 0) {
     echo "SUCCESS: Email queued for reminder.\n";
