@@ -7,6 +7,8 @@ use USMS\Database\Database;
 $db = Database::getInstance();
 $rows = $db->fetchAll("SELECT DISTINCT transaction_type, category FROM transactions");
 
+$out = "";
 foreach ($rows as $row) {
-    echo "Type: " . $row['transaction_type'] . " | Category: " . $row['category'] . "\n";
+    $out .= "T:" . $row['transaction_type'] . "|C:" . $row['category'] . "\n";
 }
+file_put_contents('c:/xampp/htdocs/usms/txn_results.txt', $out);
