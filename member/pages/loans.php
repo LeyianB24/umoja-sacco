@@ -118,9 +118,20 @@ $outstanding_balance = 0;
 $total_payable = 0;
 
 if ($active_loan) {
-    $loan_id = $active_loan['loan_id'];
-    $total_payable = $active_loan['total_payable'] > 0 ? $active_loan['total_payable'] : ($active_loan['amount'] * (1 + ($active_loan['interest_rate']/100)));
-    $outstanding_balance = $active_loan['current_balance'];
+    $loan_id = (int)$active_loan['loan_id'];
+    
+    // Fetch Total Fines
+    $f_stmt = $conn->prepare("SELECT SUM(amount) as tf FROM fines WHERE loan_id = ?");
+    $f_stmt->bind_param("i", $loan_id);
+    $f_stmt->execute();
+    $f_res = $f_stmt->get_result()->fetch_assoc();
+    $total_fines = (float)($f_res['tf'] ?? 0);
+    $f_stmt->close();
+
+    $base_total_payable = $active_loan['total_payable'] > 0 ? (float)$active_loan['total_payable'] : ((float)$active_loan['amount'] * (1 + ((float)$active_loan['interest_rate']/100)));
+    $total_payable = $base_total_payable + $total_fines;
+    
+    $outstanding_balance = (float)$active_loan['current_balance'];
     $repaid_amount = max(0, $total_payable - $outstanding_balance);
     
     if ($total_payable > 0) {
@@ -459,9 +470,17 @@ $pageTitle = "My Loans";
                                     <h1 class="display-4 fw-bold mb-0">KES <?= number_format((float)$outstanding_balance) ?></h1>
                                     <span class="label-text">Outstanding Balance</span>
                                 </div>
-                                <div class="text-end d-none d-sm-block">
-                                    <span class="label-text d-block mb-1">Interest Rate</span>
-                                    <span class="fw-bold fs-5"><?= $active_loan['interest_rate'] ?>% p.a</span>
+                                <div class="d-flex text-end d-none d-sm-flex gap-4">
+                                    <?php if(isset($total_fines) && $total_fines > 0): ?>
+                                    <div>
+                                        <span class="label-text text-warning d-block mb-1">Late Fines</span>
+                                        <span class="fw-bold fs-5 text-warning">+KES <?= number_format($total_fines) ?></span>
+                                    </div>
+                                    <?php endif; ?>
+                                    <div>
+                                        <span class="label-text d-block mb-1">Interest Rate</span>
+                                        <span class="fw-bold fs-5"><?= $active_loan['interest_rate'] ?>% p.a</span>
+                                    </div>
                                 </div>
                             </div>
 
