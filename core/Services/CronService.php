@@ -112,6 +112,12 @@ class CronService {
                 error_log("Failed to apply fine to loan #{$loan['loan_id']}: " . $e->getMessage());
             }
         }
+        
+        // Process email queue if fines were applied
+        if ($processedCount > 0) {
+            $this->emailService->processPendingEmails(50);
+        }
+        
         return $processedCount;
     }
 
@@ -142,6 +148,11 @@ class CronService {
             
             $this->emailService->queueEmail($loan['email'], $loan['full_name'], $subject, $body);
             $sentCount++;
+        }
+
+        // Process the queue immediately since XAMPP often lacks background cron
+        if ($sentCount > 0) {
+            $this->emailService->processPendingEmails(50);
         }
 
         return $sentCount;
@@ -176,6 +187,12 @@ class CronService {
                 $sentCount++;
             }
         }
+        
+        // Process the queue immediately since XAMPP often lacks background cron
+        if ($sentCount > 0) {
+            $this->emailService->processPendingEmails(50);
+        }
+
         return $sentCount;
     }
 
@@ -203,7 +220,10 @@ class CronService {
                  <p>You can pay via the Member Portal or M-Pesa Paybill.</p>
                  <p>If you have already made the payment, please ignore this email.</p>
                  <p>Best regards,<br>Umoja Drivers Sacco Management</p>";
-        
-        return $this->emailService->queueEmail($loan['email'], $loan['full_name'], $subject, $body) > 0;
+        $queued = $this->emailService->queueEmail($loan['email'], $loan['full_name'], $subject, $body) > 0;
+        if ($queued) {
+            $this->emailService->processPendingEmails(10);
+        }
+        return $queued;
     }
 }
