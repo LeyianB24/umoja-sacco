@@ -131,6 +131,9 @@ if ($active_loan) {
     $base_total_payable = $active_loan['total_payable'] > 0 ? (float)$active_loan['total_payable'] : ((float)$active_loan['amount'] * (1 + ((float)$active_loan['interest_rate']/100)));
     $total_payable = $base_total_payable + $total_fines;
     
+    $duration = (int)(!empty($active_loan['duration_months']) ? $active_loan['duration_months'] : 12);
+    $monthly_installment = $base_total_payable / $duration;
+    
     $outstanding_balance = (float)$active_loan['current_balance'];
     $repaid_amount = max(0, $total_payable - $outstanding_balance);
     
@@ -471,6 +474,10 @@ $pageTitle = "My Loans";
                                     <span class="label-text">Outstanding Balance</span>
                                 </div>
                                 <div class="d-flex text-end d-none d-sm-flex gap-4">
+                                    <div>
+                                        <span class="label-text d-block mb-1">Installment / Mo</span>
+                                        <span class="fw-bold fs-5">KES <?= number_format($monthly_installment) ?></span>
+                                    </div>
                                     <?php if(isset($total_fines) && $total_fines > 0): ?>
                                     <div>
                                         <span class="label-text text-warning d-block mb-1">Late Fines</span>
