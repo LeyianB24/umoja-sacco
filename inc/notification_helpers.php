@@ -17,8 +17,8 @@ use USMS\Services\FinancialService;
  * @param array $data - Additional data for the notification
  */
 function send_notification($conn, $member_id, $type, $data = []) {
-    // Fetch member details including RegNo and Savings Balance
-    $stmt = $conn->prepare("SELECT full_name, email, phone, member_reg_no, savings_balance FROM members WHERE member_id = ?");
+    // Fetch member details including RegNo
+    $stmt = $conn->prepare("SELECT full_name, email, phone, member_reg_no FROM members WHERE member_id = ?");
     $stmt->bind_param("i", $member_id);
     $stmt->execute();
     $member = $stmt->get_result()->fetch_assoc();
