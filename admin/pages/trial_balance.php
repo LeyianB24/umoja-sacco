@@ -22,23 +22,22 @@ while ($row = $res->fetch_assoc()) $all_accounts[] = $row;
 $assets      = [];
 $liabilities = [];
 $equity      = [];
+$revenue_total = $expense_total = 0;
 $total_assets = $total_liabilities = $total_equity = 0;
 
 foreach ($all_accounts as $acc) {
     $bal  = (float)$acc['current_balance'];
     $type = strtolower($acc['account_type']);
-    if ($type === 'asset')     { $assets[]      = $acc; $total_assets      += $bal; }
+    if ($type === 'asset')         { $assets[]      = $acc; $total_assets      += $bal; }
     elseif ($type === 'liability') { $liabilities[] = $acc; $total_liabilities += $bal; }
     elseif ($type === 'equity')    { $equity[]      = $acc; $total_equity      += $bal; }
+    elseif ($type === 'revenue')   { $revenue_total += $bal; }
+    elseif ($type === 'expense')   { $expense_total += $bal; }
 }
 
-$revenue_total = $expense_total = 0;
-foreach ($all_accounts as $acc) {
-    if (stripos((string)($acc['account_name'] ?? ''), 'revenue') !== false) $revenue_total += (float)$acc['current_balance'];
-    if (stripos((string)($acc['account_name'] ?? ''), 'expense') !== false) $expense_total += (float)$acc['current_balance'];
-}
+// Net Income calculation
 $net_income    = $revenue_total - $expense_total;
-$balance_check = $total_assets - ($total_liabilities + $total_equity);
+$balance_check = $total_assets - ($total_liabilities + $total_equity + $net_income);
 $is_balanced   = abs($balance_check) < 0.01;
 
 // 4. Export
