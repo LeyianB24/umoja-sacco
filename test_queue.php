@@ -1,8 +1,7 @@
 <?php
 require 'c:/xampp/htdocs/usms/config/app.php';
-$res = $conn->query('SELECT queue_id, recipient_email, status FROM email_queue ORDER BY queue_id DESC LIMIT 5');
-if($res) {
-    while($r = $res->fetch_assoc()) {
-        print_r($r);
-    }
-} else { echo "Error or empty: " . $conn->error; }
+$q = $conn->query('SELECT * FROM email_queue ORDER BY queue_id DESC LIMIT 10');
+if(!$q) { echo "SQL Error: " . $conn->error; exit; }
+while($row = $q->fetch_assoc()) {
+    echo "ID: {$row['queue_id']} | To: {$row['recipient_email']} | Status: {$row['status']} | Subject: {$row['subject']} | Error: {$row['last_error']}\n";
+}
