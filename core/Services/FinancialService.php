@@ -189,6 +189,17 @@ class FinancialService {
                     $this->postEntry($txn_id, $this->getSystemAccount($method), 0, $amount);
                     break;
 
+                case 'expense_incurred':
+                    $this->postEntry($txn_id, $this->getSystemAccount('expense'), $amount, 0);
+                    $this->postEntry($txn_id, $this->getSystemAccount('accounts_payable'), 0, $amount);
+                    break;
+
+                case 'expense_settlement':
+                    $this->postEntry($txn_id, $this->getSystemAccount('accounts_payable'), $amount, 0);
+                    $this->postEntry($txn_id, $this->getSystemAccount($method), 0, $amount);
+                    break;
+
+
                 case 'welfare_contribution':
                     $this->postEntry($txn_id, $this->getSystemAccount($method), $amount, 0);
                     $this->postEntry($txn_id, $this->getSystemAccount('welfare'), 0, $amount);
@@ -289,13 +300,21 @@ class FinancialService {
             'mpesa_clearing' => $master_account,
             'income'         => 'SACCO Revenue',
             'expense'        => 'SACCO Expenses',
-            'welfare'        => 'Welfare Fund Pool'
+            'welfare'        => 'Welfare Fund Pool',
+            'accounts_payable' => 'Accounts Payable'
         ];
         $name = $name_map[$key] ?? $key;
         $stmt = $this->db->prepare("SELECT account_id FROM ledger_accounts WHERE account_name = ? LIMIT 1");
         $stmt->execute([$name]);
         $row = $stmt->fetch();
-        if (!$row) throw new Exception("System Account Missing: $name");
+        if (!$row) {
+            if ($name === 'Accounts Payable') {
+                $this->db->prepare("INSERT INTO ledger_accounts (account_name, account_type, member_id, category) VALUES (?, 'liability', NULL, 'system')")
+                         ->execute([$name]);
+                return (int)$this->db->lastInsertId();
+            }
+            throw new Exception("System Account Missing: $name");
+        }
         return (int)$row['account_id'];
     }
 

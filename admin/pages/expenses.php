@@ -13,6 +13,171 @@ require_admin();
 require_permission();
 
 $pageTitle = "Expenditure Portal";
+
+// 2. Handle Form Submission
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'add_expense') {
+    verify_csrf_token();
+
+    $amount     = floatval($_POST['amount']);
+    $category   = $_POST['category'];
+    $payee      = trim($_POST['payee']);
+    $date       = $_POST['expense_date'];
+    $ref_no     = trim($_POST['ref_no']);
+    $desc       = trim($_POST['description']);
+    $is_pending = isset($_POST['is_pending']);
+
+    validate_not_future($date, "expenses.php");
+
+    if ($amount <= 0) {
+        $_SESSION['error'] = "Expense amount must be valid.";
+    } else {
+        $notes = "[$category] $payee";
+        if (!empty($desc)) $notes .= " - $desc";
+        if ($is_pending) $notes .= " [PENDING]";
+
+        $conn->begin_transaction();
+        try {
+            $unified_id    = $_POST['unified_asset_id'] ?? '';
+            $related_id    = 0;
+            $related_table = null;
+
+            if ($unified_id && $unified_id !== 'other_0') {
+                list($source, $related_id) = explode('_', $unified_id);
+                $related_id    = (int)$related_id;
+                $related_table = 'investments';
+            }
+
+            $method = $_POST['payment_method'] ?? 'cash';
+
+            $ok = TransactionHelper::record([
+                'member_id'     => null,
+                'amount'        => $amount,
+                'type'          => 'expense',
+                'category'      => $category,
+                'method'        => $method,
+                'ref_no'        => $ref_no,
+                'notes'         => $notes,
+                'related_id'    => $related_id,
+                'related_table' => $related_table,
+            ]);
+
+            if (!$ok) throw new Exception("Ledger recording failed.");
+
+            $conn->commit();
+            $_SESSION['success'] = "Expense recorded successfully!";
+            header("Location: expenses.php");
+            exit;
+        } catch (Exception $e) {
+            $conn->rollback();
+            $_SESSION['error'] = "Error: " . $e->getMessage();
+        }
+    }
+}
+
+// Handle Settle Expense
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'settle_expense') {
+    verify_csrf_token();
+    $tx_id = (int)$_POST['transaction_id'];
+
+    $stmt = $conn->prepare("SELECT notes FROM transactions WHERE ledger_transaction_id = ? AND transaction_type IN ('expense', 'expense_outflow')");
+    $stmt->bind_param("i", $tx_id);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    if ($ex_row = $res->fetch_assoc()) {
+        $notes = str_replace(' [PENDING]', '', $ex_row['notes']);
+        $notes = str_replace('[PENDING]', '', $notes);
+        
+        $upd = $conn->prepare("UPDATE transactions SET notes = ? WHERE ledger_transaction_id = ?");
+        $upd->bind_param("si", $notes, $tx_id);
+        if ($upd->execute()) {
+            $_SESSION['success'] = "Bill marked as settled successfully!";
+        } else {
+            $_SESSION['error'] = "Failed to update bill status.";
+        }
+    } else {
+        $_SESSION['error'] = "Transaction not found.";
+    }
+    header("Location: expenses.php");
+    exit;
+}
+
+// 3. Data Fetching
+
+$duration   = $_GET['duration'] ?? '3months';
+$start_date = $_GET['start_date'] ?? date('Y-m-d', strtotime('-3 months'));
+$end_date   = $_GET['end_date']   ?? date('Y-m-d');
+
+$date_filter = "";
+if ($duration !== 'all') {
+    switch ($duration) {
+        case 'today':   $start_date = $end_date = date('Y-m-d'); break;
+        case 'weekly':  $start_date = date('Y-m-d', strtotime('-7 days')); break;
+        case 'monthly': $start_date = date('Y-m-01'); $end_date = date('Y-m-t'); break;
+        case '3months': $start_date = date('Y-m-d', strtotime('-3 months')); break;
+    }
+    $date_filter = " AND created_at BETWEEN '$start_date 00:00:00' AND '$end_date 23:59:59'";
+}
+
+$where  = "transaction_type IN ('expense', 'expense_outflow') $date_filter";
+$sql    = "SELECT * FROM transactions WHERE $where ORDER BY created_at DESC";
+$result = $conn->query($sql);
+
+$expenses             = [];
+$total_period_expense = 0;
+$pending_bills_count  = 0;
+$cat_breakdown        = [];
+
+if ($result) {
+    while ($row = $result->fetch_assoc()) {
+        $expenses[] = $row;
+        $total_period_expense += $row['amount'];
+        preg_match('/\[(.*?)\]/', $row['notes'], $matches);
+        $cat = $matches[1] ?? 'Uncategorized';
+        if (stripos($row['notes'], 'pending') !== false) $pending_bills_count++;
+        $cat_breakdown[$cat] = ($cat_breakdown[$cat] ?? 0) + $row['amount'];
+    }
+}
+
+// Handle Export
+if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_excel', 'print_report'])) {
+    if ($_GET['action'] === 'export_pdf' || $_GET['action'] === 'export_excel') {
+        require_once __DIR__ . '/../../inc/ExportHelper.php';
+    } else {
+        require_once __DIR__ . '/../../core/exports/UniversalExportEngine.php';
+    }
+
+    $format      = match($_GET['action']) { 'export_excel' => 'excel', 'print_report' => 'print', default => 'pdf' };
+    $export_data = [];
+    foreach ($expenses as $ex) {
+        preg_match('/\[(.*?)\]/', $ex['notes'], $cat_match);
+        $display_cat = $cat_match[1] ?? 'General';
+        $export_data[] = [
+            'Date'          => date('d-m-Y', strtotime($ex['created_at'])),
+            'Reference'     => $ex['reference_no'],
+            'Payee/Details' => trim(str_replace(['[PENDING]', $cat_match[0] ?? ''], '', $ex['notes'])),
+            'Category'      => $display_cat,
+            'Amount'        => number_format((float)$ex['amount'], 2),
+            'Status'        => (stripos($ex['notes'], 'pending') !== false) ? 'Pending' : 'Paid'
+        ];
+    }
+
+    $title   = 'Expense_Ledger_' . date('Ymd_His');
+    $headers = ['Date', 'Reference', 'Payee/Details', 'Category', 'Amount', 'Status'];
+
+    if ($format === 'pdf')       ExportHelper::pdf('Expense Ledger', $headers, $export_data, $title . '.pdf');
+    elseif ($format === 'excel') ExportHelper::csv($title . '.csv', $headers, $export_data);
+    else                         UniversalExportEngine::handle($format, $export_data, ['title' => 'Expense Ledger', 'module' => 'Expense Management', 'headers' => $headers, 'total_value' => $total_period_expense]);
+    exit;
+}
+
+$investments_list = $conn->query("SELECT investment_id, title FROM investments WHERE status = 'active' ORDER BY title ASC");
+$investments_all  = $investments_list->fetch_all(MYSQLI_ASSOC);
+
+// Top category
+arsort($cat_breakdown);
+$top_cat = !empty($cat_breakdown) ? array_key_first($cat_breakdown) : '—';
+
+
 ?>
 <?php $layout->header($pageTitle); ?>
 
@@ -251,170 +416,7 @@ textarea.form-control { resize: vertical; min-height: 76px; }
             </ol>
         </nav>
 
-<?php
-// 2. Handle Form Submission
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'add_expense') {
-    verify_csrf_token();
 
-    $amount     = floatval($_POST['amount']);
-    $category   = $_POST['category'];
-    $payee      = trim($_POST['payee']);
-    $date       = $_POST['expense_date'];
-    $ref_no     = trim($_POST['ref_no']);
-    $desc       = trim($_POST['description']);
-    $is_pending = isset($_POST['is_pending']);
-
-    validate_not_future($date, "expenses.php");
-
-    if ($amount <= 0) {
-        $_SESSION['error'] = "Expense amount must be valid.";
-    } else {
-        $notes = "[$category] $payee";
-        if (!empty($desc)) $notes .= " - $desc";
-        if ($is_pending) $notes .= " [PENDING]";
-
-        $conn->begin_transaction();
-        try {
-            $unified_id    = $_POST['unified_asset_id'] ?? '';
-            $related_id    = 0;
-            $related_table = null;
-
-            if ($unified_id && $unified_id !== 'other_0') {
-                list($source, $related_id) = explode('_', $unified_id);
-                $related_id    = (int)$related_id;
-                $related_table = 'investments';
-            }
-
-            $method = $_POST['payment_method'] ?? 'cash';
-
-            $ok = TransactionHelper::record([
-                'member_id'     => null,
-                'amount'        => $amount,
-                'type'          => 'expense',
-                'category'      => $category,
-                'method'        => $method,
-                'ref_no'        => $ref_no,
-                'notes'         => $notes,
-                'related_id'    => $related_id,
-                'related_table' => $related_table,
-            ]);
-
-            if (!$ok) throw new Exception("Ledger recording failed.");
-
-            $conn->commit();
-            $_SESSION['success'] = "Expense recorded successfully!";
-            header("Location: expenses.php");
-            exit;
-        } catch (Exception $e) {
-            $conn->rollback();
-            $_SESSION['error'] = "Error: " . $e->getMessage();
-        }
-    }
-}
-
-// Handle Settle Expense
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'settle_expense') {
-    verify_csrf_token();
-    $tx_id = (int)$_POST['transaction_id'];
-
-    $stmt = $conn->prepare("SELECT notes FROM transactions WHERE ledger_transaction_id = ? AND transaction_type IN ('expense', 'expense_outflow')");
-    $stmt->bind_param("i", $tx_id);
-    $stmt->execute();
-    $res = $stmt->get_result();
-    if ($ex_row = $res->fetch_assoc()) {
-        $notes = str_replace(' [PENDING]', '', $ex_row['notes']);
-        $notes = str_replace('[PENDING]', '', $notes);
-        
-        $upd = $conn->prepare("UPDATE transactions SET notes = ? WHERE ledger_transaction_id = ?");
-        $upd->bind_param("si", $notes, $tx_id);
-        if ($upd->execute()) {
-            $_SESSION['success'] = "Bill marked as settled successfully!";
-        } else {
-            $_SESSION['error'] = "Failed to update bill status.";
-        }
-    } else {
-        $_SESSION['error'] = "Transaction not found.";
-    }
-    header("Location: expenses.php");
-    exit;
-}
-
-// 3. Data Fetching
-
-$duration   = $_GET['duration'] ?? '3months';
-$start_date = $_GET['start_date'] ?? date('Y-m-d', strtotime('-3 months'));
-$end_date   = $_GET['end_date']   ?? date('Y-m-d');
-
-$date_filter = "";
-if ($duration !== 'all') {
-    switch ($duration) {
-        case 'today':   $start_date = $end_date = date('Y-m-d'); break;
-        case 'weekly':  $start_date = date('Y-m-d', strtotime('-7 days')); break;
-        case 'monthly': $start_date = date('Y-m-01'); $end_date = date('Y-m-t'); break;
-        case '3months': $start_date = date('Y-m-d', strtotime('-3 months')); break;
-    }
-    $date_filter = " AND created_at BETWEEN '$start_date 00:00:00' AND '$end_date 23:59:59'";
-}
-
-$where  = "transaction_type IN ('expense', 'expense_outflow') $date_filter";
-$sql    = "SELECT * FROM transactions WHERE $where ORDER BY created_at DESC";
-$result = $conn->query($sql);
-
-$expenses             = [];
-$total_period_expense = 0;
-$pending_bills_count  = 0;
-$cat_breakdown        = [];
-
-if ($result) {
-    while ($row = $result->fetch_assoc()) {
-        $expenses[] = $row;
-        $total_period_expense += $row['amount'];
-        preg_match('/\[(.*?)\]/', $row['notes'], $matches);
-        $cat = $matches[1] ?? 'Uncategorized';
-        if (stripos($row['notes'], 'pending') !== false) $pending_bills_count++;
-        $cat_breakdown[$cat] = ($cat_breakdown[$cat] ?? 0) + $row['amount'];
-    }
-}
-
-// Handle Export
-if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_excel', 'print_report'])) {
-    if ($_GET['action'] === 'export_pdf' || $_GET['action'] === 'export_excel') {
-        require_once __DIR__ . '/../../inc/ExportHelper.php';
-    } else {
-        require_once __DIR__ . '/../../core/exports/UniversalExportEngine.php';
-    }
-
-    $format      = match($_GET['action']) { 'export_excel' => 'excel', 'print_report' => 'print', default => 'pdf' };
-    $export_data = [];
-    foreach ($expenses as $ex) {
-        preg_match('/\[(.*?)\]/', $ex['notes'], $cat_match);
-        $display_cat = $cat_match[1] ?? 'General';
-        $export_data[] = [
-            'Date'          => date('d-m-Y', strtotime($ex['created_at'])),
-            'Reference'     => $ex['reference_no'],
-            'Payee/Details' => trim(str_replace(['[PENDING]', $cat_match[0] ?? ''], '', $ex['notes'])),
-            'Category'      => $display_cat,
-            'Amount'        => number_format((float)$ex['amount'], 2),
-            'Status'        => (stripos($ex['notes'], 'pending') !== false) ? 'Pending' : 'Paid'
-        ];
-    }
-
-    $title   = 'Expense_Ledger_' . date('Ymd_His');
-    $headers = ['Date', 'Reference', 'Payee/Details', 'Category', 'Amount', 'Status'];
-
-    if ($format === 'pdf')       ExportHelper::pdf('Expense Ledger', $headers, $export_data, $title . '.pdf');
-    elseif ($format === 'excel') ExportHelper::csv($title . '.csv', $headers, $export_data);
-    else                         UniversalExportEngine::handle($format, $export_data, ['title' => 'Expense Ledger', 'module' => 'Expense Management', 'headers' => $headers, 'total_value' => $total_period_expense]);
-    exit;
-}
-
-$investments_list = $conn->query("SELECT investment_id, title FROM investments WHERE status = 'active' ORDER BY title ASC");
-$investments_all  = $investments_list->fetch_all(MYSQLI_ASSOC);
-
-// Top category
-arsort($cat_breakdown);
-$top_cat = !empty($cat_breakdown) ? array_key_first($cat_breakdown) : '—';
-?>
 
         <!-- ═══ HERO ══════════════════════════════════════════════════════ -->
         <div class="page-header mb-4">
