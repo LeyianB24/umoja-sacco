@@ -44,6 +44,12 @@ $cnt_savings = (int)($stats['count_savings']   ?? 0);
 $cnt_shares  = (int)($stats['count_shares']    ?? 0);
 $cnt_welfare = (int)($stats['count_welfare']   ?? 0);
 
+// Use ledger engine for the real savings balance (matches dashboard)
+require_once __DIR__ . '/../../inc/FinancialEngine.php';
+$_engine = new FinancialEngine($conn);
+$_balances = $_engine->getBalances((int)$member_id);
+$ledger_savings = (float)$_balances['savings']; // Authoritative savings figure
+
 // ── Monthly trend – last 7 months ──────────────────────────
 $trend_labels  = $trend_savings = $trend_shares = $trend_welfare = [];
 for ($i = 6; $i >= 0; $i--) {
@@ -492,10 +498,10 @@ body.sb-collapsed .main-content-wrapper { margin-left:72px; }
         <div class="col-md-3 sa1">
             <div class="sc sc-g">
                 <div class="sc-ico" style="background:var(--grn-bg);color:var(--grn)"><i class="bi bi-piggy-bank-fill"></i></div>
-                <div class="sc-lbl">Total Savings</div>
-                <div class="sc-val"><?= ks($savings_val) ?></div>
+                <div class="sc-lbl">Savings Balance</div>
+                <div class="sc-val"><?= ks($ledger_savings) ?></div>
                 <div class="sc-bar"><div class="sc-bar-fill" style="background:var(--grn)" data-w="100"></div></div>
-                <div class="sc-meta"><?= $cnt_savings ?> deposits all time</div>
+                <div class="sc-meta"><?= $cnt_savings ?> deposits &middot; Ledger balance</div>
             </div>
         </div>
         <div class="col-md-3 sa2">

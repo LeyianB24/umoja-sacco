@@ -52,7 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             $ok = TransactionHelper::record([
                 'member_id'     => null,
                 'amount'        => $amount,
-                'type'          => 'expense',
+                'type'          => $is_pending ? 'expense_incurred' : 'expense',
                 'category'      => $category,
                 'method'        => $method,
                 'ref_no'        => $ref_no,
@@ -64,7 +64,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             if (!$ok) throw new Exception("Ledger recording failed.");
 
             $conn->commit();
-            $_SESSION['success'] = "Expense recorded successfully!";
+            $_SESSION['success'] = $is_pending
+                ? "Pending bill recorded. Cash will only deduct when you settle it."
+                : "Expense recorded successfully!";
             header("Location: expenses.php");
             exit;
         } catch (Exception $e) {
@@ -77,25 +79,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 // Handle Settle Expense
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'settle_expense') {
     verify_csrf_token();
-    $tx_id = (int)$_POST['transaction_id'];
+    $tx_id  = (int)$_POST['transaction_id'];
+    $method = $_POST['settle_method'] ?? 'cash';
 
-    $stmt = $conn->prepare("SELECT notes FROM transactions WHERE ledger_transaction_id = ? AND transaction_type IN ('expense', 'expense_outflow')");
+    $stmt = $conn->prepare("SELECT notes, amount FROM transactions WHERE ledger_transaction_id = ? AND transaction_type = 'expense_incurred'");
     $stmt->bind_param("i", $tx_id);
     $stmt->execute();
     $res = $stmt->get_result();
     if ($ex_row = $res->fetch_assoc()) {
-        $notes = str_replace(' [PENDING]', '', $ex_row['notes']);
-        $notes = str_replace('[PENDING]', '', $notes);
-        
-        $upd = $conn->prepare("UPDATE transactions SET notes = ? WHERE ledger_transaction_id = ?");
-        $upd->bind_param("si", $notes, $tx_id);
-        if ($upd->execute()) {
-            $_SESSION['success'] = "Bill marked as settled successfully!";
-        } else {
-            $_SESSION['error'] = "Failed to update bill status.";
+        $amount      = (float)$ex_row['amount'];
+        $clean_notes = trim(str_replace([' [PENDING]', '[PENDING]'], '', $ex_row['notes']));
+        $settle_ref  = 'SETTLE-' . $tx_id . '-' . date('ymdHis');
+
+        try {
+            $ok = TransactionHelper::record([
+                'member_id'     => null,
+                'amount'        => $amount,
+                'type'          => 'expense_settlement',
+                'method'        => $method,
+                'ref_no'        => $settle_ref,
+                'notes'         => $clean_notes . ' [SETTLED]',
+                'related_id'    => $tx_id,
+                'related_table' => 'transactions',
+            ]);
+
+            if (!$ok) throw new Exception("Settlement ledger entry failed.");
+
+            // Remove [PENDING] marker from original record
+            $upd = $conn->prepare("UPDATE transactions SET notes = ? WHERE ledger_transaction_id = ?");
+            $upd->bind_param("si", $clean_notes, $tx_id);
+            $upd->execute();
+
+            $_SESSION['success'] = "Bill settled! KES " . number_format($amount, 2) . " deducted from " . ucfirst($method) . " account.";
+        } catch (Exception $e) {
+            $_SESSION['error'] = "Settlement failed: " . $e->getMessage();
         }
     } else {
-        $_SESSION['error'] = "Transaction not found.";
+        $_SESSION['error'] = "Pending bill not found or already settled.";
     }
     header("Location: expenses.php");
     exit;
@@ -118,7 +138,7 @@ if ($duration !== 'all') {
     $date_filter = " AND created_at BETWEEN '$start_date 00:00:00' AND '$end_date 23:59:59'";
 }
 
-$where  = "transaction_type IN ('expense', 'expense_outflow') $date_filter";
+$where  = "transaction_type IN ('expense', 'expense_outflow', 'expense_incurred') $date_filter";
 $sql    = "SELECT * FROM transactions WHERE $where ORDER BY created_at DESC";
 $result = $conn->query($sql);
 
@@ -576,7 +596,7 @@ textarea.form-control { resize: vertical; min-height: 76px; }
                     <?php else: foreach ($expenses as $ex):
                         preg_match('/\[(.*?)\]/', $ex['notes'], $cat_match);
                         $display_cat = $cat_match[1] ?? 'General';
-                        $is_pending  = stripos($ex['notes'], 'pending') !== false;
+                        $is_pending  = $ex['transaction_type'] === 'expense_incurred';
                         $clean_notes = trim(str_replace(['[PENDING]', $cat_match[0] ?? ''], '', $ex['notes']));
                     ?>
                         <tr>
@@ -597,11 +617,18 @@ textarea.form-control { resize: vertical; min-height: 76px; }
                                     <?= $is_pending ? 'Pending' : 'Settled' ?>
                                 </span>
                                 <?php if ($is_pending): ?>
-                                <form method="POST" style="display:inline-block; margin-left:8px;" onsubmit="return confirm('Mark this bill as settled?');">
+                                <form method="POST" style="display:inline-flex; align-items:center; gap:5px; margin-left:8px;"
+                                      onsubmit="return confirm('Settle this bill? This will deduct from the selected account.');"
+                                >
                                     <?= csrf_field() ?>
                                     <input type="hidden" name="action" value="settle_expense">
                                     <input type="hidden" name="transaction_id" value="<?= $ex['ledger_transaction_id'] ?>">
-                                    <button type="submit" class="btn btn-sm btn-lime" style="padding: 3px 8px; font-size: 0.65rem; border-radius: 6px; box-shadow: none;">Settle</button>
+                                    <select name="settle_method" style="height:26px;border:1.5px solid var(--amber-border);border-radius:6px;font-size:0.65rem;font-weight:700;color:var(--amber-text);background:var(--amber-bg);padding:0 6px;cursor:pointer;">
+                                        <option value="cash">Cash</option>
+                                        <option value="bank">Bank</option>
+                                        <option value="mpesa">M-Pesa</option>
+                                    </select>
+                                    <button type="submit" class="btn btn-sm btn-lime" style="padding:3px 10px;font-size:0.65rem;border-radius:6px;box-shadow:none;">Settle</button>
                                 </form>
                                 <?php endif; ?>
                             </td>

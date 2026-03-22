@@ -465,7 +465,9 @@ foreach($portfolio_raw as $a) {
     $st = $ledger_stats[$aid] ?? ['rev' => 0, 'exp' => 0];
     $a['revenue']  = (float)$st['rev'];
     $a['expenses'] = (float)$st['exp'];
-    $a['roi'] = (($a['current_value'] - $a['purchase_cost']) + ($a['revenue'] - $a['expenses'])) / ((float)($a['purchase_cost'] ?? 0) ?: 1) * 100;
+    $a['roi'] = $a['purchase_cost'] > 0
+        ? (($a['current_value'] - $a['purchase_cost']) + ($a['revenue'] - $a['expenses'])) / (float)$a['purchase_cost'] * 100
+        : 0;
     $perf = $viability_engine->calculatePerformance((int)$aid, 'investments');
     if ($perf) {
         $a['target_achievement'] = $perf['target_achievement_pct'];

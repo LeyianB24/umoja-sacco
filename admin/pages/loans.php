@@ -16,7 +16,7 @@ $admin_id = $_SESSION['admin_id'];
 $loan_id  = intval($_GET['id'] ?? 0);
 
 if ($loan_id <= 0) {
-    flash_set("Invalid Loan ID.", "danger");
+    // No loan ID provided – redirect to the loan list silently
     header("Location: loans_payouts.php");
     exit;
 }

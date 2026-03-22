@@ -484,23 +484,50 @@ body.sb-collapsed .main-content-wrapper{margin-left:72px}
                 if ($result && $result->num_rows > 0):
                     while ($row = $result->fetch_assoc()):
                         $type    = strtolower($row['transaction_type'] ?? '');
-                        $is_in   = in_array($type,['deposit','contribution','welfare','revenue_inflow']);
+                        $is_in   = in_array($type,[
+                            'deposit','contribution','welfare','revenue_inflow',
+                            'savings_deposit','share_purchase','dividend_payment','loan_disbursement',
+                            'registration_fee','welfare_payout'
+                        ]);
                         $is_loan = ($type === 'loan_disbursement');
                         $dt      = new DateTime($row['created_at']);
 
-                        $ico_cls = in_array($type,['welfare','contribution']) ? 'ico-welfare'
+                        $ico_cls = in_array($type,['welfare','contribution','welfare_payout','welfare_contribution']) ? 'ico-welfare'
                                  : ($is_loan ? 'ico-loan' : ($is_in ? 'ico-in' : 'ico-out'));
 
-                        $icon_map = ['deposit'=>'bi-arrow-down-circle-fill','contribution'=>'bi-calendar-check-fill','withdrawal'=>'bi-arrow-up-circle-fill','loan_repayment'=>'bi-cash-stack','loan_disbursement'=>'bi-bank2','welfare'=>'bi-heart-pulse-fill','revenue_inflow'=>'bi-receipt'];
+                        $icon_map = [
+                            'deposit'             => 'bi-arrow-down-circle-fill',
+                            'savings_deposit'      => 'bi-arrow-down-circle-fill',
+                            'contribution'         => 'bi-calendar-check-fill',
+                            'withdrawal'           => 'bi-arrow-up-circle-fill',
+                            'withdrawal_initiate'  => 'bi-arrow-up-circle-fill',
+                            'loan_repayment'       => 'bi-cash-stack',
+                            'loan_disbursement'    => 'bi-bank2',
+                            'welfare'              => 'bi-heart-pulse-fill',
+                            'welfare_contribution' => 'bi-heart-pulse-fill',
+                            'welfare_payout'       => 'bi-heart-pulse-fill',
+                            'revenue_inflow'       => 'bi-receipt',
+                            'registration_fee'     => 'bi-receipt',
+                            'share_purchase'       => 'bi-graph-up-arrow',
+                            'dividend_payment'     => 'bi-stars',
+                            'expense_outflow'      => 'bi-receipt-cutoff',
+                            'expense_incurred'     => 'bi-receipt-cutoff',
+                            'expense_settlement'   => 'bi-receipt-cutoff',
+                        ];
                         $icon = $icon_map[$type] ?? 'bi-arrow-left-right';
 
                         if ($is_loan)    { $amt_cls='amt-loan'; $sign='+'; }
                         elseif ($is_in)  { $amt_cls='amt-in';  $sign='+'; }
                         else             { $amt_cls='amt-out'; $sign='−'; }
 
-                        $valid = ['pill-deposit','pill-contribution','pill-loan_repayment','pill-loan_disbursement','pill-withdrawal','pill-welfare','pill-revenue_inflow'];
+                        $valid_pills = [
+                            'pill-deposit','pill-contribution','pill-loan_repayment',
+                            'pill-loan_disbursement','pill-withdrawal','pill-welfare',
+                            'pill-revenue_inflow','pill-savings_deposit','pill-share_purchase',
+                            'pill-dividend_payment'
+                        ];
                         $pill  = 'pill-'.$type;
-                        if (!in_array($pill,$valid)) $pill = 'pill-default';
+                        if (!in_array($pill,$valid_pills)) $pill = 'pill-default';
                         $display = ucwords(str_replace('_',' ',$type));
                 ?>
                 <tr>
