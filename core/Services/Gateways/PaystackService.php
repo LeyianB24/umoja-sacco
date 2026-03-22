@@ -94,6 +94,18 @@ class PaystackService implements PaymentGatewayInterface {
             ];
         }
 
-        return ['success' => false, 'message' => 'Paystack Transfer Failed: ' . ($json['message'] ?? 'Unknown error'), 'data' => $json];
+        $errorMsg = $json['message'] ?? 'Unknown error';
+        
+        // Sandbox bypass for testing withdrawal flow without real funds
+        if ($this->env !== 'production' && stripos($errorMsg, 'balance is not enough') !== false) {
+            return [
+                'success' => true,
+                'message' => 'Simulated Paystack Transfer (Sandbox Insufficient Balance)',
+                'data' => [],
+                'reference' => 'SIM-' . $reference
+            ];
+        }
+
+        return ['success' => false, 'message' => 'Paystack Transfer Failed: ' . $errorMsg, 'data' => $json];
     }
 }
