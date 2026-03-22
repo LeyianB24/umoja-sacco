@@ -42,6 +42,10 @@ class TransactionService {
             $action = 'welfare_contribution';
         } elseif ($type === 'income' || $cat === 'revenue') {
             $action = 'revenue_inflow';
+        } elseif ($type === 'expense_incurred') {
+            $action = 'expense_incurred';
+        } elseif ($type === 'expense_settlement') {
+            $action = 'expense_settlement';
         } elseif ($type === 'expense') {
             $action = 'expense_outflow';
         } elseif ($type === 'registration_fee' || $type === 'registration') {
