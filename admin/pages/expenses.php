@@ -312,7 +312,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     }
 }
 
+// Handle Settle Expense
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'settle_expense') {
+    verify_csrf_token();
+    $tx_id = (int)$_POST['transaction_id'];
+
+    $stmt = $conn->prepare("SELECT notes FROM transactions WHERE ledger_transaction_id = ? AND transaction_type IN ('expense', 'expense_outflow')");
+    $stmt->bind_param("i", $tx_id);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    if ($ex_row = $res->fetch_assoc()) {
+        $notes = str_replace(' [PENDING]', '', $ex_row['notes']);
+        $notes = str_replace('[PENDING]', '', $notes);
+        
+        $upd = $conn->prepare("UPDATE transactions SET notes = ? WHERE ledger_transaction_id = ?");
+        $upd->bind_param("si", $notes, $tx_id);
+        if ($upd->execute()) {
+            $_SESSION['success'] = "Bill marked as settled successfully!";
+        } else {
+            $_SESSION['error'] = "Failed to update bill status.";
+        }
+    } else {
+        $_SESSION['error'] = "Transaction not found.";
+    }
+    header("Location: expenses.php");
+    exit;
+}
+
 // 3. Data Fetching
+
 $duration   = $_GET['duration'] ?? '3months';
 $start_date = $_GET['start_date'] ?? date('Y-m-d', strtotime('-3 months'));
 $end_date   = $_GET['end_date']   ?? date('Y-m-d');
@@ -566,7 +594,16 @@ $top_cat = !empty($cat_breakdown) ? array_key_first($cat_breakdown) : '—';
                                 <span class="status-pill <?= $is_pending ? 'pending' : 'settled' ?>">
                                     <?= $is_pending ? 'Pending' : 'Settled' ?>
                                 </span>
+                                <?php if ($is_pending): ?>
+                                <form method="POST" style="display:inline-block; margin-left:8px;" onsubmit="return confirm('Mark this bill as settled?');">
+                                    <?= csrf_field() ?>
+                                    <input type="hidden" name="action" value="settle_expense">
+                                    <input type="hidden" name="transaction_id" value="<?= $ex['ledger_transaction_id'] ?>">
+                                    <button type="submit" class="btn btn-sm btn-lime" style="padding: 3px 8px; font-size: 0.65rem; border-radius: 6px; box-shadow: none;">Settle</button>
+                                </form>
+                                <?php endif; ?>
                             </td>
+
                         </tr>
                     <?php endforeach; endif; ?>
                     </tbody>
