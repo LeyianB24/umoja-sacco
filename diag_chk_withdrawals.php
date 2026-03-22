@@ -1,0 +1,6 @@
+<?php
+require 'config/app.php';
+$res = $conn->query("SELECT * FROM withdrawal_requests WHERE member_id = 2 ORDER BY created_at DESC LIMIT 5");
+$rows = [];
+while($row = $res->fetch_assoc()) $rows[] = $row;
+echo json_encode($rows, JSON_PRETTY_PRINT);
