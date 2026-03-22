@@ -135,13 +135,38 @@ class FinancialService {
                     $this->postEntry($txn_id, $this->getMemberAccount($member_id, self::CAT_LOANS), 0, $amount);
 
                     if ($related_table === 'loans' && $related_id) {
-                        $stmt = $this->db->prepare("SELECT current_balance FROM loans WHERE loan_id = ?");
+                        $stmt = $this->db->prepare("SELECT amount, interest_rate, duration_months, total_payable, current_balance, next_repayment_date FROM loans WHERE loan_id = ?");
                         $stmt->execute([$related_id]);
                         $loan = $stmt->fetch();
                         $new_bal = max(0, (float)$loan['current_balance'] - $amount);
                         $status = ($new_bal <= 0) ? 'completed' : 'disbursed';
                         
-                        $this->db->prepare("UPDATE loans SET current_balance = ?, status = ?, last_repayment_date = NOW(), next_repayment_date = DATE_ADD(NOW(), INTERVAL 1 MONTH) WHERE loan_id = ?")
+                        // Calculate expected monthly installment
+                        $base_total_payable = (float)$loan['total_payable'] > 0 ? (float)$loan['total_payable'] : ((float)$loan['amount'] * (1 + ((float)$loan['interest_rate']/100)));
+                        $duration = (int)($loan['duration_months'] > 0 ? $loan['duration_months'] : 12);
+                        $monthly_installment = $base_total_payable / $duration;
+
+                        // Sum payments made in the current billing cycle (last 30 days before next_repayment_date)
+                        $stmtCycle = $this->db->prepare("
+                            SELECT SUM(amount_paid) as total_paid 
+                            FROM loan_repayments 
+                            WHERE loan_id = ? 
+                            AND payment_date > DATE_SUB(?, INTERVAL 1 MONTH)
+                        ");
+                        $stmtCycle->execute([$related_id, $loan['next_repayment_date']]);
+                        $cycle_paid = (float)$stmtCycle->fetch()['total_paid'];
+                        
+                        $total_this_cycle = $cycle_paid + $amount;
+                        
+                        // If they met the installment for the month, push the repayment date forward by 1 month from the CURRENT next_repayment_date
+                        // If current next_repayment_date is already far in the past, it will slowly catch up, but typically it shouldn't jump from NOW() if they were late.
+                        if ($total_this_cycle >= ($monthly_installment * 0.98) || $new_bal <= 0) {
+                            $next_date_expr = "DATE_ADD(next_repayment_date, INTERVAL 1 MONTH)";
+                        } else {
+                            $next_date_expr = "next_repayment_date"; // Do not advance, they are still due for this month
+                        }
+                        
+                        $this->db->prepare("UPDATE loans SET current_balance = ?, status = ?, last_repayment_date = NOW(), next_repayment_date = {$next_date_expr} WHERE loan_id = ?")
                                  ->execute([$new_bal, $status, $related_id]);
                         
                         $this->db->prepare("INSERT INTO loan_repayments (loan_id, amount_paid, payment_date, payment_method, reference_no, remaining_balance, status) VALUES (?, ?, CURDATE(), ?, ?, ?, 'Completed')")
