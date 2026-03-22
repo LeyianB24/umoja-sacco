@@ -577,9 +577,43 @@ body.sb-collapsed .main-content-wrapper { margin-left: 76px; }
 .ew-title { font-size: .9rem; font-weight: 800; color: var(--t1); margin-bottom: 5px; }
 .ew-sub   { font-size: .78rem; font-weight: 500; color: var(--t3); }
 
-::-webkit-scrollbar { width:4px; }
-::-webkit-scrollbar-track { background:transparent; }
-::-webkit-scrollbar-thumb { background:var(--bdr); border-radius:99px; }
+/* ─────────────────────────────────────────────
+   EDUCATION CARD
+   ───────────────────────────────────────────── */
+.edu-card {
+    background: var(--surf);
+    border-radius: 22px;
+    border: 1px solid var(--bdr);
+    box-shadow: var(--sh);
+    margin-top: 28px;
+    overflow: hidden;
+    animation: slide-up .7s var(--ease) .86s both;
+}
+.edu-head {
+    padding: 18px 26px;
+    background: var(--f);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.edu-title { font-size: .88rem; font-weight: 800; letter-spacing: -.2px; }
+.edu-body { padding: 30px; }
+.edu-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; }
+.edu-item { display: flex; gap: 16px; }
+.edu-ico {
+    width: 42px; height: 42px; border-radius: 12px;
+    background: var(--bg); color: var(--fm);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem; flex-shrink: 0;
+}
+.edu-h { font-size: .82rem; font-weight: 800; color: var(--t1); margin-bottom: 4px; }
+.edu-p { font-size: .78rem; font-weight: 500; color: var(--t3); line-height: 1.5; margin-bottom: 0; }
+.edu-footer {
+    padding: 20px 30px; background: var(--surf2);
+    border-top: 1px solid var(--bdr2);
+    font-size: .8rem; font-weight: 600; color: var(--t2); text-align: center;
+}
 </style>
 </head>
 <body>
@@ -831,6 +865,63 @@ body.sb-collapsed .main-content-wrapper { margin-left: 76px; }
                     <?php endif; ?>
                 </tbody>
             </table>
+        </div>
+    </div>
+
+    <!-- Understanding Shares Education Section -->
+    <div class="edu-card">
+        <div class="edu-head">
+            <i class="bi bi-info-circle-fill" style="color:var(--lime);"></i>
+            <span class="edu-title">Understanding Your Shares</span>
+        </div>
+        <div class="edu-body">
+            <div class="edu-grid">
+                <div class="edu-item">
+                    <div class="edu-ico"><i class="bi bi-person-badge-fill"></i></div>
+                    <div>
+                        <div class="edu-h">Ownership & Membership</div>
+                        <p class="edu-p">Purchasing shares makes you a part-owner of the society. You are not just a customer; you're a member with a stake in our future.</p>
+                    </div>
+                </div>
+                <div class="edu-item">
+                    <div class="edu-ico"><i class="bi bi-safe2-fill"></i></div>
+                    <div>
+                        <div class="edu-h">Shares vs. Savings</div>
+                        <p class="edu-p"><strong>Shares</strong> are your permanent capital (ownership). <strong>Savings</strong> are your liquid deposits used for day-to-day borrowing and withdrawals.</p>
+                    </div>
+                </div>
+                <div class="edu-item">
+                    <div class="edu-ico"><i class="bi bi-graph-up-arrow"></i></div>
+                    <div>
+                        <div class="edu-h">Dividend Earnings</div>
+                        <p class="edu-p">Every year, the SACCO distributes a portion of its surplus to members as dividends based on the number of shares you hold.</p>
+                    </div>
+                </div>
+                <div class="edu-item">
+                    <div class="edu-ico"><i class="bi bi-lightning-charge-fill"></i></div>
+                    <div>
+                        <div class="edu-h">Borrowing Power</div>
+                        <p class="edu-p">Your share capital acts as collateral and directly influences your eligibility for larger loan products and competitive rates.</p>
+                    </div>
+                </div>
+                <div class="edu-item">
+                    <div class="edu-ico"><i class="bi bi-megaphone-fill"></i></div>
+                    <div>
+                        <div class="edu-h">Voting Rights</div>
+                        <p class="edu-p">Regardless of how many shares you own, each member gets <strong>one vote</strong> in the AGM, ensuring democratic control of the SACCO.</p>
+                    </div>
+                </div>
+                <div class="edu-item">
+                    <div class="edu-ico"><i class="bi bi-arrow-left-right"></i></div>
+                    <div>
+                        <div class="edu-h">Withdrawal & Transfer</div>
+                        <p class="edu-p">Shares form the core capital and are not freely withdrawable. They can be transferred to another member if you choose to exit.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="edu-footer">
+            <i class="bi bi-stars" style="color:var(--lt);"></i> Tip: Growing your shares steadily is the smartest way to maximize your long-term SACCO benefits.
         </div>
     </div>
 
