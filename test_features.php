@@ -1,7 +1,6 @@
 <?php
 require_once 'config/app.php';
-// Simulate Admin Session
-session_start();
+// We don't call session_start() here as the files handle it with guards
 $_SESSION['admin_id'] = 1; 
 
 echo "--- Testing AJAX Audit Feed ---\n";
