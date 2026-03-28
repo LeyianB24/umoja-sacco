@@ -20,7 +20,7 @@ if ($since_id > 0) {
               FROM audit_logs a 
               LEFT JOIN admins ad ON a.admin_id = ad.admin_id 
               LEFT JOIN roles r ON ad.role_id = r.id 
-              WHERE a.id > ? 
+              WHERE a.audit_id > ? 
               ORDER BY a.created_at DESC LIMIT ?";
     $stmt = $conn->prepare($query);
     $stmt->bind_param("ii", $since_id, $limit);
@@ -50,7 +50,7 @@ while ($row = $result->fetch_assoc()) {
     }
 
     $logs[] = [
-        'id'         => $row['id'],
+        'id'         => $row['audit_id'],
         'time'       => date('H:i:s', strtotime($row['created_at'])),
         'date'       => date('M d', strtotime($row['created_at'])),
         'action'     => htmlspecialchars((string)($row['action'] ?? '')),

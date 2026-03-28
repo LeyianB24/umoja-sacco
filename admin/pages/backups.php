@@ -17,6 +17,8 @@ $db         = $conn;
 
 // ─── BACKUP HANDLER ───
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'create_backup') {
+    $filename = "USMS_Backup_" . date('Y-m-d_His') . ".sql";
+
     // 1. Audit Log the start
     AuditHelper::log('DATABASE_BACKUP_START', "Manual backup initiated by $admin_name", null, (int)$admin_id, 'info');
 
