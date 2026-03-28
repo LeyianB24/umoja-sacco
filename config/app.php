@@ -69,7 +69,7 @@ if (!defined('SUPPORT_ROUTING_MAP')) {
 // 4.2a SUPPORT PAGE MAP — which admin page handles each ticket category
 if (!defined('SUPPORT_PAGE_MAP')) {
     define('SUPPORT_PAGE_MAP', [
-        'loans'       => 'loans_payouts.php',
+        'loans'       => 'loans_payouts.php', 'loans_reviews.php',
         'savings'     => 'payments.php',
         'shares'      => 'admin_shares.php',
         'welfare'     => 'welfare.php',
