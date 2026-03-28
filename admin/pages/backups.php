@@ -385,60 +385,61 @@ h1,h2,h3,h4,h5,h6,p,span,div,label,a,.modal,.offcanvas {
                                         <th>Date &amp; Time</th>
                                         <th>Administrator</th>
                                         <th>Format</th>
+                                        <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php if ($backup_logs->num_rows === 0): ?>
-                                    <tr>
-                                        <td colspan="5" class="empty-cell">
-                                            <div class="empty-icon"><i class="bi bi-inbox"></i></div>
-                                            <div style="font-weight:800;font-size:0.95rem;color:var(--text-primary);margin-bottom:0.25rem;">No Backup History</div>
-                                            <div style="font-size:0.8rem;color:var(--text-muted);">No backup sessions have been recorded yet.</div>
-                                        </td>
-                                    </tr>
-                                    <?php else: while ($log = $backup_logs->fetch_assoc()): 
-                                        // Extract filename from details if possible
-                                        $fname = '';
-                                        if (preg_match('/(USMS_Backup_.*?\.sql)/', (string)$log['details'], $matches)) {
-                                            $fname = $matches[1];
+                                    <?php 
+                                    if ($backup_logs->num_rows === 0) {
+                                        echo '<tr>
+                                            <td colspan="5" class="empty-cell">
+                                                <div class="empty-icon"><i class="bi bi-inbox"></i></div>
+                                                <div style="font-weight:800;font-size:0.95rem;color:var(--text-primary);margin-bottom:0.25rem;">No Backup History</div>
+                                                <div style="font-size:0.8rem;color:var(--text-muted);">No backup sessions have been recorded yet.</div>
+                                            </td>
+                                        </tr>';
+                                    } else {
+                                        while ($log = $backup_logs->fetch_assoc()) {
+                                            $fname = '';
+                                            if (preg_match('/(USMS_Backup_.*?\.sql)/', (string)$log['details'], $matches)) {
+                                                $fname = $matches[1];
+                                            }
+                                            $file_exists = $fname && file_exists(BASE_PATH . '/backups/' . $fname);
+                                            ?>
+                                            <tr>
+                                                <td><span class="success-pill">Success</span></td>
+                                                <td>
+                                                    <div class="cell-date"><?= date('M d, Y', strtotime($log['created_at'])) ?></div>
+                                                    <div class="cell-time"><?= date('H:i', strtotime($log['created_at'])) ?></div>
+                                                </td>
+                                                <td>
+                                                    <div class="admin-cell">
+                                                        <div class="admin-avatar">
+                                                            <?php
+                                                            $uname = (string)($log['admin_name'] ?? 'SYS');
+                                                            $parts = explode(' ', trim($uname));
+                                                            $initials = strtoupper(substr($parts[0], 0, 1) . (isset($parts[1]) ? substr($parts[1], 0, 1) : ''));
+                                                            echo htmlspecialchars($initials ?: 'SY');
+                                                            ?>
+                                                        </div>
+                                                        <span class="admin-name"><?= htmlspecialchars($log['admin_name'] ?? 'System') ?></span>
+                                                    </div>
+                                                </td>
+                                                <td><span class="format-badge">.SQL</span></td>
+                                                <td>
+                                                    <?php if ($file_exists): ?>
+                                                    <a href="download_backup.php?file=<?= urlencode($fname) ?>" class="btn btn-sm btn-outline-success rounded-pill px-3 py-1 fw-bold" style="font-size:0.7rem;">
+                                                        <i class="bi bi-download me-1"></i>Download
+                                                    </a>
+                                                    <?php else: ?>
+                                                    <span class="text-muted" style="font-size:0.7rem; font-style:italic;">Expired</span>
+                                                    <?php endif; ?>
+                                                </td>
+                                            </tr>
+                                            <?php
                                         }
-                                        $file_exists = $fname && file_exists(BASE_PATH . '/backups/' . $fname);
+                                    }
                                     ?>
-                                    <tr>
-                                        <td>
-                                            <span class="success-pill">Success</span>
-                                        </td>
-                                        <td>
-                                            <div class="cell-date"><?= date('M d, Y', strtotime($log['created_at'])) ?></div>
-                                            <div class="cell-time"><?= date('H:i', strtotime($log['created_at'])) ?></div>
-                                        </td>
-                                        <td>
-                                            <div class="admin-cell">
-                                                <div class="admin-avatar">
-                                                    <?php
-                                                    $uname = (string)($log['admin_name'] ?? 'SYS');
-                                                    $parts = explode(' ', trim($uname));
-                                                    $initials = strtoupper(substr($parts[0], 0, 1) . (isset($parts[1]) ? substr($parts[1], 0, 1) : ''));
-                                                    echo htmlspecialchars($initials ?: 'SY');
-                                                    ?>
-                                                </div>
-                                                <span class="admin-name"><?= htmlspecialchars($log['admin_name'] ?? 'System') ?></span>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <span class="format-badge">.SQL</span>
-                                        </td>
-                                        <td>
-                                            <?php if ($file_exists): ?>
-                                            <a href="download_backup.php?file=<?= urlencode($fname) ?>" class="btn btn-sm btn-outline-success rounded-pill px-3 py-1 fw-bold" style="font-size:0.7rem;">
-                                                <i class="bi bi-download me-1"></i>Download
-                                            </a>
-                                            <?php else: ?>
-                                            <span class="text-muted" style="font-size:0.7rem; font-style:italic;">Expired</span>
-                                            <?php endif; ?>
-                                        </td>
-                                    </tr>
-                                    <?php endwhile; endif; ?>
                                 </tbody>
                             </table>
                         </div>
