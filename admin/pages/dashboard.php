@@ -5,6 +5,7 @@ if (session_status() === PHP_SESSION_NONE) session_start();
 require_once __DIR__ . '/../../config/app.php';
 require_once __DIR__ . '/../../inc/Auth.php';
 require_once __DIR__ . '/../../inc/LayoutManager.php';
+require_once __DIR__ . '/../../inc/SupportTicketWidget.php';
 
 // Initialize Layout Manager
 $layout = LayoutManager::create('admin');
@@ -608,6 +609,8 @@ $pageTitle = "Command Dashboard";
             </div>
         </div>
     </div>
+
+    <?php render_support_ticket_widget($conn, ['general', 'technical'], 'General & Technical'); ?>
 
     <!-- ─── STAT CARDS ───────────────────────────────────── -->
     <div class="row g-3 mb-4">
