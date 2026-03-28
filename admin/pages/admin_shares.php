@@ -5,6 +5,7 @@ if (session_status() === PHP_SESSION_NONE) session_start();
 require_once __DIR__ . '/../../config/app.php';
 require_once __DIR__ . '/../../inc/Auth.php';
 require_once __DIR__ . '/../../inc/LayoutManager.php';
+require_once __DIR__ . '/../../inc/SupportTicketWidget.php';
 require_once __DIR__ . '/../../inc/ShareValuationEngine.php';
 
 \USMS\Middleware\AuthMiddleware::requireModulePermission('shares');
@@ -494,6 +495,9 @@ h1,h2,h3,h4,h5,h6,p,span,div,label,a,.modal,.offcanvas {
                 </div>
             </div>
             <?php endif; ?>
+
+            <!-- Pending Support Tickets -->
+            <?php render_support_ticket_widget($conn, ['shares'], 'Shares & Equity'); ?>
 
             <!-- KPI Row -->
             <div class="row g-3 mb-4">

@@ -15,6 +15,7 @@ require_once __DIR__ . '/../../inc/Auth.php';
 require_once __DIR__ . '/../../inc/LayoutManager.php';
 require_once __DIR__ . '/../../inc/ExportHelper.php';
 require_once __DIR__ . '/../../inc/TransactionHelper.php';
+require_once __DIR__ . '/../../inc/SupportTicketWidget.php';
 
 use USMS\Services\UniversalExportEngine;
 
@@ -1023,6 +1024,8 @@ h1, h2, h3, h4, h5, h6, p, span, div, label, a {
         <div style="margin-top: -36px; position: relative; z-index: 10;">
 
             <?php flash_render(); ?>
+
+            <?php render_support_ticket_widget($conn, ['loans'], 'Loans & Repayments'); ?>
 
             <!-- KPI Cards -->
             <div class="row g-3 mb-4">

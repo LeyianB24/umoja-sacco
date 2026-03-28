@@ -5,6 +5,7 @@ if (session_status() === PHP_SESSION_NONE) session_start();
 require_once __DIR__ . '/../../config/app.php';
 require_once __DIR__ . '/../../inc/Auth.php';
 require_once __DIR__ . '/../../inc/LayoutManager.php';
+require_once __DIR__ . '/../../inc/SupportTicketWidget.php';
 require_once __DIR__ . '/../../inc/functions.php';
 
 $pageTitle = "Investment Management";
@@ -525,6 +526,8 @@ $multiplier = $total_val_g / $q_cost;
         <div style="margin-top:-36px; position:relative; z-index:10;">
 
             <?php flash_render(); ?>
+
+            <?php render_support_ticket_widget($conn, ['investments'], 'Investments'); ?>
 
             <!-- KPIs -->
             <div class="row g-3 mb-4">

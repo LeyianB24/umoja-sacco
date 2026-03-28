@@ -13,6 +13,7 @@ require_once __DIR__ . '/../../config/app.php';
 require_once __DIR__ . '/../../inc/Auth.php';
 require_once __DIR__ . '/../../inc/LayoutManager.php';
 require_once __DIR__ . '/../../inc/FinancialEngine.php';
+require_once __DIR__ . '/../../inc/SupportTicketWidget.php';
 
 // --- Security ---
 \USMS\Middleware\AuthMiddleware::requireModulePermission('savings');
@@ -542,6 +543,8 @@ h1,h2,h3,h4,h5,h6,p,span,div,label,a,.modal,.offcanvas {
             </div>
 
             <?php flash_render(); ?>
+
+            <?php render_support_ticket_widget($conn, ['welfare'], 'Welfare & Benefits'); ?>
 
             <!-- Main Table Card -->
             <div class="main-card slide-up" style="animation-delay:0.28s">

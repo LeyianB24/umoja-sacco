@@ -66,6 +66,21 @@ if (!defined('SUPPORT_ROUTING_MAP')) {
     ]);
 }
 
+// 4.2a SUPPORT PAGE MAP — which admin page handles each ticket category
+if (!defined('SUPPORT_PAGE_MAP')) {
+    define('SUPPORT_PAGE_MAP', [
+        'loans'       => 'loans_payouts.php',
+        'savings'     => 'payments.php',
+        'shares'      => 'admin_shares.php',
+        'welfare'     => 'welfare.php',
+        'withdrawals' => 'payments.php',
+        'technical'   => 'dashboard.php',
+        'profile'     => 'members.php',
+        'investments' => 'investments.php',
+        'general'     => 'dashboard.php',
+    ]);
+}
+
 // 4.3 SOCIAL MEDIA
 if (!defined('SOCIAL_FACEBOOK'))  define('SOCIAL_FACEBOOK',  'https://facebook.com/umojadriverssacco');
 if (!defined('SOCIAL_TWITTER'))   define('SOCIAL_TWITTER',   'https://twitter.com/umojadrivers');

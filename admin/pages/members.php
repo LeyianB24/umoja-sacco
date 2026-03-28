@@ -5,6 +5,7 @@ if (session_status() === PHP_SESSION_NONE) session_start();
 require_once __DIR__ . '/../../config/app.php';
 require_once __DIR__ . '/../../inc/Auth.php';
 require_once __DIR__ . '/../../inc/LayoutManager.php';
+require_once __DIR__ . '/../../inc/SupportTicketWidget.php';
 
 $layout = LayoutManager::create('admin');
 
@@ -630,6 +631,8 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
     </div>
 
     <?php flash_render(); ?>
+
+    <?php render_support_ticket_widget($conn, ['profile'], 'Member Profile & Account'); ?>
 
     <!-- ─── STAT CARDS ────────────────────────────────────── -->
     <div class="row g-3 mb-4">

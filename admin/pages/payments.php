@@ -5,6 +5,7 @@ if (session_status() === PHP_SESSION_NONE) session_start();
 require_once __DIR__ . '/../../config/app.php';
 require_once __DIR__ . '/../../inc/Auth.php';
 require_once __DIR__ . '/../../inc/LayoutManager.php';
+require_once __DIR__ . '/../../inc/SupportTicketWidget.php';
 
 $layout = LayoutManager::create('admin');
 $layout = LayoutManager::create('admin');
@@ -542,6 +543,8 @@ textarea.form-control { resize: vertical; min-height: 76px; }
         <?php if (isset($_SESSION['error'])): ?>
             <div class="alert-custom danger"><i class="bi bi-exclamation-triangle-fill"></i><?= $_SESSION['error']; unset($_SESSION['error']); ?></div>
         <?php endif; ?>
+
+        <?php render_support_ticket_widget($conn, ['savings', 'withdrawals'], 'Savings & Withdrawals'); ?>
 
         <!-- ═══ FILTER BAR ════════════════════════════════════════════════ -->
         <div class="filter-card">
