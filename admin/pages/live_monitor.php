@@ -624,7 +624,7 @@ if (!function_exists('getInitials')) {
                     <div class="feed-title">Operation Audit Feed</div>
                     <div class="feed-sub">Real-time system activity — auto-sorted by latest</div>
                 </div>
-                <span class="feed-count"><?= count($recent_logs) ?> events</span>
+                <span class="feed-count" id="auditFeedCount"><?= count($recent_logs) ?> events</span>
             </div>
 
             <!-- Feed Table -->
@@ -640,7 +640,7 @@ if (!function_exists('getInitials')) {
                                 <th style="padding-right:22px;">Origin IP</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody id="auditFeedBody">
                             <?php if (empty($recent_logs)): ?>
                             <tr><td colspan="5">
                                 <div class="log-empty">
@@ -866,6 +866,72 @@ if (!function_exists('getInitials')) {
     </div><!-- /mon-body -->
 
     <script>
+    let lastLogId = <?= !empty($recent_logs) ? (int)$recent_logs[0]['id'] : 0 ?>;
+    let isPolling = false;
+
+    async function pollAudit() {
+        if (isPolling) return;
+        isPolling = true;
+        
+        try {
+            const response = await fetch(`ajax_audit_feed.php?since_id=${lastLogId}`);
+            const data = await response.json();
+            
+            if (data.logs && data.logs.length > 0) {
+                const tbody = document.getElementById('auditFeedBody');
+                const countBadge = document.getElementById('auditFeedCount');
+                
+                // Clear empty state if exists
+                if (tbody.querySelector('.log-empty')) {
+                    tbody.innerHTML = '';
+                }
+
+                // Prepend new logs
+                data.logs.forEach(log => {
+                    const row = document.createElement('tr');
+                    const sevClass = getSeverityClass(log.severity);
+                    
+                    row.innerHTML = `
+                        <td style="padding-left:22px;">
+                            <div class="log-time">${log.time}</div>
+                            <div class="log-date">${log.date}</div>
+                        </td>
+                        <td>
+                            <div class="log-action">${log.action}</div>
+                            <div class="log-type">${log.user_type}</div>
+                        </td>
+                        <td><span class="sev-badge ${sevClass}">${log.severity.toUpperCase() || 'INFO'}</span></td>
+                        <td><span class="log-detail">${log.details}</span></td>
+                        <td style="padding-right:22px;"><span class="log-ip">${log.ip_address}</span></td>
+                    `;
+                    
+                    tbody.prepend(row);
+                    lastLogId = Math.max(lastLogId, log.id);
+
+                    // Animation effect
+                    row.style.animation = 'fadeUp 0.5s var(--ease-expo) both';
+                });
+
+                // Update count if needed (optional)
+                // countBadge.textContent = (parseInt(countBadge.textContent) + data.logs.length) + ' events';
+            }
+        } catch (e) {
+            console.error('Polling error:', e);
+        } finally {
+            isPolling = false;
+        }
+    }
+
+    function getSeverityClass(sev) {
+        switch(sev) {
+            case 'warning': return 'sev-warning';
+            case 'error':   return 'sev-error';
+            case 'critical':return 'sev-critical';
+            case 'success': return 'sev-success';
+            default:        return 'sev-info';
+        }
+    }
+
     function switchTab(tab) {
         ['Feed','Health','Audit'].forEach(t => {
             document.getElementById('section'+t)?.classList.add('d-none');
@@ -882,6 +948,9 @@ if (!function_exists('getInitials')) {
         const savedTab = localStorage.getItem('mon_tab') || 'Feed';
         const tab      = urlTab ? urlTab.charAt(0).toUpperCase()+urlTab.slice(1) : savedTab;
         switchTab(tab);
+
+        // Start polling every 5 seconds
+        setInterval(pollAudit, 5000);
     });
     </script>
 
