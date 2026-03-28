@@ -420,7 +420,7 @@ h1,h2,h3,h4,h5,h6,p,span,div,label,a,.modal,.offcanvas {
                             </table>
                         </div>
                         <div class="table-card-footer">
-                            <a href="audit_logs.php">
+                            <a href="live_monitor.php">
                                 View Full Audit Trail <i class="bi bi-arrow-right ms-1"></i>
                             </a>
                         </div>
