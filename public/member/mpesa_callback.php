@@ -281,7 +281,7 @@ if (isset($response['Body']['stkCallback'])) {
 
         try {
             $sms_msg = "UDS Alert: Payment of KES " . number_format($amount) . " received. Ref: $mpesaReceipt. Wallet Bal: KES " . number_format($metadata['balance']) . ".";
-            send_sms($phone, $sms_msg, $member_id);
+            send_sms($phone, $sms_msg);
         } catch (Exception $e) { error_log("Callback SMS Error: " . $e->getMessage()); }
 
         file_put_contents($logFile,
@@ -443,7 +443,7 @@ if (isset($response['Result'])) {
 
                 try {
                     $sms_msg = "UDS Alert: KES " . number_format($amount) . " withdrawn. Ref: $transactionID. Wallet Bal: KES " . number_format($metadata['balance']) . ".";
-                    send_sms($m['phone'] ?? '', $sms_msg, $member_id);
+                    send_sms($m['phone'] ?? '', $sms_msg);
                 } catch (Exception $e) {}
             }
 
