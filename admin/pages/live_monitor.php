@@ -48,6 +48,14 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf','export_ex
 // 2. Manual Audit Run
 $audit_results = null;
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['run_audit'])) {
+    $conn->query("CREATE TABLE IF NOT EXISTS integrity_checks (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        check_type VARCHAR(100) NOT NULL,
+        status VARCHAR(50) NOT NULL,
+        details TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )");
+    
     $audit_results = $checker->runFullAudit();
     AuditHelper::log($conn,'SYSTEM_HEALTH_AUDIT','Manual system health audit executed by '.($_SESSION['admin_name']??'Admin'),null,(int)$_SESSION['admin_id'],'warning');
 }
@@ -56,9 +64,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['run_audit'])) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['system_action'])) {
     $action = $_POST['system_action'];
     switch ($action) {
-        case 'clear_cache':     AuditHelper::log($conn,'SYSTEM_MAINTENANCE','System cache cleared manually.',null,(int)$_SESSION['admin_id'],'info'); $_SESSION['success']="System cache successfully purged."; break;
-        case 'resync_financials': AuditHelper::log($conn,'SYSTEM_MAINTENANCE','Manual financial re-sync triggered.',null,(int)$_SESSION['admin_id'],'warning'); $_SESSION['success']="Financial re-sync cycle initiated."; break;
-        case 'test_connectivity': AuditHelper::log($conn,'SYSTEM_DIAGNOSTIC','Global connectivity test performed.',null,(int)$_SESSION['admin_id'],'info'); $_SESSION['success']="Connectivity check: All systems operational."; break;
+        case 'clear_cache':     
+            if (function_exists('opcache_reset')) @opcache_reset();
+            clearstatcache();
+            AuditHelper::log($conn,'SYSTEM_MAINTENANCE','System cache cleared manually.',null,(int)$_SESSION['admin_id'],'info'); 
+            $_SESSION['success']="System cache successfully purged."; 
+            break;
+            
+        case 'resync_financials': 
+            $q = $conn->query("SELECT account_id, account_type FROM ledger_accounts");
+            $synced = 0;
+            if ($q) {
+                while($r = $q->fetch_assoc()) {
+                    $acc = (int)$r['account_id'];
+                    $typ = $r['account_type'];
+                    $eq = $conn->query("SELECT SUM(debit) as d, SUM(credit) as c FROM ledger_entries WHERE account_id = $acc")->fetch_assoc();
+                    $bal = ($typ === 'asset' || $typ === 'expense') ? (($eq['d']??0) - ($eq['c']??0)) : (($eq['c']??0) - ($eq['d']??0));
+                    $conn->query("UPDATE ledger_accounts SET current_balance = $bal WHERE account_id = $acc");
+                    $synced++;
+                }
+                $conn->query("UPDATE wallet_balances wb JOIN ledger_accounts la ON wb.member_id = la.member_id AND la.category='wallet' SET wb.balance = la.current_balance");
+            }
+            AuditHelper::log($conn,'SYSTEM_MAINTENANCE',"Manual financial re-sync triggered. Synced $synced accounts.",null,(int)$_SESSION['admin_id'],'warning'); 
+            $_SESSION['success']="Financial re-sync cycle completed. $synced accounts verified."; 
+            break;
+            
+        case 'test_connectivity': 
+            $mpesa_ok = false;
+            if ($ch = curl_init('https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials')) {
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($ch, CURLOPT_TIMEOUT, 4);
+                curl_exec($ch);
+                $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                $mpesa_ok = ($code == 400 || $code == 200 || $code == 401);
+                curl_close($ch);
+            }
+            $status = $mpesa_ok ? "All systems operational (API Reachable)." : "M-Pesa API Unreachable.";
+            AuditHelper::log($conn,'SYSTEM_DIAGNOSTIC',"Global connectivity test: $status",null,(int)$_SESSION['admin_id'],'info'); 
+            $_SESSION['success']="Connectivity check: $status"; 
+            break;
     }
     header("Location: live_monitor.php?tab=health"); exit;
 }
@@ -939,7 +983,16 @@ if (!function_exists('getInitials')) {
         });
         document.getElementById('section'+tab)?.classList.remove('d-none');
         document.getElementById('tab'+tab)?.classList.add('active');
-        document.getElementById('exportControls')?.classList[tab==='Audit'?'remove':'add']('d-none');
+        
+        const exportsCtrl = document.getElementById('exportControls');
+        if (exportsCtrl) {
+            if (tab === 'Audit') {
+                exportsCtrl.classList.remove('d-none');
+            } else {
+                exportsCtrl.classList.add('d-none');
+            }
+        }
+        
         localStorage.setItem('mon_tab', tab);
     }
 

@@ -45,5 +45,11 @@ function getSystemHealth($conn) {
         $health['callback_success_rate'] = round(($row['success'] / $row['total']) * 100, 1);
     }
 
+    // 7. Database Size
+    $db_name_res = $conn->query("SELECT DATABASE() as db");
+    $db_name = $db_name_res->fetch_assoc()['db'] ?? 'umoja_drivers_sacco';
+    $q_db = $conn->query("SELECT ROUND(SUM(data_length + index_length) / 1024 / 1024, 2) AS size FROM information_schema.tables WHERE table_schema = '$db_name'");
+    $health['db_size'] = ($q_db) ? ($q_db->fetch_assoc()['size'] ?? 0) : 0;
+
     return $health;
 }
