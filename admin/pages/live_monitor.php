@@ -910,99 +910,108 @@ if (!function_exists('getInitials')) {
     </div><!-- /mon-body -->
 
     <script>
-    let lastLogId = <?= !empty($recent_logs) ? (int)$recent_logs[0]['id'] : 0 ?>;
-    let isPolling = false;
+    document.addEventListener('DOMContentLoaded', function() {
+        let lastLogId = <?= !empty($recent_logs) ? (int)($recent_logs[0]['audit_id'] ?? 0) : 0 ?>;
+        let isPolling = false;
 
-    async function pollAudit() {
-        if (isPolling) return;
-        isPolling = true;
-        
-        try {
-            const response = await fetch(`ajax_audit_feed.php?since_id=${lastLogId}`);
-            const data = await response.json();
-            
-            if (data.logs && data.logs.length > 0) {
-                const tbody = document.getElementById('auditFeedBody');
-                const countBadge = document.getElementById('auditFeedCount');
-                
-                // Clear empty state if exists
-                if (tbody.querySelector('.log-empty')) {
-                    tbody.innerHTML = '';
+        async function pollAudit() {
+            if (isPolling) return;
+            isPolling = true;
+            try {
+                const response = await fetch(`ajax_audit_feed.php?since_id=${lastLogId}`);
+                const data = await response.json();
+                if (data.logs && data.logs.length > 0) {
+                    const tbody = document.getElementById('auditFeedBody');
+                    if (tbody && tbody.querySelector('.log-empty')) {
+                        tbody.innerHTML = '';
+                    }
+                    data.logs.forEach(log => {
+                        const row = document.createElement('tr');
+                        let sevClass = 'sev-info';
+                        switch(log.severity) {
+                            case 'warning': sevClass = 'sev-warning'; break;
+                            case 'error': sevClass = 'sev-error'; break;
+                            case 'critical': sevClass = 'sev-critical'; break;
+                            case 'success': sevClass = 'sev-success'; break;
+                        }
+                        row.innerHTML = `
+                            <td style="padding-left:22px;">
+                                <div class="log-time">${log.time}</div>
+                                <div class="log-date">${log.date}</div>
+                            </td>
+                            <td>
+                                <div class="log-action">${log.action}</div>
+                                <div class="log-type">${log.user_type}</div>
+                            </td>
+                            <td><span class="sev-badge ${sevClass}">${(log.severity || 'INFO').toUpperCase()}</span></td>
+                            <td><span class="log-detail">${log.details}</span></td>
+                            <td style="padding-right:22px;"><span class="log-ip">${log.ip_address}</span></td>
+                        `;
+                        if (tbody) tbody.prepend(row);
+                        lastLogId = Math.max(lastLogId, log.id);
+                        row.style.animation = 'fadeUp 0.5s var(--ease-expo) both';
+                    });
                 }
-
-                // Prepend new logs
-                data.logs.forEach(log => {
-                    const row = document.createElement('tr');
-                    const sevClass = getSeverityClass(log.severity);
-                    
-                    row.innerHTML = `
-                        <td style="padding-left:22px;">
-                            <div class="log-time">${log.time}</div>
-                            <div class="log-date">${log.date}</div>
-                        </td>
-                        <td>
-                            <div class="log-action">${log.action}</div>
-                            <div class="log-type">${log.user_type}</div>
-                        </td>
-                        <td><span class="sev-badge ${sevClass}">${log.severity.toUpperCase() || 'INFO'}</span></td>
-                        <td><span class="log-detail">${log.details}</span></td>
-                        <td style="padding-right:22px;"><span class="log-ip">${log.ip_address}</span></td>
-                    `;
-                    
-                    tbody.prepend(row);
-                    lastLogId = Math.max(lastLogId, log.id);
-
-                    // Animation effect
-                    row.style.animation = 'fadeUp 0.5s var(--ease-expo) both';
-                });
-
-                // Update count if needed (optional)
-                // countBadge.textContent = (parseInt(countBadge.textContent) + data.logs.length) + ' events';
+            } catch (e) {
+                console.error('Polling error:', e);
+            } finally {
+                isPolling = false;
             }
-        } catch (e) {
-            console.error('Polling error:', e);
-        } finally {
-            isPolling = false;
         }
-    }
 
-    function getSeverityClass(sev) {
-        switch(sev) {
-            case 'warning': return 'sev-warning';
-            case 'error':   return 'sev-error';
-            case 'critical':return 'sev-critical';
-            case 'success': return 'sev-success';
-            default:        return 'sev-info';
+        const tabs = document.querySelectorAll('.mon-tab');
+        const sections = ['Feed', 'Health', 'Audit'];
+        
+        function switchTab(targetName) {
+            sections.forEach(function(t) {
+                const sec = document.getElementById('section' + t);
+                const btn = document.getElementById('tab' + t);
+                if (sec) sec.classList.add('d-none');
+                if (btn) btn.classList.remove('active');
+            });
+            
+            const activeSec = document.getElementById('section' + targetName);
+            const activeBtn = document.getElementById('tab' + targetName);
+            if (activeSec) activeSec.classList.remove('d-none');
+            if (activeBtn) activeBtn.classList.add('active');
+            
+            const exportsCtrl = document.getElementById('exportControls');
+            if (exportsCtrl) {
+                if (targetName === 'Audit') {
+                    exportsCtrl.classList.remove('d-none');
+                } else {
+                    exportsCtrl.classList.add('d-none');
+                }
+            }
+            localStorage.setItem('mon_tab', targetName);
         }
-    }
 
-    function switchTab(tab) {
-        ['Feed','Health','Audit'].forEach(t => {
-            document.getElementById('section'+t)?.classList.add('d-none');
-            document.getElementById('tab'+t)?.classList.remove('active');
+        tabs.forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                let name = 'Feed';
+                if (this.id === 'tabHealth') name = 'Health';
+                if (this.id === 'tabAudit') name = 'Audit';
+                switchTab(name);
+            });
+            // remove inline onclick overrides
+            btn.removeAttribute('onclick');
         });
-        document.getElementById('section'+tab)?.classList.remove('d-none');
-        document.getElementById('tab'+tab)?.classList.add('active');
+
+        // Init tab
+        const urlParams = new URLSearchParams(window.location.search);
+        let currentTab = urlParams.get('tab');
+        if (!currentTab) currentTab = localStorage.getItem('mon_tab');
         
-        const exportsCtrl = document.getElementById('exportControls');
-        if (exportsCtrl) {
-            if (tab === 'Audit') {
-                exportsCtrl.classList.remove('d-none');
-            } else {
-                exportsCtrl.classList.add('d-none');
-            }
+        if (currentTab) {
+            currentTab = currentTab.toLowerCase();
+            let resolvedTab = 'Feed';
+            if (currentTab === 'health') resolvedTab = 'Health';
+            else if (currentTab === 'audit') resolvedTab = 'Audit';
+            switchTab(resolvedTab);
+        } else {
+            switchTab('Feed');
         }
-        
-        localStorage.setItem('mon_tab', tab);
-    }
 
-    document.addEventListener('DOMContentLoaded', () => {
-        const urlTab   = new URLSearchParams(window.location.search).get('tab');
-        const savedTab = localStorage.getItem('mon_tab') || 'Feed';
-        const tab      = urlTab ? urlTab.charAt(0).toUpperCase()+urlTab.slice(1) : savedTab;
-        switchTab(tab);
-
-        // Start polling every 5 seconds
         setInterval(pollAudit, 5000);
     });
     </script>
