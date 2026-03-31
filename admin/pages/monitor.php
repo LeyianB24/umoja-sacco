@@ -331,9 +331,15 @@ select, input, textarea, button, table {
                         </div>
                     </div>
                 </div>
-                <div style="display:flex;flex-direction:column;align-items:flex-end;gap:10px;padding-top:4px">
-                    <div class="live-dot" style="color:#a8e063">LIVE</div>
-                    <div id="refreshTimer" style="font-size:.72rem;color:rgba(255,255,255,.45);font-weight:500">Auto-refreshes in 15s</div>
+                <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;padding-top:4px">
+                    <div class="d-flex align-items-center gap-2">
+                        <button id="toggleRefreshBtn" onclick="toggleRefresh()" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#fff;border-radius:6px;padding:3px 8px;font-size:0.7rem;cursor:pointer;font-weight:600;transition:all 0.2s;"><i class="bi bi-pause-fill"></i> Pause</button>
+                        <div class="live-dot" id="liveIndicator" style="color:#a8e063;font-weight:800;letter-spacing:1px;font-size:0.75rem;">LIVE</div>
+                    </div>
+                    <div id="refreshTimer" style="font-size:.75rem;color:rgba(255,255,255,.6);font-weight:600">Auto-refreshes in 15s</div>
+                    <div style="width:120px;height:4px;background:rgba(255,255,255,0.1);border-radius:4px;overflow:hidden;margin-top:2px">
+                        <div id="refreshBar" style="width:100%;height:100%;background:#a8e063;transition:width 1s linear"></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -676,7 +682,17 @@ function switchTab(tab) {
         alertsSection.classList.remove('d-none');
         tabAlerts.classList.add('active');
     }
+    
+    // Save state so page reloads don't reset the tab
+    sessionStorage.setItem('monitorActiveTab', tab);
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+    const savedTab = sessionStorage.getItem('monitorActiveTab');
+    if (savedTab) {
+        switchTab(savedTab);
+    }
+});
 
 function showPayload(raw) {
     const el = document.getElementById('payloadContent');
@@ -721,22 +737,58 @@ async function activateRequest(checkoutID, btn) {
 }
 
 // Auto-refresh logic
+let isPaused = false;
 let countdown = 15;
+const MAX_TIME = 15;
+let hoverPause = false;
+
+// Pause auto-refresh when hovering over data tables to allow reading without interruptions
+document.querySelectorAll('.detail-card').forEach(card => {
+    card.addEventListener('mouseenter', () => hoverPause = true);
+    card.addEventListener('mouseleave', () => hoverPause = false);
+});
+
+function toggleRefresh() {
+    isPaused = !isPaused;
+    const btn = document.getElementById('toggleRefreshBtn');
+    const ind = document.getElementById('liveIndicator');
+    const timerEl = document.getElementById('refreshTimer');
+    
+    if (isPaused) {
+        btn.innerHTML = '<i class="bi bi-play-fill"></i> Resume';
+        ind.style.color = '#fca5a5';
+        ind.innerText = 'PAUSED';
+        if (timerEl) timerEl.innerText = 'Updates paused';
+    } else {
+        btn.innerHTML = '<i class="bi bi-pause-fill"></i> Pause';
+        ind.style.color = '#a8e063';
+        ind.innerText = 'LIVE';
+        countdown = MAX_TIME; // reset countdown when resuming
+    }
+}
+
 setInterval(() => {
-    // Pause refresh if a modal is open so the user doesn't lose their place
+    if (isPaused) return;
+
+    const timerEl = document.getElementById('refreshTimer');
+    const barEl = document.getElementById('refreshBar');
     const modal = document.getElementById('payloadModal');
-    if (modal && modal.classList.contains('show')) {
-        document.getElementById('refreshTimer').innerText = 'Refresh paused (modal open)';
+    
+    // Pause refresh if a modal is open or user is hovering a table
+    if ((modal && modal.classList.contains('show')) || hoverPause) {
+        if (timerEl) timerEl.innerText = 'Refresh paused (Reading...)';
         return;
     }
     
     countdown--;
-    const timerEl = document.getElementById('refreshTimer');
+    
     if (countdown <= 0) {
         if (timerEl) timerEl.innerText = 'Refreshing...';
+        if (barEl) barEl.style.width = '0%';
         location.reload();
     } else {
         if (timerEl) timerEl.innerText = `Auto-refreshes in ${countdown}s`;
+        if (barEl) barEl.style.width = `${(countdown / MAX_TIME) * 100}%`;
     }
 }, 1000);
 </script>
