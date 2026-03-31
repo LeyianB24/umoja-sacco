@@ -333,7 +333,7 @@ select, input, textarea, button, table {
                 </div>
                 <div style="display:flex;flex-direction:column;align-items:flex-end;gap:10px;padding-top:4px">
                     <div class="live-dot" style="color:#a8e063">LIVE</div>
-                    <div style="font-size:.72rem;color:rgba(255,255,255,.45);font-weight:500">Auto-refreshes on load</div>
+                    <div id="refreshTimer" style="font-size:.72rem;color:rgba(255,255,255,.45);font-weight:500">Auto-refreshes in 15s</div>
                 </div>
             </div>
         </div>
@@ -719,6 +719,26 @@ async function activateRequest(checkoutID, btn) {
         btn.innerHTML = originalContent;
     }
 }
+
+// Auto-refresh logic
+let countdown = 15;
+setInterval(() => {
+    // Pause refresh if a modal is open so the user doesn't lose their place
+    const modal = document.getElementById('payloadModal');
+    if (modal && modal.classList.contains('show')) {
+        document.getElementById('refreshTimer').innerText = 'Refresh paused (modal open)';
+        return;
+    }
+    
+    countdown--;
+    const timerEl = document.getElementById('refreshTimer');
+    if (countdown <= 0) {
+        if (timerEl) timerEl.innerText = 'Refreshing...';
+        location.reload();
+    } else {
+        if (timerEl) timerEl.innerText = `Auto-refreshes in ${countdown}s`;
+    }
+}, 1000);
 </script>
 </body>
 </html>
