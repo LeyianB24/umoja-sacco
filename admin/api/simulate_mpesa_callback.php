@@ -45,11 +45,10 @@ try {
         throw new Exception("Transaction is already completed.");
     }
 
-    // Safety: Check if this reference is already in common transaction tables
+    // Safety: Check if this reference is already in the ledger (idempotency)
     $ref = $request['reference_no'];
-    $checkLedger = $conn->prepare("SELECT entry_id FROM ledger_entries WHERE notes LIKE ? LIMIT 1");
-    $likeRef = "%" . $ref . "%";
-    $checkLedger->bind_param("s", $likeRef);
+    $checkLedger = $conn->prepare("SELECT transaction_id FROM ledger_transactions WHERE reference_no = ? LIMIT 1");
+    $checkLedger->bind_param("s", $ref);
     $checkLedger->execute();
     if ($checkLedger->get_result()->num_rows > 0) {
         throw new Exception("Transaction already processed (found in ledger).");
