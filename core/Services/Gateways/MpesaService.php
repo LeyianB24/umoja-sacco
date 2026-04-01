@@ -67,7 +67,7 @@ class MpesaService implements PaymentGatewayInterface {
                 "PartyB" => $this->config['shortcode'],
                 "PhoneNumber" => $formatted_phone,
                 "CallBackURL" => $this->config['callback_url'],
-                "AccountReference" => "Umoja Sacco",
+                "AccountReference" => "Umoja Drivers Sacco",
                 "TransactionDesc" => $account_ref
             ];
 

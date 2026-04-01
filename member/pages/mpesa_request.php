@@ -124,11 +124,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $ref = 'PAY-' . strtoupper(bin2hex(random_bytes(6))); 
             $txn_desc_map = [
-                'savings' => 'Savings Deposit',
-                'shares' => 'Share Capital',
-                'welfare' => 'Welfare Fund',
-                'welfare_case' => 'Case Donation',
-                'loan_repayment' => 'Loan Repayment'
+                'savings' => 'Do you want to save?',
+                'shares' => 'Do you want to buy shares?',
+                'welfare' => 'Do you want to contribute?',
+                'welfare_case' => 'Do you want to donate?',
+                'loan_repayment' => 'Do you want to repay loan?'
             ];
             $txn_desc = $txn_desc_map[$type] ?? 'Payment';
 
