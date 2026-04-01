@@ -1,7 +1,7 @@
 <?php
 /**
  * check_duplicates.php
- * Standalone audit tool (updated with correct schema)
+ * Standalone audit tool (v3 - more robust SQL)
  */
 
 $conn = new mysqli('localhost', 'root', '', 'umoja_drivers_sacco');
@@ -24,7 +24,6 @@ if ($res && $res->num_rows > 0) {
 
 // 2. Duplicate M-Pesa Receipt Numbers in callback_logs
 echo "\n[2] Checking M-Pesa Receipts in callback_logs...\n";
-// Adjusting based on schema: log_id, mpesa_receipt_number, processed
 $sql = "SELECT mpesa_receipt_number, COUNT(*) as cnt, GROUP_CONCAT(log_id) as ids 
         FROM callback_logs 
         WHERE processed = 1 AND mpesa_receipt_number != '' AND mpesa_receipt_number IS NOT NULL 
@@ -36,20 +35,21 @@ if ($res && $res->num_rows > 0) {
     echo "  - No duplicate processed receipts.\n";
 }
 
-// 3. Duplicate Ledger Entries
-echo "\n[3] Checking Ledger for potential duplicates (same txn_id or ref)...\n";
-// Based on schema: ledger_entries has transaction_id, credit, debit, notes, member_id
-$sql = "SELECT notes, member_id, debit, credit, category, COUNT(*) as cnt, GROUP_CONCAT(entry_id) as ids
+// 3. Duplicate Ledger Entries (Potential accidental double posts)
+echo "\n[3] Checking Ledger for potential duplicates (identical amount, member, date, category)...\n";
+// Normal double-entry has 2 entries per transaction_id (one debit, one credit).
+// We are looking for identical pairs of entries.
+$sql = "SELECT member_id, debit, credit, category, entry_date, COUNT(*) as cnt, GROUP_CONCAT(entry_id) as ids
         FROM ledger_entries 
-        GROUP BY member_id, credit, debit, category, notes, entry_date 
-        HAVING cnt > 1";
+        GROUP BY member_id, credit, debit, category, entry_date 
+        HAVING cnt > 2"; // If > 2, it means more than one debit/credit pair with identical details
 $res = $conn->query($sql);
 if ($res && $res->num_rows > 0) {
     while($row = $res->fetch_assoc()) {
-        echo "  - POTENTIAL DOUBLE POST: IDs ({$row['ids']}) for Member #{$row['member_id']} - Category: {$row['category']} - Notes: {$row['notes']}\n";
+        echo "  - POTENTIAL DOUBLE POST: IDs ({$row['ids']}) for Member #{$row['member_id']} - Category: {$row['category']} - Date: {$row['entry_date']}\n";
     }
 } else {
-    echo "  - No identical ledger entries found.\n";
+    echo "  - No suspicious identical ledger entries found.\n";
 }
 
 // 4. Duplicate completed mpesa_requests
