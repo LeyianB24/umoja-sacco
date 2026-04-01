@@ -49,7 +49,7 @@ class FinancialEngineTest {
         $this->db->query("SET FOREIGN_KEY_CHECKS = 0");
         $this->db->query("DELETE FROM transactions WHERE member_id = {$this->test_member_id}");
         $this->db->query("DELETE FROM members WHERE member_id = {$this->test_member_id}");
-        $this->db->query("INSERT INTO members (member_id, full_name, member_reg_no, account_balance, status, email, phone, national_id) 
+        $this->db->query("INSERT INTO members (member_id, full_name, member_reg_no, _deprecated_account_balance, status, email, phone, national_id) 
                           VALUES ({$this->test_member_id}, 'Test Member', 'TEST-001', 0, 'active', 'test@example.com', '254700000000', 'ID-9999-99')");
         
         // Clear ledger for test member
@@ -119,11 +119,11 @@ class FinancialEngineTest {
     private function testLegacyAccountBalanceDeprecation() {
         echo "[5/5] Verifying Legacy Column Deprecation... ";
         
-        $res = $this->db->query("SELECT account_balance FROM members WHERE member_id = {$this->test_member_id}");
+        $res = $this->db->query("SELECT _deprecated_account_balance FROM members WHERE member_id = {$this->test_member_id}");
         $row = $res->fetch_assoc();
         
-        if ($row['account_balance'] != 0) {
-            throw new Exception("CRITICAL: Legacy account_balance was modified! Deprecation failed.");
+        if ($row['_deprecated_account_balance'] != 0) {
+            throw new Exception("CRITICAL: Legacy _deprecated_account_balance was modified! Deprecation failed.");
         }
         echo "Verified (Column remains unchanged).\n";
     }
