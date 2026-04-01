@@ -31,9 +31,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($contrib && $contrib['status'] === 'pending') {
                     // Double Entry Prevention: Check if this reference is already in the ledger
                     $ref = $contrib['reference_no'] ?? ("MANUAL-".$cid);
-                    $check = $conn->prepare("SELECT entry_id FROM ledger_entries WHERE notes LIKE ? LIMIT 1");
-                    $like_ref = "%" . $ref . "%";
-                    $check->bind_param("s", $like_ref);
+                    $check = $conn->prepare("SELECT transaction_id FROM ledger_transactions WHERE reference_no = ? LIMIT 1");
+                    $check->bind_param("s", $ref);
                     $check->execute();
                     if ($check->get_result()->num_rows > 0) {
                         throw new Exception("Transaction already processed in ledger (found matching reference).");
