@@ -10,9 +10,10 @@ require_once __DIR__ . '/inc/SystemHealthHelper.php';
 echo "=== USMS SYSTEM HEALTH AUDIT ===\n";
 echo "Date: " . date('Y-m-d H:i:s') . "\n\n";
 
-$conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
-if ($conn->connect_error) {
-    die("❌ DATABASE CONNECTION FAILED: " . $conn->connect_error . "\n");
+// $conn is already provided by config/app.php
+global $conn;
+if (!$conn || $conn->connect_error) {
+    die("❌ DATABASE CONNECTION FAILED: " . ($conn->connect_error ?? 'Not initialized') . "\n");
 }
 
 function print_check($title, $status, $details = "") {
