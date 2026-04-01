@@ -29,6 +29,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $res = $conn->query("SELECT * FROM contributions WHERE contribution_id = $cid");
                 $contrib = $res->fetch_assoc();
                 if ($contrib && $contrib['status'] === 'pending') {
+                    // Double Entry Prevention: Check if this reference is already in the ledger
+                    $ref = $contrib['reference_no'] ?? ("MANUAL-".$cid);
+                    $check = $conn->prepare("SELECT entry_id FROM ledger_entries WHERE notes LIKE ? LIMIT 1");
+                    $like_ref = "%" . $ref . "%";
+                    $check->bind_param("s", $like_ref);
+                    $check->execute();
+                    if ($check->get_result()->num_rows > 0) {
+                        throw new Exception("Transaction already processed in ledger (found matching reference).");
+                    }
+                    $check->close();
+
                     $conn->begin_transaction();
                     $conn->query("UPDATE contributions SET status = 'active' WHERE contribution_id = $cid");
                     $action_map = ['savings' => 'savings_deposit','shares' => 'share_purchase','welfare' => 'welfare_contribution','registration' => 'revenue_inflow'];
@@ -37,6 +48,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $conn->query("UPDATE transaction_alerts SET acknowledged = 1, acknowledged_at = NOW(), acknowledged_by = " . ($_SESSION['admin_id'] ?? 0) . " WHERE contribution_id = $cid");
                     $conn->commit();
                     $success = "Transaction activated successfully.";
+                } else {
+                    $error = "Transaction is already active or not found.";
                 }
             } catch (Exception $e) {
                 try { $conn->rollback(); } catch (Exception $re) {}

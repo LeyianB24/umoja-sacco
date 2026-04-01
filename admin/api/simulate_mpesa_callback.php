@@ -45,6 +45,17 @@ try {
         throw new Exception("Transaction is already completed.");
     }
 
+    // Safety: Check if this reference is already in common transaction tables
+    $ref = $request['reference_no'];
+    $checkLedger = $conn->prepare("SELECT entry_id FROM ledger_entries WHERE notes LIKE ? LIMIT 1");
+    $likeRef = "%" . $ref . "%";
+    $checkLedger->bind_param("s", $likeRef);
+    $checkLedger->execute();
+    if ($checkLedger->get_result()->num_rows > 0) {
+        throw new Exception("Transaction already processed (found in ledger).");
+    }
+    $checkLedger->close();
+
     $member_id    = (int)$request['member_id'];
     $reference_no = $request['reference_no'];
     $amount       = (float)$request['amount'];
