@@ -1,7 +1,7 @@
 <?php
 /**
  * check_duplicates.php
- * Standalone audit tool (bypass framework)
+ * Standalone audit tool (updated with correct schema)
  */
 
 $conn = new mysqli('localhost', 'root', '', 'umoja_drivers_sacco');
@@ -19,11 +19,12 @@ $res = $conn->query($sql);
 if ($res && $res->num_rows > 0) {
     while($row = $res->fetch_assoc()) echo "  - DUPLICATE REF: {$row['reference_no']} (Count: {$row['cnt']}, IDs: {$row['ids']})\n";
 } else {
-    echo "  - No duplicate active contributions.\n";
+    echo "  - No duplicate active contributions (by reference_no).\n";
 }
 
 // 2. Duplicate M-Pesa Receipt Numbers in callback_logs
 echo "\n[2] Checking M-Pesa Receipts in callback_logs...\n";
+// Adjusting based on schema: log_id, mpesa_receipt_number, processed
 $sql = "SELECT mpesa_receipt_number, COUNT(*) as cnt, GROUP_CONCAT(log_id) as ids 
         FROM callback_logs 
         WHERE processed = 1 AND mpesa_receipt_number != '' AND mpesa_receipt_number IS NOT NULL 
@@ -35,20 +36,23 @@ if ($res && $res->num_rows > 0) {
     echo "  - No duplicate processed receipts.\n";
 }
 
-// 3. Duplicate Ledger Entries (Potential accidental double posts)
-echo "\n[3] Checking Ledger for exact identical entries...\n";
-$sql = "SELECT transaction_id, member_id, debit, credit, category, COUNT(*) as cnt 
+// 3. Duplicate Ledger Entries
+echo "\n[3] Checking Ledger for potential duplicates (same txn_id or ref)...\n";
+// Based on schema: ledger_entries has transaction_id, credit, debit, notes, member_id
+$sql = "SELECT notes, member_id, debit, credit, category, COUNT(*) as cnt, GROUP_CONCAT(entry_id) as ids
         FROM ledger_entries 
-        GROUP BY transaction_id, member_id, debit, credit, category, entry_date 
+        GROUP BY member_id, credit, debit, category, notes, entry_date 
         HAVING cnt > 1";
 $res = $conn->query($sql);
 if ($res && $res->num_rows > 0) {
-    while($row = $res->fetch_assoc()) echo "  - POTENTIAL LEDGER DOUBLE: Txn #{$row['transaction_id']} (Type: {$row['category']}, Count: {$row['cnt']})\n";
+    while($row = $res->fetch_assoc()) {
+        echo "  - POTENTIAL DOUBLE POST: IDs ({$row['ids']}) for Member #{$row['member_id']} - Category: {$row['category']} - Notes: {$row['notes']}\n";
+    }
 } else {
-    echo "  - No exact identical ledger entries found.\n";
+    echo "  - No identical ledger entries found.\n";
 }
 
-// 4. Multiple 'completed' mpesa_requests for same CheckoutRequestID
+// 4. Duplicate completed mpesa_requests
 echo "\n[4] Checking mpesa_requests for duplicate completed IDs...\n";
 $sql = "SELECT checkout_request_id, COUNT(*) as cnt 
         FROM mpesa_requests 
