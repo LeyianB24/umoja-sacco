@@ -108,155 +108,184 @@ $alert_total = count($alerts);
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
 <style>
-/* ── Base & Reset ───────────────────────────────────────────── */
+/* ── Base & Global Tokens ───────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; }
-body, .main-content-wrapper, .modal-content,
-select, input, textarea, button, table {
+:root {
+    --forest:       #0d1f14;
+    --forest-mid:   #1a3a2a;
+    --forest-light: #2e6347;
+    --lime:         #a8e063;
+    --lime-glow:    rgba(168, 224, 99, 0.25);
+    --ink:          #0a0f0c;
+    --muted:        #8da394;
+    --surface:      rgba(255, 255, 255, 0.85);
+    --surface-2:    #f0f4f1;
+    --border:       rgba(227, 235, 229, 0.6);
+    --glass:        rgba(255, 255, 255, 0.7);
+    --glass-border: rgba(255, 255, 255, 0.4);
+    
+    --shadow-sm:    0 4px 10px rgba(10, 15, 12, 0.04);
+    --shadow-md:    0 12px 32px rgba(10, 15, 12, 0.08);
+    --shadow-lg:    0 24px 64px rgba(10, 15, 12, 0.12);
+    
+    --radius-sm:    12px;
+    --radius-md:    20px;
+    --radius-lg:    28px;
+    --transition:   all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+body { 
+    background-color: var(--surface-2); 
+    color: var(--ink);
     font-family: 'Plus Jakarta Sans', sans-serif !important;
 }
 
-/* ── Tokens ─────────────────────────────────────────────────── */
-:root {
-    --forest:       #1a3a2a;
-    --forest-mid:   #234d38;
-    --forest-light: #2e6347;
-    --lime:         #a8e063;
-    --lime-glow:    rgba(168,224,99,.18);
-    --ink:          #111c14;
-    --muted:        #6b7f72;
-    --surface:      #ffffff;
-    --surface-2:    #f5f8f5;
-    --border:       #e3ebe5;
-    --shadow-sm:    0 4px 12px rgba(26,58,42,.08);
-    --shadow-md:    0 8px 28px rgba(26,58,42,.12);
-    --shadow-lg:    0 16px 48px rgba(26,58,42,.16);
-    --radius-sm:    10px;
-    --radius-md:    16px;
-    --radius-lg:    22px;
-    --transition:   all .22s cubic-bezier(.4,0,.2,1);
+/* ── Mesh Gradient Background ───────────────────────────────── */
+.page-canvas { 
+    background: radial-gradient(at 0% 0%, rgba(168,224,99,0.05) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(46,99,71,0.05) 0px, transparent 50%);
+    min-height: 100vh; padding-bottom: 80px; 
 }
 
-/* ── Scaffold ───────────────────────────────────────────────── */
-.page-canvas { background: var(--surface-2); min-height: 100vh; padding: 0 0 60px; }
-
-/* ── Hero ───────────────────────────────────────────────────── */
+/* ── Hero & Glassmorphism ───────────────────────────────────── */
 .page-header {
-    background: linear-gradient(135deg, var(--forest) 0%, var(--forest-mid) 55%, var(--forest-light) 100%);
-    border-radius: var(--radius-lg); padding: 36px 40px; margin-bottom: 28px;
+    background: linear-gradient(135deg, var(--forest) 0%, var(--forest-mid) 100%);
+    border-radius: var(--radius-lg); padding: 48px 40px; margin-bottom: 32px;
     position: relative; overflow: hidden; box-shadow: var(--shadow-lg);
-    animation: fadeUp .35s ease both;
+    border: 1px solid rgba(255,255,255,0.08);
+    animation: slideDownFade 0.6s ease-out;
 }
+
+/* Animated Mesh Mesh effect */
 .page-header::before {
     content: ''; position: absolute; inset: 0;
-    background: radial-gradient(ellipse 60% 80% at 90% -10%, rgba(168,224,99,.22) 0%, transparent 60%),
-                radial-gradient(ellipse 40% 50% at -5% 100%, rgba(168,224,99,.08) 0%, transparent 55%);
-    pointer-events: none;
+    background: radial-gradient(circle at 20% 30%, rgba(168,224,99,0.15) 0%, transparent 40%),
+                radial-gradient(circle at 80% 70%, rgba(46,99,71,0.2) 0%, transparent 40%);
+    filter: blur(60px); opacity: 0.8; animation: meshMove 12s infinite alternate;
 }
-.page-header::after {
-    content: ''; position: absolute; right: -60px; top: -60px;
-    width: 260px; height: 260px; border-radius: 50%;
-    border: 1px solid rgba(168,224,99,.1); pointer-events: none;
-}
-.hero-inner   { position: relative; z-index: 1; display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 24px; }
-.hero-content { flex: 1; min-width: 300px; }
-.hero-chip    { display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.15); color: rgba(255,255,255,.8); font-size: .72rem; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; border-radius: 100px; padding: 5px 14px; margin-bottom: 14px; }
-.hero-title   { font-size: clamp(1.5rem, 2.5vw, 2.22rem); font-weight: 800; color: #fff; letter-spacing: -.7px; margin: 0 0 6px; }
-.hero-sub     { font-size: .88rem; color: rgba(255,255,255,.65); font-weight: 500; margin: 0 0 22px; line-height: 1.5; }
 
-.hero-stats { 
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-    gap: 12px;
+@keyframes meshMove {
+    0% { transform: scale(1) translate(0, 0); }
+    100% { transform: scale(1.1) translate(20px, 10px); }
 }
-.hero-stat    { background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.12); border-radius: var(--radius-sm); padding: 12px 18px; backdrop-filter: blur(4px); transition: var(--transition); }
-.hero-stat:hover { background: rgba(255,255,255,.12); transform: translateY(-2px); }
-.hero-stat-label { font-size: .65rem; font-weight: 600; letter-spacing: .5px; text-transform: uppercase; color: rgba(255,255,255,.5); margin-bottom: 3px; }
-.hero-stat-value { font-size: 1.15rem; font-weight: 800; color: #fff; }
-.hero-stat-value.lime  { color: var(--lime); }
-.hero-stat-value.rose  { color: #fca5a5; }
-.hero-stat-value.amber { color: #fde68a; }
+
+.hero-inner { position: relative; z-index: 2; display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 32px; }
+
+.hero-chip {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px); color: var(--lime);
+    font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;
+    padding: 6px 16px; border-radius: 100px; margin-bottom: 18px;
+}
+
+.hero-title { font-size: clamp(1.8rem, 4vw, 2.8rem); font-weight: 800; color: #fff; letter-spacing: -1.5px; margin-bottom: 8px; }
+.hero-sub   { font-size: 0.95rem; color: rgba(255,255,255,0.6); max-width: 500px; line-height: 1.6; }
+
+.hero-stats {
+    display: flex; gap: 16px; flex-wrap: wrap; margin-top: 32px;
+}
+.hero-stat {
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+    backdrop-filter: blur(12px); padding: 14px 22px; border-radius: var(--radius-md);
+    min-width: 140px; transition: var(--transition);
+}
+.hero-stat:hover { background: rgba(255,255,255,0.08); transform: translateY(-4px); border-color: rgba(168,224,99,0.3); }
+.hero-stat-label { font-size: 0.65rem; color: rgba(255,255,255,0.5); text-transform: uppercase; font-weight: 700; letter-spacing: 1px; margin-bottom: 4px; }
+.hero-stat-value { font-size: 1.5rem; font-weight: 800; color: #fff; }
+.hero-stat-value.lime { color: var(--lime); text-shadow: 0 0 15px rgba(168,224,99,0.4); }
 
 .hero-controls {
-    display: flex; flex-direction: column; align-items: flex-end; gap: 8px; padding-top: 4px;
-    min-width: 160px;
+    display: flex; flex-direction: column; align-items: flex-end; gap: 12px;
 }
 
-/* ── Tab switcher ───────────────────────────────────────────── */
+/* ── Live Pulse ─────────────────────────────────────────────── */
+.live-pulse {
+    position: relative; width: 10px; height: 10px; background: var(--lime);
+    border-radius: 50%; box-shadow: 0 0 10px var(--lime);
+}
+.live-pulse::after {
+    content: ''; position: absolute; inset: -4px; border: 2px solid var(--lime);
+    border-radius: 50%; opacity: 0; animation: pulseRing 1.5s infinite;
+}
+@keyframes pulseRing {
+    0% { transform: scale(0.5); opacity: 0; }
+    50% { opacity: 0.5; }
+    100% { transform: scale(1.5); opacity: 0; }
+}
+
+/* ── Tab Switcher ───────────────────────────────────────────── */
 .tab-switcher {
-    display: flex; gap: 8px; align-items: center;
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius-md); padding: 6px;
-    box-shadow: var(--shadow-sm); margin-bottom: 24px;
-    animation: fadeUp .4s ease both; animation-delay: .06s;
-    width: 100%; overflow-x: auto; scrollbar-width: none;
-    -ms-overflow-style: none; flex-wrap: nowrap;
+    display: flex; gap: 12px; background: var(--glass);
+    backdrop-filter: blur(16px); border: 1px solid var(--glass-border);
+    padding: 8px; border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md); margin-bottom: 32px;
+    overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none;
 }
 .tab-switcher::-webkit-scrollbar { display: none; }
 
 .tab-btn {
-    display: flex; align-items: center; gap: 8px;
-    font-family: 'Plus Jakarta Sans', sans-serif !important;
-    font-size: .83rem; font-weight: 700; border: none; cursor: pointer;
-    border-radius: 10px; padding: 10px 22px; transition: var(--transition);
-    background: transparent; color: var(--muted);
-    white-space: nowrap; flex-shrink: 0;
+    display: flex; align-items: center; gap: 10px; padding: 12px 24px;
+    border-radius: 14px; border: none; background: transparent;
+    font-weight: 700; font-size: 0.88rem; color: var(--muted);
+    transition: var(--transition); white-space: nowrap; cursor: pointer;
+    scroll-snap-align: start;
 }
-.tab-btn:hover { background: var(--surface-2); color: var(--ink); }
-.tab-btn.active { background: var(--forest); color: #fff; box-shadow: 0 4px 12px rgba(26,58,42,.22); }
-.tab-btn .tab-count {
-    font-size: .68rem; font-weight: 800; border-radius: 100px; padding: 2px 9px;
-    background: rgba(255,255,255,.2); color: inherit; line-height: 1.4;
+.tab-btn i { font-size: 1.1rem; }
+.tab-btn:hover { background: rgba(0,0,0,0.03); color: var(--ink); }
+.tab-btn.active {
+    background: var(--forest); color: #fff;
+    box-shadow: 0 8px 16px rgba(13,31,20,0.2);
 }
-.tab-btn:not(.active) .tab-count { background: var(--lime-glow); color: var(--forest); }
+.tab-count {
+    background: rgba(168,224,99,0.15); color: var(--forest-light);
+    font-size: 0.72rem; padding: 2px 8px; border-radius: 6px; font-weight: 800;
+}
+.tab-btn.active .tab-count { background: rgba(255,255,255,0.2); color: #fff; }
 
-/* ── Table card ─────────────────────────────────────────────── */
+/* ── Content Cards ──────────────────────────────────────────── */
 .detail-card {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius-md); overflow: hidden;
-    box-shadow: var(--shadow-sm); transition: var(--transition);
-    animation: fadeUp .4s ease both; animation-delay: .12s;
+    background: var(--surface); backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border); border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md); overflow: hidden;
+    animation: fadeInUp 0.6s ease both;
 }
-.detail-card:hover { box-shadow: var(--shadow-md); border-color: #d0ddd4; }
 
 .card-toolbar {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 20px 24px; border-bottom: 1px solid var(--border); flex-wrap: wrap; gap: 14px;
-}
-.card-toolbar-title { font-size: .8rem; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; color: var(--forest); display: flex; align-items: center; gap: 10px; }
-.card-toolbar-title i { width: 32px; height: 32px; border-radius: 10px; background: var(--lime-glow); color: var(--forest); display: flex; align-items: center; justify-content: center; font-size: 1rem; }
-.record-count { font-size: .75rem; font-weight: 700; background: var(--lime-glow); color: var(--forest); border: 1px solid rgba(168,224,99,.3); border-radius: 100px; padding: 5px 14px; }
-
-/* ── Mobile Overrides ───────────────────────────────────────── */
-@media (max-width: 991px) {
-    .page-header { padding: 30px 28px; }
-    .hero-inner { flex-direction: column; align-items: stretch; }
-    .hero-controls { align-items: flex-start; margin-top: 10px; }
+    padding: 24px 32px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;
 }
 
-@media (max-width: 576px) {
-    .hero-title { font-size: 1.8rem; }
-    .hero-stats { grid-template-columns: 1fr 1fr; }
-    .tab-btn { padding: 8px 16px; font-size: .78rem; }
-    .card-toolbar { padding: 15px 18px; }
-    .mon-table td, .mon-table th { padding: 10px 12px; }
+/* ── Search Bar ─────────────────────────────────────────────── */
+.search-box {
+    position: relative; min-width: 280px;
 }
-
-/* ── Animate ────────────────────────────────────────────────── */
-@keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
-
-/* ── Modal Utility ──────────────────────────────────────────── */
-.modal-content { border: 0 !important; border-radius: var(--radius-lg) !important; overflow: hidden; box-shadow: var(--shadow-lg); }
-.modal-header  { border-bottom: 0 !important; padding: 24px 24px 0 !important; }
-.modal-body    { padding: 16px 24px 24px !important; }
-.payload-code {
-    background: #0f1f17; border-radius: 10px; padding: 18px;
-    font-family: 'DM Mono', monospace, 'Plus Jakarta Sans' !important;
-    font-size: .77rem; color: #a8e063; line-height: 1.7;
-    white-space: pre-wrap; word-break: break-all;
-    max-height: 400px; overflow-y: auto;
+.search-box i { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--muted); }
+.search-input {
+    width: 100%; background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 10px 16px 10px 42px; font-size: 0.85rem;
+    font-weight: 500; transition: var(--transition);
 }
-.payload-code::-webkit-scrollbar { width: 4px; }
-.payload-code::-webkit-scrollbar-thumb { background: #2e6347; border-radius: 4px; }
+.search-input:focus { outline: none; border-color: var(--lime); box-shadow: 0 0 0 4px var(--lime-glow); }
+
+/* ── Table Styling ──────────────────────────────────────────── */
+.mon-table th {
+    background: transparent; color: var(--muted); font-size: 0.72rem;
+    text-transform: uppercase; letter-spacing: 1px; font-weight: 800;
+    padding: 18px 24px; border-bottom: 1px solid var(--border);
+}
+.mon-table td { padding: 20px 24px; font-size: 0.88rem; vertical-align: middle; transition: var(--transition); }
+.mon-table tr:hover td { background: rgba(168,224,99,0.03); }
+
+/* ── Utilities ──────────────────────────────────────────────── */
+.copy-btn {
+    background: transparent; border: none; color: var(--muted); cursor: pointer;
+    padding: 4px; border-radius: 4px; transition: var(--transition);
+}
+.copy-btn:hover { color: var(--forest); background: rgba(0,0,0,0.05); }
+
+@keyframes slideDownFade { from { opacity: 0; transform: translateY(-30px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 </style>
 
 <?php $layout->sidebar(); ?>
@@ -264,52 +293,51 @@ select, input, textarea, button, table {
     <?php $layout->topbar($pageTitle ?? ""); ?>
     <div class="container-fluid px-4 py-4 page-canvas">
 
-        <!-- Breadcrumb -->
+        <!-- ═══ BREADCRUMB ═══════════════════════════════════════════════ -->
         <nav class="mb-4" aria-label="breadcrumb">
             <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="dashboard.php"><i class="bi bi-house-door me-1"></i>Dashboard</a></li>
-                <li class="breadcrumb-item active">Transaction Monitor</li>
+                <li class="breadcrumb-item"><a href="dashboard.php" class="text-decoration-none" style="color:var(--muted); font-weight:600"><i class="bi bi-house-door me-1"></i>Dashboard</a></li>
+                <li class="breadcrumb-item active" style="color:var(--forest); font-weight:700">Transaction Monitor</li>
             </ol>
         </nav>
 
         <!-- ═══ HERO ══════════════════════════════════════════════════════ -->
-        <div class="page-header mb-4">
+        <div class="page-header">
             <div class="hero-inner">
                 <div class="hero-content">
-                    <div class="hero-chip"><i class="bi bi-wifi"></i>M-Pesa · Live Monitor</div>
-                    <h1 class="hero-title">Transaction Monitor</h1>
-                    <p class="hero-sub">Real-time view of M-Pesa callbacks and initiated payment requests.</p>
+                    <div class="hero-chip"><i class="bi bi-activity"></i>Gateway Status: <span class="ms-1" style="color:#fff">Operational</span></div>
+                    <h1 class="hero-title">Transaction Hub</h1>
+                    <p class="hero-sub">Deep-level monitoring of incoming M-Pesa callbacks and initiated STK push requests. Real-time data feed with automated refresh.</p>
                     <div class="hero-stats">
                         <div class="hero-stat">
-                            <div class="hero-stat-label">Callbacks</div>
+                            <div class="hero-stat-label">Feed Count</div>
                             <div class="hero-stat-value"><?= $cb_total ?></div>
                         </div>
                         <div class="hero-stat">
-                            <div class="hero-stat-label">Successful</div>
-                            <div class="hero-stat-value lime"><?= $cb_success ?></div>
+                            <div class="hero-stat-label">Success Rate</div>
+                            <div class="hero-stat-value lime"><?= $cb_total > 0 ? round(($cb_success/$cb_total)*100) : 0 ?>%</div>
                         </div>
                         <div class="hero-stat">
-                            <div class="hero-stat-label">Requests</div>
-                            <div class="hero-stat-value"><?= $req_total ?></div>
-                        </div>
-                        <div class="hero-stat">
-                            <div class="hero-stat-label">Stuck Txns</div>
-                            <div class="hero-stat-value <?= $stuck_total > 0 ? 'rose' : '' ?>"><?= $stuck_total ?></div>
-                        </div>
-                        <div class="hero-stat">
-                            <div class="hero-stat-label">Alerts</div>
-                            <div class="hero-stat-value <?= $alert_total > 0 ? 'amber' : '' ?>"><?= $alert_total ?></div>
+                            <div class="hero-stat-label">Pending Issues</div>
+                            <div class="hero-stat-value <?= ($stuck_total + $alert_total) > 0 ? 'text-warning' : '' ?>"><?= $stuck_total + $alert_total ?></div>
                         </div>
                     </div>
                 </div>
                 <div class="hero-controls">
-                    <div class="d-flex align-items-center gap-2">
-                        <button id="toggleRefreshBtn" onclick="toggleRefresh()" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#fff;border-radius:6px;padding:3px 8px;font-size:0.7rem;cursor:pointer;font-weight:600;transition:all 0.2s;"><i class="bi bi-pause-fill"></i> Pause</button>
-                        <div class="live-dot" id="liveIndicator" style="color:#a8e063;font-weight:800;letter-spacing:1px;font-size:0.75rem;">LIVE</div>
+                    <div class="d-flex align-items-center gap-3 glass-pill p-2" style="background:rgba(255,255,255,0.1); border-radius:16px; border:1px solid rgba(255,255,255,0.1)">
+                        <div id="liveIndicator" class="d-flex align-items-center gap-2 px-2">
+                            <div class="live-pulse"></div>
+                            <span style="color:#fff; font-weight:800; font-size:0.75rem; letter-spacing:1px">LIVE</span>
+                        </div>
+                        <button id="toggleRefreshBtn" onclick="toggleRefresh()" style="background:var(--lime); border:none; color:var(--forest); border-radius:10px; padding:6px 16px; font-size:0.75rem; cursor:pointer; font-weight:800; transition:all 0.2s;">
+                            <i class="bi bi-pause-fill"></i> PAUSE
+                        </button>
                     </div>
-                    <div id="refreshTimer" style="font-size:.75rem;color:rgba(255,255,255,.6);font-weight:600">Auto-refreshes in 15s</div>
-                    <div style="width:120px;height:4px;background:rgba(255,255,255,0.1);border-radius:4px;overflow:hidden;margin-top:2px">
-                        <div id="refreshBar" style="width:100%;height:100%;background:#a8e063;transition:width 1s linear"></div>
+                    <div class="mt-2 text-end">
+                        <span id="refreshTimer" style="font-size:0.7rem; color:rgba(255,255,255,0.5); font-weight:700; text-transform:uppercase; letter-spacing:0.5px">Sync in 15s</span>
+                        <div style="width:140px; height:3px; background:rgba(255,255,255,0.1); border-radius:10px; overflow:hidden; margin-top:6px">
+                            <div id="refreshBar" style="width:100%; height:100%; background:var(--lime); transition:width 1s linear"></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -342,18 +370,19 @@ select, input, textarea, button, table {
                     <i class="bi bi-arrow-down-circle-fill d-flex"></i>
                     Incoming Payment Callbacks
                 </div>
+                <div class="search-box">
+                    <i class="bi bi-search"></i>
+                    <input type="text" class="search-input" placeholder="Search logs..." onkeyup="filterTable(this, 'sectionCallbacks')">
+                </div>
                 <div style="display:flex;align-items:center;gap:10px">
-                    <div class="live-dot">Live Feed</div>
-                    <?php if ($cb_total): ?>
-                    <span class="record-count"><?= $cb_total ?> entries</span>
-                    <?php endif; ?>
+                    <div class="record-count"><?= $cb_total ?> entries</div>
                 </div>
             </div>
             <div class="table-responsive">
-                <table class="mon-table">
+                <table class="mon-table" id="tableCallbacks">
                     <thead>
                         <tr>
-                            <th style="padding-left:20px">Timestamp</th>
+                            <th style="padding-left:24px">Timestamp</th>
                             <th>Type</th>
                             <th>Member / Phone</th>
                             <th>Amount</th>
@@ -365,41 +394,44 @@ select, input, textarea, button, table {
                     <tbody>
                     <?php if (empty($callbacks)): ?>
                         <tr><td colspan="7">
-                            <div class="empty-state">
-                                <i class="bi bi-arrow-down-circle"></i>
-                                <p>No callback logs found.</p>
+                            <div class="empty-state text-center py-5" style="color:var(--muted)">
+                                <i class="bi bi-inbox" style="font-size:3rem"></i>
+                                <p class="mt-2 fw-600">No callback logs found.</p>
                             </div>
                         </td></tr>
                     <?php else: foreach ($callbacks as $cl):
                         $is_success = (int)$cl['result_code'] === 0;
                     ?>
                         <tr>
-                            <td style="padding-left:20px">
-                                <div class="ts-val"><?= date('H:i:s', strtotime($cl['created_at'])) ?></div>
-                                <div class="ts-date"><?= date('d M Y', strtotime($cl['created_at'])) ?></div>
+                            <td style="padding-left:24px">
+                                <div style="font-weight:700; color:var(--ink)"><?= date('H:i:s', strtotime($cl['created_at'])) ?></div>
+                                <div style="font-size:0.7rem; color:var(--muted); font-weight:600"><?= date('d M Y', strtotime($cl['created_at'])) ?></div>
                             </td>
-                            <td><span class="type-chip"><?= htmlspecialchars($cl['callback_type']) ?></span></td>
+                            <td><span class="type-chip" style="background:var(--surface-2); padding:4px 10px; border-radius:8px; font-weight:700; font-size:0.75rem"><?= htmlspecialchars($cl['callback_type']) ?></span></td>
                             <td>
-                                <div class="mem-name"><?= htmlspecialchars($cl['full_name'] ?? 'Inbound') ?></div>
-                                <div class="mem-phone"><?= htmlspecialchars($cl['phone'] ?? 'Unknown') ?></div>
+                                <div style="font-weight:700; color:var(--ink)"><?= htmlspecialchars($cl['full_name'] ?? 'Inbound') ?></div>
+                                <div style="font-size:0.75rem; color:var(--muted); font-weight:600"><?= htmlspecialchars($cl['phone'] ?? 'Unknown') ?></div>
                             </td>
-                            <td><div class="amount-val">KES <?= number_format((float)($cl['amount'] ?? 0)) ?></div></td>
+                            <td><div style="font-weight:800; color:var(--forest)">KES <?= number_format((float)($cl['amount'] ?? 0)) ?></div></td>
                             <td>
-                                <span class="status-pill <?= $is_success ? 'sp-success' : 'sp-failed' ?>">
+                                <span class="status-pill <?= $is_success ? 'sp-success' : 'sp-failed' ?>" style="padding:4px 12px; border-radius:100px; font-size:0.7rem; font-weight:800; background:<?= $is_success ? 'rgba(168,224,99,0.15)' : 'rgba(255,0,0,0.05)' ?>; color:<?= $is_success ? 'var(--forest-mid)' : '#d00' ?>">
                                     <?= $is_success ? 'Success' : 'Failed (' . $cl['result_code'] . ')' ?>
                                 </span>
                             </td>
                             <td>
-                                <span class="mpesa-ref <?= $cl['mpesa_receipt_number'] ? '' : 'na' ?>">
-                                    <?= htmlspecialchars($cl['mpesa_receipt_number'] ?: 'N/A') ?>
-                                </span>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="mpesa-ref" style="font-family:monospace; font-weight:700; color:var(--muted)"><?= htmlspecialchars($cl['mpesa_receipt_number'] ?: 'N/A') ?></span>
+                                    <?php if($cl['mpesa_receipt_number']): ?>
+                                    <button class="copy-btn" onclick="copyText('<?= $cl['mpesa_receipt_number'] ?>', this)" title="Copy Receipt">
+                                        <i class="bi bi-clipboard"></i>
+                                    </button>
+                                    <?php endif; ?>
+                                </div>
                             </td>
                             <td class="payload-cell">
-                                <span class="payload-text"
-                                      onclick="showPayload(<?= htmlspecialchars(json_encode($cl['raw_payload']), ENT_QUOTES) ?>)"
-                                      title="Click to view full payload">
-                                    <?= htmlspecialchars($cl['raw_payload']) ?>
-                                </span>
+                                <button class="btn btn-sm btn-outline-secondary" onclick="showPayload(<?= htmlspecialchars(json_encode($cl['raw_payload']), ENT_QUOTES) ?>)" style="border-radius:8px; font-size:0.7rem; font-weight:700">
+                                    <i class="bi bi-code-slash me-1"></i> View
+                                </button>
                             </td>
                         </tr>
                     <?php endforeach; endif; ?>
@@ -415,15 +447,19 @@ select, input, textarea, button, table {
                     <i class="bi bi-arrow-up-circle-fill d-flex"></i>
                     Initiated Payment Requests
                 </div>
+                <div class="search-box">
+                    <i class="bi bi-search"></i>
+                    <input type="text" class="search-input" placeholder="Search requests..." onkeyup="filterTable(this, 'sectionRequests')">
+                </div>
                 <?php if ($req_total): ?>
                 <span class="record-count"><?= $req_total ?> entries</span>
                 <?php endif; ?>
             </div>
             <div class="table-responsive">
-                <table class="mon-table">
+                <table class="mon-table" id="tableRequests">
                     <thead>
                         <tr>
-                            <th style="padding-left:20px">Timestamp</th>
+                            <th style="padding-left:24px">Timestamp</th>
                             <th>Member</th>
                             <th>Amount</th>
                             <th>Reference</th>
@@ -434,44 +470,60 @@ select, input, textarea, button, table {
                     </thead>
                     <tbody>
                     <?php if (empty($requests)): ?>
-                        <tr><td colspan="6">
-                            <div class="empty-state">
-                                <i class="bi bi-arrow-up-circle"></i>
-                                <p>No payment requests found.</p>
+                        <tr><td colspan="7">
+                            <div class="empty-state text-center py-5" style="color:var(--muted)">
+                                <i class="bi bi-send-x" style="font-size:3rem"></i>
+                                <p class="mt-2 fw-600">No payment requests found.</p>
                             </div>
                         </td></tr>
                     <?php else: foreach ($requests as $r): ?>
                         <tr>
-                            <td style="padding-left:20px">
-                                <div class="ts-val"><?= date('H:i:s', strtotime($r['created_at'])) ?></div>
-                                <div class="ts-date"><?= date('d M Y', strtotime($r['created_at'])) ?></div>
+                            <td style="padding-left:24px">
+                                <div style="font-weight:700; color:var(--ink)"><?= date('H:i:s', strtotime($r['created_at'])) ?></div>
+                                <div style="font-size:0.7rem; color:var(--muted); font-weight:600"><?= date('d M Y', strtotime($r['created_at'])) ?></div>
                             </td>
                             <td>
-                                <div class="mem-name"><?= htmlspecialchars($r['full_name']) ?></div>
-                                <div class="mem-phone"><?= htmlspecialchars($r['phone']) ?></div>
+                                <div style="font-weight:700; color:var(--ink)"><?= htmlspecialchars($r['full_name']) ?></div>
+                                <div style="font-size:0.75rem; color:var(--muted); font-weight:600"><?= htmlspecialchars($r['phone']) ?></div>
                             </td>
-                            <td><div class="amount-val">KES <?= number_format((float)($r['amount'] ?? 0)) ?></div></td>
-                            <td><span class="mpesa-ref"><?= htmlspecialchars($r['reference_no']) ?></span></td>
-                            <td><span class="checkout-id" title="<?= htmlspecialchars($r['checkout_request_id']) ?>"><?= htmlspecialchars($r['checkout_request_id']) ?></span></td>
+                            <td><div style="font-weight:800; color:var(--forest)">KES <?= number_format((float)($r['amount'] ?? 0)) ?></div></td>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span style="font-family:monospace; font-weight:700; color:var(--muted)"><?= htmlspecialchars($r['reference_no']) ?></span>
+                                    <button class="copy-btn" onclick="copyText('<?= $r['reference_no'] ?>', this)" title="Copy Reference">
+                                        <i class="bi bi-clipboard"></i>
+                                    </button>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span style="font-size:0.75rem; font-family:monospace; color:var(--muted)"><?= substr($r['checkout_request_id'], 0, 12) ?>...</span>
+                                    <button class="copy-btn" onclick="copyText('<?= $r['checkout_request_id'] ?>', this)" title="Copy Full ID">
+                                        <i class="bi bi-clipboard"></i>
+                                    </button>
+                                </div>
+                            </td>
                             <td>
                                 <?php
                                 $sp = match($r['status']) {
-                                    'completed' => ['sp-completed', 'Completed'],
-                                    'pending'   => ['sp-pending',   'Pending'],
-                                    default     => ['sp-failed',    'Failed'],
+                                    'completed' => ['background:rgba(168,224,99,0.15); color:var(--forest-mid)', 'Completed'],
+                                    'pending'   => ['background:rgba(255,193,7,0.1); color:#856404',   'Pending'],
+                                    default     => ['background:rgba(220,53,69,0.1); color:#721c24',    'Failed'],
                                 };
                                 ?>
-                                <span class="status-pill <?= $sp[0] ?>"><?= $sp[1] ?></span>
+                                <span style="padding:4px 12px; border-radius:100px; font-size:0.7rem; font-weight:800; <?= $sp[0] ?>">
+                                    <?= $sp[1] ?>
+                                </span>
                             </td>
                             <td>
                                 <?php if ($r['status'] === 'pending'): ?>
                                     <button class="btn btn-sm" 
-                                            style="background:var(--lime-glow);color:var(--forest);font-weight:700;border-radius:8px;padding:4px 10px;font-size:0.75rem;border:1px solid rgba(168,224,99,0.3)"
+                                            style="background:var(--lime); color:var(--forest); font-weight:800; border-radius:10px; padding:4px 14px; font-size:0.7rem; border:none; box-shadow:0 4px 10px var(--lime-glow)"
                                             onclick="activateRequest('<?= $r['checkout_request_id'] ?>', this)">
-                                        <i class="bi bi-lightning-fill me-1"></i> Activate
+                                        <i class="bi bi-lightning-fill"></i> Activate
                                     </button>
                                 <?php else: ?>
-                                    <span class="text-muted" style="font-size:0.7rem;font-weight:600">No Action</span>
+                                    <i class="bi bi-check2-circle text-success" title="Processed"></i>
                                 <?php endif; ?>
                             </td>
                         </tr>
@@ -488,15 +540,19 @@ select, input, textarea, button, table {
                     <i class="bi bi-hourglass-split d-flex"></i>
                     Stuck Pending Contributions
                 </div>
+                <div class="search-box">
+                    <i class="bi bi-search"></i>
+                    <input type="text" class="search-input" placeholder="Search stuck..." onkeyup="filterTable(this, 'sectionStuck')">
+                </div>
                 <?php if ($stuck_total): ?>
                     <span class="record-count"><?= $stuck_total ?> entries</span>
                 <?php endif; ?>
             </div>
             <div class="table-responsive">
-                <table class="mon-table">
+                <table class="mon-table" id="tableStuck">
                     <thead>
                         <tr>
-                            <th style="padding-left:20px">Timestamp</th>
+                            <th style="padding-left:24px">Timestamp</th>
                             <th>Member</th>
                             <th>Type</th>
                             <th>Amount</th>
@@ -507,30 +563,30 @@ select, input, textarea, button, table {
                     <tbody>
                     <?php if (empty($stuck)): ?>
                         <tr><td colspan="6">
-                            <div class="empty-state">
-                                <i class="bi bi-check2-all"></i>
-                                <p>No stuck transactions found.</p>
+                            <div class="empty-state text-center py-5" style="color:var(--muted)">
+                                <i class="bi bi-check-circle" style="font-size:3rem; color:var(--lime)"></i>
+                                <p class="mt-2 fw-600">No stuck transactions found.</p>
                             </div>
                         </td></tr>
                     <?php else: foreach ($stuck as $s): ?>
                         <tr>
-                            <td style="padding-left:20px">
-                                <div class="ts-val"><?= date('H:i:s', strtotime($s['created_at'])) ?></div>
-                                <div class="ts-date"><?= date('d M Y', strtotime($s['created_at'])) ?></div>
+                            <td style="padding-left:24px">
+                                <div style="font-weight:700; color:var(--ink)"><?= date('H:i:s', strtotime($s['created_at'])) ?></div>
+                                <div style="font-size:0.7rem; color:var(--muted); font-weight:600"><?= date('d M Y', strtotime($s['created_at'])) ?></div>
                             </td>
                             <td>
-                                <div class="mem-name"><?= htmlspecialchars($s['full_name']) ?></div>
-                                <div class="mem-phone"><?= htmlspecialchars($s['phone']) ?></div>
+                                <div style="font-weight:700; color:var(--ink)"><?= htmlspecialchars($s['full_name']) ?></div>
+                                <div style="font-size:0.75rem; color:var(--muted); font-weight:600"><?= htmlspecialchars($s['phone']) ?></div>
                             </td>
-                            <td><span class="type-chip"><?= ucfirst($s['contribution_type']) ?></span></td>
-                            <td><div class="amount-val">KES <?= number_format((float)$s['amount']) ?></div></td>
-                            <td><span class="mpesa-ref"><?= htmlspecialchars($s['reference_no']) ?></span></td>
+                            <td><span style="background:var(--surface-2); padding:4px 10px; border-radius:8px; font-weight:700; font-size:0.75rem"><?= ucfirst($s['contribution_type']) ?></span></td>
+                            <td><div style="font-weight:800; color:var(--forest)">KES <?= number_format((float)$s['amount']) ?></div></td>
+                            <td><span style="font-family:monospace; font-weight:700; color:var(--muted)"><?= htmlspecialchars($s['reference_no']) ?></span></td>
                             <td>
                                 <form method="POST" class="d-inline" onsubmit="return confirm('Manually activate this transaction?')">
                                     <input type="hidden" name="action" value="manual_activate">
                                     <input type="hidden" name="contribution_id" value="<?= $s['contribution_id'] ?>">
-                                    <button type="submit" class="btn btn-sm btn-lime rounded-pill px-3 fw-bold" style="font-size:0.7rem">
-                                        <i class="bi bi-lightning-charge-fill me-1"></i> Activate
+                                    <button type="submit" class="btn btn-sm" style="background:var(--forest); color:#fff; font-weight:800; border-radius:10px; padding:6px 16px; font-size:0.7rem; border:none; box-shadow:0 4px 12px rgba(13,31,20,0.2)">
+                                        <i class="bi bi-lightning-charge-fill me-1"></i> Resolve
                                     </button>
                                 </form>
                             </td>
@@ -556,7 +612,7 @@ select, input, textarea, button, table {
                 <table class="mon-table">
                     <thead>
                         <tr>
-                            <th style="padding-left:20px">Severity</th>
+                            <th style="padding-left:24px">Severity</th>
                             <th>Message</th>
                             <th>Date / Time</th>
                             <th>Actions</th>
@@ -565,34 +621,34 @@ select, input, textarea, button, table {
                     <tbody>
                     <?php if (empty($alerts)): ?>
                         <tr><td colspan="4">
-                            <div class="empty-state">
-                                <i class="bi bi-shield-check"></i>
-                                <p>All systems normal. No active alerts.</p>
+                            <div class="empty-state text-center py-5" style="color:var(--muted)">
+                                <i class="bi bi-shield-check" style="font-size:3rem; color:var(--lime)"></i>
+                                <p class="mt-2 fw-600">All systems normal. No active alerts.</p>
                             </div>
                         </td></tr>
                     <?php else: foreach ($alerts as $a):
                         $sev = strtolower($a['severity'] ?? 'info');
-                        $pill_class = match($sev) {
-                            'critical' => 'sp-failed',
-                            'warning'  => 'sp-pending',
-                            default    => 'sp-completed'
+                        $pill_style = match($sev) {
+                            'critical' => 'background:rgba(220,53,69,0.1); color:#721c24',
+                            'warning'  => 'background:rgba(255,193,7,0.1); color:#856404',
+                            default    => 'background:rgba(23,162,184,0.1); color:#0c5460'
                         };
                     ?>
                         <tr>
-                            <td style="padding-left:20px">
-                                <span class="status-pill <?= $pill_class ?>"><?= strtoupper($sev) ?></span>
+                            <td style="padding-left:24px">
+                                <span style="padding:4px 12px; border-radius:100px; font-size:0.7rem; font-weight:800; <?= $pill_style ?>"><?= strtoupper($sev) ?></span>
                             </td>
-                            <td><div class="mem-name" style="font-weight:500; font-size:0.8rem"><?= htmlspecialchars($a['message']) ?></div></td>
+                            <td><div style="font-weight:600; color:var(--ink); font-size:0.85rem"><?= htmlspecialchars($a['message']) ?></div></td>
                             <td>
-                                <div class="ts-val"><?= date('H:i:s', strtotime($a['created_at'])) ?></div>
-                                <div class="ts-date"><?= date('d M Y', strtotime($a['created_at'])) ?></div>
+                                <div style="font-weight:700; color:var(--ink)"><?= date('H:i:s', strtotime($a['created_at'])) ?></div>
+                                <div style="font-size:0.7rem; color:var(--muted); font-weight:600"><?= date('d M Y', strtotime($a['created_at'])) ?></div>
                             </td>
                             <td>
                                 <form method="POST" class="d-inline">
                                     <input type="hidden" name="action" value="acknowledge_alert">
                                     <input type="hidden" name="alert_id" value="<?= $a['id'] ?>">
-                                    <button type="submit" class="btn btn-sm btn-outline-secondary rounded-pill px-3" style="font-size:0.7rem">
-                                        Ack
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary" style="border-radius:10px; font-size:0.7rem; padding:4px 14px; font-weight:700">
+                                        Acknowledge
                                     </button>
                                 </form>
                             </td>
@@ -605,17 +661,22 @@ select, input, textarea, button, table {
 
         <!-- ═══ PAYLOAD MODAL ════════════════════════════════════════════ -->
         <div class="modal fade" id="payloadModal" tabindex="-1">
-            <div class="modal-dialog modal-dialog-centered" style="max-width:560px">
-                <div class="modal-content">
-                    <div class="modal-header">
+            <div class="modal-dialog modal-dialog-centered" style="max-width:600px">
+                <div class="modal-content" style="border:none; box-shadow:var(--shadow-lg); border-radius:var(--radius-lg)">
+                    <div class="modal-header px-4 pt-4 pb-0" style="border:none">
                         <div>
-                            <h6 class="fw-800 mb-1" style="color:var(--ink);font-weight:800">Raw Callback Payload</h6>
-                            <p class="text-muted mb-0" style="font-size:.78rem">Full JSON received from M-Pesa gateway.</p>
+                            <h5 class="fw-800" style="font-weight:800; letter-spacing:-1px">Transaction Payload</h5>
+                            <p style="font-size:0.75rem; color:var(--muted); font-weight:600">Secure breakdown of the raw M-Pesa callback JSON.</p>
                         </div>
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
-                    <div class="modal-body">
-                        <pre class="payload-code" id="payloadContent"></pre>
+                    <div class="modal-body p-4">
+                        <div class="d-flex justify-content-end mb-2">
+                             <button class="btn btn-sm btn-light" onclick="copyPayload()" style="font-size:0.7rem; font-weight:700; border-radius:8px">
+                                <i class="bi bi-clipboard me-1"></i> Copy JSON
+                             </button>
+                        </div>
+                        <pre class="payload-code" id="payloadContent" style="background:#0a0f0c; color:var(--lime); padding:20px; border-radius:16px; font-size:0.8rem; line-height:1.6; max-height:450px"></pre>
                     </div>
                 </div>
             </div>
@@ -627,52 +688,83 @@ select, input, textarea, button, table {
 
 <script>
 function switchTab(tab) {
-    const cbSection  = document.getElementById('sectionCallbacks');
-    const reqSection = document.getElementById('sectionRequests');
-    const stuckSection = document.getElementById('sectionStuck');
-    const alertsSection = document.getElementById('sectionAlerts');
+    const sections = ['sectionCallbacks', 'sectionRequests', 'sectionStuck', 'sectionAlerts'];
+    const buttons = ['tabCallbacks', 'tabRequests', 'tabStuck', 'tabAlerts'];
     
-    const tabCb      = document.getElementById('tabCallbacks');
-    const tabReq     = document.getElementById('tabRequests');
-    const tabStuck   = document.getElementById('tabStuck');
-    const tabAlerts  = document.getElementById('tabAlerts');
+    // Smooth Transition Out
+    const currentActiveSection = sections.find(s => !document.getElementById(s).classList.contains('d-none'));
+    if (currentActiveSection) {
+        const el = document.getElementById(currentActiveSection);
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(10px)';
+        
+        setTimeout(() => {
+            sections.forEach(s => document.getElementById(s).classList.add('d-none'));
+            buttons.forEach(b => document.getElementById(b).classList.remove('active'));
 
-    [cbSection, reqSection, stuckSection, alertsSection].forEach(s => s.classList.add('d-none'));
-    [tabCb, tabReq, tabStuck, tabAlerts].forEach(t => t.classList.remove('active'));
+            const targetSection = document.getElementById('section' + tab.charAt(0).toUpperCase() + tab.slice(1));
+            const targetBtn = document.getElementById('tab' + tab.charAt(0).toUpperCase() + tab.slice(1));
 
-    if (tab === 'callbacks') {
-        cbSection.classList.remove('d-none');
-        tabCb.classList.add('active');
-    } else if (tab === 'requests') {
-        reqSection.classList.remove('d-none');
-        tabReq.classList.add('active');
-    } else if (tab === 'stuck') {
-        stuckSection.classList.remove('d-none');
-        tabStuck.classList.add('active');
-    } else if (tab === 'alerts') {
-        alertsSection.classList.remove('d-none');
-        tabAlerts.classList.add('active');
+            targetSection.classList.remove('d-none');
+            targetSection.style.opacity = '0';
+            targetSection.style.transform = 'translateY(10px)';
+            targetBtn.classList.add('active');
+
+            // Trigger reflow for animation
+            targetSection.offsetHeight; 
+            targetSection.style.transition = 'all 0.4s ease';
+            targetSection.style.opacity = '1';
+            targetSection.style.transform = 'translateY(0)';
+        }, 200);
+    } else {
+        // Initial load
+        const targetSection = document.getElementById('section' + tab.charAt(0).toUpperCase() + tab.slice(1));
+        const targetBtn = document.getElementById('tab' + tab.charAt(0).toUpperCase() + tab.slice(1));
+        targetSection.classList.remove('d-none');
+        targetBtn.classList.add('active');
     }
     
-    // Save state so page reloads don't reset the tab
     sessionStorage.setItem('monitorActiveTab', tab);
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    const savedTab = sessionStorage.getItem('monitorActiveTab');
-    if (savedTab) {
-        switchTab(savedTab);
-    }
+    const savedTab = sessionStorage.getItem('monitorActiveTab') || 'callbacks';
+    switchTab(savedTab);
 });
+
+function filterTable(input, sectionID) {
+    const filter = input.value.toLowerCase();
+    const table = document.getElementById(sectionID).querySelector('table');
+    const trs = table.getElementsByTagName('tr');
+
+    for (let i = 1; i < trs.length; i++) {
+        let text = trs[i].textContent.toLowerCase();
+        trs[i].style.display = text.indexOf(filter) > -1 ? "" : "none";
+    }
+}
+
+function copyText(text, btn) {
+    navigator.clipboard.writeText(text).then(() => {
+        const original = btn.innerHTML;
+        btn.innerHTML = '<i class="bi bi-check2 text-success"></i>';
+        setTimeout(() => btn.innerHTML = original, 2000);
+    });
+}
 
 function showPayload(raw) {
     const el = document.getElementById('payloadContent');
     try {
-        el.textContent = JSON.stringify(JSON.parse(raw), null, 2);
+        const obj = typeof raw === 'string' ? JSON.parse(raw) : raw;
+        el.textContent = JSON.stringify(obj, null, 2);
     } catch {
         el.textContent = raw;
     }
     new bootstrap.Modal(document.getElementById('payloadModal')).show();
+}
+
+function copyPayload() {
+    const text = document.getElementById('payloadContent').textContent;
+    navigator.clipboard.writeText(text);
 }
 
 async function activateRequest(checkoutID, btn) {
@@ -692,7 +784,6 @@ async function activateRequest(checkoutID, btn) {
         const result = await response.json();
         
         if (result.success) {
-            // Success feel: Confetti or just a nice alert
             alert('Success! ' + result.message);
             location.reload();
         } else {
@@ -713,11 +804,56 @@ let countdown = 15;
 const MAX_TIME = 15;
 let hoverPause = false;
 
-// Pause auto-refresh when hovering over data tables to allow reading without interruptions
 document.querySelectorAll('.detail-card').forEach(card => {
     card.addEventListener('mouseenter', () => hoverPause = true);
     card.addEventListener('mouseleave', () => hoverPause = false);
 });
+
+function toggleRefresh() {
+    isPaused = !isPaused;
+    const btn = document.getElementById('toggleRefreshBtn');
+    const pulse = document.querySelector('.live-pulse');
+    const timerEl = document.getElementById('refreshTimer');
+    
+    if (isPaused) {
+        btn.innerHTML = '<i class="bi bi-play-fill"></i> RESUME';
+        btn.style.background = 'var(--muted)';
+        if(pulse) pulse.style.background = '#fca5a5';
+        if (timerEl) timerEl.innerText = 'Sync Paused';
+    } else {
+        btn.innerHTML = '<i class="bi bi-pause-fill"></i> PAUSE';
+        btn.style.background = 'var(--lime)';
+        if(pulse) pulse.style.background = 'var(--lime)';
+        countdown = MAX_TIME;
+    }
+}
+
+setInterval(() => {
+    if (isPaused) return;
+
+    const timerEl = document.getElementById('refreshTimer');
+    const barEl = document.getElementById('refreshBar');
+    const modal = document.getElementById('payloadModal');
+    
+    if ((modal && modal.classList.contains('show')) || hoverPause) {
+        if (timerEl) timerEl.innerText = 'Wait (Reading...)';
+        return;
+    }
+    
+    countdown--;
+    
+    if (countdown <= 0) {
+        if (timerEl) timerEl.innerText = 'Syncing...';
+        if (barEl) barEl.style.width = '0%';
+        location.reload();
+    } else {
+        if (timerEl) timerEl.innerText = `Sync in ${countdown}s`;
+        if (barEl) barEl.style.width = `${(countdown / MAX_TIME) * 100}%`;
+    }
+}, 1000);
+</script>
+</body>
+</html>
 
 function toggleRefresh() {
     isPaused = !isPaused;
