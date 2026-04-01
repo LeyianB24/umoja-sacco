@@ -530,7 +530,7 @@ $theme = $_COOKIE['theme'] ?? 'light';
                                 <div class="amount-wrapper">
                                     <label class="currency-label">Enter Amount (KES)</label>
                                     <input type="number" name="amount" class="amount-input-lg" 
-                                           id="floatingAmount" placeholder="0.00" min="<?= (int)MIN_AMOUNT ?>" required autofocus>
+                                           id="floatingAmount" placeholder="0.00" min="<?= (int)MIN_AMOUNT ?>" required>
                                 </div>
                             </div>
 

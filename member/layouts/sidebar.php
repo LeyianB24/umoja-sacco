@@ -402,6 +402,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const active = sidebar?.querySelector('.hd-nav-link.active');
-    if (active) active.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    const area   = sidebar?.querySelector('.hd-scroll-area');
+    if (active && area) {
+        // Only scroll if really needed, and use a more stable method
+        const rect = active.getBoundingClientRect();
+        const areaRect = area.getBoundingClientRect();
+        if (rect.top < areaRect.top || rect.bottom > areaRect.bottom) {
+            active.scrollIntoView({ block: 'nearest' });
+        }
+    }
 });
 </script>
