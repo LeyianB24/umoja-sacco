@@ -82,14 +82,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
                 $db->query("UPDATE loan_guarantors SET status = '" . ($action === 'approve' ? 'approved' : 'rejected') . "' WHERE loan_id = $loan_id");
 
-                $res_data = $db->query("SELECT member_id, amount, reference_no FROM loans WHERE loan_id = $loan_id");
+                $res_data = $db->query("SELECT member_id, amount FROM loans WHERE loan_id = $loan_id");
                 if ($res_data && $res_data->num_rows > 0) {
-                    $l_data = $res_data->fetch_assoc();
+                    $l_data   = $res_data->fetch_assoc();
+                    $loan_ref = 'LOAN-' . str_pad((string)$loan_id, 5, '0', STR_PAD_LEFT);
                     require_once __DIR__ . '/../../inc/notification_helpers.php';
                     if ($action === 'approve') {
-                        send_notification($db, (int)$l_data['member_id'], 'loan_approved', ['amount' => (float)$l_data['amount'], 'ref' => $l_data['reference_no']]);
+                        send_notification($db, (int)$l_data['member_id'], 'loan_approved', ['amount' => (float)$l_data['amount'], 'ref' => $loan_ref]);
                     } else {
-                        send_notification($db, (int)$l_data['member_id'], 'loan_rejected', ['amount' => (float)$l_data['amount'], 'rejection_reason' => $notes, 'ref' => $l_data['reference_no']]);
+                        send_notification($db, (int)$l_data['member_id'], 'loan_rejected', ['amount' => (float)$l_data['amount'], 'rejection_reason' => $notes, 'ref' => $loan_ref]);
                     }
                 }
 
