@@ -427,6 +427,7 @@ if (session_status() === PHP_SESSION_NONE) session_start();
 <script src="<?= defined('ASSET_BASE') ? ASSET_BASE : '../public/assets' ?>/js/main.js"></script>
 <script src="<?= defined('ASSET_BASE') ? ASSET_BASE : '../public/assets' ?>/js/sidebar.js"></script>
 <script src="<?= defined('ASSET_BASE') ? ASSET_BASE : '../public/assets' ?>/js/darkmode.js"></script>
+<script src="<?= defined('ASSET_BASE') ? ASSET_BASE : '../public/assets' ?>/js/live-refresh.js"></script>
 <script>
 document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el));
 </script>
