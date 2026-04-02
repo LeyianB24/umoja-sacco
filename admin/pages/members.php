@@ -9,6 +9,68 @@ require_once __DIR__ . '/../../inc/SupportTicketWidget.php';
 
 $layout = LayoutManager::create('admin');
 
+// ---------------------------------------------------------
+// POST HANDLER — approve / suspend / reactivate
+// ---------------------------------------------------------
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'], $_POST['member_id'])) {
+
+    // CSRF guard
+    verify_csrf_token();
+
+    // Permission guard
+    if (!can('manage_members')) {
+        flash_set('You do not have permission to manage members.', 'danger');
+        header('Location: ' . $_SERVER['PHP_SELF']); exit;
+    }
+
+    $member_id  = (int) $_POST['member_id'];
+    $action     = $_POST['action'];
+    $admin_id   = $_SESSION['admin_id'] ?? 0;
+
+    $new_status = match($action) {
+        'approve'    => 'active',
+        'suspend'    => 'suspended',
+        'reactivate' => 'active',
+        default      => null
+    };
+
+    if ($new_status && $member_id > 0) {
+        $stmt = $conn->prepare("UPDATE members SET status = ? WHERE member_id = ?");
+        $stmt->bind_param("si", $new_status, $member_id);
+        $stmt->execute();
+
+        if ($stmt->affected_rows > 0) {
+            // Fetch member name for audit log
+            $r    = $conn->query("SELECT full_name FROM members WHERE member_id = $member_id");
+            $name = $r ? ($r->fetch_assoc()['full_name'] ?? "Member #$member_id") : "Member #$member_id";
+
+            $log_action = match($action) {
+                'approve'    => 'Member Approved',
+                'suspend'    => 'Member Suspended',
+                'reactivate' => 'Member Reactivated',
+                default      => 'Member Status Changed'
+            };
+            $log_detail = "$log_action: $name (ID: $member_id) → status set to '$new_status'.";
+            $ip         = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+
+            $stmt_log = $conn->prepare(
+                "INSERT INTO audit_logs (admin_id, action, details, ip_address, created_at) VALUES (?, ?, ?, ?, NOW())"
+            );
+            $stmt_log->bind_param("isss", $admin_id, $log_action, $log_detail, $ip);
+            $stmt_log->execute();
+
+            flash_set("$name has been successfully " . strtolower($log_action) . ".", 'success');
+        } else {
+            flash_set('No changes were made. Member may already have that status.', 'warning');
+        }
+    } else {
+        flash_set('Invalid action or member ID.', 'danger');
+    }
+
+    header('Location: ' . $_SERVER['PHP_SELF'] . '?' . http_build_query(['status' => $_GET['status'] ?? 'all', 'q' => $_GET['q'] ?? '']));
+    exit;
+}
+
 // 1. Stats Aggregation
 $stats = $conn->query("SELECT 
     COUNT(CASE WHEN status='active'    THEN 1 END) as active, 
