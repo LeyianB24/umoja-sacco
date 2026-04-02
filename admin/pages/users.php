@@ -10,17 +10,141 @@ require_once __DIR__ . '/../../inc/SystemUserService.php';
 
 $layout = LayoutManager::create('admin');
 $hrService = new HRService($conn);
-$systemUserService = new SystemUserService($conn);
+$systemUserService = new SystemUserService();
 
-/**
- * admin/users.php
- * Dynamic Admin/Staff Management with RBAC Integration
- * Umoja Sacco V17
- */
-
-$pageTitle = "Umoja Sacco Admin :: Staff Control";
-$layout = LayoutManager::create('admin');
+$pageTitle = "System Users";
 require_superadmin();
+
+// ---------------------------------------------------------
+// 1. POST ACTIONS — must run before any HTML output
+// ---------------------------------------------------------
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+    verify_csrf_token();
+
+    if ($_POST['action'] === 'add_user') {
+        $fullname = trim($_POST['full_name']);
+        $email    = trim($_POST['email']);
+        $username = trim($_POST['username']);
+        $role_id  = (int)$_POST['role_id'];
+        $password = trim($_POST['password']);
+
+        $check = $conn->prepare("SELECT admin_id FROM admins WHERE email = ? OR username = ?");
+        $check->bind_param("ss", $email, $username);
+        $check->execute();
+        if ($check->get_result()->num_rows > 0) {
+            flash_set("Email or Username already exists.", "danger");
+        } else {
+            $userData = ['employee_no' => $username, 'company_email' => $email, 'full_name' => $fullname];
+            $result = $systemUserService->createSystemUser($userData, $role_id);
+
+            if ($result['success']) {
+                if (!empty($password) && $password !== $username) {
+                    $systemUserService->resetPassword($result['admin_id'], $password);
+                }
+                // Sync to employees table
+                $empData = [
+                    'full_name'  => $fullname,
+                    'national_id'=> 'SYS-' . $result['admin_id'],
+                    'phone'      => '',
+                    'job_title'  => 'System Administrator',
+                    'grade_id'   => 1,
+                    'salary'     => 0.00,
+                    'hire_date'  => date('Y-m-d')
+                ];
+                $empResult = $hrService->createEmployee($empData);
+                if ($empResult['success']) {
+                    $stmt = $conn->prepare("UPDATE employees SET admin_id = ? WHERE employee_id = ?");
+                    $stmt->bind_param("ii", $result['admin_id'], $empResult['employee_id']);
+                    $stmt->execute();
+                }
+                flash_set("Staff account created successfully.", "success");
+            } else {
+                flash_set("Error: " . $result['error'], "danger");
+            }
+        }
+    }
+
+    if ($_POST['action'] === 'edit_user') {
+        $id       = (int)$_POST['admin_id'];
+        $fullname = trim($_POST['full_name']);
+        $email    = trim($_POST['email']);
+        $role_id  = (int)$_POST['role_id'];
+        $password = trim($_POST['password'] ?? '');
+
+        if ($id > 0) {
+            // Direct mysqli update — avoids PDO/mysqli mismatch on $systemUserService
+            $stmt = $conn->prepare("UPDATE admins SET full_name = ?, email = ?, role_id = ? WHERE admin_id = ?");
+            $stmt->bind_param("ssii", $fullname, $email, $role_id, $id);
+            $stmt->execute();
+
+            if (!empty($password)) {
+                $hashed = password_hash($password, PASSWORD_BCRYPT);
+                $ps = $conn->prepare("UPDATE admins SET password = ? WHERE admin_id = ?");
+                $ps->bind_param("si", $hashed, $id);
+                $ps->execute();
+            }
+
+            // Sync full_name to linked employee record
+            $sync = $conn->prepare("UPDATE employees SET full_name = ? WHERE admin_id = ?");
+            $sync->bind_param("si", $fullname, $id);
+            $sync->execute();
+
+            // Audit log
+            $admin_id   = $_SESSION['admin_id'] ?? 0;
+            $log_detail = "Edited system user ID $id (name: $fullname, role: $role_id).";
+            $ip         = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+            $log_action = 'User Updated';
+            $stmt_log   = $conn->prepare("INSERT INTO audit_logs (admin_id, action, details, ip_address, created_at) VALUES (?, ?, ?, ?, NOW())");
+            $stmt_log->bind_param("isss", $admin_id, $log_action, $log_detail, $ip);
+            $stmt_log->execute();
+
+            flash_set("User profile updated successfully.", "success");
+        } else {
+            flash_set("Invalid user ID.", "danger");
+        }
+    }
+
+    header("Location: users.php"); exit;
+}
+
+// ---------------------------------------------------------
+// 2. DELETE
+// ---------------------------------------------------------
+if (isset($_GET['delete_id'])) {
+    $del_id = (int)$_GET['delete_id'];
+    if ($del_id === ($_SESSION['admin_id'] ?? 0)) {
+        flash_set("Self-deletion is not allowed.", "danger");
+    } else {
+        $stmt = $conn->prepare("DELETE FROM admins WHERE admin_id = ?");
+        $stmt->bind_param("i", $del_id);
+        $stmt->execute();
+        if ($stmt->affected_rows > 0) {
+            flash_set("Staff account deleted.", "warning");
+        } else {
+            flash_set("User not found.", "danger");
+        }
+    }
+    header("Location: users.php"); exit;
+}
+
+// ---------------------------------------------------------
+// 3. FETCH DATA for display
+// ---------------------------------------------------------
+$roles_res  = $conn->query("SELECT * FROM roles ORDER BY name ASC");
+$roles_list = [];
+while ($r = $roles_res->fetch_assoc()) $roles_list[] = $r;
+
+$users_res = $conn->query("SELECT a.*, r.name as role_name FROM admins a LEFT JOIN roles r ON a.role_id = r.id ORDER BY a.created_at DESC");
+$all_users = [];
+while ($u = $users_res->fetch_assoc()) $all_users[] = $u;
+
+$total_staff = count($all_users);
+$role_counts = [];
+foreach ($all_users as $u) {
+    $rn = $u['role_name'] ?? 'No Role';
+    $role_counts[$rn] = ($role_counts[$rn] ?? 0) + 1;
+}
+$total_roles = count($role_counts);
 ?>
 <?php $layout->header($pageTitle); ?>
 
@@ -553,117 +677,7 @@ tr:hover .avatar-box {
 
         <?php flash_render(); ?>
 
-        <?php
-        // 1. Handle POST Actions
-        if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
-            verify_csrf_token();
-
-            if ($_POST['action'] === 'add_user') {
-                $fullname = trim($_POST['full_name']);
-                $email    = trim($_POST['email']);
-                $username = trim($_POST['username']);
-                $role_id  = intval($_POST['role_id']);
-                $password = trim($_POST['password']);
-
-                $check = $conn->prepare("SELECT admin_id FROM admins WHERE email = ? OR username = ?");
-                $check->bind_param("ss", $email, $username);
-                $check->execute();
-                if ($check->get_result()->num_rows > 0) {
-                    flash_set("Email or Username already exists.", "danger");
-                } else {
-                    $userData = ['employee_no' => $username, 'company_email' => $email, 'full_name' => $fullname];
-                    $result = $systemUserService->createSystemUser($userData, $role_id);
-                    
-                    if ($result['success']) {
-                        if (!empty($password) && $password !== $username) {
-                            $systemUserService->resetPassword($result['admin_id'], $password);
-                        }
-                        
-                        // Sync to employees table
-                        $empData = [
-                            'full_name' => $fullname,
-                            'national_id' => 'SYS-' . $result['admin_id'],
-                            'phone' => '',
-                            'job_title' => 'System Administrator',
-                            'grade_id' => 1,
-                            'salary' => 0.00,
-                            'hire_date' => date('Y-m-d')
-                        ];
-                        $empResult = $hrService->createEmployee($empData);
-                        
-                        if ($empResult['success']) {
-                            $stmt = $conn->prepare("UPDATE employees SET admin_id = ? WHERE employee_id = ?");
-                            $stmt->bind_param("ii", $result['admin_id'], $empResult['employee_id']);
-                            $stmt->execute();
-                        }
-                        
-                        flash_set("Admin user created and synced to employees successfully.");
-                    } else {
-                        flash_set("Error: " . $result['error'], "danger");
-                    }
-                }
-            }
-
-            if ($_POST['action'] === 'edit_user') {
-                $id = intval($_POST['admin_id']);
-                $fullname = trim($_POST['full_name']);
-                $email = trim($_POST['email']);
-                $role_id = intval($_POST['role_id']);
-
-                if (!empty($_POST['password'])) {
-                    $systemUserService->resetPassword($id, $_POST['password']);
-                }
-                
-                $updateResult = $systemUserService->updateSystemUser($id, [
-                    'full_name' => $fullname,
-                    'email' => $email
-                ]);
-                $systemUserService->assignRole($id, $role_id);
-
-                if ($updateResult['success']) {
-                    flash_set("User updated and synced successfully.");
-                } else {
-                    flash_set("Error: " . $updateResult['error'], "danger");
-                }
-            }
-
-            header("Location: users.php");
-            exit;
-        }
-
-        // 2. Delete Admin
-        if (isset($_GET['delete_id'])) {
-            $del_id = intval($_GET['delete_id']);
-            if ($del_id === $_SESSION['admin_id']) {
-                flash_set("Self-deletion is not allowed.", "danger");
-            } else {
-                $stmt = $conn->prepare("DELETE FROM admins WHERE admin_id = ?");
-                $stmt->bind_param("i", $del_id);
-                $stmt->execute();
-                flash_set("User deleted permanently.", "warning");
-            }
-            header("Location: users.php"); exit;
-        }
-
-        // 3. Fetch Data
-        $roles_res = $conn->query("SELECT * FROM roles ORDER BY name ASC");
-        $roles_list = [];
-        while ($r = $roles_res->fetch_assoc()) $roles_list[] = $r;
-
-        $users_res = $conn->query("SELECT a.*, r.name as role_name FROM admins a LEFT JOIN roles r ON a.role_id = r.id ORDER BY a.created_at DESC");
-        $all_users = [];
-        while ($u = $users_res->fetch_assoc()) $all_users[] = $u;
-
-        $total_staff  = count($all_users);
-        $role_counts  = [];
-        foreach ($all_users as $u) {
-            $rn = $u['role_name'] ?? 'No Role';
-            $role_counts[$rn] = ($role_counts[$rn] ?? 0) + 1;
-        }
-        $total_roles = count($role_counts);
-
-        $pageTitle = "Staff Management";
-        ?>
+        <?php $pageTitle = "System Users"; ?>
 
         <!-- Breadcrumb -->
         <nav class="mb-1" aria-label="breadcrumb">
