@@ -1,9 +1,39 @@
 /**
- * Global Live Refresh Widget
- * Auto-refreshes the page every 15 seconds, with intelligent pausing.
+ * Global Live Refresh & Idle Timeout Widget
+ * Auto-refreshes the page every 15 seconds (with intelligent pausing)
+ * Auto-logs out the user after 2 minutes of complete inactivity.
  */
 document.addEventListener('DOMContentLoaded', () => {
-    // Skip if on monitor.php (has its own hardcoded refresh UI)
+
+    /* ==============================================================================
+     * 1. Auto-Logout (Idle Timer) Logic
+     * Automatically logs the user out after 2 minutes of no interaction.
+     * ============================================================================== */
+    const IDLE_TIMEOUT_MS = 2 * 60 * 1000; // 2 minutes
+    let idleTimer;
+
+    const resetIdleTimer = () => {
+        clearTimeout(idleTimer);
+        idleTimer = setTimeout(() => {
+            // Force logout
+            const basePath = window.location.pathname.includes('/usms/') ? '/usms' : '';
+            window.location.href = basePath + '/public/logout.php?reason=idle_timeout';
+        }, IDLE_TIMEOUT_MS);
+    };
+
+    // Listen to standard user interaction events to reset the timer
+    ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart'].forEach(evt => {
+        document.addEventListener(evt, resetIdleTimer, true);
+    });
+    
+    // Start idle timer immediately
+    resetIdleTimer();
+
+
+    /* ==============================================================================
+     * 2. Live Page Refresh Logic
+     * ============================================================================== */
+    // Skip if on monitor.php (has its own hardcoded refresh UI) or explicitly disabled
     if (window.location.pathname.includes('monitor.php')) return;
     if (window.DISABLE_LIVE_REFRESH) return;
 
@@ -13,7 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let hoverPause = false;
     let inputFocus = false;
 
-    // 1. Create Floating UI Widget
+    // Create Floating UI Widget
     const widget = document.createElement('div');
     widget.id = 'usms-live-refresh-widget';
     widget.innerHTML = `
@@ -43,7 +73,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const timeEl = () => document.getElementById('glr-time');
     const textEl = document.getElementById('glr-text');
 
-    // 2. Toggle Pause Manually
+    // Toggle Pause Manually
     widget.addEventListener('click', () => {
         isPaused = !isPaused;
         if (isPaused) {
@@ -53,7 +83,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             pulse.style.background = '#16a34a';
             pulse.style.boxShadow = '0 0 10px rgba(22,163,74,0.6)';
-            textEl.innerHTML = `SYNC: <span id="glr-time">${MAX_TIME}</span>S`;
+            textEl.innerHTML = \`SYNC: <span id="glr-time">\${MAX_TIME}</span>S\`;
             countdown = MAX_TIME;
         }
     });
@@ -62,7 +92,7 @@ document.addEventListener('DOMContentLoaded', () => {
     widget.addEventListener('mouseenter', () => widget.style.transform = 'translateY(-3px)');
     widget.addEventListener('mouseleave', () => widget.style.transform = 'translateY(0)');
 
-    // 3. Intelligent Interaction Pausing
+    // Intelligent Interaction Pausing
     document.addEventListener('focusin', (e) => {
         if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) {
             inputFocus = true;
@@ -79,7 +109,7 @@ document.addEventListener('DOMContentLoaded', () => {
         el.addEventListener('mouseleave', () => hoverPause = false);
     });
 
-    // 4. Timer Loop
+    // Timer Loop
     setInterval(() => {
         if (isPaused) return;
 
@@ -99,14 +129,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (textEl.innerText === 'WAITING...') {
             pulse.style.background = '#16a34a';
             pulse.style.boxShadow = '0 0 10px rgba(22,163,74,0.6)';
-            textEl.innerHTML = `SYNC: <span id="glr-time">${countdown}</span>S`;
+            textEl.innerHTML = \`SYNC: <span id="glr-time">\${countdown}</span>S\`;
         }
 
         countdown--;
 
         if (countdown <= 0) {
             textEl.innerHTML = '<span style="color:#16a34a">SYNCING...</span>';
-            // Use replace to avoid resubmitting POST data warnings
             window.location.replace(window.location.href);
         } else {
             const t = timeEl();
