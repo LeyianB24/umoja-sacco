@@ -83,7 +83,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             pulse.style.background = '#16a34a';
             pulse.style.boxShadow = '0 0 10px rgba(22,163,74,0.6)';
-            textEl.innerHTML = \`SYNC: <span id="glr-time">\${MAX_TIME}</span>S\`;
+            textEl.innerHTML = 'SYNC: <span id="glr-time">' + MAX_TIME + '</span>S';
             countdown = MAX_TIME;
         }
     });
@@ -129,7 +129,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (textEl.innerText === 'WAITING...') {
             pulse.style.background = '#16a34a';
             pulse.style.boxShadow = '0 0 10px rgba(22,163,74,0.6)';
-            textEl.innerHTML = \`SYNC: <span id="glr-time">\${countdown}</span>S\`;
+            textEl.innerHTML = 'SYNC: <span id="glr-time">' + countdown + '</span>S';
         }
 
         countdown--;
