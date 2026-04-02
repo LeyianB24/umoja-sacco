@@ -1,6 +1,0 @@
-<?php
-require 'config/app.php';
-$res = $conn->query("SELECT * FROM transactions WHERE member_id = 2 ORDER BY created_at DESC LIMIT 10");
-$rows = [];
-while($row = $res->fetch_assoc()) $rows[] = $row;
-echo json_encode($rows, JSON_PRETTY_PRINT);
