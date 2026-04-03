@@ -565,7 +565,6 @@ textarea.form-control { resize: vertical; min-height: 80px; }
         <?php endif; ?>
 
         <!-- Finance Nav -->
-        <?php include __DIR__ . '/../../inc/finance_nav.php'; ?>
 
         <!-- ═══ KPI STRIP ═════════════════════════════════════════════════ -->
         <div class="row g-4 mb-4">

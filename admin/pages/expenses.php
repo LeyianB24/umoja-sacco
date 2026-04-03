@@ -529,9 +529,6 @@ textarea.form-control { resize: vertical; min-height: 76px; }
             </form>
         </div>
 
-        <!-- Finance Nav -->
-        <?php include __DIR__ . '/../../inc/finance_nav.php'; ?>
-
         <!-- ═══ KPIs ══════════════════════════════════════════════════════ -->
         <div class="row g-4 mb-4">
             <div class="col-md-4" style="animation-delay:.04s">
