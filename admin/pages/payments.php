@@ -633,7 +633,6 @@ textarea.form-control { resize: vertical; min-height: 76px; }
         </div>
 
         <!-- Finance Nav -->
-        <?php include __DIR__ . '/../../inc/finance_nav.php'; ?>
 
         <!-- Alerts -->
         <?php if (isset($_SESSION['success'])): ?>
