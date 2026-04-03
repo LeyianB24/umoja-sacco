@@ -4,11 +4,8 @@
  * Compact loader to inject dark mode assets into pages that bypass shared headers.
  */
 if (!defined('BASE_URL')) {
-    // Attempt to load config if not defined
+    // Load main config
     $config_path = __DIR__ . '/../config/app.php';
-    if (!file_exists($config_path)) {
-        $config_path = __DIR__ . '/../config/app_config.php';
-    }
     if (file_exists($config_path)) require_once $config_path;
 }
 

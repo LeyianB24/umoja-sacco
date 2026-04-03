@@ -15,8 +15,7 @@ This document explains the security improvements implemented for the USMS system
 
 2. **Secure Configuration Files**
    - `config/environment.php` - Now loads M-Pesa, email, Paystack credentials from `.env.local`
-   - `config/app.php` - Updated database and SMTP settings to use environment variables
-   - `config/app_config.php` - Updated SMS, SMTP, and notification settings to use environment variables
+   - `config/app.php` - Consolidated master config: database, SMTP, SMS, and notification settings from environment variables
 
 3. **Git Protection** (`.gitignore`)
    - ✅ `.env` (all environment files)
@@ -151,9 +150,8 @@ php -r "require 'config/EnvLoader.php'; use USMS\Config\EnvLoader; EnvLoader::lo
 ├── .gitignore             # Excludes .env.* and config files 🛡️
 ├── config/
 │   ├── EnvLoader.php      # NEW: Loads .env.local securely
-│   ├── environment.php    # Updated: Uses EnvLoader
-│   ├── app.php            # Updated: Uses EnvLoader
-│   └── app_config.php     # Updated: Uses EnvLoader
+│   ├── environment.php    # Updated: Uses EnvLoader for M-Pesa/Email
+│   └── app.php            # Single source of truth for all config
 └── ... (rest of app)
 ```
 

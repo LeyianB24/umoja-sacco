@@ -1,11 +1,29 @@
 <?php
 // inc/header.php
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
+// Validate environment on first load
+if (!defined('USMS_BOOTSTRAP_COMPLETE')) {
+    require_once __DIR__ . '/../config/bootstrap.php';
+    define('USMS_BOOTSTRAP_COMPLETE', true);
 }
 
 require_once __DIR__ . '/../config/app.php';
+
+// ════════════════════════════════════════════════════════════
+// SECURITY CONFIGURATION
+// ════════════════════════════════════════════════════════════
+use USMS\Config\EnvLoader;
+
+// 1. Add secure security headers
+EnvLoader::addSecurityHeaders();
+
+// 2. Enforce HTTPS in production
+EnvLoader::enforceHttps();
+
+// 3. Configure secure sessions (if not already started)
+if (session_status() === PHP_SESSION_NONE) {
+    EnvLoader::configureSession();
+}
 
 if (class_exists('USMS\\Middleware\\CsrfMiddleware')) {
     \USMS\Middleware\CsrfMiddleware::token();
