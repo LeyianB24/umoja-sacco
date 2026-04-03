@@ -376,7 +376,6 @@ h1,h2,h3,h4,h5,h6,p,span,div,label,a,.modal,.offcanvas {
         <div style="margin-top:-36px; position:relative; z-index:10;">
 
             <?php if (function_exists('flash_render')) flash_render(); ?>
-            <?php include __DIR__ . '/../../inc/finance_nav.php'; ?>
 
             <div class="row g-4 mt-1">
 

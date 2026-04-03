@@ -626,7 +626,6 @@ $pageTitle = "Golden Ledger Vault";
         </div>
     </div>
 
-    <?php include __DIR__ . '/../../inc/finance_nav.php'; ?>
 
     <!-- ─── FILTER PANEL ─────────────────────────── -->
     <div class="filter-panel">
