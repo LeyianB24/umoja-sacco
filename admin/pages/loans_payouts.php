@@ -94,7 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'notes'         => "Loan Disbursement via $method. Ref: $ref"
                 ]);
 
-                $conn->query("UPDATE loans SET current_balance = amount, status='disbursed', disbursement_date=NOW() WHERE loan_id=$loan_id");
+                $conn->query("UPDATE loans SET current_balance = amount, status='disbursed', disbursed_date=NOW() WHERE loan_id=$loan_id");
 
                 require_once __DIR__ . '/../../inc/notification_helpers.php';
                 send_notification($conn, (int)$l_chk['member_id'], 'loan_disbursed', ['amount' => (float)$l_chk['amount'], 'ref' => $ref]);
