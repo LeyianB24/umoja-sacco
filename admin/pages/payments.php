@@ -8,7 +8,6 @@ require_once __DIR__ . '/../../inc/LayoutManager.php';
 require_once __DIR__ . '/../../inc/SupportTicketWidget.php';
 
 $layout = LayoutManager::create('admin');
-$layout = LayoutManager::create('admin');
 
 require_once __DIR__ . '/../../inc/FinancialEngine.php';
 require_once __DIR__ . '/../../inc/TransactionHelper.php';
@@ -118,6 +117,106 @@ if (!empty($_GET['search'])) {
     $where .= " AND (t.reference_no LIKE ? OR m.full_name LIKE ?)";
     $params[] = $search; $params[] = $search;
     $types .= "ss";
+}
+
+// HANDLE INDIVIDUAL RECEIPT DOWNLOAD
+if (isset($_GET['action']) && $_GET['action'] === 'download_receipt') {
+    $txn_id = intval($_GET['id'] ?? 0);
+    if ($txn_id > 0) {
+        require_once __DIR__ . '/../../core/exports/UniversalExportEngine.php';
+        
+        $sql_receipt = "SELECT t.*, m.full_name, m.national_id, m.phone, m.member_reg_no
+                        FROM transactions t 
+                        LEFT JOIN members m ON t.member_id = m.member_id 
+                        WHERE t.transaction_id = ?";
+        $stmt_r = $conn->prepare($sql_receipt);
+        $stmt_r->bind_param("i", $txn_id);
+        $stmt_r->execute();
+        $txn = $stmt_r->get_result()->fetch_assoc();
+        
+        if ($txn) {
+            UniversalExportEngine::handle('pdf', function($pdf) use ($txn) {
+                $pdf->SetFont('Arial', 'B', 14);
+                $pdf->Cell(0, 10, 'OFFICIAL PAYMENT RECEIPT', 0, 1, 'C');
+                $pdf->Ln(5);
+                
+                $pdf->SetFont('Arial', 'B', 10);
+                $pdf->Cell(40, 7, 'Receipt No:', 0, 0);
+                $pdf->SetFont('Arial', '', 10);
+                $pdf->Cell(60, 7, $txn['reference_no'], 0, 1);
+                
+                $pdf->SetFont('Arial', 'B', 10);
+                $pdf->Cell(40, 7, 'Date:', 0, 0);
+                $pdf->SetFont('Arial', '', 10);
+                $pdf->Cell(60, 7, date('d M Y h:i A', strtotime($txn['transaction_date'] ?? $txn['created_at'])), 0, 1);
+                
+                $pdf->Ln(5);
+                $pdf->SetFillColor(240, 240, 240);
+                $pdf->SetFont('Arial', 'B', 11);
+                $pdf->Cell(0, 8, '  MEMBER DETAILS', 0, 1, 'L', true);
+                $pdf->Ln(2);
+                
+                $pdf->SetFont('Arial', 'B', 10);
+                $pdf->Cell(40, 7, 'Name:', 0, 0);
+                $pdf->SetFont('Arial', '', 10);
+                $pdf->Cell(0, 7, $txn['full_name'] ?? 'OFFICE / GENERAL', 0, 1);
+                
+                if (!empty($txn['national_id'])) {
+                    $pdf->SetFont('Arial', 'B', 10);
+                    $pdf->Cell(40, 7, 'ID Number:', 0, 0);
+                    $pdf->SetFont('Arial', '', 10);
+                    $pdf->Cell(0, 7, $txn['national_id'], 0, 1);
+                }
+                
+                $pdf->Ln(5);
+                $pdf->SetFillColor(240, 240, 240);
+                $pdf->SetFont('Arial', 'B', 11);
+                $pdf->Cell(0, 8, '  TRANSACTION DETAILS', 0, 1, 'L', true);
+                $pdf->Ln(2);
+                
+                $pdf->SetFont('Arial', 'B', 10);
+                $pdf->Cell(40, 7, 'Type:', 0, 0);
+                $pdf->SetFont('Arial', '', 10);
+                $pdf->Cell(0, 7, ucwords(str_replace('_', ' ', $txn['transaction_type'])), 0, 1);
+                
+                $pdf->SetFont('Arial', 'B', 10);
+                $pdf->Cell(40, 7, 'Method:', 0, 0);
+                $pdf->SetFont('Arial', '', 10);
+                $pdf->Cell(0, 7, strtoupper($txn['payment_channel'] ?? 'CASH'), 0, 1);
+                
+                if (!empty($txn['notes'])) {
+                    $pdf->SetFont('Arial', 'B', 10);
+                    $pdf->Cell(40, 7, 'Notes:', 0, 0);
+                    $pdf->SetFont('Arial', '', 10);
+                    $pdf->MultiCell(0, 7, $txn['notes'], 0, 'L');
+                }
+                
+                $pdf->Ln(10);
+                $pdf->SetDrawColor(200, 200, 200);
+                $pdf->Line(15, $pdf->GetY(), 195, $pdf->GetY());
+                $pdf->Ln(5);
+                
+                $pdf->SetFont('Arial', 'B', 16);
+                $pdf->Cell(120, 10, 'AMOUNT PAID:', 0, 0, 'R');
+                $pdf->SetTextColor(27, 94, 32);
+                $pdf->Cell(0, 10, 'KES ' . number_format((float)$txn['amount'], 2), 0, 1, 'R');
+                
+                $pdf->Ln(20);
+                $pdf->SetTextColor(100, 100, 100);
+                $pdf->SetFont('Arial', 'I', 9);
+                $pdf->Cell(0, 5, 'This is a computer generated receipt and does not require a signature.', 0, 1, 'C');
+                $pdf->Cell(0, 5, 'Thank you for choosing ' . SITE_NAME . '.', 0, 1, 'C');
+                
+            }, [
+                'title' => 'Payment Receipt',
+                'module' => 'Finance',
+                'account_ref' => $txn['reference_no'],
+                'total_value' => (float)$txn['amount']
+            ]);
+        }
+    }
+    header("Location: payments.php");
+    exit;
 }
 
 // HANDLE EXPORT
@@ -654,7 +753,7 @@ textarea.form-control { resize: vertical; min-height: 76px; }
                                 <div class="notes-text"><?= htmlspecialchars($row['notes'] ?? '') ?></div>
                             </td>
                             <td class="action-col">
-                                <button class="btn-receipt" title="Download Receipt"><i class="bi bi-download"></i></button>
+                                <a href="?action=download_receipt&id=<?= $row['transaction_id'] ?>" class="btn-receipt" title="Download Receipt"><i class="bi bi-download"></i></a>
                             </td>
                         </tr>
                         <?php endwhile; ?>
