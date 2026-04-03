@@ -4,9 +4,12 @@
 /vendor/
 /composer.lock
 
-# Environment & Config
+# Environment & Configuration (NEVER commit credentials!)
 .env
+.env.local
+.env.*.local
 config/database.php
+config/environment.php
 
 # Sensitive Assets & Uploads
 /uploads/
@@ -21,6 +24,7 @@ config/database.php
 *.json
 *.pdf
 !composer.json
+.phpunit.result.cache
 
 # IDEs
 .vscode/

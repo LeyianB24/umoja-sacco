@@ -62,8 +62,12 @@ if (!defined('SOCIAL_TIKTOK'))    define('SOCIAL_TIKTOK',    'https://tiktok.com
 // ============================================================
 // 5. SECURITY
 // ============================================================
-if (!defined('APP_SECRET')) define('APP_SECRET', 'a-very-long-random-secret-you-generate');
-if (!defined('APP_ENV'))    define('APP_ENV',    'development'); // 'sandbox' or 'production'
+require_once __DIR__ . '/EnvLoader.php';
+use USMS\Config\EnvLoader;
+EnvLoader::load();
+
+if (!defined('APP_SECRET')) define('APP_SECRET', EnvLoader::get('APP_SECRET', 'a-very-long-random-secret-you-generate'));
+if (!defined('APP_ENV'))    define('APP_ENV',    EnvLoader::get('APP_ENV', 'development'));
 
 // ============================================================
 // 6. NOTIFICATION SETTINGS
@@ -72,23 +76,23 @@ if (!defined('EMAIL_ENABLED'))   define('EMAIL_ENABLED',   true);
 if (!defined('EMAIL_FROM'))      define('EMAIL_FROM',      COMPANY_EMAIL);
 if (!defined('EMAIL_FROM_NAME')) define('EMAIL_FROM_NAME', SITE_NAME);
 
-if (!defined('SMS_ENABLED'))     define('SMS_ENABLED',     true);
-if (!defined('SMS_SENDER_ID'))   define('SMS_SENDER_ID',   'UMOJA_SACCO');
-if (!defined('SMS_API_KEY'))     define('SMS_API_KEY',     'atsk_aac0d19755a64e3664f9bcb4653fa983e3e94fc90acdff7bca92c1b859e4f4c6aede328c');
+if (!defined('SMS_ENABLED'))     define('SMS_ENABLED',     EnvLoader::getBool('SMS_ENABLED', true));
+if (!defined('SMS_SENDER_ID'))   define('SMS_SENDER_ID',   EnvLoader::get('SMS_SENDER_ID', 'UMOJA_SACCO'));
+if (!defined('SMS_API_KEY'))     define('SMS_API_KEY',     EnvLoader::get('SMS_API_KEY', ''));
 
 // SMTP (used by EmailQueueManager + cron/process_email_queue)
-if (!defined('SMTP_HOST'))       define('SMTP_HOST',      'smtp.gmail.com');
-if (!defined('SMTP_PORT'))       define('SMTP_PORT',      587);
-if (!defined('SMTP_SECURE'))     define('SMTP_SECURE',    'tls');            // 'tls' or 'ssl'
-if (!defined('SMTP_USERNAME'))   define('SMTP_USERNAME',  'leyianbeza24@gmail.com');
-if (!defined('SMTP_PASSWORD'))   define('SMTP_PASSWORD',  'duzb mbqt fnsz ipkg'); // Gmail app password
-if (!defined('SMTP_FROM_NAME'))  define('SMTP_FROM_NAME', SITE_NAME);
+if (!defined('SMTP_HOST'))       define('SMTP_HOST',       EnvLoader::get('SMTP_HOST', 'smtp.gmail.com'));
+if (!defined('SMTP_PORT'))       define('SMTP_PORT',       EnvLoader::getInt('SMTP_PORT', 587));
+if (!defined('SMTP_SECURE'))     define('SMTP_SECURE',     'tls');            // 'tls' or 'ssl'
+if (!defined('SMTP_USERNAME'))   define('SMTP_USERNAME',   EnvLoader::get('SMTP_USERNAME', ''));
+if (!defined('SMTP_PASSWORD'))   define('SMTP_PASSWORD',   EnvLoader::get('SMTP_PASSWORD', ''));
+if (!defined('SMTP_FROM_NAME'))  define('SMTP_FROM_NAME',  SITE_NAME);
 
 // Notification Triggers
-if (!defined('NOTIFY_ON_LOAN_APPROVAL'))  define('NOTIFY_ON_LOAN_APPROVAL',  true);
-if (!defined('NOTIFY_ON_WITHDRAWAL'))     define('NOTIFY_ON_WITHDRAWAL',     true);
-if (!defined('NOTIFY_ON_DEPOSIT'))        define('NOTIFY_ON_DEPOSIT',        true);
-if (!defined('NOTIFY_ON_WELFARE_GRANT'))  define('NOTIFY_ON_WELFARE_GRANT',  true);
+if (!defined('NOTIFY_ON_LOAN_APPROVAL'))  define('NOTIFY_ON_LOAN_APPROVAL',  EnvLoader::getBool('NOTIFY_ON_LOAN_APPROVAL', true));
+if (!defined('NOTIFY_ON_WITHDRAWAL'))     define('NOTIFY_ON_WITHDRAWAL',     EnvLoader::getBool('NOTIFY_ON_WITHDRAWAL', true));
+if (!defined('NOTIFY_ON_DEPOSIT'))        define('NOTIFY_ON_DEPOSIT',        EnvLoader::getBool('NOTIFY_ON_DEPOSIT', true));
+if (!defined('NOTIFY_ON_WELFARE_GRANT'))  define('NOTIFY_ON_WELFARE_GRANT',  EnvLoader::getBool('NOTIFY_ON_WELFARE_GRANT', true));
 
 // ============================================================
 // 7. EXPORT SETTINGS

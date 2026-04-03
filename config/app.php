@@ -89,16 +89,20 @@ if (!defined('SOCIAL_YOUTUBE'))   define('SOCIAL_YOUTUBE',   'https://youtube.co
 if (!defined('SOCIAL_TIKTOK'))    define('SOCIAL_TIKTOK',    'https://tiktok.com/@umojadriverssacco');
 
 // 5. ENVIRONMENT & SECURITY
-if (!defined('APP_ENV'))    define('APP_ENV',    getenv('APP_ENV') ?: 'development');
-if (!defined('APP_SECRET')) define('APP_SECRET', 'a-very-long-random-secret-you-generate');
+require_once __DIR__ . '/EnvLoader.php';
+use USMS\Config\EnvLoader;
+EnvLoader::load();
 
-// 6. DATABASE CONFIGURATION (Legacy mysqli support)
+if (!defined('APP_ENV'))    define('APP_ENV',    EnvLoader::get('APP_ENV', 'development'));
+if (!defined('APP_SECRET')) define('APP_SECRET', EnvLoader::get('APP_SECRET', 'a-very-long-random-secret-you-generate'));
+
+// 6. DATABASE CONFIGURATION (Legacy mysqli support - from .env.local)
 $db_config = [
-    'host'     => 'localhost',
-    'user'     => 'root',
-    'pass'     => '',
-    'dbname'   => 'umoja_drivers_sacco',
-    'charset'  => 'utf8mb4'
+    'host'     => EnvLoader::get('DB_HOST', 'localhost'),
+    'user'     => EnvLoader::get('DB_USER', 'root'),
+    'pass'     => EnvLoader::get('DB_PASS', ''),
+    'dbname'   => EnvLoader::get('DB_NAME', 'umoja_drivers_sacco'),
+    'charset'  => EnvLoader::get('DB_CHARSET', 'utf8mb4')
 ];
 
 $conn = new mysqli($db_config['host'], $db_config['user'], $db_config['pass'], $db_config['dbname']);
@@ -122,22 +126,22 @@ if (!defined('EMAIL_ENABLED'))   define('EMAIL_ENABLED',   true);
 if (!defined('EMAIL_FROM'))      define('EMAIL_FROM',      COMPANY_EMAIL);
 if (!defined('EMAIL_FROM_NAME')) define('EMAIL_FROM_NAME', SITE_NAME);
 
-if (!defined('SMS_ENABLED'))     define('SMS_ENABLED',     true);
-if (!defined('SMS_SENDER_ID'))   define('SMS_SENDER_ID',   'UMOJA_SACCO');
-if (!defined('SMS_API_KEY'))     define('SMS_API_KEY',     'atsk_aac0d19755a64e3664f9bcb4653fa983e3e94fc90acdff7bca92c1b859e4f4c6aede328c');
+if (!defined('SMS_ENABLED'))     define('SMS_ENABLED',     EnvLoader::getBool('SMS_ENABLED', true));
+if (!defined('SMS_SENDER_ID'))   define('SMS_SENDER_ID',   EnvLoader::get('SMS_SENDER_ID', 'UMOJA_SACCO'));
+if (!defined('SMS_API_KEY'))     define('SMS_API_KEY',     EnvLoader::get('SMS_API_KEY', ''));
 
-if (!defined('SMTP_HOST'))       define('SMTP_HOST',       $config['email']['smtp_host'] ?? 'smtp.gmail.com');
-if (!defined('SMTP_PORT'))       define('SMTP_PORT',       $config['email']['smtp_port'] ?? 587);
-if (!defined('SMTP_USERNAME'))   define('SMTP_USERNAME',   $config['email']['smtp_username'] ?? 'leyianbeza24@gmail.com');
-if (!defined('SMTP_PASSWORD'))   define('SMTP_PASSWORD',   $config['email']['smtp_password'] ?? 'duzb mbqt fnsz ipkg');
+if (!defined('SMTP_HOST'))       define('SMTP_HOST',       EnvLoader::get('SMTP_HOST', 'smtp.gmail.com'));
+if (!defined('SMTP_PORT'))       define('SMTP_PORT',       EnvLoader::getInt('SMTP_PORT', 587));
+if (!defined('SMTP_USERNAME'))   define('SMTP_USERNAME',   EnvLoader::get('SMTP_USERNAME', ''));
+if (!defined('SMTP_PASSWORD'))   define('SMTP_PASSWORD',   EnvLoader::get('SMTP_PASSWORD', ''));
 if (!defined('SMTP_SECURE'))     define('SMTP_SECURE',     'tls');
 if (!defined('SMTP_FROM_NAME'))  define('SMTP_FROM_NAME',  SITE_NAME);
 
 // Notification Triggers
-if (!defined('NOTIFY_ON_LOAN_APPROVAL')) define('NOTIFY_ON_LOAN_APPROVAL', true);
-if (!defined('NOTIFY_ON_WITHDRAWAL'))    define('NOTIFY_ON_WITHDRAWAL',    true);
-if (!defined('NOTIFY_ON_DEPOSIT'))       define('NOTIFY_ON_DEPOSIT',       true);
-if (!defined('NOTIFY_ON_WELFARE_GRANT')) define('NOTIFY_ON_WELFARE_GRANT', true);
+if (!defined('NOTIFY_ON_LOAN_APPROVAL')) define('NOTIFY_ON_LOAN_APPROVAL', EnvLoader::getBool('NOTIFY_ON_LOAN_APPROVAL', true));
+if (!defined('NOTIFY_ON_WITHDRAWAL'))    define('NOTIFY_ON_WITHDRAWAL',    EnvLoader::getBool('NOTIFY_ON_WITHDRAWAL', true));
+if (!defined('NOTIFY_ON_DEPOSIT'))       define('NOTIFY_ON_DEPOSIT',       EnvLoader::getBool('NOTIFY_ON_DEPOSIT', true));
+if (!defined('NOTIFY_ON_WELFARE_GRANT')) define('NOTIFY_ON_WELFARE_GRANT', EnvLoader::getBool('NOTIFY_ON_WELFARE_GRANT', true));
 
 // 9. EXPORT SETTINGS
 if (!defined('EXPORT_ENABLED'))       define('EXPORT_ENABLED',       true);
