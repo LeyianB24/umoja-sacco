@@ -386,7 +386,6 @@ select, input, textarea, button, table {
             </div>
         </div>
 
-        <?php include __DIR__ . '/../../inc/finance_nav.php'; ?>
 
         <!-- ═══ KPI STRIP + CHART ════════════════════════════════════════ -->
         <div class="row g-4 mb-4">
