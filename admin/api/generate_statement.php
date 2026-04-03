@@ -25,7 +25,7 @@ if (!$member_id || !$start_date || !$end_date) {
 }
 
 // 2. Member Fetching
-$stmt = $conn->prepare("SELECT member_id, full_name, member_reg_no, national_id, phone_number FROM members WHERE member_id = ?");
+$stmt = $conn->prepare("SELECT member_id, full_name, member_reg_no, national_id, phone FROM members WHERE member_id = ?");
 $stmt->bind_param("i", $member_id);
 $stmt->execute();
 $member = $stmt->get_result()->fetch_assoc();
