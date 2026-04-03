@@ -114,45 +114,23 @@ class ShareValuationEngine {
     }
 
     /**
-     * Perform Dividend Distribution
+     * Perform Dividend Distribution using the Enterprise DividendService (Pro-Rata)
      */
     public function distributeDividends(float $total_pool, string $reference): bool {
-        $valuation = $this->getValuation();
-        $totalUnits = $valuation['total_units'];
-        if ($totalUnits <= 0) return false;
-
-        $dividend_per_unit = $total_pool / $totalUnits;
-
-        $this->db->begin_transaction();
         try {
-            $res = $this->db->query("SELECT member_id, units_owned FROM member_shareholdings WHERE units_owned > 0");
-            while ($row = $res->fetch_assoc()) {
-                $mid = (int)$row['member_id'];
-                $units = (float)$row['units_owned'];
-                $member_dividend = $units * $dividend_per_unit;
-
-                // 1. Credit Member's Wallet via FinancialEngine
-                // Debit: Equity (Retained Earnings), Credit: Liability (Member Wallet)
-                $this->financialEngine->transact([
-                    'member_id' => $mid,
-                    'amount' => $member_dividend,
-                    'action_type' => 'dividend_payment',
-                    'reference' => $reference . '-M' . $mid,
-                    'notes' => "Dividend payout: " . number_format($units, 2) . " units @ KES " . number_format($dividend_per_unit, 2)
-                ]);
-
-                // 2. Log in share_transactions
-                $stmt = $this->db->prepare("INSERT INTO share_transactions (member_id, units, unit_price, total_value, transaction_type, reference_no) VALUES (?, 0, ?, ?, 'dividend', ?)");
-                $price_placeholder = 0.0;
-                $ref = $reference . '-DIV-' . $mid;
-                $stmt->bind_param("idds", $mid, $price_placeholder, $member_dividend, $ref);
-                $stmt->execute();
-            }
-
-            $this->db->commit();
-            return true;
+            $dividendService = new \USMS\Services\DividendService();
+            $year = date('Y');
+            $adminId = (int)($_SESSION['admin_id'] ?? 1);
+            
+            // 1. Declare and calculate payouts
+            $res = $dividendService->distributeFromPool($total_pool, $year, $adminId);
+            
+            // 2. Process payouts (Finalize to Ledger)
+            $count = $dividendService->processPayouts($res['period_id'], $adminId);
+            
+            return $count > 0;
         } catch (Exception $e) {
-            $this->db->rollback();
+            error_log("Dividend Redistribution Failure: " . $e->getMessage());
             throw $e;
         }
     }

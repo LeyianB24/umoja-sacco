@@ -51,15 +51,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 $msg = $msg ?? "";
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'distribute_dividend') {
     $pool = (float)$_POST['dividend_pool'];
-    $ref = "DIV-" . strtoupper(uniqid());
+    $year = $_POST['fiscal_year'] ?? date('Y');
+    $ref = "DIV-" . $year . "-" . strtoupper(uniqid());
     if ($pool > 0) {
         try {
+            // Using the updated engine that now handles pro-rata and taxes
             if ($svEngine->distributeDividends($pool, $ref)) {
-                $msg = "<div class='alert alert-success rounded-3'>Successfully distributed KES " . number_format($pool, 2) . " across all shareholders.</div>";
+                $msg = "<div class='alert alert-success rounded-3 shadow-sm border-0 d-flex align-items-center'>
+                            <i class='bi bi-check-circle-fill me-3 fs-4'></i>
+                            <div>
+                                <strong class='d-block'>Distribution Successful!</strong>
+                                <span>KES " . number_format($pool, 2) . " has been distributed proportionally (pro-rata) for FY $year. 5% WHT has been deducted.</span>
+                            </div>
+                        </div>";
                 $valuation = $svEngine->getValuation();
             }
         } catch (Exception $e) {
-            $msg = "<div class='alert alert-danger rounded-3'>Error: " . $e->getMessage() . "</div>";
+            $msg = "<div class='alert alert-danger rounded-3 shadow-sm border-0 d-flex align-items-center'>
+                        <i class='bi bi-exclamation-octagon-fill me-3 fs-4'></i>
+                        <div>
+                            <strong class='d-block'>Distribution Failed</strong>
+                            <span>" . $e->getMessage() . "</span>
+                        </div>
+                    </div>";
         }
     }
 }
@@ -725,6 +739,14 @@ h1,h2,h3,h4,h5,h6,p,span,div,label,a,.modal,.offcanvas {
                 <form method="POST">
                     <input type="hidden" name="action" value="distribute_dividend">
                     <div class="modal-body-pad">
+                        <div class="mb-3">
+                            <label class="field-label">Fiscal Year</label>
+                            <select name="fiscal_year" class="form-select-enh" required>
+                                <option value="<?= date('Y') ?>"><?= date('Y') ?> (Current)</option>
+                                <option value="<?= date('Y')-1 ?>"><?= date('Y')-1 ?></option>
+                                <option value="<?= date('Y')-2 ?>"><?= date('Y')-2 ?></option>
+                            </select>
+                        </div>
                         <div class="mb-3">
                             <label class="field-label">Total Dividend Pool (KES)</label>
                             <div class="input-group-enh">
