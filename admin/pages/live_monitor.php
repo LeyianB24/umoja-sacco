@@ -83,7 +83,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['system_action'])) {
                     $conn->query("UPDATE ledger_accounts SET current_balance = $bal WHERE account_id = $acc");
                     $synced++;
                 }
-                $conn->query("UPDATE wallet_balances wb JOIN ledger_accounts la ON wb.member_id = la.member_id AND la.category='wallet' SET wb.balance = la.current_balance");
             }
             AuditHelper::log($conn,'SYSTEM_MAINTENANCE',"Manual financial re-sync triggered. Synced $synced accounts.",null,(int)$_SESSION['admin_id'],'warning'); 
             $_SESSION['success']="Financial re-sync cycle completed. $synced accounts verified."; 
