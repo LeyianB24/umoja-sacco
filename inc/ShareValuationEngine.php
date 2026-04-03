@@ -28,7 +28,8 @@ class ShareValuationEngine {
         
         return array_merge($valuation, [
             'initial_price' => (float)($settings['initial_unit_price'] ?? 100.00),
-            'par_value' => (float)($settings['par_value'] ?? 100.00)
+            'par_value' => (float)($settings['par_value'] ?? 100.00),
+            'total_authorized_units' => (float)($settings['total_authorized_units'] ?? 0)
         ]);
     }
 
@@ -39,6 +40,24 @@ class ShareValuationEngine {
         $valuation = $this->getValuation();
         $unit_price = (float)$valuation['price'];
         $units = $amount / $unit_price;
+
+        $authorizedUnits = (float)$valuation['total_authorized_units'];
+        $currentTotalUnits = (float)$valuation['total_units'];
+
+        // 1. Check Global Limit
+        if ($currentTotalUnits + $units > $authorizedUnits) {
+            throw new Exception("Share Issuance Error: The requested purchase of " . number_format($units, 2) . " units exceeds the SACCO's authorized limit. Available capacity: " . number_format(max(0, $authorizedUnits - $currentTotalUnits), 2) . " units.");
+        }
+
+        // 2. Check Individual Ownership (Cannot exceed 100% of Authorized Sacco Value)
+        $stmt_m = $this->db->prepare("SELECT units_owned FROM member_shareholdings WHERE member_id = ?");
+        $stmt_m->bind_param("i", $member_id);
+        $stmt_m->execute();
+        $memberCurrentUnits = (float)($stmt_m->get_result()->fetch_assoc()['units_owned'] ?? 0);
+
+        if ($memberCurrentUnits + $units > $authorizedUnits) {
+            throw new Exception("Ownership Violation: A single member cannot own more than 100% of the SACCO's authorized value.");
+        }
 
         $this->db->begin_transaction();
         try {

@@ -163,7 +163,7 @@ class ReportService {
         $liabilities = $savings + $welfare;
         $netEquity   = $totalAssets - $liabilities;
 
-        $totalUnits  = (float)($this->db->query("SELECT COALESCE(SUM(share_units),0) FROM shares")->fetchColumn());
+        $totalUnits  = (float)($this->db->query("SELECT COALESCE(SUM(units_owned),0) FROM member_shareholdings")->fetchColumn());
         $price       = ($totalUnits > 0) ? ($netEquity / $totalUnits) : 100.00;
         if ($price < 1.0) $price = 100.00;
 
