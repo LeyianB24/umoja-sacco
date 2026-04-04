@@ -66,7 +66,7 @@ body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--body-bg);
    HERO
 ═══════════════════════════════ */
 .lp-hero {
-    min-height: 100vh;
+    min-height: calc(100vh - 68px);
     position: relative;
     display: flex;
     align-items: center;
@@ -216,17 +216,17 @@ body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--body-bg);
 
 /* ─── Poker Slideshow ─── */
 .poker-slideshow {
-    perspective: 1200px;
     display: flex;
+    flex-direction: row;
     justify-content: center;
     align-items: center;
-    height: 420px;
-    position: relative;
+    gap: 10px;
+    height: auto;
+    overflow-x: auto;
     animation: heroFadeIn 1s 0.25s ease both;
 }
 .poker-card {
-    position: absolute;
-    width: 270px; height: 370px;
+    width: 200px; height: 280px;
     border-radius: 22px;
     background: #fff;
     box-shadow: 0 24px 60px rgba(0,0,0,0.2);
@@ -234,13 +234,9 @@ body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--body-bg);
     cursor: pointer;
     overflow: hidden;
     border: 5px solid #fff;
-    transform-origin: bottom center;
+    flex-shrink: 0;
 }
 .poker-card img { width: 100%; height: 100%; object-fit: cover; border-radius: 17px; display: block; }
-.poker-card[data-active="true"] { z-index:10; transform: rotateY(0deg) translateZ(0) scale(1.08); opacity: 1; }
-.poker-card[data-side="left"]  { z-index:5;  transform: rotateY(22deg) translateX(-160px) translateZ(-90px) scale(0.88); opacity: 0.55; }
-.poker-card[data-side="right"] { z-index:5;  transform: rotateY(-22deg) translateX(160px) translateZ(-90px) scale(0.88); opacity: 0.55; }
-.poker-card[data-hidden="true"] { opacity:0; transform: translateZ(-200px) scale(0.8); pointer-events:none; }
 
 .slideshow-controls {
     position: absolute;
@@ -613,7 +609,7 @@ body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--body-bg);
             $n = 1;
             foreach ($steps as $step):
             ?>
-            <div class="col-lg-3 col-md-6">
+            <div class="col-lg-3 col-md-6 col-6">
                 <div class="blueprint-card <?= $n==4 ? 'featured' : '' ?>">
                     <div class="bp-num"><?= $n ?></div>
                     <i class="bi <?= $step[0] ?> bp-icon"></i>
@@ -645,7 +641,7 @@ body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--body-bg);
             ];
             foreach ($services as $srv):
             ?>
-            <div class="col-lg-4 col-md-6">
+            <div class="col-lg-4 col-md-6 col-6">
                 <div class="service-card">
                     <div class="service-icon"><i class="bi <?= $srv[0] ?>"></i></div>
                     <h5><?= $srv[1] ?></h5>
@@ -675,7 +671,7 @@ body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--body-bg);
             ];
             foreach ($assets as $item):
             ?>
-            <div class="col-lg-3 col-md-6">
+            <div class="col-lg-3 col-md-6 col-6">
                 <div class="asset-card">
                     <div class="asset-icon"><i class="bi <?= $item[0] ?>"></i></div>
                     <h5><?= $item[1] ?></h5>
