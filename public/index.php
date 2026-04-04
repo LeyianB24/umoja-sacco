@@ -66,11 +66,14 @@ body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--body-bg);
    HERO
 ═══════════════════════════════ */
 .lp-hero {
-    min-height: 100vh;
+    min-height: calc(100vh - 72px);
     position: relative;
     display: flex;
     align-items: center;
     overflow: hidden;
+}
+.lp-hero .container {
+    max-width: 1160px;
 }
 .lp-hero-bg {
     position: absolute;
@@ -149,7 +152,7 @@ body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--body-bg);
     font-weight: 500;
     color: var(--text-muted);
     line-height: 1.75;
-    max-width: 520px;
+    max-width: 600px;
     margin-bottom: 36px;
     animation: heroFadeIn 1s 0.2s ease both;
 }
@@ -204,15 +207,17 @@ body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--body-bg);
 /* Hero Trust Row */
 .hero-trust {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 20px;
+    justify-content: flex-start;
+    gap: 18px;
     margin-top: 40px;
     animation: heroFadeIn 1s 0.4s ease both;
 }
 .hero-trust-divider { width: 1px; height: 32px; background: rgba(255,255,255,0.15); }
-.hero-trust-stat { text-align: center; }
+.hero-trust-stat { text-align: left; min-width: 120px; }
 .hero-trust-stat .val { font-size: 1.2rem; font-weight: 800; color: var(--lime); line-height: 1; margin-bottom: 3px; }
-.hero-trust-stat .lbl { font-size: 0.6rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.7px; }
+.hero-trust-stat .lbl { font-size: 0.65rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.7px; }
 
 /* ─── Poker Slideshow ─── */
 .poker-slideshow {
@@ -220,17 +225,21 @@ body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--body-bg);
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 420px;
+    height: 460px;
     position: relative;
+    width: 100%;
+    max-width: 620px;
+    margin: 0 auto;
+    overflow: hidden;
     animation: heroFadeIn 1s 0.25s ease both;
 }
 .poker-card {
     position: absolute;
-    width: 270px; height: 370px;
+    width: 280px; height: 420px;
     border-radius: 22px;
     background: #fff;
-    box-shadow: 0 24px 60px rgba(0,0,0,0.2);
-    transition: all 0.55s cubic-bezier(0.23,1,0.32,1);
+    box-shadow: 0 24px 60px rgba(0,0,0,0.18);
+    transition: transform 0.55s cubic-bezier(0.23,1,0.32,1), opacity 0.35s ease;
     cursor: pointer;
     overflow: hidden;
     border: 5px solid #fff;
@@ -286,8 +295,10 @@ body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--body-bg);
 .stat-chip .lbl { font-size: 0.7rem; font-weight: 600; color: rgba(255,255,255,0.45); text-transform: uppercase; letter-spacing: 0.7px; }
 
 /* ─── Section Base ─── */
-.lp-section { padding: 88px 0; }
+html { scroll-behavior: smooth; }
+.lp-section { padding: 88px 0; scroll-margin-top: 95px; }
 .lp-section-alt { background: var(--section-alt); }
+.lp-cta { scroll-margin-top: 95px; }
 
 .lp-section-head { text-align: center; margin-bottom: 52px; }
 .lp-section-head h2 {
@@ -354,8 +365,10 @@ body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--body-bg);
     display: flex;
     flex-direction: column;
     align-items: flex-start;
+    max-width: 360px;
+    margin: 0 auto;
 }
-.service-card:hover { transform: translateY(-4px); box-shadow: 0 14px 40px rgba(15,57,43,0.1); border-color: #A3E635; }
+.service-card:hover { transform: translateY(-6px); box-shadow: 0 16px 44px rgba(15,57,43,0.12); border-color: #A3E635; }
 .service-icon {
     width: 48px; height: 48px;
     border-radius: 14px;
@@ -429,7 +442,20 @@ body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--body-bg);
     margin-bottom: 16px;
 }
 .lp-cta h2 span { color: var(--lime); }
-.lp-cta p { font-size: 1rem; color: rgba(255,255,255,0.6); font-weight: 500; max-width: 500px; margin: 0 auto 32px; line-height: 1.7; }
+.lp-cta p { font-size: 1rem; color: rgba(255,255,255,0.72); font-weight: 500; max-width: 520px; margin: 0 auto 32px; line-height: 1.7; }
+.lp-cta .cta-label {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255,255,255,0.75);
+    text-transform: uppercase;
+    font-size: 0.78rem;
+    letter-spacing: 1.8px;
+    border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 100px;
+    padding: 10px 20px;
+    margin-bottom: 24px;
+}
 .cta-badges {
     display: flex;
     flex-wrap: wrap;
@@ -594,6 +620,43 @@ body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--body-bg);
     </div>
 </div>
 
+<!-- ══ ABOUT ══ -->
+<section class="lp-section lp-section-alt" id="about">
+    <div class="container">
+        <div class="lp-section-head reveal">
+            <div class="lp-eyebrow"><span class="lp-eyebrow-dot"></span> About Umoja</div>
+            <h2>Built for drivers, owned by members</h2>
+            <p>Umoja Drivers Sacco is a member-owned cooperative that transforms everyday contributions into reliable credit, dividends, and diversified assets.</p>
+        </div>
+        <div class="row g-4 reveal">
+            <div class="col-lg-4 col-md-6">
+                <div class="blueprint-card">
+                    <div class="bp-num">01</div>
+                    <i class="bi bi-people-fill bp-icon"></i>
+                    <h5>Member Ownership</h5>
+                    <p>Every member shares in the growth, profits, and decision-making of the Sacco.</p>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6">
+                <div class="blueprint-card">
+                    <div class="bp-num">02</div>
+                    <i class="bi bi-lightning-charge-fill bp-icon"></i>
+                    <h5>Fast Access</h5>
+                    <p>Quick loan decisions and easy savings access keep members moving when it matters most.</p>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-12">
+                <div class="blueprint-card">
+                    <div class="bp-num">03</div>
+                    <i class="bi bi-bar-chart-line-fill bp-icon"></i>
+                    <h5>Growth Focus</h5>
+                    <p>Your contributions are invested into fleets, real estate, and agriculture to build lasting returns.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
 <!-- ══ BLUEPRINT ══ -->
 <section class="lp-section" id="wealth-model">
     <div class="container">
@@ -634,7 +697,7 @@ body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--body-bg);
             <h2>Financial Products Built for Members</h2>
             <p>Tailored savings, credit, and welfare products designed around the transport community.</p>
         </div>
-        <div class="row g-4 reveal">
+        <div class="row justify-content-center g-4 reveal">
             <?php
             $services = [
                 ["bi-piggy-bank-fill",  "Voluntary Savings",   "Save regularly to build your financial foundation and earn competitive interest on every deposit."],
@@ -691,7 +754,7 @@ body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--body-bg);
 <section class="lp-cta" id="contact">
     <div class="container position-relative" style="z-index:2;">
         <div class="reveal">
-            <div class="lp-eyebrow d-inline-flex mb-4"><span class="lp-eyebrow-dot"></span> Join Today</div>
+            <div class="cta-label">Join Today</div>
             <h2>Stop Waiting.<br><span>Start Owning.</span></h2>
             <p>It takes less than 5 minutes to begin. Secure your future with stable dividends, fast credit, and real ownership.</p>
             <div class="cta-badges">

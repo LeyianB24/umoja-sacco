@@ -221,7 +221,7 @@ if (!defined('OFFICE_PHONE')) {
 .ft-bottom-powered span { color: #F5C842; font-weight: 800; }
 </style>
 
-<footer class="lp-footer" id="contact">
+<footer class="lp-footer" id="site-footer">
     <div class="container position-relative" style="z-index:2;">
         <div class="row gy-5">
 
