@@ -36,6 +36,11 @@ require_once __DIR__ . '/../inc/header.php';
     --section-alt: #0d2018;
 }
 
+html, body {
+    margin: 0;
+    padding: 0;
+}
+
 body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--body-bg); }
 
 /* ─── Shared Utilities ─── */
