@@ -66,7 +66,7 @@ body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--body-bg);
    HERO
 ═══════════════════════════════ */
 .lp-hero {
-    min-height: calc(100vh - 68px);
+    min-height: 100vh;
     position: relative;
     display: flex;
     align-items: center;
@@ -216,17 +216,17 @@ body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--body-bg);
 
 /* ─── Poker Slideshow ─── */
 .poker-slideshow {
+    perspective: 1200px;
     display: flex;
-    flex-direction: row;
     justify-content: center;
     align-items: center;
-    gap: 10px;
-    height: auto;
-    overflow-x: auto;
+    height: 420px;
+    position: relative;
     animation: heroFadeIn 1s 0.25s ease both;
 }
 .poker-card {
-    width: 200px; height: 280px;
+    position: absolute;
+    width: 270px; height: 370px;
     border-radius: 22px;
     background: #fff;
     box-shadow: 0 24px 60px rgba(0,0,0,0.2);
@@ -234,9 +234,13 @@ body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--body-bg);
     cursor: pointer;
     overflow: hidden;
     border: 5px solid #fff;
-    flex-shrink: 0;
+    transform-origin: bottom center;
 }
 .poker-card img { width: 100%; height: 100%; object-fit: cover; border-radius: 17px; display: block; }
+.poker-card[data-active="true"] { z-index:10; transform: rotateY(0deg) translateZ(0) scale(1.08); opacity: 1; }
+.poker-card[data-side="left"]  { z-index:5;  transform: rotateY(22deg) translateX(-160px) translateZ(-90px) scale(0.88); opacity: 0.55; }
+.poker-card[data-side="right"] { z-index:5;  transform: rotateY(-22deg) translateX(160px) translateZ(-90px) scale(0.88); opacity: 0.55; }
+.poker-card[data-hidden="true"] { opacity:0; transform: translateZ(-200px) scale(0.8); pointer-events:none; }
 
 .slideshow-controls {
     position: absolute;
