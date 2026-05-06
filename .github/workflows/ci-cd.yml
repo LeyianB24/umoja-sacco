@@ -1,0 +1,107 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: test_db
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+        ports:
+          - 3306:3306
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.2'
+        extensions: mysqli, pdo, pdo_mysql
+        coverage: xdebug
+    
+    - name: Cache Composer dependencies
+      uses: actions/cache@v3
+      with:
+        path: vendor
+        key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+        restore-keys: ${{ runner.os }}-composer-
+    
+    - name: Install dependencies
+      run: composer install --prefer-dist --no-progress
+    
+    - name: Create storage directories
+      run: |
+        mkdir -p storage/cache
+        mkdir -p storage/logs
+        chmod 777 storage/cache storage/logs
+    
+    - name: Run PHPUnit tests
+      env:
+        DB_HOST: 127.0.0.1
+        DB_USER: root
+        DB_PASSWORD: root
+        DB_NAME: test_db
+      run: vendor/bin/phpunit --configuration phpunit.xml
+
+  code-quality:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.2'
+    
+    - name: Install dependencies
+      run: composer install --prefer-dist
+    
+    - name: Check code style (PSR-12)
+      run: |
+        # Install PHPCS if not in composer
+        composer require --dev squizlabs/php_codesniffer || true
+        vendor/bin/phpcs --standard=PSR12 core/ inc/ admin/pages --ignore=vendor
+      continue-on-error: true
+    
+    - name: Run security check
+      run: |
+        # Check for PHP security issues
+        composer require --dev vimeo/psalm || true
+        vendor/bin/psalm --init=level:5 || true
+        vendor/bin/psalm core/ inc/
+      continue-on-error: true
+
+  build:
+    needs: [test, code-quality]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Build Docker image
+      run: |
+        docker build -t usms:latest .
+        docker tag usms:latest usms:${{ github.sha }}
+    
+    - name: Upload to registry (optional)
+      run: |
+        echo "Docker image built successfully"
+        echo "Image: usms:latest"
+        echo "Tag: usms:${{ github.sha }}"

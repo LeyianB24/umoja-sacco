@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: usms-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password_change_me
+      MYSQL_DATABASE: umoja_drivers_sacco
+      MYSQL_USER: usms_user
+      MYSQL_PASSWORD: usms_password_change_me
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - ./database/seeds:/docker-entrypoint-initdb.d/seeds
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  php-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: usms-app
+    environment:
+      DB_HOST: mysql
+      DB_USER: usms_user
+      DB_PASSWORD: usms_password_change_me
+      DB_NAME: umoja_drivers_sacco
+      APP_ENV: development
+      APP_DEBUG: 1
+    ports:
+      - "8080:80"
+    volumes:
+      - .:/var/www/html
+      - ./docker/php.ini:/usr/local/etc/php/conf.d/custom.ini
+    depends_on:
+      mysql:
+        condition: service_healthy
+    links:
+      - mysql
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: usms-phpmyadmin
+    environment:
+      PMA_HOST: mysql
+      PMA_USER: root
+      PMA_PASSWORD: root_password_change_me
+    ports:
+      - "8081:80"
+    depends_on:
+      - mysql
+
+volumes:
+  mysql_data:
