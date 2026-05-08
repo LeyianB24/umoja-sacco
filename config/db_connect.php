@@ -9,9 +9,9 @@ require_once __DIR__ . '/bootstrap.php';
 use USMS\Config\EnvLoader;
 
 // Get database credentials from environment variables
-$host   = EnvLoader::get('DB_HOST', 'localhost');
+$host   = EnvLoader::get('DB_HOST', 'mysql-u8c6.railway.internal');
 $user   = EnvLoader::get('DB_USER', 'root');
-$pass   = EnvLoader::get('DB_PASS', '');
+$pass   = EnvLoader::get('DB_PASS', 'llMmeLTRnRawbCUcAiTNTmrMcPtOhahM');
 $port   = EnvLoader::get('DB_PORT', 3306);
 $dbname = EnvLoader::get('DB_NAME', 'umoja_drivers_sacco');
 
