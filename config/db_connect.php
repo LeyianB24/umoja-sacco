@@ -9,11 +9,12 @@ require_once __DIR__ . '/bootstrap.php';
 use USMS\Config\EnvLoader;
 
 // Get database credentials from environment variables
-$host   = EnvLoader::get('DB_HOST', 'mysql-u8c6.railway.internal');
-$user   = EnvLoader::get('DB_USER', 'root');
-$pass   = EnvLoader::get('DB_PASS', 'llMmeLTRnRawbCUcAiTNTmrMcPtOhahM');
-$port   = EnvLoader::get('DB_PORT', 3306);
-$dbname = EnvLoader::get('DB_NAME', 'umoja_drivers_sacco');
+// Priority: MYSQL_* (Railway) > DB_* (.env.local) > defaults (XAMPP local dev)
+$host   = EnvLoader::get('MYSQLHOST') ?? EnvLoader::get('DB_HOST') ?? 'localhost';
+$user   = EnvLoader::get('MYSQLUSER') ?? EnvLoader::get('DB_USER') ?? 'root';
+$pass   = EnvLoader::get('MYSQLPASSWORD') ?? EnvLoader::get('DB_PASS') ?? '';
+$port   = EnvLoader::get('MYSQLPORT') ?? EnvLoader::get('DB_PORT') ?? 3306;
+$dbname = EnvLoader::get('MYSQLDATABASE') ?? EnvLoader::get('DB_NAME') ?? 'umoja_drivers_sacco';
 
 $conn = new mysqli($host, $user, $pass, $dbname, (int)$port);
 

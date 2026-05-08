@@ -8,6 +8,7 @@
 .env
 .env.local
 .env.*.local
+.env.railway
 config/database.php
 config/environment.php
 
