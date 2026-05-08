@@ -13,7 +13,8 @@ class EnvLoader
     private static bool $loaded = false;
 
     /**
-     * Load environment variables from .env.local file
+     * Load environment variables from .env.local file and system environment
+     * Priority: System env vars > $_ENV > .env.local > defaults
      */
     public static function load(): void
     {
@@ -21,43 +22,45 @@ class EnvLoader
             return;
         }
 
+        // First, try to load from .env.local (for local development)
         $env_file = dirname(__DIR__) . '/.env.local';
 
-        if (!file_exists($env_file)) {
+        if (file_exists($env_file)) {
+            $lines = file($env_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+
+            foreach ($lines as $line) {
+                // Skip comments
+                if (strpos(trim($line), '#') === 0) {
+                    continue;
+                }
+
+                // Parse KEY=VALUE
+                if (strpos($line, '=') === false) {
+                    continue;
+                }
+
+                [$key, $value] = explode('=', $line, 2);
+                $key = trim($key);
+                $value = trim($value);
+
+                // Remove quotes if present
+                if ((str_starts_with($value, '"') && str_ends_with($value, '"'))
+                    || (str_starts_with($value, "'") && str_ends_with($value, "'"))) {
+                    $value = substr($value, 1, -1);
+                }
+
+                self::$env[$key] = $value;
+                // Also set in $_ENV and putenv for backward compatibility
+                $_ENV[$key] = $value;
+                putenv("$key=$value");
+            }
+        } else {
+            // On production/cloud (Railway, etc), .env.local won't exist
+            // System environment variables are already available
             trigger_error(
-                ".env.local file not found. Copy .env.example to .env.local and configure it.",
-                E_USER_WARNING
+                ".env.local file not found (OK for cloud deployments). Using system environment variables.",
+                E_USER_NOTICE
             );
-            return;
-        }
-
-        $lines = file($env_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-
-        foreach ($lines as $line) {
-            // Skip comments
-            if (strpos(trim($line), '#') === 0) {
-                continue;
-            }
-
-            // Parse KEY=VALUE
-            if (strpos($line, '=') === false) {
-                continue;
-            }
-
-            [$key, $value] = explode('=', $line, 2);
-            $key = trim($key);
-            $value = trim($value);
-
-            // Remove quotes if present
-            if ((str_starts_with($value, '"') && str_ends_with($value, '"'))
-                || (str_starts_with($value, "'") && str_ends_with($value, "'"))) {
-                $value = substr($value, 1, -1);
-            }
-
-            self::$env[$key] = $value;
-            // Also set in $_ENV and putenv for backward compatibility
-            $_ENV[$key] = $value;
-            putenv("$key=$value");
         }
 
         self::$loaded = true;
@@ -65,12 +68,30 @@ class EnvLoader
 
     /**
      * Get an environment variable with optional default value
+     * Priority: getenv() (system) > $_ENV > self::$env (.env.local) > default
      */
     public static function get(string $key, mixed $default = null): mixed
     {
         self::load();
 
-        return self::$env[$key] ?? $_ENV[$key] ?? $default;
+        // Priority: System environment variables (used by Railway, Docker, etc)
+        $system_value = getenv($key);
+        if ($system_value !== false) {
+            return $system_value;
+        }
+
+        // Fallback to $_ENV
+        if (isset($_ENV[$key])) {
+            return $_ENV[$key];
+        }
+
+        // Fallback to .env.local
+        if (isset(self::$env[$key])) {
+            return self::$env[$key];
+        }
+
+        // Return default
+        return $default;
     }
 
     /**

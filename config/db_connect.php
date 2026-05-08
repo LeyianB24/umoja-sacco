@@ -3,16 +3,24 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-$host   = 'localhost';                 // XAMPP default server
-$user   = 'root';                      // XAMPP default username
-$pass   = '';                          // XAMPP default password is empty
-$dbname = 'umoja_drivers_sacco';       // Correct database as per user instruction
+// Load environment configuration
+require_once __DIR__ . '/bootstrap.php';
 
-$conn = new mysqli($host, $user, $pass, $dbname);
+use USMS\Config\EnvLoader;
+
+// Get database credentials from environment variables
+$host   = EnvLoader::get('DB_HOST', 'localhost');
+$user   = EnvLoader::get('DB_USER', 'root');
+$pass   = EnvLoader::get('DB_PASS', '');
+$port   = EnvLoader::get('DB_PORT', 3306);
+$dbname = EnvLoader::get('DB_NAME', 'umoja_drivers_sacco');
+
+$conn = new mysqli($host, $user, $pass, $dbname, (int)$port);
 
 // Check connection
 if ($conn->connect_errno) {
-    if (defined('APP_ENV') && APP_ENV === 'development') {
+    $app_env = EnvLoader::get('APP_ENV', 'production');
+    if ($app_env === 'development') {
         die("Database connection failed: " . $conn->connect_error);
     } else {
         die("Error connecting to system database. Please try again later.");
@@ -20,4 +28,4 @@ if ($conn->connect_errno) {
 }
 
 // Set default charset
-$conn->set_charset('utf8mb4');
+$conn->set_charset(EnvLoader::get('DB_CHARSET', 'utf8mb4'));
