@@ -351,6 +351,7 @@ $perf_color = $execution_time < 0.5 ? '#16a34a' : ($execution_time < 1.5 ? '#d97
     <script src="<?= ASSET_BASE ?>/js/darkmode.js"></script>
     <script src="<?= ASSET_BASE ?>/js/main.js"></script>
     <script src="<?= ASSET_BASE ?>/js/live-refresh.js"></script>
+    <script src="<?= ASSET_BASE ?>/js/mobile-menu.js"></script>
     <?php if (isset($extraJs)): ?>
     <?= $extraJs ?>
     <?php endif; ?>

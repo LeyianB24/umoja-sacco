@@ -1,0 +1,375 @@
+/*
+ * mobile-responsive.css — Umoja Sacco Mobile & Tablet Optimizations
+ * Ensures full responsiveness for phones, tablets, and desktops
+ * Last updated: 2026-05-08
+ */
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MOBILE BREAKPOINTS & DEFAULTS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* For phones: max-width 640px (default mobile) */
+@media (max-width: 640px) {
+    /* ──── Layout ──── */
+    body { font-size: 15px; }
+    .main-content {
+        padding: 1rem 1rem !important;
+    }
+    
+    /* ──── Sidebar: Hide on mobile, show as offcanvas ──── */
+    .admin-sidebar {
+        position: fixed;
+        left: -100%;
+        width: 280px;
+        height: 100vh;
+        z-index: 1050;
+        transition: left 0.3s ease;
+        box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+    }
+    
+    .admin-sidebar.show {
+        left: 0;
+    }
+    
+    /* Sidebar overlay on mobile */
+    .admin-sidebar-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.5);
+        z-index: 1040;
+    }
+    
+    .admin-sidebar-overlay.show {
+        display: block;
+    }
+    
+    /* ──── Mobile Menu Toggle Button ──── */
+    .mobile-menu-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 44px;
+        height: 44px;
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        padding: 0;
+    }
+    
+    .mobile-menu-toggle i {
+        font-size: 1.5rem;
+        color: var(--text-primary);
+    }
+    
+    /* ──── Topbar Adjustments ──── */
+    .topbar {
+        padding: 0.75rem 1rem !important;
+    }
+    
+    /* ──── Typography ──── */
+    h1 { font-size: 1.75rem !important; }
+    h2 { font-size: 1.5rem !important; }
+    h3 { font-size: 1.25rem !important; }
+    h4 { font-size: 1.1rem !important; }
+    
+    /* ──── Cards ──── */
+    .glass-card {
+        padding: 1rem !important;
+        border-radius: 12px !important;
+        margin-bottom: 0.75rem !important;
+    }
+    
+    /* ──── Buttons: Touch-friendly (44px minimum height) ──── */
+    .btn {
+        min-height: 44px;
+        min-width: 44px;
+        padding: 0.625rem 1rem !important;
+        font-size: 0.95rem !important;
+    }
+    
+    .btn-sm { min-height: 36px; }
+    .btn-lg { min-height: 52px; }
+    
+    /* ──── Forms ──── */
+    .form-control,
+    .form-select {
+        min-height: 44px;
+        padding: 0.75rem !important;
+        font-size: 16px !important; /* Prevents auto-zoom on iOS */
+    }
+    
+    label {
+        font-size: 0.95rem !important;
+        margin-bottom: 0.5rem !important;
+    }
+    
+    .form-group {
+        margin-bottom: 1rem !important;
+    }
+    
+    /* ──── Tables: Responsive stacking ──── */
+    .table {
+        font-size: 0.9rem;
+    }
+    
+    .table-responsive {
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    
+    @supports (overflow: overlay) {
+        .table-responsive {
+            overflow-x: overlay;
+        }
+    }
+    
+    /* Stack table cells on mobile */
+    .table thead {
+        display: none;
+    }
+    
+    .table tr {
+        display: flex;
+        flex-direction: column;
+        border-bottom: 2px solid var(--card-border);
+        padding: 1rem 0;
+    }
+    
+    .table td {
+        padding: 0.5rem 0 !important;
+        border: none;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .table td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        margin-right: 0.5rem;
+        min-width: 120px;
+        color: var(--text-muted);
+    }
+    
+    /* ──── Lists ──── */
+    .list-group-item {
+        padding: 1rem 0.75rem !important;
+    }
+    
+    /* ──── Modals ──── */
+    .modal-dialog {
+        margin: 1rem !important;
+        max-height: 85vh;
+    }
+    
+    /* ──── Dropdowns ──── */
+    .dropdown-menu {
+        max-height: 60vh;
+        overflow-y: auto;
+        font-size: 0.95rem;
+    }
+    
+    .dropdown-item {
+        padding: 0.75rem 1rem !important;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+    }
+    
+    /* ──── Navigation ──── */
+    .nav-tabs {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    
+    .nav-link {
+        padding: 0.5rem 1rem !important;
+        font-size: 0.9rem !important;
+    }
+    
+    /* ──── Live Refresh Widget ──── */
+    #usms-live-refresh-widget {
+        bottom: 16px !important;
+        left: 16px !important;
+        font-size: 0.7rem !important;
+    }
+    
+    /* ──── Alerts ──── */
+    .alert {
+        padding: 1rem 0.875rem !important;
+        margin-bottom: 0.75rem !important;
+    }
+}
+
+/* For tablets: 641px - 1024px */
+@media (min-width: 641px) and (max-width: 1024px) {
+    .main-content {
+        padding: 1.5rem 1.75rem !important;
+    }
+    
+    .glass-card {
+        padding: 1.25rem !important;
+    }
+    
+    .btn {
+        min-height: 40px;
+    }
+    
+    .form-control,
+    .form-select {
+        min-height: 40px;
+        font-size: 15px !important;
+    }
+    
+    /* Sidebar stays visible but may be narrower */
+    .admin-sidebar {
+        width: 220px;
+    }
+    
+    .main-content-wrapper {
+        margin-left: 220px;
+    }
+    
+    h1 { font-size: 2rem !important; }
+    h2 { font-size: 1.75rem !important; }
+}
+
+/* For desktop: 1025px+ (default) */
+@media (min-width: 1025px) {
+    .mobile-menu-toggle {
+        display: none !important;
+    }
+    
+    .admin-sidebar {
+        position: fixed;
+        left: 0;
+        width: var(--sidebar-width, 260px);
+    }
+    
+    .main-content-wrapper {
+        margin-left: var(--sidebar-width, 260px);
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ORIENTATION & LANDSCAPE MODE
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media (max-height: 500px) and (orientation: landscape) {
+    .main-content {
+        padding: 0.75rem 1rem !important;
+    }
+    
+    .glass-card {
+        padding: 0.75rem !important;
+    }
+    
+    .btn {
+        padding: 0.5rem 0.75rem !important;
+        font-size: 0.85rem !important;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   RESPONSIVE UTILITIES
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Hide on mobile */
+.hide-mobile {
+    display: none;
+}
+
+/* Hide on desktop */
+.hide-desktop {
+    display: block;
+}
+
+@media (min-width: 769px) {
+    .hide-mobile {
+        display: block;
+    }
+    
+    .hide-desktop {
+        display: none;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   TOUCH DEVICE OPTIMIZATIONS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media (hover: none) and (pointer: coarse) {
+    /* Touch device: increase tap targets */
+    button, a.btn, .btn-like {
+        min-height: 48px;
+        min-width: 48px;
+    }
+    
+    /* Remove hover effects on touch devices (optional) */
+    .btn:hover,
+    .nav-link:hover {
+        transform: none !important;
+    }
+    
+    /* Increase spacing between interactive elements */
+    .btn + .btn {
+        margin-left: 0.75rem;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LANDSCAPE TABLES & SCROLLABLE AREAS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 640px) {
+    /* Data tables with horizontal scroll hint */
+    .table-wrapper {
+        position: relative;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .table-wrapper::after {
+        content: '';
+        position: absolute;
+        right: 0;
+        top: 0;
+        width: 20px;
+        height: 100%;
+        background: linear-gradient(to left, rgba(0,0,0,0.1), transparent);
+        pointer-events: none;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   FLOATING ACTION BUTTON (FAB) POSITIONING
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 640px) {
+    .fab, .floating-btn {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        bottom: 24px;
+        right: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SAFE AREA (iPhone notch support)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@supports (padding: max(0px)) {
+    .topbar, .main-content {
+        padding-left: max(1rem, env(safe-area-inset-left)) !important;
+        padding-right: max(1rem, env(safe-area-inset-right)) !important;
+    }
+}

@@ -36,6 +36,7 @@ $pageTitle = isset($pageTitle) ? $pageTitle : 'Member Portal';
     <!-- LAYOUT SPECIFIC CSS -->
     <link rel="stylesheet" href="<?= ASSET_BASE ?>/css/layout.css">
     <link rel="stylesheet" href="<?= ASSET_BASE ?>/css/darkmode.css">
+    <link rel="stylesheet" href="<?= ASSET_BASE ?>/css/mobile-responsive.css">
     
     <script>
         // Pre-apply theme to avoid flash

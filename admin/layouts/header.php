@@ -46,6 +46,7 @@ $activePage  = $activePage  ?? '';          // set by page before including layo
     <link rel="stylesheet" href="<?= ASSET_BASE ?>/css/admin.css">
     <link rel="stylesheet" href="<?= ASSET_BASE ?>/css/layout.css">
     <link rel="stylesheet" href="<?= ASSET_BASE ?>/css/darkmode.css">
+    <link rel="stylesheet" href="<?= ASSET_BASE ?>/css/mobile-responsive.css">
 
     <?php if (isset($extraCss)): ?>
     <?= (string)$extraCss ?>
