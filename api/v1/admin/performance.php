@@ -14,6 +14,10 @@
 
 declare(strict_types=1);
 
+use USMS\Http\PerformanceController;
+use USMS\Cache\CacheManager;
+use USMS\Database\QueryLogger;
+
 session_start();
 
 // Verify admin access
@@ -26,10 +30,6 @@ if (empty($_SESSION['admin_id'])) {
 try {
     require_once __DIR__ . '/../../../config/app.php';
     require_once __DIR__ . '/../../../config/db_connect.php';
-    
-    use USMS\Http\PerformanceController;
-    use USMS\Cache\CacheManager;
-    use USMS\Database\QueryLogger;
     
     // Initialize query logging
     QueryLogger::initialize();
