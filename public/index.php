@@ -521,10 +521,10 @@ body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--body-bg);
                         <?= defined('SITE_NAME') ? htmlspecialchars(SITE_NAME) : 'Umoja Sacco' ?> is the financial backbone for the transport community — owning <strong>fleets, real estate, and agribusiness</strong> and delivering generational wealth to every member.
                     </p>
                     <div class="hero-btns">
-                        <a href="<?= BASE_URL ?>/public/login.php" class="btn-lp-primary">
+                        <a href="<?= PUBLIC_URL ?>/login.php" class="btn-lp-primary">
                             <i class="bi bi-box-arrow-in-right"></i> Member Login
                         </a>
-                        <a href="<?= BASE_URL ?>/public/register.php" class="btn-lp-outline">
+                        <a href="<?= PUBLIC_URL ?>/register.php" class="btn-lp-outline">
                             <i class="bi bi-person-plus"></i> Join Today
                         </a>
                     </div>
@@ -706,7 +706,7 @@ body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--body-bg);
                 <span class="cta-badge"><i class="bi bi-people-fill"></i> Community Owned</span>
             </div>
             <div class="cta-buttons">
-                <a href="<?= BASE_URL ?>/public/register.php" class="btn-lp-cta-primary">
+                <a href="<?= PUBLIC_URL ?>/register.php" class="btn-lp-cta-primary">
                     <i class="bi bi-person-circle"></i> Join Our Community
                 </a>
                 <a href="#contact" class="btn-lp-cta-outline">
