@@ -133,7 +133,7 @@ Visit it! 🎉
 1. PHP service → **"Settings"** → **"Build Command"**
    - Should run: `composer install`
 2. PHP service → **"Settings"** → **"Start Command"**
-   - Should be: `vendor/bin/heroku-php-apache2 -C docker/apache.conf public/`
+   - Should be: `vendor/bin/heroku-php-apache2 -C docker/apache.conf ./`
 3. If not, manually set these and redeploy
 
 ### Slow First Load

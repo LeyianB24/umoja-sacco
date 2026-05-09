@@ -111,5 +111,3 @@ function send_sms($phone, $message) {
 
     return $response;
 }
-?>
-

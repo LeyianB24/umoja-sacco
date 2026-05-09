@@ -418,5 +418,3 @@ if (!function_exists('verifyAndUpgradePassword')) {
         return $valid;
     }
 }
-?>
-

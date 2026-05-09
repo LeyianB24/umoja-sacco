@@ -109,4 +109,3 @@ class TopbarHelper {
         return "just now";
     }
 }
-?>
