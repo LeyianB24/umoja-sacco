@@ -7,8 +7,10 @@
 # Environment & Configuration (NEVER commit credentials!)
 .env
 .env.local
+.env.production
 .env.*.local
 .env.railway
+
 config/database.php
 config/environment.php
 
