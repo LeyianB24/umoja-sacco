@@ -14,8 +14,23 @@ if (session_status() === PHP_SESSION_NONE) {
 if (!defined('APP_START_TIME')) define('APP_START_TIME', microtime(true));
 
 // 1. BASE PATHS
+// 1. BASE PATHS
 if (!defined('BASE_PATH')) define('BASE_PATH', dirname(__DIR__));
-if (!defined('BASE_URL'))  define('BASE_URL', '/usms');
+
+// Dynamic BASE_URL: detect if we are in a subdirectory or root
+if (!defined('BASE_URL')) {
+    // Priority: Env var > detected path
+    $env_base_url = \USMS\Config\EnvLoader::get('BASE_URL');
+    if ($env_base_url !== null) {
+        define('BASE_URL', rtrim($env_base_url, '/'));
+    } else {
+        // Fallback: Use empty string for root deployment (Docker/Railway), 
+        // or '/usms' if that folder exists in the request URI (Local XAMPP)
+        $detected_base = (strpos($_SERVER['REQUEST_URI'] ?? '', '/usms') === 0) ? '/usms' : '';
+        define('BASE_URL', $detected_base);
+    }
+}
+
 
 // 2. AUTOLOAD
 if (file_exists(BASE_PATH . '/vendor/autoload.php')) {
@@ -28,7 +43,14 @@ if (file_exists(BASE_PATH . '/vendor/autoload.php')) {
 $protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? 'https' : 'http';
 $host     = !empty($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : 'localhost';
 if (!defined('SITE_URL'))   define('SITE_URL', $protocol . '://' . rtrim($host, '/') . '/' . ltrim(BASE_URL, '/'));
-if (!defined('ASSET_BASE')) define('ASSET_BASE', BASE_URL . '/public/assets');
+
+// Adjust ASSET_BASE: In root deployment (Docker), assets are at /assets. 
+// In subfolder deployment (XAMPP), assets are at /usms/public/assets.
+if (!defined('ASSET_BASE')) {
+    $asset_path = (BASE_URL === '') ? '/assets' : BASE_URL . '/public/assets';
+    define('ASSET_BASE', $asset_path);
+}
+
 
 
 // 4. CORE IDENTITY
