@@ -33,6 +33,9 @@ class ErrorHandler {
      */
     public static function handleException(\Throwable $e): void {
         error_log("[USMS FATAL] " . $e->getMessage() . " in " . $e->getFile() . ":" . $e->getLine());
+        
+        // Debug override
+        die("<h1>FATAL ERROR CAUGHT</h1><p>Message: " . $e->getMessage() . "</p><p>File: " . $e->getFile() . "</p><p>Line: " . $e->getLine() . "</p><pre>" . $e->getTraceAsString() . "</pre>");
 
         if (self::isAjaxRequest()) {
             self::jsonError($e->getMessage(), self::getHttpCode($e));
