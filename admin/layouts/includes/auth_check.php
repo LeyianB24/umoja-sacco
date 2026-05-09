@@ -2,7 +2,7 @@
 // admin/auth_check.php
 // Consolidated Administrative Security Gatekeeper
 
-require_once __DIR__ . '/../../inc/auth.php';
+require_once __DIR__ . '/../../../inc/Auth.php';
 
 // 1. Mandatory Admin Check
 require_admin();
