@@ -57,10 +57,7 @@ class EnvLoader
         } else {
             // On production/cloud (Railway, etc), .env.local won't exist
             // System environment variables are already available
-            trigger_error(
-                ".env.local file not found (OK for cloud deployments). Using system environment variables.",
-                E_USER_NOTICE
-            );
+            error_log(".env.local file not found (OK for cloud deployments). Using system environment variables.");
         }
 
         self::$loaded = true;
