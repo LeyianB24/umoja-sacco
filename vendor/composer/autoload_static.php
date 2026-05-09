@@ -10,6 +10,8 @@ class ComposerStaticInitac2d307f4ed514763a8119f3523066bb
         '2cffec82183ee1cea088009cef9a6fc3' => __DIR__ . '/..' . '/ezyang/htmlpurifier/library/HTMLPurifier.composer.php',
         '6124b4c8570aa390c21fafd04a26c69f' => __DIR__ . '/..' . '/myclabs/deep-copy/src/DeepCopy/deep_copy.php',
         'ec07570ca5a812141189b1fa81503674' => __DIR__ . '/..' . '/phpunit/phpunit/src/Framework/Assert/Functions.php',
+        '512b1cdd9f48288ec77cd65cd558106a' => __DIR__ . '/../..' . '/config/app.php',
+        '2f61e466adf9510912b38a2d5e8acba3' => __DIR__ . '/../..' . '/inc/functions.php',
         '2f33f50c37bc6c1fced08e7584bc08c7' => __DIR__ . '/../..' . '/core/Middleware/Auth.php',
     );
 
