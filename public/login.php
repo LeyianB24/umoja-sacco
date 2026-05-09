@@ -1,15 +1,12 @@
 <?php
-error_reporting(E_ALL);
-ini_set('display_errors', '1');
-set_error_handler(null);
-set_exception_handler(null);
+declare(strict_types=1);
 session_start();
 require_once __DIR__ . '/../config/app.php';
 require_once __DIR__ . '/../inc/functions.php';
 require_once __DIR__ . '/../inc/Auth.php';
 
-define('REMEMBER_SECONDS', 30 * 24 * 60 * 60);
-define('COOKIE_NAME', 'usms_rem');
+if (!defined('REMEMBER_SECONDS')) define('REMEMBER_SECONDS', 30 * 24 * 60 * 60);
+if (!defined('COOKIE_NAME'))     define('COOKIE_NAME',     'usms_rem');
 $cookie_secure = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
