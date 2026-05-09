@@ -1,5 +1,4 @@
-<style>
-    /* --- SIDEBAR THEME VARIABLES --- */
+/* --- SIDEBAR THEME VARIABLES --- */
     :root {
         --sb-width: 280px;
         --sb-collapsed: 86px; /* Width when closed */
@@ -109,5 +108,9 @@
     }
     .sidebar-backdrop.show { opacity: 1; visibility: visible; }
 
-    .main-content, .main-content-wrapper, .hp-main-wrapper { margin-left: var(--sb-width); transition: margin-left 0.3s; }
-</style>
+    @media (min-width: 992px) {
+        .main-content, .main-content-wrapper, .hp-main-wrapper { margin-left: var(--sb-width); transition: margin-left 0.3s; }
+    }
+    @media (max-width: 991px) {
+        .main-content, .main-content-wrapper, .hp-main-wrapper { margin-left: 0 !important; }
+    }
