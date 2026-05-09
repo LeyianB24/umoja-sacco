@@ -158,7 +158,8 @@ class EnvLoader
         }
 
         $is_production = self::get('APP_ENV') === 'production';
-        $is_https = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on';
+        $is_https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || 
+                    (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
 
         // Session security settings
         session_set_cookie_params([
@@ -184,7 +185,10 @@ class EnvLoader
             return;
         }
 
-        if (empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] === 'off') {
+        $is_https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || 
+                    (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
+
+        if (!$is_https) {
             header('Location: https://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'], true, 301);
             exit;
         }
