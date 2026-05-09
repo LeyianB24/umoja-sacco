@@ -508,7 +508,7 @@ body.sb-collapsed .main-content-wrapper { margin-left:76px; }
 <!-- ═══════════════════ FLOATING STATS ══════════════════ -->
 <div class="stats-float">
     <div class="row g-3">
-        <div class="col-md-3 sa1">
+        <div class="col-lg-3 col-md-6 col-6 sa1">
             <div class="sc sc-g">
                 <div class="sc-ico" style="background:var(--grn-bg);color:var(--grn);"><i class="bi bi-heart-fill"></i></div>
                 <div class="sc-lbl">My Contributions</div>
@@ -517,7 +517,7 @@ body.sb-collapsed .main-content-wrapper { margin-left:76px; }
                 <div class="sc-meta">Lifetime welfare contributions</div>
             </div>
         </div>
-        <div class="col-md-3 sa2">
+        <div class="col-lg-3 col-md-6 col-6 sa2">
             <div class="sc sc-r">
                 <div class="sc-ico" style="background:var(--red-bg);color:var(--red);"><i class="bi bi-arrow-down-left-square-fill"></i></div>
                 <div class="sc-lbl">Support Received</div>
@@ -527,7 +527,7 @@ body.sb-collapsed .main-content-wrapper { margin-left:76px; }
                 <div class="sc-meta">Total support disbursed to you</div>
             </div>
         </div>
-        <div class="col-md-3 sa3">
+        <div class="col-lg-3 col-md-6 col-6 sa3">
             <div class="sc sc-<?= $net_standing>=0 ? 'l' : 'r' ?>">
                 <div class="sc-ico" style="background:<?= $net_standing>=0 ? 'var(--lg)' : 'var(--red-bg)' ?>;color:<?= $net_standing>=0 ? 'var(--lt)' : 'var(--red)' ?>;"><i class="bi bi-scale"></i></div>
                 <div class="sc-lbl">Net Impact</div>
@@ -536,7 +536,7 @@ body.sb-collapsed .main-content-wrapper { margin-left:76px; }
                 <div class="sc-meta">Community <?= ucfirst($standing_status) ?> status</div>
             </div>
         </div>
-        <div class="col-md-3 sa4">
+        <div class="col-lg-3 col-md-6 col-6 sa4">
             <div class="sc sc-a">
                 <div class="sc-ico" style="background:var(--amb-bg);color:var(--amb);"><i class="bi bi-wallet2"></i></div>
                 <div class="sc-lbl">Withdrawable</div>

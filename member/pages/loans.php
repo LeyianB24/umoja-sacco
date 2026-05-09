@@ -517,13 +517,13 @@ $pageTitle = "My Loans";
                                 </div>
                                 <div class="col-lg-5">
                                     <div class="row g-2 mt-2">
-                                        <div class="col-sm-6">
+                                        <div class="col-6">
                                             <a href="mpesa_request.php?type=loan_repayment&loan_id=<?= $active_loan['loan_id'] ?>" 
                                                class="btn btn-lime w-100 py-3 shadow-sm">
                                                 <i class="bi bi-phone me-2"></i> M-Pesa
                                             </a>
                                         </div>
-                                        <div class="col-sm-6">
+                                        <div class="col-6">
                                             <button class="btn btn-white border w-100 py-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#repayWalletModal">
                                                 <i class="bi bi-wallet2 me-2 text-success"></i> Wallet
                                             </button>

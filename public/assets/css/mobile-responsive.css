@@ -21,13 +21,20 @@
         margin-left: 0 !important;
     }
 
-    body.admin-body {
+    body.admin-body, body.member-body {
         display: block !important;
         width: 100% !important;
         margin: 0 !important;
         padding: 0 !important;
     }
-}
+
+    .main-content-wrapper, .main-content, main, .dash, .pg-body {
+        margin-left: 0 !important;
+        width: 100% !important;
+        max-width: 100vw !important;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+    }
 
 /* ═══════════════════════════════════════════════════════════════════════════
    MOBILE BREAKPOINTS & DEFAULTS

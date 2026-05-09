@@ -495,7 +495,7 @@ body.sb-collapsed .main-content-wrapper { margin-left:72px; }
 ══════════════════════════════ -->
 <div class="stats-float">
     <div class="row g-3">
-        <div class="col-md-3 sa1">
+        <div class="col-lg-4 col-md-6 col-6 sa1">
             <div class="sc sc-g">
                 <div class="sc-ico" style="background:var(--grn-bg);color:var(--grn)"><i class="bi bi-piggy-bank-fill"></i></div>
                 <div class="sc-lbl">Savings Balance</div>
@@ -504,7 +504,7 @@ body.sb-collapsed .main-content-wrapper { margin-left:72px; }
                 <div class="sc-meta"><?= $cnt_savings ?> deposits &middot; Ledger balance</div>
             </div>
         </div>
-        <div class="col-md-3 sa2">
+        <div class="col-lg-4 col-md-6 col-6 sa2">
             <div class="sc sc-b">
                 <div class="sc-ico" style="background:var(--blu-bg);color:var(--blu)"><i class="bi bi-pie-chart-fill"></i></div>
                 <div class="sc-lbl">Shares Capital</div>
@@ -514,7 +514,7 @@ body.sb-collapsed .main-content-wrapper { margin-left:72px; }
                 <div class="sc-meta"><?= $sPct ?>% of total portfolio</div>
             </div>
         </div>
-        <div class="col-md-3 sa3">
+        <div class="col-lg-4 col-md-6 col-6 sa3">
             <div class="sc sc-r">
                 <div class="sc-ico" style="background:var(--red-bg);color:var(--red)"><i class="bi bi-heart-pulse-fill"></i></div>
                 <div class="sc-lbl">Welfare Fund</div>
@@ -522,15 +522,6 @@ body.sb-collapsed .main-content-wrapper { margin-left:72px; }
                 <?php $wPct = $grand_total>0?round(($welfare_val/$safe_gt)*100):0; ?>
                 <div class="sc-bar"><div class="sc-bar-fill" style="background:var(--red)" data-w="<?= $wPct ?>"></div></div>
                 <div class="sc-meta"><?= $wPct ?>% of total portfolio</div>
-            </div>
-        </div>
-        <div class="col-md-3 sa4">
-            <div class="sc sc-l">
-                <div class="sc-ico" style="background:var(--lg);color:var(--lt)"><i class="bi bi-calendar-check-fill"></i></div>
-                <div class="sc-lbl">Active Days</div>
-                <div class="sc-val"><?= $active_days ?></div>
-                <div class="sc-bar"><div class="sc-bar-fill" style="background:var(--lime)" data-w="<?= min(100, $active_days/30*100) ?>"></div></div>
-                <div class="sc-meta">In the last 30 days</div>
             </div>
         </div>
     </div>

@@ -328,7 +328,7 @@ body.sb-collapsed .main-content-wrapper{margin-left:72px}
 <!-- STAT CARDS -->
 <div class="stats-float">
     <div class="row g-3">
-        <div class="col-md-3 sa1">
+        <div class="col-lg-3 col-md-6 col-6 sa1">
             <div class="sc sc-g">
                 <div class="sc-ico" style="background:var(--grn-bg);color:var(--grn)"><i class="bi bi-piggy-bank-fill"></i></div>
                 <div class="sc-lbl">Total Savings</div>
@@ -337,7 +337,7 @@ body.sb-collapsed .main-content-wrapper{margin-left:72px}
                 <div class="sc-meta">Active savings account</div>
             </div>
         </div>
-        <div class="col-md-3 sa2">
+        <div class="col-lg-3 col-md-6 col-6 sa2">
             <div class="sc sc-b">
                 <div class="sc-ico" style="background:var(--blu-bg);color:var(--blu)"><i class="bi bi-calendar-check-fill"></i></div>
                 <div class="sc-lbl">This Month</div>
@@ -346,7 +346,7 @@ body.sb-collapsed .main-content-wrapper{margin-left:72px}
                 <div class="sc-meta"><?= $month_contrib>0?'Contribution made':'Not yet contributed' ?></div>
             </div>
         </div>
-        <div class="col-md-3 sa3">
+        <div class="col-lg-3 col-md-6 col-6 sa3">
             <div class="sc sc-a">
                 <div class="sc-ico" style="background:var(--amb-bg);color:var(--amb)"><i class="bi bi-graph-up-arrow"></i></div>
                 <div class="sc-lbl">Total Deposits</div>
@@ -355,7 +355,7 @@ body.sb-collapsed .main-content-wrapper{margin-left:72px}
                 <div class="sc-meta">All-time deposits</div>
             </div>
         </div>
-        <div class="col-md-3 sa4">
+        <div class="col-lg-3 col-md-6 col-6 sa4">
             <div class="sc sc-r">
                 <div class="sc-ico" style="background:var(--red-bg);color:var(--red)"><i class="bi bi-arrow-up-right-square-fill"></i></div>
                 <div class="sc-lbl">Total Withdrawn</div>

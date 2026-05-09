@@ -134,7 +134,12 @@ if (!function_exists('is_active')) {
 .sidebar-backdrop.show{opacity:1;visibility:visible}
 
 /* MAIN CONTENT OFFSET */
-.main-content-wrapper,.main-content,main{margin-left:var(--sb-w);transition:margin-left .28s var(--sb-ease)}
+@media(min-width:992px){
+    .main-content-wrapper,.main-content,main{margin-left:var(--sb-w);transition:margin-left .28s var(--sb-ease)}
+}
+@media(max-width:991px){
+    .main-content-wrapper,.main-content,main{margin-left:0!important}
+}
 
 /* DARK PATCHES */
 [data-bs-theme="dark"] .hd-sidebar{background:var(--sb-bg);border-right-color:var(--sb-bdr)}

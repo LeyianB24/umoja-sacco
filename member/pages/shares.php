@@ -717,18 +717,18 @@ body.sb-collapsed .main-content-wrapper { margin-left: 76px; }
 <!-- ═══════════════════ FLOATING STATS ══════════════════ -->
 <div class="stats-float">
     <div class="row g-3">
-        <div class="col-md-3 sa1">
+        <div class="col-lg-3 col-md-6 col-6 sa1">
             <div class="sc sc-g">
                 <div class="sc-ico" style="background:var(--grn-bg);color:var(--grn);">
                     <i class="bi bi-pie-chart-fill"></i>
                 </div>
                 <div class="sc-lbl">Ownership Units</div>
-                <div class="sc-val"><?= number_format((float)$totalUnits, 4) ?></div>
+                <div class="sc-val"><?= number_format((float)$total_units, 4) ?></div>
                 <div class="sc-bar"><div class="sc-bar-fill" style="background:var(--grn);" data-w="100"></div></div>
                 <div class="sc-meta"><?= number_format((float)$ownership_pct, 4) ?>% of total SACCO equity</div>
             </div>
         </div>
-        <div class="col-md-3 sa2">
+        <div class="col-lg-3 col-md-6 col-6 sa2">
             <div class="sc sc-l">
                 <div class="sc-ico" style="background:var(--lg);color:var(--lt);">
                     <i class="bi bi-currency-exchange"></i>
@@ -739,7 +739,7 @@ body.sb-collapsed .main-content-wrapper { margin-left: 76px; }
                 <div class="sc-meta">Current corporate valuation</div>
             </div>
         </div>
-        <div class="col-md-3 sa3">
+        <div class="col-lg-3 col-md-6 col-6 sa3">
             <div class="sc sc-a">
                 <div class="sc-ico" style="background:var(--amb-bg);color:var(--amb);">
                     <i class="bi bi-award-fill"></i>
@@ -750,7 +750,7 @@ body.sb-collapsed .main-content-wrapper { margin-left: 76px; }
                 <div class="sc-meta">At <?= $dividend_rate_projection ?>% projected rate · Annual est.</div>
             </div>
         </div>
-        <div class="col-md-3 sa4">
+        <div class="col-lg-3 col-md-6 col-6 sa4">
             <div class="sc sc-b">
                 <div class="sc-ico" style="background:rgba(37,99,235,0.09);color:#2563eb;">
                     <i class="bi bi-graph-up-arrow"></i>

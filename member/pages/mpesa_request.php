@@ -484,7 +484,7 @@ $theme = $_COOKIE['theme'] ?? 'light';
  <div class="d-flex">
         <?php $layout->sidebar(); ?>
 
-        <div class="flex-fill main-content-wrapper" style="margin-left: 280px; transition: margin-left 0.3s ease;">
+        <div class="flex-fill main-content-wrapper">
             
             <?php $layout->topbar($pageTitle ?? ''); ?>
             
