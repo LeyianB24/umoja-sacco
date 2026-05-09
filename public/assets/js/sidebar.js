@@ -59,16 +59,24 @@
 
     function toggleMobile() {
         const isOpen = sidebar.classList.contains('hd-sidebar') 
-            ? sidebar.classList.toggle('show') 
+            ? (sidebar.classList.toggle('show') || sidebar.classList.toggle('mobile-open')) 
             : sidebar.classList.toggle('sidebar-open');
 
-        if (overlay) overlay.classList.toggle('show', isOpen);
-        document.body.style.overflow = isOpen ? 'hidden' : '';
+        // Force both classes for compatibility if it's an hd-sidebar
+        if (sidebar.classList.contains('hd-sidebar')) {
+            const nowOpen = sidebar.classList.contains('show') || sidebar.classList.contains('mobile-open');
+            sidebar.classList.toggle('show', nowOpen);
+            sidebar.classList.toggle('mobile-open', nowOpen);
+        }
+
+        if (overlay) overlay.classList.toggle('show', sidebar.classList.contains('show') || sidebar.classList.contains('mobile-open') || sidebar.classList.contains('sidebar-open'));
+        document.body.style.overflow = (sidebar.classList.contains('show') || sidebar.classList.contains('mobile-open') || sidebar.classList.contains('sidebar-open')) ? 'hidden' : '';
     }
 
     function closeOnMobile() {
         sidebar.classList.remove('sidebar-open');
         sidebar.classList.remove('show');
+        sidebar.classList.remove('mobile-open');
         if (overlay) overlay.classList.remove('show');
         document.body.style.overflow = '';
     }

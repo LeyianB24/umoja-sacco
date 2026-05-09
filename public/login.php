@@ -147,7 +147,10 @@ if (isset($_SESSION['member_id'])) {
 
     body {
         font-family: 'Plus Jakarta Sans', sans-serif;
-        background-color: #f8fafc;
+        background: linear-gradient(rgba(15, 57, 43, 0.7), rgba(15, 57, 43, 0.7)), url('<?= BACKGROUND_IMAGE ?>');
+        background-size: cover;
+        background-position: center;
+        background-attachment: fixed;
         min-height: 100vh;
         margin: 0;
         display: flex;

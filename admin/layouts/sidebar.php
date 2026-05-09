@@ -291,7 +291,7 @@ if (!function_exists('is_active')) {
         width: 268px !important;
         box-shadow: 12px 0 40px rgba(0,0,0,0.12);
     }
-    .hd-sidebar.show { transform: translateX(0); }
+    .hd-sidebar.show, .hd-sidebar.mobile-open { transform: translateX(0); }
     .main-content-wrapper { margin-left: 0 !important; }
     .hd-toggle-btn { display: none !important; }
     .hd-nav-text, .hd-nav-header, .hd-brand-text { opacity: 1 !important; width: auto !important; }

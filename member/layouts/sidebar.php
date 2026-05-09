@@ -67,7 +67,7 @@ if (!function_exists('is_active')) {
 /* MOBILE */
 @media(max-width:991px){
     .hd-sidebar{transform:translateX(-100%);transition:transform .3s var(--sb-ease)}
-    .hd-sidebar.mobile-open{transform:translateX(0);box-shadow:0 0 60px rgba(0,0,0,.25)}
+    .hd-sidebar.mobile-open, .hd-sidebar.show{transform:translateX(0);box-shadow:0 0 60px rgba(0,0,0,.25)}
     .hd-toggle-btn{display:none!important}
 }
 
@@ -369,47 +369,5 @@ if (!function_exists('is_active')) {
 
 </aside>
 
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-    const sidebar   = document.getElementById('sidebar');
-    const backdrop  = document.getElementById('sidebarBackdrop');
-    const toggleBtn = document.getElementById('sidebarToggle');
-    const mobileBtn = document.getElementById('mobileSidebarToggle');
 
-    if (toggleBtn) {
-        toggleBtn.addEventListener('click', () => {
-            document.body.classList.toggle('sb-collapsed');
-            const c = document.body.classList.contains('sb-collapsed');
-            localStorage.setItem('sb_collapsed', c ? '1' : '0');
-            toggleBtn.title = c ? 'Expand sidebar' : 'Collapse sidebar';
-        });
-    }
-
-    if (localStorage.getItem('sb_collapsed') === '1') document.body.classList.add('sb-collapsed');
-
-    if (mobileBtn) {
-        mobileBtn.addEventListener('click', () => {
-            sidebar.classList.toggle('mobile-open');
-            backdrop.classList.toggle('show');
-        });
-    }
-
-    if (backdrop) {
-        backdrop.addEventListener('click', () => {
-            sidebar.classList.remove('mobile-open');
-            backdrop.classList.remove('show');
-        });
-    }
-
-    const active = sidebar?.querySelector('.hd-nav-link.active');
-    const area   = sidebar?.querySelector('.hd-scroll-area');
-    if (active && area) {
-        // Only scroll if really needed, and use a more stable method
-        const rect = active.getBoundingClientRect();
-        const areaRect = area.getBoundingClientRect();
-        if (rect.top < areaRect.top || rect.bottom > areaRect.bottom) {
-            active.scrollIntoView({ block: 'nearest' });
-        }
-    }
-});
-</script>
+<?php // Sidebar state restoration handled by assets/js/sidebar.js ?>

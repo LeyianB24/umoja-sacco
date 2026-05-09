@@ -17,18 +17,19 @@
     }
     
     /* ──── Sidebar: Hide on mobile, show as offcanvas ──── */
-    .admin-sidebar {
+    .admin-sidebar, .hd-sidebar {
         position: fixed;
         left: -100%;
         width: 280px;
         height: 100vh;
         z-index: 1050;
-        transition: left 0.3s ease;
+        transition: transform 0.3s ease, left 0.3s ease;
         box-shadow: 2px 0 10px rgba(0,0,0,0.1);
     }
     
-    .admin-sidebar.show {
+    .admin-sidebar.show, .hd-sidebar.show, .hd-sidebar.mobile-open {
         left: 0;
+        transform: translateX(0);
     }
     
     /* Sidebar overlay on mobile */
@@ -238,13 +239,18 @@
     h2 { font-size: 1.75rem !important; }
 }
 
+    .main-content-wrapper {
+        margin-left: 0 !important;
+    }
+}
+
 /* For desktop: 1025px+ (default) */
 @media (min-width: 1025px) {
     .mobile-menu-toggle {
         display: none !important;
     }
     
-    .admin-sidebar {
+    .admin-sidebar, .hd-sidebar {
         position: fixed;
         left: 0;
         width: var(--sidebar-width, 260px);
