@@ -22,7 +22,8 @@ config/environment.php
 # Development Artifacts
 *.log
 *.txt
-*.json
+# *.json removed to allow tracking specifically needed json files like railway.json for deletion
+
 *.pdf
 !composer.json
 .phpunit.result.cache
