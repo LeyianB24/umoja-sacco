@@ -1029,7 +1029,7 @@ h1, h2, h3, h4, h5, h6, p, span, div, label, a {
 
             <!-- KPI Cards -->
             <div class="row g-3 mb-4">
-                <div class="col-md-3">
+                <div class="col-lg-3 col-md-6 col-6">
                     <div class="glass-stat slide-up" style="animation-delay: 0.05s">
                         <div class="d-flex align-items-start gap-3">
                             <div class="glass-stat-icon" style="background:#fffbeb; color:#b45309;">
@@ -1045,7 +1045,7 @@ h1, h2, h3, h4, h5, h6, p, span, div, label, a {
                         </div>
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-lg-3 col-md-6 col-6">
                     <div class="glass-stat slide-up" style="animation-delay: 0.12s">
                         <div class="d-flex align-items-start gap-3">
                             <div class="glass-stat-icon" style="background:#eff6ff; color:#1d4ed8;">
@@ -1061,7 +1061,7 @@ h1, h2, h3, h4, h5, h6, p, span, div, label, a {
                         </div>
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-lg-3 col-md-6 col-6">
                     <div class="glass-stat slide-up" style="animation-delay: 0.19s">
                         <div class="d-flex align-items-start gap-3">
                             <div class="glass-stat-icon" style="background:#f0fdf4; color:#166534;">
@@ -1078,7 +1078,7 @@ h1, h2, h3, h4, h5, h6, p, span, div, label, a {
                     </div>
                 </div>
                 <!-- Overdue Portfolio Card -->
-                <div class="col-md-3">
+                <div class="col-lg-3 col-md-6 col-6">
                     <div class="glass-stat slide-up" style="animation-delay: 0.23s; border-bottom: 3px solid #ef4444;">
                         <div class="d-flex align-items-start gap-3">
                             <div class="glass-stat-icon" style="background:#fef2f2; color:#ef4444;">

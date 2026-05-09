@@ -580,7 +580,7 @@ if (!function_exists('getInitials')) {
                 $cb_text  = $cb >= 90 ? '#166534' : ($cb >= 70 ? '#b45309' : '#b91c1c');
                 $cb_class = $cb >= 90 ? 'kc-success' : ($cb >= 70 ? 'kc-warn' : 'kc-danger');
                 ?>
-                <div class="col-md-3">
+                <div class="col-lg-3 col-md-6 col-6">
                     <div class="kpi-card <?= $cb_class ?>">
                         <div class="kpi-icon" style="background:<?= $cb>=90?'#f0fdf4':($cb>=70?'#fffbeb':'#fef2f2') ?>;color:<?= $cb_text ?>;">
                             <i class="bi bi-check2-circle"></i>
@@ -604,7 +604,7 @@ if (!function_exists('getInitials')) {
 
                 <!-- Pending STK -->
                 <?php $pend = (int)$health['pending_transactions']; $pend_warn = $pend > 5; ?>
-                <div class="col-md-3">
+                <div class="col-lg-3 col-md-6 col-6">
                     <div class="kpi-card <?= $pend_warn ? 'kc-warn' : 'kc-success' ?>">
                         <div class="kpi-icon" style="background:<?= $pend_warn?'#fffbeb':'#f0fdf4' ?>;color:<?= $pend_warn?'#b45309':'#166534' ?>;">
                             <i class="bi bi-hourglass-split"></i>
@@ -625,7 +625,7 @@ if (!function_exists('getInitials')) {
 
                 <!-- Failed Comms -->
                 <?php $fail = (int)$health['failed_notifications']; ?>
-                <div class="col-md-3">
+                <div class="col-lg-3 col-md-6 col-6">
                     <div class="kpi-card <?= $fail > 0 ? 'kc-danger' : 'kc-success' ?>">
                         <div class="kpi-icon" style="background:<?= $fail>0?'#fef2f2':'#f0fdf4' ?>;color:<?= $fail>0?'#dc2626':'#166534' ?>;">
                             <i class="bi bi-envelope-exclamation"></i>
@@ -640,7 +640,7 @@ if (!function_exists('getInitials')) {
                 </div>
 
                 <!-- Daily Volume -->
-                <div class="col-md-3">
+                <div class="col-lg-3 col-md-6 col-6">
                     <div class="kpi-card kc-dark">
                         <div class="kpi-icon" style="background:rgba(255,255,255,0.12);color:var(--lime);">
                             <i class="bi bi-lightning-charge-fill"></i>
@@ -739,7 +739,7 @@ if (!function_exists('getInitials')) {
             <!-- Integrity Cards -->
             <div class="row g-3 mb-4">
                 <?php $imbal = $health['ledger_imbalance']; ?>
-                <div class="col-md-4">
+                <div class="col-lg-4 col-md-6 col-12">
                     <div class="health-card <?= $imbal ? 'hc-err' : 'hc-ok' ?>">
                         <div class="hc-header">
                             <div class="hc-title">Ledger Balance Sync</div>
@@ -751,7 +751,7 @@ if (!function_exists('getInitials')) {
                         </div>
                     </div>
                 </div>
-                <div class="col-md-4">
+                <div class="col-lg-4 col-md-6 col-12">
                     <div class="health-card hc-ok">
                         <div class="hc-header">
                             <div class="hc-title">Member Account Sync</div>
@@ -763,7 +763,7 @@ if (!function_exists('getInitials')) {
                         </div>
                     </div>
                 </div>
-                <div class="col-md-4">
+                <div class="col-lg-4 col-md-6 col-12">
                     <div class="health-card hc-info">
                         <div class="hc-header">
                             <div class="hc-title">Database Storage</div>

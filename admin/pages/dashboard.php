@@ -579,9 +579,13 @@ $pageTitle = "Command Dashboard";
         }
 
         @media (max-width: 768px) {
-            .hp-hero { padding: 32px 28px; }
-            .hp-hero h1 { font-size: 2.2rem; }
-            .monitor-metric { padding: 0 12px; }
+            .hp-hero { padding: 32px 24px; }
+            .hp-hero h1 { font-size: 1.8rem; }
+            .monitor-metric { padding: 12px 0; border-right: none !important; border-bottom: 1px solid #f0f0f0; }
+            .monitor-metric:last-child { border-bottom: none; }
+            .stat-card { padding: 16px; flex-direction: column; align-items: flex-start; text-align: left; }
+            .stat-card .stat-body { text-align: left; margin-top: 12px; }
+            .stat-card .stat-value { font-size: 1.5rem; }
         }
     </style>
 
@@ -614,7 +618,7 @@ $pageTitle = "Command Dashboard";
 
     <!-- ─── STAT CARDS ───────────────────────────────────── -->
     <div class="row g-3 mb-4">
-        <div class="col-md-3">
+        <div class="col-lg-3 col-md-6 col-6">
             <a href="<?= BASE_URL ?>/admin/pages/members.php" class="stat-card">
                 <div class="stat-icon bg-primary bg-opacity-10 text-primary">
                     <i class="bi bi-people-fill"></i>
@@ -626,7 +630,7 @@ $pageTitle = "Command Dashboard";
                 </div>
             </a>
         </div>
-        <div class="col-md-3">
+        <div class="col-lg-3 col-md-6 col-6">
             <a href="<?= BASE_URL ?>/admin/pages/loans_reviews.php" class="stat-card">
                 <div class="stat-icon bg-warning bg-opacity-10 text-warning">
                     <i class="bi bi-cash-stack"></i>
@@ -638,7 +642,7 @@ $pageTitle = "Command Dashboard";
                 </div>
             </a>
         </div>
-        <div class="col-md-3">
+        <div class="col-lg-3 col-md-6 col-6">
             <a href="<?= BASE_URL ?>/admin/pages/revenue.php" class="stat-card">
                 <div class="stat-icon" style="background:rgba(15,46,37,0.08);color:var(--forest,#0f2e25);">
                     <i class="bi bi-bank2"></i>
@@ -650,7 +654,7 @@ $pageTitle = "Command Dashboard";
                 </div>
             </a>
         </div>
-        <div class="col-md-3">
+        <div class="col-lg-3 col-md-6 col-6">
             <a href="<?= BASE_URL ?>/admin/pages/live_monitor.php" class="stat-card">
                 <div class="stat-icon bg-info bg-opacity-10 text-info">
                     <i class="bi bi-cpu-fill"></i>
@@ -759,7 +763,7 @@ $pageTitle = "Command Dashboard";
                         <tbody>
                             <?php foreach($tickets as $t): ?>
                             <tr>
-                                <td>
+                                <td data-label="Member">
                                     <div class="d-flex align-items-center">
                                         <div class="member-avatar"><?= strtoupper(substr($t['sender'], 0, 1)) ?></div>
                                         <div>
@@ -768,18 +772,18 @@ $pageTitle = "Command Dashboard";
                                         </div>
                                     </div>
                                 </td>
-                                <td style="font-size:0.88rem;color:#374151;max-width:200px;">
+                                <td data-label="Issue" style="font-size:0.88rem;color:#374151;max-width:200px;">
                                     <span style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
                                         <?= htmlspecialchars($t['subject']) ?>
                                     </span>
                                 </td>
-                                <td>
+                                <td data-label="Priority">
                                     <?php $p = strtolower($t['priority']); ?>
                                     <span class="priority-badge <?= $p ?>">
                                         <?= strtoupper($t['priority']) ?>
                                     </span>
                                 </td>
-                                <td>
+                                <td data-label="Action">
                                     <a href="<?= BASE_URL ?>/admin/pages/support_view.php?id=<?= $t['support_id'] ?>" class="btn btn-sm btn-forest rounded-pill px-3" style="font-size:0.8rem;">
                                         Reply <i class="bi bi-reply ms-1"></i>
                                     </a>

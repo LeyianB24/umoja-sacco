@@ -699,7 +699,7 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
     <!-- ─── STAT CARDS ────────────────────────────────────── -->
     <div class="row g-3 mb-4">
 
-        <div class="col-md-3">
+        <div class="col-lg-3 col-md-6 col-6">
             <div class="stat-card">
                 <div class="stat-icon" style="background:rgba(15,46,37,0.08);color:var(--forest,#0f2e25);">
                     <i class="bi bi-people-fill"></i>
@@ -710,7 +710,7 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
             </div>
         </div>
 
-        <div class="col-md-3">
+        <div class="col-lg-3 col-md-6 col-6">
             <div class="stat-card">
                 <div class="stat-icon" style="background:#fef2f2;color:#dc2626;">
                     <i class="bi bi-person-x-fill"></i>
@@ -721,7 +721,7 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
             </div>
         </div>
 
-        <div class="col-md-3">
+        <div class="col-lg-3 col-md-6 col-6">
             <div class="stat-card">
                 <div class="stat-icon" style="background:#fffbeb;color:#d97706;">
                     <i class="bi bi-clock-history"></i>
@@ -732,7 +732,7 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
             </div>
         </div>
 
-        <div class="col-md-3">
+        <div class="col-lg-3 col-md-6 col-6">
             <div class="filter-stat-card">
                 <div class="filter-label">Registry Filter</div>
                 <form method="GET" id="memberFilter">
@@ -822,7 +822,7 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
                 ?>
                     <tr>
                         <!-- Identity -->
-                        <td style="padding-left:24px;">
+                        <td data-label="Identity" style="padding-left:24px;">
                             <div class="identity-cell">
                                 <?php if (!empty($m['profile_pic'])): ?>
                                     <img src="data:image/jpeg;base64,<?= base64_encode($m['profile_pic']) ?>"
@@ -840,26 +840,26 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
                         </td>
 
                         <!-- Contact -->
-                        <td>
+                        <td data-label="Contact">
                             <div class="contact-email"><?= esc($m['email']) ?></div>
                             <div class="contact-phone"><?= esc($m['phone']) ?></div>
                         </td>
 
                         <!-- Status -->
-                        <td>
+                        <td data-label="Status">
                             <span class="status-badge <?= $status_key ?>">
                                 <?= $status_label ?>
                             </span>
                         </td>
 
                         <!-- Date -->
-                        <td>
+                        <td data-label="Joined">
                             <div class="join-date"><?= date('d M, Y', strtotime($m['join_date'])) ?></div>
                             <div class="join-sub">System Registered</div>
                         </td>
 
                         <!-- Actions -->
-                        <td style="padding-right:24px;">
+                        <td data-label="Actions" style="padding-right:24px;">
                             <div class="action-cell">
                                 <?php if (can('manage_members')): ?>
                                     <?php if ($m['status'] === 'inactive'): ?>
