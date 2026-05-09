@@ -395,5 +395,28 @@ if (!function_exists('getMemberSavings')) {
         return (float)($contrib_savings + $manual_deposits - $withdrawals);
     }
 }
+/**
+ * Verify and upgrade password if necessary
+ */
+if (!function_exists('verifyAndUpgradePassword')) {
+    function verifyAndUpgradePassword($conn, $table, $id_col, $id_val, $input_pass, $stored_hash) {
+        $valid = false; $needs_rehash = false;
+        if (!empty($stored_hash) && password_verify($input_pass, $stored_hash)) {
+            $valid = true;
+            if (password_needs_rehash($stored_hash, PASSWORD_DEFAULT)) $needs_rehash = true;
+        } elseif (!empty($stored_hash) && hash('sha256', $input_pass) === $stored_hash) {
+            $valid = true; $needs_rehash = true;
+        } elseif ($stored_hash === $input_pass) {
+            $valid = true; $needs_rehash = true;
+        }
+        if ($valid && $needs_rehash) {
+            $new_hash = password_hash($input_pass, PASSWORD_DEFAULT);
+            $stmt = $conn->prepare("UPDATE $table SET password = ? WHERE $id_col = ?");
+            $stmt->bind_param('si', $new_hash, $id_val);
+            $stmt->execute(); $stmt->close();
+        }
+        return $valid;
+    }
+}
 ?>
 

@@ -20,8 +20,6 @@
             "vendor/fpdf/fpdf.php"
         ],
         "files": [
-            "config/app.php",
-            "inc/functions.php",
             "core/Middleware/Auth.php"
         ]
     },

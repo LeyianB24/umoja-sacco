@@ -1,5 +1,5 @@
 <?php
-ob_start();
+session_start();
 require_once __DIR__ . '/../config/app.php';
 require_once __DIR__ . '/../inc/functions.php';
 require_once __DIR__ . '/../inc/Auth.php';
@@ -7,25 +7,6 @@ require_once __DIR__ . '/../inc/Auth.php';
 define('REMEMBER_SECONDS', 30 * 24 * 60 * 60);
 define('COOKIE_NAME', 'usms_rem');
 $cookie_secure = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
-
-function verifyAndUpgradePassword($conn, $table, $id_col, $id_val, $input_pass, $stored_hash) {
-    $valid = false; $needs_rehash = false;
-    if (!empty($stored_hash) && password_verify($input_pass, $stored_hash)) {
-        $valid = true;
-        if (password_needs_rehash($stored_hash, PASSWORD_DEFAULT)) $needs_rehash = true;
-    } elseif (!empty($stored_hash) && hash('sha256', $input_pass) === $stored_hash) {
-        $valid = true; $needs_rehash = true;
-    } elseif ($stored_hash === $input_pass) {
-        $valid = true; $needs_rehash = true;
-    }
-    if ($valid && $needs_rehash) {
-        $new_hash = password_hash($input_pass, PASSWORD_DEFAULT);
-        $stmt = $conn->prepare("UPDATE $table SET password = ? WHERE $id_col = ?");
-        $stmt->bind_param('si', $new_hash, $id_val);
-        $stmt->execute(); $stmt->close();
-    }
-    return $valid;
-}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf_token();
