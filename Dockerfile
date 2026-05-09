@@ -2,7 +2,7 @@ FROM php:8.2-apache
 
 # Install required PHP extensions
 RUN apt-get update && apt-get install -y \
-    libmysqlclient-dev \
+    libmariadb-dev \
     mariadb-client \
     git \
     curl \
