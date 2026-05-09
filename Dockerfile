@@ -30,8 +30,10 @@ COPY . .
 # Copy Apache configuration
 COPY docker/apache.conf /etc/apache2/sites-available/000-default.conf
 
-# Remove vendor and reinstall cleanly — skip classmap optimization to avoid fpdf path issue
-RUN rm -rf vendor && composer install --no-dev --no-scripts --ignore-platform-reqs
+# Patch composer.json to remove broken fpdf classmap entry, then install
+RUN rm -rf vendor && \
+    sed -i '/vendor\/fpdf\/fpdf\.php/d' composer.json && \
+    composer install --no-dev --optimize-autoloader
 
 # Create required directories
 RUN mkdir -p storage/cache storage/logs uploads && chmod 755 storage/cache storage/logs uploads
