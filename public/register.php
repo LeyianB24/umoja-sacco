@@ -106,7 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     send_notification($conn, (int)$newMemberId, 'registration_success', ['member_no' => $reg_no]);
                     
                     $ins->close();
-                    header("Location: ../member/pages/pay_registration.php"); exit;
+                    header("Location: ../member/pages/dashboard.php"); exit;
                 } else { 
                     $ins->close();
                     throw new Exception("Registration failed: " . $ins->error); 

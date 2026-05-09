@@ -3,7 +3,7 @@ declare(strict_types=1);
 if (session_status() === PHP_SESSION_NONE) session_start();
 
 require_once __DIR__ . '/../../config/app.php';
-require_once __DIR__ . '/../../inc/Auth.php';
+require_once __DIR__ . '/../../inc/auth.php';
 require_once __DIR__ . '/../../inc/LayoutManager.php';
 require_once __DIR__ . '/../../inc/SettingsHelper.php';
 

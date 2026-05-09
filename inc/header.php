@@ -37,15 +37,11 @@ if (!function_exists('is_active')) {
 
 $is_logged_in = isset($_SESSION['member_id']) || isset($_SESSION['admin_id']);
 
-$dashboard_link = '/member/pages/dashboard.php';
+$dashboard_link = BASE_URL . '/member/pages/dashboard.php';
 if (isset($_SESSION['admin_id'])) {
-    $role = $_SESSION['role'] ?? 'admin';
-    $dashboard_link = match($role) {
-        'superadmin' => '/superadmin/dashboard.php',
-        'manager'    => '/manager/dashboard.php',
-        'accountant' => '/accountant/dashboard.php',
-        default      => '/admin/pages/dashboard.php'
-    };
+    // Standardize all admin dashboards to the current admin/pages path
+    // Future role-specific dashboards can be added here if files are created
+    $dashboard_link = BASE_URL . '/admin/pages/dashboard.php';
 }
 ?>
 <!DOCTYPE html>

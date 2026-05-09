@@ -1,7 +1,7 @@
 <?php
 // inc/sidebar.php — HD Edition · Forest & Lime · Plus Jakarta Sans
 if (session_status() === PHP_SESSION_NONE) session_start();
-require_once __DIR__ . '/../../inc/Auth.php';
+require_once __DIR__ . '/../../inc/auth.php';
 
 $role = 'guest';
 if (isset($_SESSION['admin_id']))       { $role = $_SESSION['role'] ?? 'admin'; }
