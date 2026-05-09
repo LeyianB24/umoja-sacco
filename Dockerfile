@@ -30,8 +30,8 @@ COPY . .
 # Copy Apache configuration
 COPY docker/apache.conf /etc/apache2/sites-available/000-default.conf
 
-# Remove vendor and reinstall cleanly
-RUN rm -rf vendor && composer install --no-dev --optimize-autoloader
+# Remove vendor and reinstall cleanly — skip classmap optimization to avoid fpdf path issue
+RUN rm -rf vendor && composer install --no-dev --no-scripts --ignore-platform-reqs
 
 # Create required directories
 RUN mkdir -p storage/cache storage/logs uploads && chmod 755 storage/cache storage/logs uploads
