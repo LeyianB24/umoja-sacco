@@ -211,7 +211,9 @@ class EnvLoader
         header('X-Frame-Options: SAMEORIGIN', true);
 
         // Content Security Policy
-        header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'", true);
+        // Content Security Policy: Relaxed to allow Bootstrap CDN and Google Fonts
+        header("Content-Security-Policy: default-src 'self' https://cdn.jsdelivr.net; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline' 'unsafe-eval'; style-src 'self' https://cdn.jsdelivr.net https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com; img-src 'self' data: https:;", true);
+
 
         // Referrer Policy
         header('Referrer-Policy: strict-origin-when-cross-origin', true);
