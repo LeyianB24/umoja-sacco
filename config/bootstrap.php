@@ -15,14 +15,24 @@ EnvLoader::load();
 /**
  * Validate that all critical environment variables are set
  * This prevents mysterious errors later due to missing config
+ * Priority: MYSQL_* (Railway) > DB_* (Local Dev) > check for alternatives
  */
 try {
+    // Check if we have Railway MySQL variables OR local DB variables
+    $has_mysql_vars = EnvLoader::has('MYSQLHOST') && EnvLoader::has('MYSQLUSER') && EnvLoader::has('MYSQLDATABASE');
+    $has_db_vars = EnvLoader::has('DB_HOST') && EnvLoader::has('DB_USER') && EnvLoader::has('DB_NAME');
+
+    if (!$has_mysql_vars && !$has_db_vars) {
+        throw new \RuntimeException(
+            "Missing required database variables. " .
+            "Either set MYSQL_* (Railway) or DB_* (Local) environment variables."
+        );
+    }
+
+    // Validate other required variables
     EnvLoader::requireAll([
         'APP_ENV',
         'APP_SECRET',
-        'DB_HOST',
-        'DB_USER',
-        'DB_NAME',
         'SMTP_HOST',
         'SMTP_USERNAME',
         'SMTP_PASSWORD',
