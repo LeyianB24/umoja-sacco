@@ -1,7 +1,7 @@
 <?php
 // usms/public/logout.php
 require_once __DIR__ . '/../config/app.php';
-require_once __DIR__ . '/../inc/Auth.php';
+require_once __DIR__ . '/../inc/auth.php';
 
 // If we are using the new Auth engine
 if (class_exists('Auth')) {

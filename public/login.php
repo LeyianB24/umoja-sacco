@@ -1,17 +1,9 @@
 <?php
 declare(strict_types=1);
-error_reporting(E_ALL);
-ini_set('display_errors', '1');
-set_error_handler(function($errno, $errstr, $errfile, $errline) {
-    die("PHP Error [$errno]: $errstr in $errfile on line $errline");
-});
-set_exception_handler(function($e) {
-    die("PHP Exception: " . $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine());
-});
 session_start();
 require_once __DIR__ . '/../config/app.php';
 require_once __DIR__ . '/../inc/functions.php';
-require_once __DIR__ . '/../inc/Auth.php';
+require_once __DIR__ . '/../inc/auth.php';
 
 if (!defined('REMEMBER_SECONDS')) define('REMEMBER_SECONDS', 30 * 24 * 60 * 60);
 if (!defined('COOKIE_NAME'))     define('COOKIE_NAME',     'usms_rem');
