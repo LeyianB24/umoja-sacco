@@ -322,7 +322,7 @@ if (isset($_SESSION['admin_id'])) {
         <div class="container">
 
             <!-- Brand -->
-            <a class="nb-brand navbar-brand" href="<?= BASE_URL ?>/public/index.php">
+            <a class="nb-brand navbar-brand" href="<?= PUBLIC_URL ?>/index.php">
                 <div class="nb-logo-wrap">
                     <img src="<?= ASSET_BASE ?>/images/people_logo.png" alt="Logo"
                          onerror="this.style.display='none';this.parentElement.innerText='U'">
@@ -349,19 +349,19 @@ if (isset($_SESSION['admin_id'])) {
             <div class="collapse navbar-collapse" id="mainNav">
                 <ul class="nb-nav ms-auto align-items-center">
                     <li>
-                        <a href="<?= BASE_URL ?>/public/index.php"
+                        <a href="<?= PUBLIC_URL ?>/index.php"
                            class="nb-nav-link <?= is_active('index.php') ?>">Home</a>
                     </li>
                     <li>
-                        <a href="<?= BASE_URL ?>/public/index.php#about"
+                        <a href="<?= PUBLIC_URL ?>/index.php#about"
                            class="nb-nav-link">About Us</a>
                     </li>
                     <li>
-                        <a href="<?= BASE_URL ?>/public/index.php#services"
+                        <a href="<?= PUBLIC_URL ?>/index.php#services"
                            class="nb-nav-link">Services</a>
                     </li>
                     <li>
-                        <a href="<?= BASE_URL ?>/public/index.php#contact"
+                        <a href="<?= PUBLIC_URL ?>/index.php#contact"
                            class="nb-nav-link">Contact</a>
                     </li>
 
@@ -387,7 +387,7 @@ if (isset($_SESSION['admin_id'])) {
                                 </li>
                                 <li><div class="nb-dropdown-divider"></div></li>
                                 <li>
-                                    <a class="nb-dropdown-item danger" href="<?= BASE_URL ?>/public/logout.php">
+                                    <a class="nb-dropdown-item danger" href="<?= PUBLIC_URL ?>/logout.php">
                                         <span class="nb-dropdown-icon"><i class="bi bi-power"></i></span> Sign Out
                                     </a>
                                 </li>
@@ -395,12 +395,12 @@ if (isset($_SESSION['admin_id'])) {
                         </li>
                     <?php else: ?>
                         <li>
-                            <a href="<?= BASE_URL ?>/public/login.php" class="btn-nb-login">
+                            <a href="<?= PUBLIC_URL ?>/login.php" class="btn-nb-login">
                                 <i class="bi bi-box-arrow-in-right"></i> Log In
                             </a>
                         </li>
                         <li>
-                            <a href="<?= BASE_URL ?>/public/register.php" class="btn-nb-register">
+                            <a href="<?= PUBLIC_URL ?>/register.php" class="btn-nb-register">
                                 <i class="bi bi-person-plus-fill"></i> Join Us
                             </a>
                         </li>

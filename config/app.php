@@ -51,6 +51,13 @@ if (!defined('ASSET_BASE')) {
     define('ASSET_BASE', $asset_path);
 }
 
+// PUBLIC_URL: For links to pages in the public/ folder
+// In Docker, these are at root. In XAMPP, they are at /usms/public/
+if (!defined('PUBLIC_URL')) {
+    define('PUBLIC_URL', (BASE_URL === '') ? '' : BASE_URL . '/public');
+}
+
+
 
 
 // 4. CORE IDENTITY
