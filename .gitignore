@@ -1,7 +1,7 @@
 # USMS Git Inhibition List
 
 # Dependencies
-/vendor/
+vendor/
 /composer.lock
 
 # Environment & Configuration (NEVER commit credentials!)
@@ -15,11 +15,12 @@ config/database.php
 config/environment.php
 
 # Sensitive Assets & Uploads
-/uploads/
+uploads/*
 /cert/
 /member/uploads/
 /public/uploads/
-/storage/
+storage/cache/*
+storage/logs/*
 
 # Development Artifacts
 *.log
