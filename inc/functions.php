@@ -84,11 +84,12 @@ if (!function_exists('csrf_token')) {
  * Render a hidden CSRF input field
  */
 if (!function_exists('csrf_field')) {
-    function csrf_field()
+    function csrf_field(): string
     {
         $token = csrf_token();
-        echo '<input type="hidden" name="csrf_token" value="' . esc($token) . '">';
+        return '<input type="hidden" name="csrf_token" value="' . esc($token) . '">';
     }
+
 }
 
 /**
@@ -286,7 +287,8 @@ if (!function_exists('generate_member_no')) {
         } else {
             $num = 1;
         }
-        return $prefix . str_pad($num, 4, '0', STR_PAD_LEFT);
+        return $prefix . str_pad((string)$num, 4, '0', STR_PAD_LEFT);
+
     }
 }
 

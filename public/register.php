@@ -553,7 +553,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?php endif; ?>
 
         <form method="POST" action="" id="regForm" enctype="multipart/form-data">
-            <?php csrf_field(); ?>
+            <?= csrf_field() ?>
+
 
             <!-- Personal Info -->
             <div class="rr-section">
