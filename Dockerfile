@@ -1,6 +1,6 @@
 FROM php:8.2-apache
 
-# Install required PHP extensions
+# Install required PHP extensions + GD dependencies
 RUN apt-get update && apt-get install -y \
     libmariadb-dev \
     mariadb-client \
@@ -8,10 +8,16 @@ RUN apt-get update && apt-get install -y \
     curl \
     zip \
     unzip \
-    && docker-php-ext-install mysqli pdo pdo_mysql \
+    libpng-dev \
+    libjpeg-dev \
+    libfreetype6-dev \
+    libzip-dev \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install mysqli pdo pdo_mysql gd zip \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Composer
+ENV COMPOSER_ALLOW_SUPERUSER=1
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
 # Enable Apache rewrite module
