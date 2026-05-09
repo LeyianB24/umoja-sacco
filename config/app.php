@@ -13,7 +13,13 @@ if (session_status() === PHP_SESSION_NONE) {
 
 if (!defined('APP_START_TIME')) define('APP_START_TIME', microtime(true));
 
+// 0. ENVIRONMENT LOADER (Required for path detection)
+require_once __DIR__ . '/EnvLoader.php';
+use USMS\Config\EnvLoader;
+EnvLoader::load();
+
 // 1. BASE PATHS
+
 // 1. BASE PATHS
 if (!defined('BASE_PATH')) define('BASE_PATH', dirname(__DIR__));
 
@@ -117,10 +123,8 @@ if (!defined('SOCIAL_INSTAGRAM')) define('SOCIAL_INSTAGRAM', 'https://instagram.
 if (!defined('SOCIAL_YOUTUBE'))   define('SOCIAL_YOUTUBE',   'https://youtube.com/umojadriverssacco');
 if (!defined('SOCIAL_TIKTOK'))    define('SOCIAL_TIKTOK',    'https://tiktok.com/@umojadriverssacco');
 
-// 5. ENVIRONMENT & SECURITY
-require_once __DIR__ . '/EnvLoader.php';
-use USMS\Config\EnvLoader;
-EnvLoader::load();
+// 5. ENVIRONMENT & SECURITY (Already initialized above)
+
 
 if (!defined('APP_ENV'))    define('APP_ENV',    EnvLoader::get('APP_ENV', 'development'));
 if (!defined('APP_SECRET')) define('APP_SECRET', EnvLoader::get('APP_SECRET', 'a-very-long-random-secret-you-generate'));
