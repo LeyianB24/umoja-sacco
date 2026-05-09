@@ -211,8 +211,9 @@ class EnvLoader
         header('X-Frame-Options: SAMEORIGIN', true);
 
         // Content Security Policy
-        // Content Security Policy: Relaxed to allow Bootstrap CDN and Google Fonts
-        header("Content-Security-Policy: default-src 'self' https://cdn.jsdelivr.net; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline' 'unsafe-eval'; style-src 'self' https://cdn.jsdelivr.net https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com; img-src 'self' data: https:;", true);
+        // Content Security Policy: Relaxed to allow all HTTPS sources (CDN, Fonts, etc)
+        header("Content-Security-Policy: default-src 'self' https:; script-src 'self' https: 'unsafe-inline' 'unsafe-eval'; style-src 'self' https: 'unsafe-inline'; font-src 'self' https: data:; img-src 'self' https: data:;", true);
+
 
 
         // Referrer Policy
