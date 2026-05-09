@@ -129,25 +129,34 @@ if (!defined('SOCIAL_TIKTOK'))    define('SOCIAL_TIKTOK',    'https://tiktok.com
 if (!defined('APP_ENV'))    define('APP_ENV',    EnvLoader::get('APP_ENV', 'development'));
 if (!defined('APP_SECRET')) define('APP_SECRET', EnvLoader::get('APP_SECRET', 'a-very-long-random-secret-you-generate'));
 
-// 6. DATABASE CONFIGURATION (Legacy mysqli support - from .env.local)
+// 6. DATABASE CONFIGURATION (Legacy mysqli support - Priority: Railway > .env.local > Defaults)
+if (!defined('DB_HOST')) define('DB_HOST', EnvLoader::get('MYSQLHOST', EnvLoader::get('DB_HOST', 'localhost')));
+if (!defined('DB_PORT')) define('DB_PORT', EnvLoader::get('MYSQLPORT', EnvLoader::get('DB_PORT', '3306')));
+if (!defined('DB_USER')) define('DB_USER', EnvLoader::get('MYSQLUSER', EnvLoader::get('DB_USER', 'root')));
+if (!defined('DB_PASS')) define('DB_PASS', EnvLoader::get('MYSQLPASSWORD', EnvLoader::get('DB_PASS', '')));
+if (!defined('DB_NAME')) define('DB_NAME', EnvLoader::get('MYSQLDATABASE', EnvLoader::get('DB_NAME', 'umoja_drivers_sacco')));
+if (!defined('DB_CHARSET')) define('DB_CHARSET', EnvLoader::get('DB_CHARSET', 'utf8mb4'));
+
 $db_config = [
-    'host'     => EnvLoader::get('DB_HOST', 'localhost'),
-    'user'     => EnvLoader::get('DB_USER', 'root'),
-    'pass'     => EnvLoader::get('DB_PASS', ''),
-    'dbname'   => EnvLoader::get('DB_NAME', 'umoja_drivers_sacco'),
-    'charset'  => EnvLoader::get('DB_CHARSET', 'utf8mb4')
+    'host'     => DB_HOST,
+    'user'     => DB_USER,
+    'pass'     => DB_PASS,
+    'dbname'   => DB_NAME,
+    'port'     => (int) DB_PORT,
+    'charset'  => DB_CHARSET
 ];
 
-$conn = new mysqli($db_config['host'], $db_config['user'], $db_config['pass'], $db_config['dbname']);
+$conn = new mysqli($db_config['host'], $db_config['user'], $db_config['pass'], $db_config['dbname'], $db_config['port']);
 if ($conn->connect_error) {
     error_log("[USMS] MySQL connection failed: " . $conn->connect_error);
     \USMS\Http\ErrorHandler::abort(500,
-        APP_ENV === 'development'
+        (defined('APP_ENV') && APP_ENV === 'development')
             ? "Database connection failed: " . $conn->connect_error
             : "Error connecting to system database. Please try again later."
     );
 }
 $conn->set_charset($db_config['charset']);
+
 // Global $db alias for legacy pages
 $db = $conn;
 
