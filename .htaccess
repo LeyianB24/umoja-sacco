@@ -1,0 +1,21 @@
+# Root .htaccess for Umoja Sacco
+RewriteEngine On
+
+# 1. Protect Sensitive Directories
+RewriteRule ^(inc|config|core|database|storage|vendor|scripts|cron|tests|tools)/.*$ - [F,L]
+
+# 2. Protect environment and hidden files
+RewriteRule ^\.(env|git|vscode|vs|phpunit).*$ - [F,L]
+
+# 3. Redirect root to public/index.php if no specific file is requested
+# This ensures the landing page works as expected
+RewriteCond %{REQUEST_URI} ^/$
+RewriteRule ^$ public/index.php [L]
+
+# 4. Handle redirects from / to /public/ for common files if needed
+# (Optional, but helps if users type domain.com/login.php)
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^login\.php$ public/login.php [L]
+RewriteRule ^register\.php$ public/register.php [L]
+RewriteRule ^logout\.php$ public/logout.php [L]
