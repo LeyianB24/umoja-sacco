@@ -120,7 +120,7 @@ class EnvLoader
     public static function has(string $key): bool
     {
         self::load();
-        return isset(self::$env[$key]) || isset($_ENV[$key]);
+        return getenv($key) !== false || isset(self::$env[$key]) || isset($_ENV[$key]);
     }
 
     /**
