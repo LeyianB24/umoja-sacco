@@ -11,7 +11,9 @@ ENV COMPOSER_ALLOW_SUPERUSER=1
 RUN curl -sS https://getcomposer.org/installer | php -- \
     --install-dir=/usr/local/bin --filename=composer
 
-RUN a2dismod mpm_event mpm_worker 2>/dev/null || true \
+# Robust MPM fix: remove symlinks manually and enable prefork
+RUN rm -f /etc/apache2/mods-enabled/mpm_event.load /etc/apache2/mods-enabled/mpm_event.conf \
+    && rm -f /etc/apache2/mods-enabled/mpm_worker.load /etc/apache2/mods-enabled/mpm_worker.conf \
     && a2enmod mpm_prefork rewrite
 
 WORKDIR /var/www/html
