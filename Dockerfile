@@ -20,8 +20,8 @@ RUN apt-get update && apt-get install -y \
 ENV COMPOSER_ALLOW_SUPERUSER=1
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
-# Enable Apache rewrite module
-RUN a2enmod rewrite
+# Fix Apache MPM conflict — disable event, enable prefork (required for PHP)
+RUN a2dismod mpm_event && a2enmod mpm_prefork rewrite
 
 # Set up Apache document root
 WORKDIR /var/www/html
