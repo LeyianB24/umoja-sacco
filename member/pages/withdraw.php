@@ -212,7 +212,7 @@ $pageTitle = "Withdraw Funds";
         .balance-display { background: linear-gradient(135deg, #0f392b 0%, #134e3b 100%); color: white; padding: 32px; border-radius: 20px; }
     </style>
 
-    <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
+    <?php require_once __DIR__ . '/../../inc/dark_mode_loader.php'; ?>
 </head>
 <body>
 

@@ -470,7 +470,7 @@ $theme = $_COOKIE['theme'] ?? 'light';
         }
     </style>
 
-    <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
+    <?php require_once __DIR__ . '/../../inc/dark_mode_loader.php'; ?>
 </head>
 <body>
     <div id="processingOverlay">

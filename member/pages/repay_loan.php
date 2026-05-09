@@ -117,7 +117,7 @@ $pageTitle = "Repay Loan #" . $loan_id;
         @media (max-width: 991.98px) { .main-content-wrapper { margin-left: 0; } }
     </style>
 
-    <?php require_once 'C:/xampp/htdocs/usms/inc/dark_mode_loader.php'; ?>
+    <?php require_once __DIR__ . '/../../inc/dark_mode_loader.php'; ?>
 </head>
 <body>
 
