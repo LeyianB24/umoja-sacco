@@ -1,4 +1,8 @@
 <?php
+error_reporting(E_ALL);
+ini_set('display_errors', '1');
+set_error_handler(null);
+set_exception_handler(null);
 session_start();
 require_once __DIR__ . '/../config/app.php';
 require_once __DIR__ . '/../inc/functions.php';
