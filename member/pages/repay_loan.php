@@ -237,7 +237,7 @@ $pageTitle = "Repay Loan #" . $loan_id;
         setTimeout(() => {
             btn.disabled = false;
             btn.innerHTML = originalText;
-        }, 15000);
+        }, 60000);
     });
 </script>
 </body>

@@ -1011,7 +1011,7 @@ if (!function_exists('getInitials')) {
             switchTab('Feed');
         }
 
-        setInterval(pollAudit, 5000);
+        setInterval(pollAudit, 60000);
     });
     </script>
 

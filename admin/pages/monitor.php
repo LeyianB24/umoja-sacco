@@ -333,7 +333,7 @@ body {
                         </button>
                     </div>
                     <div class="mt-2 text-end">
-                        <span id="refreshTimer" style="font-size:0.7rem; color:rgba(255,255,255,0.5); font-weight:700; text-transform:uppercase; letter-spacing:0.5px">Sync in 15s</span>
+                        <span id="refreshTimer" style="font-size:0.7rem; color:rgba(255,255,255,0.5); font-weight:700; text-transform:uppercase; letter-spacing:0.5px">Sync in 60s</span>
                         <div style="width:140px; height:3px; background:rgba(255,255,255,0.1); border-radius:10px; overflow:hidden; margin-top:6px">
                             <div id="refreshBar" style="width:100%; height:100%; background:var(--lime); transition:width 1s linear"></div>
                         </div>
@@ -799,8 +799,8 @@ async function activateRequest(checkoutID, btn) {
 
 // Auto-refresh logic
 let isPaused = false;
-let countdown = 15;
-const MAX_TIME = 15;
+let countdown = 60;
+const MAX_TIME = 60;
 let hoverPause = false;
 
 document.querySelectorAll('.detail-card').forEach(card => {

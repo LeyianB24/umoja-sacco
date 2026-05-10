@@ -1,6 +1,6 @@
 /**
  * Global Live Refresh & Idle Timeout Widget
- * Auto-refreshes the page every 15 seconds (with intelligent pausing)
+ * Auto-refreshes the page every 60 seconds (with intelligent pausing)
  * Auto-logs out the user after 2 minutes of complete inactivity.
  */
 document.addEventListener('DOMContentLoaded', () => {
@@ -37,7 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.location.pathname.includes('monitor.php')) return;
     if (window.DISABLE_LIVE_REFRESH) return;
 
-    const MAX_TIME = 15;
+    const MAX_TIME = 60;
     let countdown = MAX_TIME;
     let isPaused = false;
     let hoverPause = false;
