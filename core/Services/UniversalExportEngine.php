@@ -123,6 +123,10 @@ class UniversalExportEngine {
         $cleanTitle = preg_replace('/[^a-zA-Z0-9_\-]/', '_', strtolower($options['title'] ?? 'doc'));
         $filename = "{$cleanTitle}_{$dateStr}.pdf";
         
+        if ($outputMode !== 'S' && ob_get_length()) {
+            ob_clean();
+        }
+        
         $result = $pdf->Output($outputMode, $filename);
         
         if ($outputMode === 'S') {

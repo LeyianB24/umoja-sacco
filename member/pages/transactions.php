@@ -1,13 +1,14 @@
 <?php
 declare(strict_types=1);
-if (session_status() === PHP_SESSION_NONE) session_start();
-header("Cache-Control: no-cache, no-store, must-revalidate");
-header("Pragma: no-cache");
-header("Expires: 0");
 
 require_once __DIR__ . '/../../config/app.php';
 require_once __DIR__ . '/../../inc/auth.php';
 require_once __DIR__ . '/../../inc/LayoutManager.php';
+
+header("Cache-Control: no-cache, no-store, must-revalidate");
+header("Pragma: no-cache");
+header("Expires: 0");
+
 $layout = LayoutManager::create('member');
 require_member();
 

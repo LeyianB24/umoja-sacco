@@ -31,8 +31,26 @@ if (!defined('BASE_URL')) {
     }
 }
 
-if (!defined('PUBLIC_URL')) define('PUBLIC_URL', BASE_URL . '/public');
-if (!defined('ASSET_BASE')) define('ASSET_BASE', PUBLIC_URL . '/assets');
+if (!defined('PUBLIC_URL')) {
+    // Detect if we are already serving from the public directory (common in production)
+    $script_name = $_SERVER['SCRIPT_NAME'] ?? '';
+    if (strpos($script_name, '/public/') === false && file_exists(BASE_PATH . '/public/index.php')) {
+        // If /public/ is NOT in the URL but the folder exists, we might be serving from it.
+        // Let's check the DOCUMENT_ROOT vs BASE_PATH.
+        $doc_root = realpath($_SERVER['DOCUMENT_ROOT'] ?? '');
+        $public_path = realpath(BASE_PATH . '/public');
+        if ($doc_root && $public_path && strpos($public_path, $doc_root) === 0 && strlen($public_path) >= strlen($doc_root)) {
+             // We are serving from public or a subfolder of public
+             define('PUBLIC_URL', BASE_URL);
+        } else {
+             define('PUBLIC_URL', BASE_URL . '/public');
+        }
+    } else {
+        // Fallback or explicit public in URL
+        define('PUBLIC_URL', BASE_URL . (strpos($script_name, '/public/') !== false ? '/public' : '/public'));
+    }
+}
+if (!defined('ASSET_BASE')) define('ASSET_BASE', rtrim(PUBLIC_URL, '/') . '/assets');
 
 $protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? 'https' : (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https' ? 'https' : 'http');
 $host     = !empty($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : 'localhost';
