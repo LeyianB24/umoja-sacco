@@ -25,22 +25,16 @@ if (!defined('BASE_PATH')) define('BASE_PATH', dirname(__DIR__));
 
 // Dynamic BASE_URL: detect if we are in a subdirectory or root
 if (!defined('BASE_URL')) {
-    // Priority: Env var > detected path
     $env_base_url = \USMS\Config\EnvLoader::get('BASE_URL');
     if ($env_base_url !== null) {
         define('BASE_URL', rtrim($env_base_url, '/'));
     } else {
-        // Fallback: Use '/usms' if that folder exists in the request URI (Local XAMPP)
-        // Otherwise empty string for root deployment (Docker/Railway)
-        $detected_base = (strpos($_SERVER['REQUEST_URI'] ?? '', '/usms') === 0) ? '/usms' : '';
+        // More robust detection for local subdirectories
+        $req_uri = $_SERVER['REQUEST_URI'] ?? '';
+        $detected_base = (stripos($req_uri, '/usms') === 0) ? '/usms' : '';
         define('BASE_URL', $detected_base);
     }
 }
-
-// Detect if we are accessing through the public/ directory
-$script_path = $_SERVER['SCRIPT_NAME'] ?? '';
-$is_in_public = (strpos($script_path, '/public/') !== false);
-
 
 // 2. AUTOLOAD
 if (file_exists(BASE_PATH . '/vendor/autoload.php')) {
@@ -55,17 +49,11 @@ $host     = !empty($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : 'localhost';
 if (!defined('SITE_URL'))   define('SITE_URL', $protocol . '://' . rtrim($host, '/') . '/' . ltrim(BASE_URL, '/'));
 
 // PUBLIC_URL: For links to pages in the public/ folder
-// In Docker/Railway, these are at /public. In XAMPP, they are at /usms/public/
 if (!defined('PUBLIC_URL')) {
-    if (BASE_URL !== '') {
-        define('PUBLIC_URL', BASE_URL . '/public');
-    } else {
-        // In root deployment, if we are in public subfolder, use it
-        define('PUBLIC_URL', $is_in_public ? '/public' : '');
-    }
+    define('PUBLIC_URL', BASE_URL . '/public');
 }
 
-// Adjust ASSET_BASE: Always relative to PUBLIC_URL
+// ASSET_BASE: Where images, css, and js live
 if (!defined('ASSET_BASE')) {
     define('ASSET_BASE', PUBLIC_URL . '/assets');
 }

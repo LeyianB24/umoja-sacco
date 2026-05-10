@@ -278,7 +278,9 @@ if (isset($_SESSION['member_id'])) {
     <div class="login-brand">
         <div class="brand-content">
             <a href="<?= BASE_URL ?>/" class="text-white text-decoration-none d-flex align-items-center mb-5">
-                <i class="bi bi-shield-fill-check fs-2 me-2 text-lime"></i>
+                <div style="width: 48px; height: 48px; background: #fff; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-right: 14px; overflow: hidden; padding: 5px;">
+                    <img src="<?= SITE_LOGO ?>" alt="Logo" style="max-width: 100%; max-height: 100%; object-fit: contain;">
+                </div>
                 <span class="fw-800 fs-4 tracking-tight"><?= strtoupper(SITE_NAME) ?></span>
             </a>
             <h2>Secure<br>Access to your<br><span>Wealth.</span></h2>

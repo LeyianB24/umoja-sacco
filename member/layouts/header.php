@@ -14,12 +14,10 @@ $pageTitle = isset($pageTitle) ? $pageTitle : 'Member Portal';
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="light">
 <head>
-    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
-    <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
-    <link rel="stylesheet" href="/usms/public/assets/css/darkmode.css">
     <script>(function(){const s=localStorage.getItem('theme')||'light';document.documentElement.setAttribute('data-bs-theme',s);})();</script>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/png" href="<?= SITE_FAVICON ?>">
     <title><?= htmlspecialchars($pageTitle) ?> - <?= SITE_NAME ?></title>
 
     <!-- FONTS -->

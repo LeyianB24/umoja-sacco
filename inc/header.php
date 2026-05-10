@@ -54,6 +54,7 @@ if (isset($_SESSION['admin_id'])) {
         <?= \USMS\Middleware\CsrfMiddleware::metaTag() ?>
     <?php endif; ?>
     <title><?= isset($pageTitle) ? htmlspecialchars($pageTitle) . ' — ' : '' ?><?= defined('SITE_NAME') ? htmlspecialchars(SITE_NAME) : 'Sacco Portal' ?></title>
+    <link rel="icon" type="image/png" href="<?= SITE_FAVICON ?>">
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">

@@ -336,7 +336,7 @@ if (!function_exists('is_active')) {
 
     <!-- ─── Brand ── -->
     <a href="<?= $base ?>/public/index.php" class="hd-brand">
-        <img src="<?= $assets ?>/images/people_logo.png" alt="Logo" class="hd-logo-img">
+        <img src="<?= SITE_LOGO ?>" alt="Logo" class="hd-logo-img">
         <div class="hd-brand-text">
             <div class="hd-brand-name"><?= defined('SITE_NAME') ? htmlspecialchars(SITE_NAME) : 'UMOJA SACCO' ?></div>
             <span class="hd-brand-sub">Admin Panel</span>

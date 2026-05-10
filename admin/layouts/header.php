@@ -27,6 +27,7 @@ $activePage  = $activePage  ?? '';          // set by page before including layo
     <?php if (class_exists('USMS\\Middleware\\CsrfMiddleware')): ?>
     <?= \USMS\Middleware\CsrfMiddleware::metaTag() ?>
     <?php endif; ?>
+    <link rel="icon" type="image/png" href="<?= SITE_FAVICON ?>">
     <title><?= htmlspecialchars($pageTitle) ?> — <?= defined('SITE_NAME') ? htmlspecialchars(SITE_NAME) : 'Sacco Admin' ?></title>
 
     <!-- Theme init: must be first to prevent FOUC -->
