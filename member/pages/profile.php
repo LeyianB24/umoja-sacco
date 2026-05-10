@@ -44,8 +44,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['error'] = "Invalid file type. Upload JPG, PNG or WEBP.";
             header("Location: profile.php"); exit;
         }
-        if ($f_size > 1 * 1024 * 1024) {
-            $_SESSION['error'] = "Image too large (max 1 MB). Please compress it.";
+        if ($f_size > 5 * 1024 * 1024) {
+            $_SESSION['error'] = "Image too large (max 5 MB). Please compress it.";
             header("Location: profile.php"); exit;
         }
         $pic_data = file_get_contents($f_tmp);

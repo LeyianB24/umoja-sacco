@@ -27,24 +27,49 @@ class MpesaService implements PaymentGatewayInterface {
     }
 
     private function getAccessToken(): string {
-        $url = $this->config['base_url'] . '/oauth/v1/generate?grant_type=client_credentials';
+        $baseUrl = rtrim($this->config['base_url'] ?? '', '/');
+        $url = $baseUrl . '/oauth/v1/generate?grant_type=client_credentials';
         
+        $key = $this->config['consumer_key'] ?? '';
+        $secret = $this->config['consumer_secret'] ?? '';
+
+        if (empty($key) || empty($secret)) {
+            throw new Exception("M-Pesa Error: Consumer Key or Secret is missing in configuration.");
+        }
+
         $ch = curl_init($url);
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_HTTPHEADER => ['Authorization: Basic ' . base64_encode($this->config['consumer_key'] . ':' . $this->config['consumer_secret'])],
+            CURLOPT_HTTPHEADER => ['Authorization: Basic ' . base64_encode($key . ':' . $secret)],
             CURLOPT_SSL_VERIFYPEER => false,
-            CURLOPT_SSL_VERIFYHOST => 0
+            CURLOPT_SSL_VERIFYHOST => 0,
+            CURLOPT_TIMEOUT => 30
         ]);
         
         $resp = curl_exec($ch);
-        if ($resp === false) throw new Exception("Mpesa Auth Error: " . curl_error($ch));
-        
         $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curl_error = curl_error($ch);
         curl_close($ch);
         
+        if ($resp === false) {
+            throw new Exception("M-Pesa Connection Error: " . $curl_error);
+        }
+        
         $j = json_decode($resp, true);
-        if ($http_code != 200) throw new Exception("Mpesa Token Error ($http_code): " . ($j['errorMessage'] ?? $resp));
+        if ($http_code != 200) {
+            $error_detail = $j['errorMessage'] ?? $j['error'] ?? $resp;
+            error_log("M-Pesa Token Error (HTTP $http_code): " . $resp);
+            
+            $msg = "M-Pesa Token Error ($http_code): " . $error_detail;
+            if ($http_code == 400) {
+                $msg .= ". This usually means your Consumer Key/Secret are invalid for the " . $this->env . " environment (" . $baseUrl . ").";
+            }
+            throw new Exception($msg);
+        }
+        
+        if (!isset($j['access_token'])) {
+            throw new Exception("M-Pesa Error: Access token not found in response.");
+        }
         
         return $j['access_token'];
     }

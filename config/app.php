@@ -7,18 +7,18 @@
 
 declare(strict_types=1);
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
-if (!defined('APP_START_TIME')) define('APP_START_TIME', microtime(true));
+// Start output buffering (essential for PDF generation and header redirects)
+ob_start();
 
 // 0. ENVIRONMENT LOADER (Required for path detection)
 require_once __DIR__ . '/EnvLoader.php';
 use USMS\Config\EnvLoader;
 EnvLoader::load();
 
-// 1. BASE PATHS
+// Centralized Session Configuration (MUST happen before session_start)
+if (session_status() === PHP_SESSION_NONE) {
+    EnvLoader::configureSession();
+}
 
 // 1. BASE PATHS
 if (!defined('BASE_PATH')) define('BASE_PATH', dirname(__DIR__));

@@ -162,13 +162,14 @@ class EnvLoader
                     (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
 
         // Session security settings
+        // Use Lax instead of Strict to avoid session loss on external redirects (e.g. M-Pesa callbacks or Email links)
         session_set_cookie_params([
-            'lifetime' => 3600,           // 1 hour
+            'lifetime' => 3600 * 24,       // 24 hours
             'path' => '/',
-            'domain' => $_SERVER['HTTP_HOST'] ?? 'localhost',
-            'secure' => $is_production && $is_https,  // HTTPS only in production
-            'httponly' => true,           // No JavaScript access
-            'samesite' => 'Strict',       // CSRF protection
+            'domain' => '',                // Current domain automatically
+            'secure' => $is_https,         // Secure if accessed via HTTPS
+            'httponly' => true,            // No JavaScript access
+            'samesite' => 'Lax',           // Balanced CSRF protection
         ]);
 
         if (session_status() === PHP_SESSION_NONE) {

@@ -26,12 +26,12 @@ $environments = [
             'consumer_secret' => EnvLoader::get('MPESA_SANDBOX_CONSUMER_SECRET', ''),
             'shortcode' => EnvLoader::get('MPESA_SANDBOX_SHORTCODE', '174379'),
             'passkey' => EnvLoader::get('MPESA_SANDBOX_PASSKEY', ''),
-            'callback_url' => EnvLoader::get('MPESA_SANDBOX_CALLBACK_URL', ''),
+            'callback_url' => EnvLoader::get('MPESA_SANDBOX_CALLBACK_URL', SITE_URL . '/public/member/mpesa_callback.php'),
             'b2c_shortcode' => EnvLoader::get('MPESA_SANDBOX_B2C_SHORTCODE', '600981'),
             'b2c_initiator_name' => EnvLoader::get('MPESA_SANDBOX_B2C_INITIATOR_NAME', 'testapi'),
             'b2c_security_credential' => EnvLoader::get('MPESA_SANDBOX_B2C_SECURITY_CREDENTIAL', ''),
-            'b2c_timeout_url' => EnvLoader::get('MPESA_SANDBOX_B2C_TIMEOUT_URL', ''),
-            'b2c_result_url' => EnvLoader::get('MPESA_SANDBOX_B2C_RESULT_URL', ''),
+            'b2c_timeout_url' => EnvLoader::get('MPESA_SANDBOX_B2C_TIMEOUT_URL', SITE_URL . '/public/member/mpesa_callback.php'),
+            'b2c_result_url' => EnvLoader::get('MPESA_SANDBOX_B2C_RESULT_URL', SITE_URL . '/public/member/mpesa_callback.php'),
         ],
         'email' => [
             'smtp_host' => EnvLoader::get('SMTP_HOST', 'smtp.gmail.com'),
@@ -53,12 +53,12 @@ $environments = [
             'consumer_secret' => EnvLoader::get('MPESA_LIVE_CONSUMER_SECRET', ''),
             'shortcode' => EnvLoader::get('MPESA_LIVE_SHORTCODE', ''),
             'passkey' => EnvLoader::get('MPESA_LIVE_PASSKEY', ''),
-            'callback_url' => EnvLoader::get('MPESA_LIVE_CALLBACK_URL', ''),
+            'callback_url' => EnvLoader::get('MPESA_LIVE_CALLBACK_URL', SITE_URL . '/public/member/mpesa_callback.php'),
             'b2c_shortcode' => EnvLoader::get('MPESA_LIVE_B2C_SHORTCODE', ''),
             'b2c_initiator_name' => EnvLoader::get('MPESA_LIVE_B2C_INITIATOR_NAME', ''),
             'b2c_security_credential' => EnvLoader::get('MPESA_LIVE_B2C_SECURITY_CREDENTIAL', ''),
-            'b2c_timeout_url' => EnvLoader::get('MPESA_LIVE_B2C_TIMEOUT_URL', ''),
-            'b2c_result_url' => EnvLoader::get('MPESA_LIVE_B2C_RESULT_URL', ''),
+            'b2c_timeout_url' => EnvLoader::get('MPESA_LIVE_B2C_TIMEOUT_URL', SITE_URL . '/public/member/mpesa_callback.php'),
+            'b2c_result_url' => EnvLoader::get('MPESA_LIVE_B2C_RESULT_URL', SITE_URL . '/public/member/mpesa_callback.php'),
         ],
         'email' => [
             'smtp_host' => EnvLoader::get('SMTP_HOST', 'smtp.gmail.com'),
@@ -89,7 +89,12 @@ if (!$mpesa_env) {
 
 // Current environment config - Fallback to sandbox if key doesn't exist
 $current_env = array_key_exists($mpesa_env, $environments) ? $mpesa_env : 'sandbox';
+if ($current_env !== $mpesa_env) {
+    error_log("M-Pesa environment '$mpesa_env' not found, falling back to '$current_env'");
+}
 $config = $environments[$current_env];
+
+if (!defined('MPESA_ENV')) define('MPESA_ENV', $current_env);
 
 // Define constants for global use
 if (!defined('MPESA_BASE_URL')) define('MPESA_BASE_URL', $config['mpesa']['base_url']);
