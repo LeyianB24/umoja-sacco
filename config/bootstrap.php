@@ -5,12 +5,38 @@
  * Call this FIRST in your application entry point
  */
 
-require_once __DIR__ . '/EnvLoader.php';
+declare(strict_types=1);
 
+// Start output buffering (essential for PDF generation and header redirects)
+if (ob_get_level() === 0) ob_start();
+
+require_once __DIR__ . '/EnvLoader.php';
 use USMS\Config\EnvLoader;
 
 // Load environment variables
 EnvLoader::load();
+
+// 1. BASE PATHS & URLS
+if (!defined('BASE_PATH')) define('BASE_PATH', dirname(__DIR__));
+
+// Dynamic BASE_URL: detect if we are in a subdirectory or root
+if (!defined('BASE_URL')) {
+    $env_base_url = \USMS\Config\EnvLoader::get('BASE_URL');
+    if ($env_base_url !== null) {
+        define('BASE_URL', rtrim($env_base_url, '/'));
+    } else {
+        $req_uri = $_SERVER['REQUEST_URI'] ?? '';
+        $detected_base = (stripos($req_uri, '/usms') === 0) ? '/usms' : '';
+        define('BASE_URL', $detected_base);
+    }
+}
+
+if (!defined('PUBLIC_URL')) define('PUBLIC_URL', BASE_URL . '/public');
+if (!defined('ASSET_BASE')) define('ASSET_BASE', PUBLIC_URL . '/assets');
+
+$protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? 'https' : (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https' ? 'https' : 'http');
+$host     = !empty($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : 'localhost';
+if (!defined('SITE_URL'))   define('SITE_URL', $protocol . '://' . rtrim($host, '/') . '/' . ltrim(BASE_URL, '/'));
 
 /**
  * Validate that all critical environment variables are set

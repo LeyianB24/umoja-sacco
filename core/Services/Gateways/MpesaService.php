@@ -58,11 +58,11 @@ class MpesaService implements PaymentGatewayInterface {
         $j = json_decode($resp, true);
         if ($http_code != 200) {
             $error_detail = $j['errorMessage'] ?? $j['error'] ?? $resp;
-            error_log("M-Pesa Token Error (HTTP $http_code): " . $resp);
+            error_log("M-Pesa Token Error (HTTP $http_code) for environment " . $this->env . ": " . $resp);
             
             $msg = "M-Pesa Token Error ($http_code): " . $error_detail;
             if ($http_code == 400) {
-                $msg .= ". This usually means your Consumer Key/Secret are invalid for the " . $this->env . " environment (" . $baseUrl . ").";
+                $msg .= ". Verify your MPESA_LIVE_CONSUMER_KEY and SECRET for production.";
             }
             throw new Exception($msg);
         }

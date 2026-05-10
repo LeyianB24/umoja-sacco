@@ -7,56 +7,23 @@
 
 declare(strict_types=1);
 
-// Start output buffering (essential for PDF generation and header redirects)
-ob_start();
+// 0. BOOTSTRAP (Essential for paths, URLs, and output buffering)
+require_once __DIR__ . '/bootstrap.php';
 
-// 0. ENVIRONMENT LOADER (Required for path detection)
-require_once __DIR__ . '/EnvLoader.php';
 use USMS\Config\EnvLoader;
-EnvLoader::load();
 
 // Centralized Session Configuration (MUST happen before session_start)
 if (session_status() === PHP_SESSION_NONE) {
     EnvLoader::configureSession();
 }
 
-// 1. BASE PATHS
-if (!defined('BASE_PATH')) define('BASE_PATH', dirname(__DIR__));
-
-// Dynamic BASE_URL: detect if we are in a subdirectory or root
-if (!defined('BASE_URL')) {
-    $env_base_url = \USMS\Config\EnvLoader::get('BASE_URL');
-    if ($env_base_url !== null) {
-        define('BASE_URL', rtrim($env_base_url, '/'));
-    } else {
-        // More robust detection for local subdirectories
-        $req_uri = $_SERVER['REQUEST_URI'] ?? '';
-        $detected_base = (stripos($req_uri, '/usms') === 0) ? '/usms' : '';
-        define('BASE_URL', $detected_base);
-    }
-}
-
-// 2. AUTOLOAD
+// 1. AUTOLOAD
 if (file_exists(BASE_PATH . '/vendor/autoload.php')) {
     require_once BASE_PATH . '/vendor/autoload.php';
 }
 
-// 3. ERROR HANDLING
+// 2. ERROR HANDLING
 \USMS\Http\ErrorHandler::register();
-
-$protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? 'https' : 'http';
-$host     = !empty($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : 'localhost';
-if (!defined('SITE_URL'))   define('SITE_URL', $protocol . '://' . rtrim($host, '/') . '/' . ltrim(BASE_URL, '/'));
-
-// PUBLIC_URL: For links to pages in the public/ folder
-if (!defined('PUBLIC_URL')) {
-    define('PUBLIC_URL', BASE_URL . '/public');
-}
-
-// ASSET_BASE: Where images, css, and js live
-if (!defined('ASSET_BASE')) {
-    define('ASSET_BASE', PUBLIC_URL . '/assets');
-}
 
 
 
