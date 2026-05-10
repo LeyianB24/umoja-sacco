@@ -50,8 +50,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $member_id = $conn->insert_id;
             $ins->close();
 
-            $upload_dir = __DIR__ . '/../../uploads/kyc/';
-            if (!is_dir($upload_dir)) mkdir($upload_dir, 0777, true);
+            // Secure upload directory in project root (not public)
+            $upload_dir = BASE_PATH . '/uploads/kyc/';
+            if (!is_dir($upload_dir)) {
+                if (!@mkdir($upload_dir, 0775, true)) {
+                    throw new Exception("Critical: Could not create upload directory. Check permissions.");
+                }
+            }
 
             $files_to_process = [
                 'passport_photo'    => 'passport_photo',

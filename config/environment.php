@@ -75,8 +75,20 @@ $environments = [
     ]
 ];
 
+// M-Pesa Environment Detection: Explicit MPESA_ENV > Auto-fallback > APP_ENV
+$mpesa_env = EnvLoader::get('MPESA_ENV');
+if (!$mpesa_env) {
+    $mpesa_env = APP_ENV;
+    // Auto-fallback: If in production but no live keys, use sandbox if keys exist
+    if ($mpesa_env === 'production' && empty(EnvLoader::get('MPESA_LIVE_CONSUMER_KEY'))) {
+        if (!empty(EnvLoader::get('MPESA_SANDBOX_CONSUMER_KEY'))) {
+            $mpesa_env = 'sandbox';
+        }
+    }
+}
+
 // Current environment config - Fallback to sandbox if key doesn't exist
-$current_env = array_key_exists(APP_ENV, $environments) ? APP_ENV : 'sandbox';
+$current_env = array_key_exists($mpesa_env, $environments) ? $mpesa_env : 'sandbox';
 $config = $environments[$current_env];
 
 // Define constants for global use

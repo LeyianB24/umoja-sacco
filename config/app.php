@@ -30,12 +30,16 @@ if (!defined('BASE_URL')) {
     if ($env_base_url !== null) {
         define('BASE_URL', rtrim($env_base_url, '/'));
     } else {
-        // Fallback: Use empty string for root deployment (Docker/Railway), 
-        // or '/usms' if that folder exists in the request URI (Local XAMPP)
+        // Fallback: Use '/usms' if that folder exists in the request URI (Local XAMPP)
+        // Otherwise empty string for root deployment (Docker/Railway)
         $detected_base = (strpos($_SERVER['REQUEST_URI'] ?? '', '/usms') === 0) ? '/usms' : '';
         define('BASE_URL', $detected_base);
     }
 }
+
+// Detect if we are accessing through the public/ directory
+$script_path = $_SERVER['SCRIPT_NAME'] ?? '';
+$is_in_public = (strpos($script_path, '/public/') !== false);
 
 
 // 2. AUTOLOAD
@@ -50,17 +54,20 @@ $protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? 'https' :
 $host     = !empty($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : 'localhost';
 if (!defined('SITE_URL'))   define('SITE_URL', $protocol . '://' . rtrim($host, '/') . '/' . ltrim(BASE_URL, '/'));
 
-// Adjust ASSET_BASE: In root deployment (Docker), assets are at /assets. 
-// In subfolder deployment (XAMPP), assets are at /usms/public/assets.
-if (!defined('ASSET_BASE')) {
-    $asset_path = (BASE_URL === '') ? '/assets' : BASE_URL . '/public/assets';
-    define('ASSET_BASE', $asset_path);
+// PUBLIC_URL: For links to pages in the public/ folder
+// In Docker/Railway, these are at /public. In XAMPP, they are at /usms/public/
+if (!defined('PUBLIC_URL')) {
+    if (BASE_URL !== '') {
+        define('PUBLIC_URL', BASE_URL . '/public');
+    } else {
+        // In root deployment, if we are in public subfolder, use it
+        define('PUBLIC_URL', $is_in_public ? '/public' : '');
+    }
 }
 
-// PUBLIC_URL: For links to pages in the public/ folder
-// In Docker, these are at root. In XAMPP, they are at /usms/public/
-if (!defined('PUBLIC_URL')) {
-    define('PUBLIC_URL', (BASE_URL === '') ? '' : BASE_URL . '/public');
+// Adjust ASSET_BASE: Always relative to PUBLIC_URL
+if (!defined('ASSET_BASE')) {
+    define('ASSET_BASE', PUBLIC_URL . '/assets');
 }
 
 

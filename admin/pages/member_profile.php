@@ -39,8 +39,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif ($file_size > $max_size) {
             flash_set("File is too large. Max size is 5MB.", "danger");
         } else {
-            $upload_dir = __DIR__ . '/../../uploads/kyc/';
-            if (!is_dir($upload_dir)) mkdir($upload_dir, 0777, true);
+            // Secure upload directory in project root (not public)
+            $upload_dir = BASE_PATH . '/uploads/kyc/';
+            if (!is_dir($upload_dir)) {
+                if (!@mkdir($upload_dir, 0775, true)) {
+                    flash_set("Critical: Could not create upload directory. Check permissions.", "danger");
+                    header("Location: member_profile.php?id=$member_id#kyc"); exit;
+                }
+            }
             $ext      = pathinfo($_FILES['kyc_upload']['name'], PATHINFO_EXTENSION);
             $new_name = "{$doc_type}_{$member_id}_" . time() . ".$ext";
             if (move_uploaded_file($_FILES['kyc_upload']['tmp_name'], $upload_dir . $new_name)) {

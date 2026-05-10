@@ -57,7 +57,7 @@ class PdfTemplate extends FPDF {
 
     public function Header() {
         // 1. Logo
-        $logoPath = __DIR__ . '/../../public/assets/images/people_logo.png';
+        $logoPath = BASE_PATH . '/public/assets/images/people_logo.png';
         if (file_exists($logoPath)) {
             $this->Image($logoPath, 15, 10, 20);
         }
