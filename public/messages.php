@@ -947,14 +947,46 @@ function renderAvatar($blob, $name, $size = '44px', $fontSize = '1rem') {
         padding: 12px 20px 6px;
     }
 
+    /* ─── Mobile Overlays ─── */
+    .msg-backdrop {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.4);
+        backdrop-filter: blur(2px);
+        z-index: 998;
+    }
+    .msg-backdrop.show { display: block; }
+
     @media (max-width: 991px) {
         .msg-sidebar { position: fixed; left: -100%; height: 100%; z-index: 999; transition: left 0.3s cubic-bezier(0.4,0,0.2,1); box-shadow: 20px 0 60px rgba(0,0,0,0.4); }
         .msg-sidebar.show { left: 0; }
+        
+        .chat-viewport { padding: 20px 18px; }
+        .chat-bubble { max-width: 85%; }
+        .chat-head { padding: 12px 18px; }
+        .chat-input-area { padding: 12px 18px 16px; }
+        
+        .mobile-chat-toggle {
+            display: flex !important;
+            width: 38px; height: 38px;
+            border-radius: 10px;
+            background: #F0F7F4;
+            border: 1px solid #E0EDE7;
+            align-items: center; justify-content: center;
+            color: #0F392B;
+            font-size: 1.1rem;
+            cursor: pointer;
+            margin-right: 8px;
+        }
     }
+    
+    .mobile-chat-toggle { display: none; }
     </style>
 </head>
 <body>
 <div class="msg-app">
+    <div class="msg-backdrop" id="msgBackdrop"></div>
 
     <!-- ── SIDEBAR ── -->
     <aside class="msg-sidebar" id="msgSidebar">
@@ -1026,7 +1058,7 @@ function renderAvatar($blob, $name, $size = '44px', $fontSize = '1rem') {
             <!-- Header -->
             <div class="chat-head">
                 <div class="chat-head-left">
-                    <button class="chat-menu-btn d-lg-none" onclick="document.getElementById('msgSidebar').classList.toggle('show')">
+                    <button class="mobile-chat-toggle" id="toggleSidebar">
                         <i class="bi bi-list"></i>
                     </button>
                     <?= renderAvatar($partner['pic'], $partner['name'], '42px', '0.95rem') ?>
@@ -1243,6 +1275,31 @@ document.getElementById('modalSearch')?.addEventListener('input', function() {
     const q = this.value.toLowerCase();
     document.querySelectorAll('#modalUserList .modal-user-item').forEach(el => {
         el.style.display = el.dataset.name?.includes(q) ? '' : 'none';
+    });
+});
+
+// Mobile Sidebar Toggle
+const sidebar = document.getElementById('msgSidebar');
+const backdrop = document.getElementById('msgBackdrop');
+const toggleBtn = document.getElementById('toggleSidebar');
+
+function toggleMobileSidebar(show) {
+    if (show) {
+        sidebar?.classList.add('show');
+        backdrop?.classList.add('show');
+    } else {
+        sidebar?.classList.remove('show');
+        backdrop?.classList.remove('show');
+    }
+}
+
+toggleBtn?.addEventListener('click', () => toggleMobileSidebar(true));
+backdrop?.addEventListener('click', () => toggleMobileSidebar(false));
+
+// Close on thread click (mobile)
+document.querySelectorAll('.thread-item').forEach(item => {
+    item.addEventListener('click', () => {
+        if (window.innerWidth <= 991) toggleMobileSidebar(false);
     });
 });
 </script>

@@ -58,19 +58,18 @@
     }
 
     function toggleMobile() {
-        const isOpen = sidebar.classList.contains('hd-sidebar') 
-            ? (sidebar.classList.toggle('show') || sidebar.classList.toggle('mobile-open')) 
-            : sidebar.classList.toggle('sidebar-open');
+        if (!sidebar) return;
+        
+        // Toggle 'show' for Bootstrap/Standard and 'mobile-open' for our hd-sidebar
+        const wasOpen = sidebar.classList.contains('show') || sidebar.classList.contains('mobile-open') || sidebar.classList.contains('sidebar-open');
+        const newState = !wasOpen;
 
-        // Force both classes for compatibility if it's an hd-sidebar
-        if (sidebar.classList.contains('hd-sidebar')) {
-            const nowOpen = sidebar.classList.contains('show') || sidebar.classList.contains('mobile-open');
-            sidebar.classList.toggle('show', nowOpen);
-            sidebar.classList.toggle('mobile-open', nowOpen);
-        }
+        sidebar.classList.toggle('show', newState);
+        sidebar.classList.toggle('mobile-open', newState);
+        sidebar.classList.toggle('sidebar-open', newState);
 
-        if (overlay) overlay.classList.toggle('show', sidebar.classList.contains('show') || sidebar.classList.contains('mobile-open') || sidebar.classList.contains('sidebar-open'));
-        document.body.style.overflow = (sidebar.classList.contains('show') || sidebar.classList.contains('mobile-open') || sidebar.classList.contains('sidebar-open')) ? 'hidden' : '';
+        if (overlay) overlay.classList.toggle('show', newState);
+        document.body.style.overflow = newState ? 'hidden' : '';
     }
 
     function closeOnMobile() {

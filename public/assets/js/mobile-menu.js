@@ -55,7 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 2. MOBILE MENU TOGGLE
     // ═════════════════════════════════════════════════════════════════════════
 
-    const sidebar = document.querySelector('.admin-sidebar');
+    const sidebar = document.querySelector('.admin-sidebar') || document.querySelector('.hd-sidebar');
     const mainContent = document.querySelector('.main-content-wrapper');
     
     // Create overlay element for mobile
