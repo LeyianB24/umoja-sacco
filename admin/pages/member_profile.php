@@ -39,20 +39,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif ($file_size > $max_size) {
             flash_set("File is too large. Max size is 5MB.", "danger");
         } else {
-            // Secure upload directory in project root (not public)
-            $upload_dir = BASE_PATH . '/uploads/kyc/';
-            if (!is_dir($upload_dir)) {
-                if (!@mkdir($upload_dir, 0775, true)) {
-                    flash_set("Critical: Could not create upload directory. Check permissions.", "danger");
-                    header("Location: member_profile.php?id=$member_id#kyc"); exit;
-                }
-            }
-            $ext      = pathinfo($_FILES['kyc_upload']['name'], PATHINFO_EXTENSION);
-            $new_name = "{$doc_type}_{$member_id}_" . time() . ".$ext";
-            if (move_uploaded_file($_FILES['kyc_upload']['tmp_name'], $upload_dir . $new_name)) {
-                $stmt     = $conn->prepare("INSERT INTO member_documents (member_id, document_type, file_path, status, uploaded_at, verified_by, verified_at, verification_notes) VALUES (?, ?, ?, 'verified', NOW(), ?, NOW(), 'Uploaded by Admin') ON DUPLICATE KEY UPDATE file_path = VALUES(file_path), status = 'verified', uploaded_at = NOW(), verified_by = VALUES(verified_by), verified_at = NOW(), verification_notes = VALUES(verification_notes)");
+            // Store file content directly in database as BLOB
+            $doc_type      = $_POST['doc_type'] ?? '';
+            $allowed_types = ['image/jpeg', 'image/png', 'application/pdf'];
+            $max_size      = 5 * 1024 * 1024;
+            $file_type     = mime_content_type($_FILES['kyc_upload']['tmp_name']);
+            $file_size     = $_FILES['kyc_upload']['size'];
+
+            if (!in_array($file_type, $allowed_types)) {
+                flash_set("Invalid file type. Only JPG, PNG, and PDF are allowed.", "danger");
+            } elseif ($file_size > $max_size) {
+                flash_set("File is too large. Max size is 5MB.", "danger");
+            } else {
+                // Read file content into memory
+                $file_content = file_get_contents($_FILES['kyc_upload']['tmp_name']);
+                $original_filename = basename($_FILES['kyc_upload']['name']);
+                
+                // Store in database as BLOB
+                $stmt = $conn->prepare("
+                    INSERT INTO member_documents 
+                    (member_id, document_type, file_path, file_content, file_type, original_filename, status, uploaded_at, verified_by, verified_at, verification_notes) 
+                    VALUES (?, ?, ?, ?, ?, ?, 'verified', NOW(), ?, NOW(), 'Uploaded by Admin') 
+                    ON DUPLICATE KEY UPDATE 
+                    file_content = VALUES(file_content), 
+                    file_type = VALUES(file_type),
+                    original_filename = VALUES(original_filename),
+                    status = 'verified', 
+                    uploaded_at = NOW(), 
+                    verified_by = VALUES(verified_by), 
+                    verified_at = NOW(), 
+                    verification_notes = VALUES(verification_notes)
+                ");
+                
                 $admin_id = $_SESSION['admin_id'];
-                $stmt->bind_param("issi", $member_id, $doc_type, $new_name, $admin_id);
+                $file_path = "{$doc_type}_{$member_id}_" . time(); // No extension needed when storing BLOB
+                $null = null;
+                
+                $stmt->bind_param("issbssi", $member_id, $doc_type, $file_path, $null, $file_type, $original_filename, $admin_id);
+                $stmt->send_long_data(3, $file_content); // Send BLOB data
+                
                 if ($stmt->execute()) {
                     flash_set("Document uploaded and auto-verified successfully.", "success");
                     $q = $conn->query("SELECT status FROM member_documents WHERE member_id = $member_id AND document_type IN ('national_id_front', 'national_id_back', 'passport_photo')");
@@ -68,9 +93,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     flash_set("Database error: " . $stmt->error, "danger");
                 }
                 $stmt->close();
-            } else {
-                flash_set("Failed to move uploaded file.", "danger");
             }
+            header("Location: member_profile.php?id=$member_id#kyc"); exit;
         }
         header("Location: member_profile.php?id=$member_id#kyc"); exit;
     }
