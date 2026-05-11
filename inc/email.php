@@ -26,7 +26,7 @@ function sendEmailWithNotification($to_email, $subject, $body_content, $member_i
 
     // 1. Prepare Branded HTML Body
     $site_name = defined('SITE_NAME') ? SITE_NAME : 'Umoja Drivers Sacco';
-    $site_url  = defined('BASE_URL') ? BASE_URL : 'http://localhost/usms';
+    $site_url  = defined('SITE_URL') ? SITE_URL : 'http://localhost/usms';
     $logo_url  = defined('SITE_LOGO') ? SITE_LOGO : $site_url . '/public/assets/images/people_logo.png';
     $date_now  = date('jS M, Y H:i:s');
     

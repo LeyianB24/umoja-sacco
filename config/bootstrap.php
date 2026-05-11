@@ -54,7 +54,11 @@ if (!defined('ASSET_BASE')) define('ASSET_BASE', rtrim(PUBLIC_URL, '/') . '/asse
 
 $protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? 'https' : (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https' ? 'https' : 'http');
 $host     = !empty($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : 'localhost';
-if (!defined('SITE_URL'))   define('SITE_URL', $protocol . '://' . rtrim($host, '/') . '/' . ltrim(BASE_URL, '/'));
+$site_url = $protocol . '://' . rtrim($host, '/');
+if (!empty(BASE_URL)) {
+    $site_url .= '/' . ltrim(BASE_URL, '/');
+}
+if (!defined('SITE_URL')) define('SITE_URL', rtrim($site_url, '/'));
 
 /**
  * Validate that all critical environment variables are set
