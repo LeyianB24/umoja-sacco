@@ -9,7 +9,7 @@ require_once __DIR__ . '/../../inc/HRService.php';
 require_once __DIR__ . '/../../inc/SystemUserService.php';
 
 $layout = LayoutManager::create('admin');
-$hrService = new HRService($conn);
+$hrService = new HRService();
 $systemUserService = new SystemUserService();
 
 $pageTitle = "System Users";

@@ -43,6 +43,14 @@ document.addEventListener('DOMContentLoaded', () => {
         // Match Bootstrap's lg breakpoint (992px) — same as d-lg-none on hamburger
         isMobileBreakpoint() {
             return this.getViewportWidth() < 992;
+        },
+        getBreakpoint() {
+            const w = this.getViewportWidth();
+            if (w < 576) return 'xs';
+            if (w < 768) return 'sm';
+            if (w < 992) return 'md';
+            if (w < 1200) return 'lg';
+            return 'xl';
         }
     };
 
@@ -158,6 +166,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // ═════════════════════════════════════════════════════════════════════════
+    // 6. RESPONSIVE TABLES (Data-label injection)
+    // ═════════════════════════════════════════════════════════════════════════
+    const initResponsiveTables = () => {
+        document.querySelectorAll('table.table, table.sh-table, table.staff-table').forEach(table => {
+            const headers = Array.from(table.querySelectorAll('thead th')).map(th => th.innerText.trim());
             table.querySelectorAll('tbody tr').forEach((row) => {
                 row.querySelectorAll('td').forEach((cell, index) => {
                     if (headers[index] && !cell.hasAttribute('data-label')) {

@@ -4,6 +4,21 @@ namespace USMS\Reports;
 
 use FPDF;
 
+/**
+ * @method void AddPage(string $orientation = '', mixed $size = '', int $rotation = 0)
+ * @method void SetFont(string $family, string $style = '', float $size = 0)
+ * @method void Cell(float $w, float $h = 0, string $txt = '', mixed $border = 0, int $ln = 0, string $align = '', bool $fill = false, mixed $link = '')
+ * @method void Ln(float $h = null)
+ * @method void SetTextColor(int $r, int $g = null, int $b = null)
+ * @method void SetFillColor(int $r, int $g = null, int $b = null)
+ * @method void SetDrawColor(int $r, int $g = null, int $b = null)
+ * @method float GetY()
+ * @method float GetX()
+ * @method void SetXY(float $x, float $y)
+ * @method void MultiCell(float $w, float $h, string $txt, mixed $border = 0, string $align = 'J', bool $fill = false)
+ * @method void Image(string $file, float $x = null, float $y = null, float $w = 0, float $h = 0, string $type = '', mixed $link = '')
+ * @method string Output(string $dest = '', string $name = '', bool $isUTF8 = false)
+ */
 class PdfTemplate extends FPDF {
     protected $docTitle;
     protected $docModule;
@@ -236,7 +251,7 @@ class PdfTemplate extends FPDF {
         if($w == 0)
             $w = $this->w - $this->rMargin - $this->x;
         $wmax = ($w - 2 * $this->cMargin) * 1000 / $this->FontSize;
-        $s = str_replace("\r", '', (string)$txt); // Explicitly cast to string here
+        $s = str_replace("\r", '', (string)$txt); 
         $nb = strlen($s);
         if($nb > 0 && $s[$nb - 1] == "\n")
             $nb--;
@@ -279,4 +294,3 @@ class PdfTemplate extends FPDF {
         $this->UniversalTable($headers, $data);
     }
 }
-

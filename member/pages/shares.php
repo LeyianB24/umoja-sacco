@@ -43,7 +43,8 @@ require_once __DIR__ . '/../../inc/FinancialEngine.php';
 $engine            = new FinancialEngine($conn);
 $balances          = $engine->getBalances($member_id);
 $totalCapital      = $balances['shares'];
-$totalUnits        = $totalCapital / $current_share_price;
+$total_units       = $totalCapital / $current_share_price;
+$totalUnits        = $total_units;
 $projectedDividend = $totalCapital * ($dividend_rate_projection / 100);
 
 $sqlHistory = "SELECT created_at, reference_no, units as share_units, unit_price, total_value, transaction_type FROM share_transactions WHERE member_id = ? ORDER BY created_at DESC";
