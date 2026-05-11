@@ -23,19 +23,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $phone      = trim($_POST['phone']       ?? '');
     $address    = trim($_POST['address']     ?? '');
     $gender     = trim($_POST['gender']      ?? '');
-    $dob        = trim($_POST['dob']         ?? '');
+    $dob        = trim($_POST['dob']         ?? '')  ?: null;
     $occupation = trim($_POST['occupation']  ?? '');
     $nok_name   = trim($_POST['nok_name']    ?? '');
     $nok_phone  = trim($_POST['nok_phone']   ?? '');
     $remove_pic = isset($_POST['remove_pic']);
 
-    $stmt = $conn->prepare("SELECT profile_pic FROM members WHERE member_id = ?");
-    $stmt->bind_param("i", $member_id); $stmt->execute();
-    $current  = $stmt->get_result()->fetch_assoc(); $stmt->close();
-    $pic_data = $current['profile_pic'];
+    $update_pic  = false;
+    $new_pic     = null;  // null = keep existing, false = set NULL (remove)
 
     if ($remove_pic) {
-        $pic_data = null;
+        $update_pic = true;
+        $new_pic    = false; // will store NULL
     } elseif (!empty($_FILES['profile_pic']['name']) && $_FILES['profile_pic']['error'] === UPLOAD_ERR_OK) {
         $f_tmp  = $_FILES['profile_pic']['tmp_name'];
         $f_type = mime_content_type($f_tmp);
@@ -48,7 +47,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['error'] = "Image too large (max 5 MB). Please compress it.";
             header("Location: profile.php"); exit;
         }
-        $pic_data = file_get_contents($f_tmp);
+        $raw = file_get_contents($f_tmp);
+        if ($raw === false || strlen($raw) === 0) {
+            $_SESSION['error'] = "Failed to read uploaded file. Please try again.";
+            header("Location: profile.php"); exit;
+        }
+        $update_pic = true;
+        $new_pic    = $raw;
+    } elseif (!empty($_FILES['profile_pic']['name']) && $_FILES['profile_pic']['error'] !== UPLOAD_ERR_NO_FILE) {
+        // PHP-level upload error (size limit, etc.)
+        $upload_errors = [
+            UPLOAD_ERR_INI_SIZE   => "File exceeds server upload limit (max ~2 MB). Please compress the image.",
+            UPLOAD_ERR_FORM_SIZE  => "File exceeds form upload limit.",
+            UPLOAD_ERR_PARTIAL    => "File was only partially uploaded.",
+            UPLOAD_ERR_NO_TMP_DIR => "Server temporary directory missing.",
+            UPLOAD_ERR_CANT_WRITE => "Server failed to write file to disk.",
+        ];
+        $_SESSION['error'] = $upload_errors[$_FILES['profile_pic']['error']] ?? "Upload error code: " . $_FILES['profile_pic']['error'];
+        header("Location: profile.php"); exit;
     }
 
     // KYC upload
@@ -72,7 +88,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             
             $ext      = pathinfo($_FILES['kyc_doc']['name'], PATHINFO_EXTENSION);
-            $new_name = "{$doc_type}_{$member_id}_".time().".$ext";
+            $new_name = "{$doc_type}_{$member_id}_".time().".{$ext}";
             if (move_uploaded_file($_FILES['kyc_doc']['tmp_name'], $upload_dir.$new_name)) {
                 $stmt = $conn->prepare("INSERT INTO member_documents (member_id, document_type, file_path, status) VALUES (?, ?, ?, 'pending') ON DUPLICATE KEY UPDATE file_path=VALUES(file_path), status='pending', uploaded_at=NOW()");
                 $stmt->bind_param("iss", $member_id, $doc_type, $new_name); $stmt->execute(); $stmt->close();
@@ -84,21 +100,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    $sql  = "UPDATE members SET email=?, phone=?, address=?, gender=?, dob=?, occupation=?, next_of_kin_name=?, next_of_kin_phone=?, profile_pic=? WHERE member_id=?";
+    // ── 1. Update text fields (always) ──────────────────────────────────────
+    $sql  = "UPDATE members SET email=?, phone=?, address=?, gender=?, dob=?, occupation=?, next_of_kin_name=?, next_of_kin_phone=? WHERE member_id=?";
     $stmt = $conn->prepare($sql);
-    $null = null;
-    $stmt->bind_param("ssssssssbi", $email, $phone, $address, $gender, $dob, $occupation, $nok_name, $nok_phone, $null, $member_id);
-    if ($pic_data !== null) $stmt->send_long_data(8, $pic_data);
-    if ($stmt->execute()) {
+    $stmt->bind_param("ssssssssi", $email, $phone, $address, $gender, $dob, $occupation, $nok_name, $nok_phone, $member_id);
+    $text_ok = $stmt->execute();
+    $text_err = $conn->error;
+    $stmt->close();
+
+    // ── 2. Update profile picture only if changed ────────────────────────────
+    $pic_ok = true;
+    if ($update_pic) {
+        $stmt = $conn->prepare("UPDATE members SET profile_pic=? WHERE member_id=?");
+        $null = null;
+        $stmt->bind_param("bi", $null, $member_id);
+        if ($new_pic !== false && $new_pic !== null) {
+            // Send actual image data
+            $stmt->send_long_data(0, $new_pic);
+        }
+        // When $new_pic is false (remove), $null stays null → sets column to NULL
+        $pic_ok  = $stmt->execute();
+        $pic_err = $conn->error;
+        $stmt->close();
+
+        if (!$pic_ok) {
+            error_log("[USMS] Profile pic update failed for member $member_id: " . ($pic_err ?? ''));
+        }
+    }
+
+    if ($text_ok) {
         require_once __DIR__ . '/../../inc/notification_helpers.php';
         send_notification($conn, (int)$member_id, 'profile_updated');
-        $_SESSION['success'] = "Profile updated successfully!";
+        $_SESSION['success'] = $update_pic && !$pic_ok
+            ? "Profile updated, but photo could not be saved (image may be too large for database)."
+            : "Profile updated successfully!";
         header("Location: profile.php"); exit;
     } else {
-        $_SESSION['error'] = "Update failed: " . $conn->error;
+        $_SESSION['error'] = "Update failed: " . $text_err;
     }
-    $stmt->close();
 }
+
 
 // Fetch member data
 $stmt = $conn->prepare("SELECT * FROM members WHERE member_id = ?");

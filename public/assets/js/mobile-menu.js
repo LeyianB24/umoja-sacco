@@ -2,7 +2,7 @@
  * mobile-menu.js — Umoja Sacco Mobile Navigation
  * Handles sidebar toggle and mobile menu interactions
  * Auto-detects device type (phone, tablet, desktop)
- * Last updated: 2026-05-08
+ * Last updated: 2026-05-11
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -40,11 +40,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (this.isTablet()) return 'tablet';
             return 'desktop';
         },
-        getBreakpoint() {
-            const width = this.getViewportWidth();
-            if (width <= 640) return 'mobile';
-            if (width <= 1024) return 'tablet';
-            return 'desktop';
+        // Match Bootstrap's lg breakpoint (992px) — same as d-lg-none on hamburger
+        isMobileBreakpoint() {
+            return this.getViewportWidth() < 992;
         }
     };
 
@@ -52,152 +50,114 @@ document.addEventListener('DOMContentLoaded', () => {
     window.DeviceDetector = DeviceDetector;
 
     // ═════════════════════════════════════════════════════════════════════════
-    // 2. MOBILE MENU TOGGLE
+    // 2. MOBILE MENU TOGGLE — wires ALL known sidebar + backdrop selectors
     // ═════════════════════════════════════════════════════════════════════════
 
-    const sidebar = document.querySelector('.admin-sidebar') || document.querySelector('.hd-sidebar');
-    const mainContent = document.querySelector('.main-content-wrapper');
-    
-    // Create overlay element for mobile
-    const overlay = document.createElement('div');
-    overlay.className = 'admin-sidebar-overlay';
-    document.body.appendChild(overlay);
+    const sidebar  = document.querySelector('.hd-sidebar') || document.querySelector('.admin-sidebar');
+    const backdrop = document.querySelector('#sidebarBackdrop') ||
+                     document.querySelector('.sidebar-backdrop') ||
+                     document.querySelector('.sidebar-overlay');
 
-    // Toggle sidebar on mobile
-    const toggleSidebar = (show = null) => {
-        if (DeviceDetector.getBreakpoint() !== 'mobile') {
-            sidebar?.classList.remove('show');
-            overlay.classList.remove('show');
+    const toggleSidebar = (forceShow = null) => {
+        if (!sidebar) return;
+
+        if (!DeviceDetector.isMobileBreakpoint()) {
+            // On desktop: remove mobile classes, let sidebar.js handle collapse toggle
+            sidebar.classList.remove('show', 'mobile-open', 'sidebar-open');
+            if (backdrop) backdrop.classList.remove('show');
+            document.body.style.overflow = '';
             return;
         }
 
-        const isShown = sidebar?.classList.contains('show');
-        const shouldShow = show !== null ? show : !isShown;
+        const isOpen = sidebar.classList.contains('show') ||
+                       sidebar.classList.contains('mobile-open') ||
+                       sidebar.classList.contains('sidebar-open');
+        const shouldOpen = forceShow !== null ? forceShow : !isOpen;
 
-        if (shouldShow) {
-            sidebar?.classList.add('show');
-            overlay.classList.add('show');
-            document.body.style.overflow = 'hidden';
-        } else {
-            sidebar?.classList.remove('show');
-            overlay.classList.remove('show');
-            document.body.style.overflow = '';
-        }
+        sidebar.classList.toggle('show',         shouldOpen);
+        sidebar.classList.toggle('mobile-open',  shouldOpen);
+        sidebar.classList.toggle('sidebar-open', shouldOpen);
+
+        if (backdrop) backdrop.classList.toggle('show', shouldOpen);
+        document.body.style.overflow = shouldOpen ? 'hidden' : '';
     };
 
-    // Find or create mobile menu toggle button
-    let toggleBtn = document.querySelector('.mobile-menu-toggle');
-    
-    if (!toggleBtn && sidebar) {
-        // Create button if it doesn't exist
-        toggleBtn = document.createElement('button');
-        toggleBtn.className = 'mobile-menu-toggle';
-        toggleBtn.type = 'button';
-        toggleBtn.setAttribute('aria-label', 'Toggle navigation menu');
-        toggleBtn.innerHTML = '<i class="bi bi-list"></i>';
-        
-        // Insert before topbar content
-        const topbar = document.querySelector('.topbar');
-        if (topbar) {
-            topbar.insertBefore(toggleBtn, topbar.firstChild);
-        } else {
-            document.body.insertBefore(toggleBtn, document.body.firstChild);
-        }
+    // Wire ALL known hamburger / toggle selectors in a single pass
+    const toggleSelectors = [
+        '#mobileSidebarToggle',   // Admin topbar hamburger (d-lg-none)
+        '#mobileToggle',
+        '#sidebarToggle',
+        '.mobile-menu-toggle',
+        '.mobile-nav-toggle',
+        '.sidebar-toggle-btn',
+    ];
+    document.querySelectorAll(toggleSelectors.join(',')).forEach(btn => {
+        btn.addEventListener('click', e => {
+            e.stopPropagation();
+            toggleSidebar();
+        });
+    });
+
+    // Close on backdrop click
+    if (backdrop) {
+        backdrop.addEventListener('click', () => toggleSidebar(false));
     }
 
-    // Toggle on button click
-    toggleBtn?.addEventListener('click', (e) => {
-        e.stopPropagation();
-        toggleSidebar();
-    });
-
-    // Close sidebar when overlay is clicked
-    overlay.addEventListener('click', () => {
-        toggleSidebar(false);
-    });
-
-    // Close sidebar when a link is clicked
-    sidebar?.addEventListener('click', (e) => {
-        if (e.target.tagName === 'A' || e.target.closest('a')) {
-            setTimeout(() => toggleSidebar(false), 100);
-        }
-    });
+    // Close on sidebar nav link click (mobile only)
+    if (sidebar) {
+        sidebar.addEventListener('click', e => {
+            if ((e.target.tagName === 'A' || e.target.closest('a')) &&
+                DeviceDetector.isMobileBreakpoint()) {
+                setTimeout(() => toggleSidebar(false), 100);
+            }
+        });
+    }
 
     // ═════════════════════════════════════════════════════════════════════════
     // 3. RESPONSIVE BEHAVIOR
     // ═════════════════════════════════════════════════════════════════════════
 
-    // Handle window resize
     let resizeTimeout;
     window.addEventListener('resize', () => {
         clearTimeout(resizeTimeout);
         resizeTimeout = setTimeout(() => {
-            // Close mobile menu when resizing to desktop
-            if (DeviceDetector.getBreakpoint() !== 'mobile') {
-                toggleSidebar(false);
-            }
+            if (!DeviceDetector.isMobileBreakpoint()) toggleSidebar(false);
         }, 150);
     });
 
-    // Handle orientation change
     window.addEventListener('orientationchange', () => {
-        setTimeout(() => {
-            toggleSidebar(false);
-            // Refresh viewport meta
-            DeviceDetector.getViewportWidth();
-        }, 100);
+        setTimeout(() => toggleSidebar(false), 100);
     });
 
     // ═════════════════════════════════════════════════════════════════════════
-    // 4. TOUCH & SWIPE SUPPORT
+    // 4. SWIPE SUPPORT (open from left edge, close by swiping left)
     // ═════════════════════════════════════════════════════════════════════════
 
     let touchStartX = 0;
-    let touchEndX = 0;
+    let touchEndX   = 0;
 
-    document.addEventListener('touchstart', (e) => {
+    document.addEventListener('touchstart', e => {
         touchStartX = e.changedTouches[0].screenX;
-    }, false);
+    }, { passive: true });
 
-    document.addEventListener('touchend', (e) => {
+    document.addEventListener('touchend', e => {
         touchEndX = e.changedTouches[0].screenX;
-        handleSwipe();
-    }, false);
-
-    const handleSwipe = () => {
-        // Swipe right from left edge opens menu
-        if (touchEndX - touchStartX > 50 && touchStartX < 50) {
-            if (DeviceDetector.getBreakpoint() === 'mobile') {
-                toggleSidebar(true);
-            }
-        }
-        // Swipe left closes menu
-        if (touchStartX - touchEndX > 50) {
-            toggleSidebar(false);
-        }
-    };
+        if (!DeviceDetector.isMobileBreakpoint()) return;
+        if (touchEndX - touchStartX > 60 && touchStartX < 40) toggleSidebar(true);   // swipe right from edge
+        if (touchStartX - touchEndX > 60) toggleSidebar(false);                      // swipe left
+    }, { passive: true });
 
     // ═════════════════════════════════════════════════════════════════════════
-    // 5. KEYBOARD SUPPORT (ESC to close menu)
+    // 5. KEYBOARD (ESC closes sidebar)
     // ═════════════════════════════════════════════════════════════════════════
 
-    document.addEventListener('keydown', (e) => {
+    document.addEventListener('keydown', e => {
         if (e.key === 'Escape' && sidebar?.classList.contains('show')) {
             toggleSidebar(false);
         }
     });
 
     // ═════════════════════════════════════════════════════════════════════════
-    // 6. RESPONSIVE TABLE HEADERS
-    // ═════════════════════════════════════════════════════════════════════════
-
-    // Add data-label attributes to table cells for mobile display
-    const initResponsiveTables = () => {
-        document.querySelectorAll('.table').forEach((table) => {
-            const headers = Array.from(table.querySelectorAll('thead th')).map(th => 
-                th.textContent.trim()
-            );
-
             table.querySelectorAll('tbody tr').forEach((row) => {
                 row.querySelectorAll('td').forEach((cell, index) => {
                     if (headers[index] && !cell.hasAttribute('data-label')) {

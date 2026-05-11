@@ -16,23 +16,26 @@ class ExportManager {
      */
     public static function export($type, $data, $options = []) {
         self::$isValidExport = true;
-        $title = $options['title'] ?? 'System Export';
-        $module = $options['module'] ?? 'Generic';
-        $headers = $options['headers'] ?? [];
+        $title      = $options['title']  ?? 'System Export';
+        $module     = $options['module'] ?? 'Generic';
+        $headers    = $options['headers'] ?? [];
         $outputMode = $options['output_mode'] ?? 'D'; // D: Download, S: String Return
-        
-        // 1. Log the export attempt
-        if (!ExportLogger::log($type, $module, ['title' => $title, 'record_count' => is_array($data) ? count($data) : 'custom'])) {
-             // Handle log failure if strict
+
+        // 1. Log the export attempt — wrapped so a missing table never kills exports
+        try {
+            ExportLogger::log($type, $module, [
+                'title'        => $title,
+                'record_count' => is_array($data) ? count($data) : 'custom'
+            ]);
+        } catch (\Throwable $e) {
+            error_log("[ExportManager] Logger failed (non-fatal): " . $e->getMessage());
         }
-        
+
         // 2. Route to appropriate generator
         if ($type === 'pdf') {
-            if (is_callable($data)) {
-                return self::generateCustomPdf($data, $title, $module, $outputMode);
-            } else {
-                return self::generatePdf($data, $options);
-            }
+            return is_callable($data)
+                ? self::generateCustomPdf($data, $title, $module, $outputMode)
+                : self::generatePdf($data, $options);
         } elseif ($type === 'excel') {
             return self::generateExcel($data, $headers, $title, $module, $outputMode);
         } else {
@@ -52,9 +55,7 @@ class ExportManager {
             return $pdf->Output('S');
         } else {
             $filename = strtolower(str_replace(' ', '_', $title)) . '_' . date('Ymd') . '.pdf';
-            if (ob_get_length()) {
-                ob_clean();
-            }
+            while (ob_get_level() > 0) { ob_end_clean(); }
             $pdf->Output('D', $filename);
             exit;
         }
@@ -84,9 +85,8 @@ class ExportManager {
             return $pdf->Output('S');
         } else {
             $filename = strtolower(str_replace(' ', '_', $title)) . '_' . date('Ymd') . '.pdf';
-            if (ob_get_length()) {
-                ob_clean();
-            }
+            // Drain ALL output buffer levels so headers can be sent cleanly
+            while (ob_get_level() > 0) { ob_end_clean(); }
             $pdf->Output('D', $filename);
             exit;
         }
