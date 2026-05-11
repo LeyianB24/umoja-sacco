@@ -29,16 +29,7 @@ if (class_exists('USMS\\Middleware\\CsrfMiddleware')) {
     \USMS\Middleware\CsrfMiddleware::token();
 }
 
-if (!function_exists('is_active')) {
-    function is_active($page, $aliases = []) {
-        $current = basename($_SERVER['PHP_SELF']);
-        if ($current === $page) return 'active';
-        foreach ($aliases as $alias) {
-            if ($current === $alias) return 'active';
-        }
-        return '';
-    }
-}
+// Active Link Helper is now centrally defined in inc/functions.php
 
 $is_logged_in = isset($_SESSION['member_id']) || isset($_SESSION['admin_id']);
 

@@ -216,6 +216,23 @@ if (!function_exists('old')) {
    ========================================================================== */
 
 /**
+ * Check if a page is active for navigation highlighting.
+ * @param string $page The page name to check.
+ * @param array $aliases Optional aliases that also count as active.
+ * @return string 'active' or empty string.
+ */
+if (!function_exists('is_active')) {
+    function is_active($page, $aliases = []) {
+        $current = basename($_SERVER['PHP_SELF'] ?? '');
+        if ($current === $page) return 'active';
+        foreach ($aliases as $alias) {
+            if ($current === $alias) return 'active';
+        }
+        return '';
+    }
+}
+
+/**
  * Standard Redirect
  */
 if (!function_exists('redirect_to')) {

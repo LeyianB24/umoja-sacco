@@ -11,6 +11,7 @@ $base   = defined('BASE_URL')   ? BASE_URL   : '/usms';
 $assets = defined('ASSET_BASE') ? ASSET_BASE : $base . '/public/assets';
 
 // Active Link Helper is now centrally defined in inc/header.php
+require_once __DIR__ . '/../../inc/header.php';
 
 ?>
 <link rel="preconnect" href="https://fonts.googleapis.com">
