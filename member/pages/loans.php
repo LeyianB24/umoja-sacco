@@ -344,6 +344,45 @@ $pageTitle = "My Loans";
         .table-premium tr:last-child td { border-bottom: none; }
         .table-premium tr:hover td { background-color: #fcfcfc; }
 
+        /* Mobile Table Responsiveness */
+        @media (max-width: 576px) {
+            .table-premium th,
+            .table-premium td {
+                padding: 0.75rem;
+                font-size: 0.85rem;
+            }
+            
+            .table-premium th {
+                font-size: 0.65rem;
+                padding: 0.5rem;
+            }
+            
+            .table-responsive {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .row {
+                gap: 1.5rem;
+            }
+            
+            .col-xl-4 {
+                display: flex;
+                flex-direction: column;
+                gap: 1.5rem;
+            }
+            
+            .card-forest {
+                padding: 1.5rem !important;
+            }
+            
+            .d-flex.text-end.d-none.d-sm-flex {
+                display: none !important;
+            }
+        }
+
         /* Status Badges */
         .badge-pill {
             padding: 6px 12px;

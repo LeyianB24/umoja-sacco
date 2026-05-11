@@ -41,6 +41,8 @@ if (!function_exists('is_active')) {
     transition: width 0.3s cubic-bezier(0.16,1,0.3,1),
                 transform 0.3s cubic-bezier(0.16,1,0.3,1);
     overflow: hidden;
+    visibility: visible;
+    opacity: 1;
 }
 
 /* Collapsed state */

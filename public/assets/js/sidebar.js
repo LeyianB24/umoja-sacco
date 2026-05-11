@@ -20,6 +20,11 @@
             return;
         }
 
+        // Ensure sidebar is visible on page load
+        sidebar.style.visibility = 'visible';
+        sidebar.style.opacity = '1';
+        sidebar.style.display = 'flex';
+
         // Restore desktop collapsed state
         if (localStorage.getItem(STORAGE_KEY) === 'true') {
             document.body.classList.add('sb-collapsed');

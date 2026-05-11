@@ -47,14 +47,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['error'] = "The image is too large (Maximum 1MB). Please compress it or use a smaller photo.";
             header("Location: profile.php"); exit;
         }
-        $pic_data = file_get_contents($file_tmp);
+        
+        // Store as file instead of BLOB
+        $upload_dir = BASE_PATH . '/uploads/admin_profiles/';
+        if (!is_dir($upload_dir)) {
+            @mkdir($upload_dir, 0775, true);
+        }
+        
+        $file_ext = pathinfo($_FILES['profile_pic']['name'], PATHINFO_EXTENSION);
+        $new_filename = 'admin_' . $admin_id . '_' . time() . '.' . $file_ext;
+        
+        if (move_uploaded_file($file_tmp, $upload_dir . $new_filename)) {
+            $pic_data = $new_filename;
+        } else {
+            $_SESSION['error'] = "Failed to upload file. Check server permissions.";
+            header("Location: profile.php"); exit;
+        }
     }
 
     $sql = "UPDATE admins SET email=?, phone=?, profile_pic=? WHERE admin_id=?";
     $stmt = $conn->prepare($sql);
-    $null = null; 
-    $stmt->bind_param("ssbi", $email, $phone, $null, $admin_id);
-    if ($pic_data !== null) { $stmt->send_long_data(2, $pic_data); }
+    $stmt->bind_param("sssi", $email, $phone, $pic_data, $admin_id);
     
     if ($stmt->execute()) {
         $_SESSION['success'] = "Profile updated successfully!";
@@ -74,7 +87,14 @@ $stmt->close();
 
 $display_pic = BASE_URL . '/public/assets/uploads/male.jpg';
 if (!empty($admin['profile_pic'])) {
-    $display_pic = 'data:image/jpeg;base64,' . base64_encode($admin['profile_pic']);
+    // Check if it's a filename (new system) or base64 (legacy)
+    if (strpos($admin['profile_pic'], 'admin_') === 0) {
+        // New file-based system
+        $display_pic = BASE_URL . '/uploads/admin_profiles/' . htmlspecialchars($admin['profile_pic']);
+    } else {
+        // Legacy BLOB system (convert to base64)
+        $display_pic = 'data:image/jpeg;base64,' . base64_encode($admin['profile_pic']);
+    }
 }
 
 $pageTitle = "My Profile";

@@ -80,9 +80,15 @@ $mpesa_env = EnvLoader::get('MPESA_ENV');
 if (!$mpesa_env) {
     $mpesa_env = APP_ENV;
     // Auto-fallback: If in production but no live keys, use sandbox if keys exist
-    if ($mpesa_env === 'production' && empty(EnvLoader::get('MPESA_LIVE_CONSUMER_KEY'))) {
-        if (!empty(EnvLoader::get('MPESA_SANDBOX_CONSUMER_KEY'))) {
-            $mpesa_env = 'sandbox';
+    if ($mpesa_env === 'production') {
+        $live_key = EnvLoader::get('MPESA_LIVE_CONSUMER_KEY');
+        if (empty($live_key)) {
+            // Check if sandbox keys are configured
+            $sandbox_key = EnvLoader::get('MPESA_SANDBOX_CONSUMER_KEY');
+            if (!empty($sandbox_key)) {
+                $mpesa_env = 'sandbox';
+                error_log("M-Pesa: Production env detected but no live keys. Falling back to sandbox mode for payment processing.");
+            }
         }
     }
 }

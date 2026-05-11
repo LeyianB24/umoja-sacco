@@ -74,16 +74,23 @@ function sendEmailWithNotification($to_email, $subject, $body_content, $member_i
     // 2. SEND EMAIL
     $mail = new PHPMailer(true);
     try {
+        // Load email config from environment.php
+        $env_config = require_once(__DIR__ . '/../config/environment.php');
+        $email_config = $env_config['email'] ?? [];
+        
         $mail->isSMTP();
-        $mail->Host       = defined('SMTP_HOST') ? SMTP_HOST : 'smtp.gmail.com';
+        $mail->Host       = $email_config['smtp_host'] ?? (defined('SMTP_HOST') ? SMTP_HOST : 'smtp.gmail.com');
         $mail->SMTPAuth   = true;
-        $mail->Username   = defined('SMTP_USERNAME') ? SMTP_USERNAME : 'leyianbeza24@gmail.com'; 
-        $mail->Password   = defined('SMTP_PASSWORD') ? SMTP_PASSWORD : 'duzb mbqt fnsz ipkg';    
-        $mail->SMTPSecure = defined('SMTP_SECURE') ? (SMTP_SECURE === 'tls' ? PHPMailer::ENCRYPTION_STARTTLS : PHPMailer::ENCRYPTION_SMTPS) : PHPMailer::ENCRYPTION_STARTTLS; 
-        $mail->Port       = defined('SMTP_PORT') ? (int)SMTP_PORT : 587;
+        $mail->Username   = $email_config['smtp_username'] ?? (defined('SMTP_USERNAME') ? SMTP_USERNAME : '');
+        $mail->Password   = $email_config['smtp_password'] ?? (defined('SMTP_PASSWORD') ? SMTP_PASSWORD : '');
+        $mail->SMTPSecure = ($email_config['smtp_port'] ?? 587) == 465 ? PHPMailer::ENCRYPTION_SMTPS : PHPMailer::ENCRYPTION_STARTTLS;
+        $mail->Port       = $email_config['smtp_port'] ?? 587;
         $mail->SMTPOptions = ['ssl' => ['verify_peer' => false, 'verify_peer_name' => false, 'allow_self_signed' => true]];
 
-        $mail->setFrom(defined('SMTP_USERNAME') ? SMTP_USERNAME : 'info@umojadrivers.co.ke', $site_name);
+        $from_email = $email_config['from_email'] ?? (defined('SMTP_USERNAME') ? SMTP_USERNAME : 'info@umojadrivers.co.ke');
+        $from_name = $email_config['from_name'] ?? $site_name;
+        
+        $mail->setFrom($from_email, $from_name);
         $mail->addAddress($to_email);
         $mail->isHTML(true);
         $mail->Subject = $subject;
