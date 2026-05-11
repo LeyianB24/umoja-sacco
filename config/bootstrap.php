@@ -39,10 +39,11 @@ if (!defined('PUBLIC_URL')) {
         // Let's check the DOCUMENT_ROOT vs BASE_PATH.
         $doc_root = realpath($_SERVER['DOCUMENT_ROOT'] ?? '');
         $public_path = realpath(BASE_PATH . '/public');
-        if ($doc_root && $public_path && strpos($public_path, $doc_root) === 0 && strlen($public_path) >= strlen($doc_root)) {
-             // We are serving from public or a subfolder of public
+        if ($doc_root && $public_path && strcasecmp($doc_root, $public_path) === 0) {
+             // We are serving FROM the public directory as the root
              define('PUBLIC_URL', BASE_URL);
         } else {
+             // We are serving from a parent directory, so we must include /public
              define('PUBLIC_URL', BASE_URL . '/public');
         }
     } else {

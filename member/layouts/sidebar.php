@@ -10,14 +10,8 @@ elseif (isset($_SESSION['member_id'])) { $role = 'member'; }
 $base   = defined('BASE_URL')   ? BASE_URL   : '/usms';
 $assets = defined('ASSET_BASE') ? ASSET_BASE : $base . '/public/assets';
 
-if (!function_exists('is_active')) {
-    function is_active($page, $aliases = []) {
-        $current = basename($_SERVER['PHP_SELF']);
-        if ($current === $page) return 'active';
-        foreach ($aliases as $alias) { if ($current === $alias) return 'active'; }
-        return '';
-    }
-}
+// Active Link Helper is now centrally defined in inc/header.php
+
 ?>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

@@ -10,17 +10,8 @@ $assets = defined('ASSET_BASE') ? ASSET_BASE : $base . '/public/assets';
 
 require_once __DIR__ . '/../../inc/sidebar_styles.php';
 
-// Active Link Helper
-if (!function_exists('is_active')) {
-    function is_active($page, $aliases = []) {
-        $current = basename($_SERVER['PHP_SELF']);
-        if ($current === $page) return 'active';
-        foreach ($aliases as $alias) {
-            if ($current === $alias) return 'active';
-        }
-        return '';
-    }
-}
+// Active Link Helper is now centrally defined in inc/header.php
+
 ?>
 
 <style>
@@ -92,11 +83,22 @@ if (!function_exists('is_active')) {
     min-height: 72px;
 }
 
-.hd-logo-img {
-    width: 34px; height: 34px;
-    border-radius: 10px;
-    object-fit: cover;
+.hd-logo-wrap {
+    width: 40px; height: 40px;
+    border-radius: 12px;
+    background: #fff;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+    border: 1.5px solid rgba(163,230,53,0.3);
+    box-shadow: 0 4px 14px rgba(0,0,0,0.1);
     flex-shrink: 0;
+}
+
+.hd-logo-img {
+    width: 100%; height: 100%;
+    object-fit: contain;
+    padding: 4px;
+    display: block;
 }
 
 .hd-brand-text {
@@ -339,7 +341,9 @@ if (!function_exists('is_active')) {
 
     <!-- ─── Brand ── -->
     <a href="<?= $base ?>/public/index.php" class="hd-brand">
-        <img src="<?= SITE_LOGO ?>" alt="Logo" class="hd-logo-img">
+        <div class="hd-logo-wrap">
+            <img src="<?= SITE_LOGO ?>" alt="Logo" class="hd-logo-img">
+        </div>
         <div class="hd-brand-text">
             <div class="hd-brand-name"><?= defined('SITE_NAME') ? htmlspecialchars(SITE_NAME) : 'UMOJA SACCO' ?></div>
             <span class="hd-brand-sub">Admin Panel</span>

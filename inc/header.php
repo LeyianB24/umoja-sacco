@@ -30,8 +30,13 @@ if (class_exists('USMS\\Middleware\\CsrfMiddleware')) {
 }
 
 if (!function_exists('is_active')) {
-    function is_active($page_name) {
-        return basename($_SERVER['PHP_SELF']) === $page_name ? 'active' : '';
+    function is_active($page, $aliases = []) {
+        $current = basename($_SERVER['PHP_SELF']);
+        if ($current === $page) return 'active';
+        foreach ($aliases as $alias) {
+            if ($current === $alias) return 'active';
+        }
+        return '';
     }
 }
 
