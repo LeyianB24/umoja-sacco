@@ -65,10 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($ins->execute()) {
                     $newMemberId = $ins->insert_id;
                     
-                    // Handle KYC Uploads
-                    $upload_dir = __DIR__ . '/../uploads/kyc/';
-                    if (!is_dir($upload_dir)) mkdir($upload_dir, 0777, true);
-                    
+                    // Handle KYC Uploads — Store as BLOB in database
                     $files_to_process = [
                         'passport_photo'    => 'passport_photo',
                         'national_id_front' => 'national_id_front',
@@ -77,15 +74,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                     foreach ($files_to_process as $input_name => $doc_type) {
                         if (!empty($_FILES[$input_name]['name']) && $_FILES[$input_name]['error'] === UPLOAD_ERR_OK) {
-                            $ext      = pathinfo($_FILES[$input_name]['name'], PATHINFO_EXTENSION);
-                            $filename = "{$doc_type}_{$newMemberId}_" . time() . ".$ext";
-                            $target   = $upload_dir . $filename;
-                            if (move_uploaded_file($_FILES[$input_name]['tmp_name'], $target)) {
-                                $doc_stmt = $conn->prepare("INSERT INTO member_documents (member_id, document_type, file_path, status) VALUES (?, ?, ?, 'pending')");
-                                $doc_stmt->bind_param("iss", $newMemberId, $doc_type, $filename);
-                                $doc_stmt->execute();
-                                $doc_stmt->close();
-                            }
+                            $file_content = file_get_contents($_FILES[$input_name]['tmp_name']);
+                            $file_type = mime_content_type($_FILES[$input_name]['tmp_name']);
+                            $original_filename = basename($_FILES[$input_name]['name']);
+                            $file_path = "{$doc_type}_{$newMemberId}_" . time();
+                            
+                            $doc_stmt = $conn->prepare("INSERT INTO member_documents (member_id, document_type, file_path, file_content, file_type, original_filename, status) VALUES (?, ?, ?, ?, ?, ?, 'pending')");
+                            $null = null;
+                            $doc_stmt->bind_param("issbss", $newMemberId, $doc_type, $file_path, $null, $file_type, $original_filename);
+                            $doc_stmt->send_long_data(3, $file_content);
+                            $doc_stmt->execute();
+                            $doc_stmt->close();
                         } else {
                             throw new Exception("Please upload all required KYC documents.");
                         }

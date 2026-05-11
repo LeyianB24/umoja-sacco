@@ -26,8 +26,8 @@ if ($member_id <= 0) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf_token();
 
-    // File Upload
-    if (!empty($_FILES['kyc_upload']['name'])) {
+    // File Upload — Store as BLOB in database
+    if (!empty($_FILES['kyc_upload']['name']) && $_FILES['kyc_upload']['error'] === UPLOAD_ERR_OK) {
         $doc_type      = $_POST['doc_type'] ?? '';
         $allowed_types = ['image/jpeg', 'image/png', 'application/pdf'];
         $max_size      = 5 * 1024 * 1024;
@@ -39,62 +39,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif ($file_size > $max_size) {
             flash_set("File is too large. Max size is 5MB.", "danger");
         } else {
-            // Store file content directly in database as BLOB
-            $doc_type      = $_POST['doc_type'] ?? '';
-            $allowed_types = ['image/jpeg', 'image/png', 'application/pdf'];
-            $max_size      = 5 * 1024 * 1024;
-            $file_type     = mime_content_type($_FILES['kyc_upload']['tmp_name']);
-            $file_size     = $_FILES['kyc_upload']['size'];
-
-            if (!in_array($file_type, $allowed_types)) {
-                flash_set("Invalid file type. Only JPG, PNG, and PDF are allowed.", "danger");
-            } elseif ($file_size > $max_size) {
-                flash_set("File is too large. Max size is 5MB.", "danger");
-            } else {
-                // Read file content into memory
-                $file_content = file_get_contents($_FILES['kyc_upload']['tmp_name']);
-                $original_filename = basename($_FILES['kyc_upload']['name']);
-                
-                // Store in database as BLOB
-                $stmt = $conn->prepare("
-                    INSERT INTO member_documents 
-                    (member_id, document_type, file_path, file_content, file_type, original_filename, status, uploaded_at, verified_by, verified_at, verification_notes) 
-                    VALUES (?, ?, ?, ?, ?, ?, 'verified', NOW(), ?, NOW(), 'Uploaded by Admin') 
-                    ON DUPLICATE KEY UPDATE 
-                    file_content = VALUES(file_content), 
-                    file_type = VALUES(file_type),
-                    original_filename = VALUES(original_filename),
-                    status = 'verified', 
-                    uploaded_at = NOW(), 
-                    verified_by = VALUES(verified_by), 
-                    verified_at = NOW(), 
-                    verification_notes = VALUES(verification_notes)
-                ");
-                
-                $admin_id = $_SESSION['admin_id'];
-                $file_path = "{$doc_type}_{$member_id}_" . time(); // No extension needed when storing BLOB
-                $null = null;
-                
-                $stmt->bind_param("issbssi", $member_id, $doc_type, $file_path, $null, $file_type, $original_filename, $admin_id);
-                $stmt->send_long_data(3, $file_content); // Send BLOB data
-                
-                if ($stmt->execute()) {
-                    flash_set("Document uploaded and auto-verified successfully.", "success");
-                    $q = $conn->query("SELECT status FROM member_documents WHERE member_id = $member_id AND document_type IN ('national_id_front', 'national_id_back', 'passport_photo')");
-                    $all_docs = $q->fetch_all(MYSQLI_ASSOC);
-                    $verified_count = 0; $rejected_count = 0;
-                    foreach ($all_docs as $d) {
-                        if ($d['status'] === 'verified') $verified_count++;
-                        if ($d['status'] === 'rejected') $rejected_count++;
-                    }
-                    $new_kyc = $verified_count >= 3 ? 'approved' : ($rejected_count > 0 ? 'rejected' : 'pending');
-                    $conn->query("UPDATE members SET kyc_status = '$new_kyc' WHERE member_id = $member_id");
-                } else {
-                    flash_set("Database error: " . $stmt->error, "danger");
+            // Read file content into memory for BLOB storage
+            $file_content = file_get_contents($_FILES['kyc_upload']['tmp_name']);
+            $original_filename = basename($_FILES['kyc_upload']['name']);
+            
+            // Store in database as BLOB
+            $stmt = $conn->prepare("
+                INSERT INTO member_documents 
+                (member_id, document_type, file_path, file_content, file_type, original_filename, status, uploaded_at, verified_by, verified_at, verification_notes) 
+                VALUES (?, ?, ?, ?, ?, ?, 'verified', NOW(), ?, NOW(), 'Uploaded by Admin') 
+                ON DUPLICATE KEY UPDATE 
+                file_content = VALUES(file_content), 
+                file_type = VALUES(file_type),
+                original_filename = VALUES(original_filename),
+                status = 'verified', 
+                uploaded_at = NOW(), 
+                verified_by = VALUES(verified_by), 
+                verified_at = NOW(), 
+                verification_notes = VALUES(verification_notes)
+            ");
+            
+            $admin_id = $_SESSION['admin_id'];
+            $file_path = "{$doc_type}_{$member_id}_" . time();
+            $null = null;
+            
+            $stmt->bind_param("issbssi", $member_id, $doc_type, $file_path, $null, $file_type, $original_filename, $admin_id);
+            $stmt->send_long_data(3, $file_content);
+            
+            if ($stmt->execute()) {
+                flash_set("Document uploaded and auto-verified successfully.", "success");
+                $q = $conn->query("SELECT status FROM member_documents WHERE member_id = $member_id AND document_type IN ('national_id_front', 'national_id_back', 'passport_photo')");
+                $all_docs = $q->fetch_all(MYSQLI_ASSOC);
+                $verified_count = 0; $rejected_count = 0;
+                foreach ($all_docs as $d) {
+                    if ($d['status'] === 'verified') $verified_count++;
+                    if ($d['status'] === 'rejected') $rejected_count++;
                 }
-                $stmt->close();
+                $new_kyc = $verified_count >= 3 ? 'approved' : ($rejected_count > 0 ? 'rejected' : 'pending');
+                $conn->query("UPDATE members SET kyc_status = '$new_kyc' WHERE member_id = $member_id");
+            } else {
+                flash_set("Database error: " . $stmt->error, "danger");
             }
-            header("Location: member_profile.php?id=$member_id#kyc"); exit;
+            $stmt->close();
         }
         header("Location: member_profile.php?id=$member_id#kyc"); exit;
     }
@@ -167,8 +153,8 @@ $q_l_list->bind_param("i", $member_id);
 $q_l_list->execute();
 $member_loans = $q_l_list->get_result()->fetch_all(MYSQLI_ASSOC);
 
-// KYC DOCUMENTS
-$q_docs = $conn->prepare("SELECT * FROM member_documents WHERE member_id = ?");
+// KYC DOCUMENTS (exclude BLOB content from listing query for performance)
+$q_docs = $conn->prepare("SELECT document_id, member_id, document_type, file_path, file_type, original_filename, status, uploaded_at, verified_by, verified_at, verification_notes FROM member_documents WHERE member_id = ?");
 $q_docs->bind_param("i", $member_id);
 $q_docs->execute();
 $member_docs = $q_docs->get_result()->fetch_all(MYSQLI_ASSOC);
@@ -1166,10 +1152,10 @@ $pageTitle = $member['full_name'] . " — Member Profile";
                         <div class="kyc-doc-meta">
                             <div class="kyc-doc-icon"><i class="bi bi-file-earmark-text-fill"></i></div>
                             <div style="flex:1;min-width:0;">
-                                <div class="kyc-doc-filename"><?= htmlspecialchars($doc['file_path']) ?></div>
+                                <div class="kyc-doc-filename"><?= htmlspecialchars($doc['original_filename'] ?? $doc['file_path']) ?></div>
                                 <div class="kyc-doc-date">Uploaded: <?= date('d M Y', strtotime($doc['uploaded_at'])) ?></div>
                             </div>
-                            <a href="<?= BASE_URL ?>/uploads/kyc/<?= $doc['file_path'] ?>" target="_blank"
+                            <a href="<?= BASE_URL ?>/admin/api/serve_document.php?id=<?= $doc['document_id'] ?>" target="_blank"
                                style="flex-shrink:0;font-size:0.78rem;font-weight:700;color:var(--forest,#0f2e25);text-decoration:none;background:rgba(15,46,37,0.07);padding:5px 12px;border-radius:7px;">
                                 <i class="bi bi-eye me-1"></i>View
                             </a>

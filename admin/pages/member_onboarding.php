@@ -50,14 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $member_id = $conn->insert_id;
             $ins->close();
 
-            // Secure upload directory in project root (not public)
-            $upload_dir = BASE_PATH . '/uploads/kyc/';
-            if (!is_dir($upload_dir)) {
-                if (!@mkdir($upload_dir, 0775, true)) {
-                    throw new Exception("Critical: Could not create upload directory. Check permissions.");
-                }
-            }
-
+            // Store KYC uploads as BLOB in database
             $files_to_process = [
                 'passport_photo'    => 'passport_photo',
                 'national_id_front' => 'national_id_front',
@@ -67,15 +60,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $uploaded_count = 0;
             foreach ($files_to_process as $input_name => $doc_type) {
                 if (!empty($_FILES[$input_name]['name']) && $_FILES[$input_name]['error'] === UPLOAD_ERR_OK) {
-                    $ext      = pathinfo($_FILES[$input_name]['name'], PATHINFO_EXTENSION);
-                    $filename = "{$doc_type}_{$member_id}_" . time() . ".$ext";
-                    $target   = $upload_dir . $filename;
-                    if (move_uploaded_file($_FILES[$input_name]['tmp_name'], $target)) {
-                        $doc_stmt = $conn->prepare("INSERT INTO member_documents (member_id, document_type, file_path, status, verified_at) VALUES (?, ?, ?, 'verified', NOW())");
-                        $doc_stmt->bind_param("iss", $member_id, $doc_type, $filename);
-                        $doc_stmt->execute();
-                        $uploaded_count++;
-                    }
+                    $file_content = file_get_contents($_FILES[$input_name]['tmp_name']);
+                    $file_type = mime_content_type($_FILES[$input_name]['tmp_name']);
+                    $original_filename = basename($_FILES[$input_name]['name']);
+                    $file_path = "{$doc_type}_{$member_id}_" . time();
+                    
+                    $doc_stmt = $conn->prepare("INSERT INTO member_documents (member_id, document_type, file_path, file_content, file_type, original_filename, status, verified_at) VALUES (?, ?, ?, ?, ?, ?, 'verified', NOW())");
+                    $null = null;
+                    $doc_stmt->bind_param("issbss", $member_id, $doc_type, $file_path, $null, $file_type, $original_filename);
+                    $doc_stmt->send_long_data(3, $file_content);
+                    if ($doc_stmt->execute()) $uploaded_count++;
+                    $doc_stmt->close();
                 }
             }
 

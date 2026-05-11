@@ -67,7 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         header("Location: profile.php"); exit;
     }
 
-    // KYC upload
+    // KYC upload — Store as BLOB in database
     if (!empty($_FILES['kyc_doc']['name']) && $_FILES['kyc_doc']['error'] === UPLOAD_ERR_OK) {
         $doc_type = $_POST['doc_type'] ?? '';
         $kf_type  = mime_content_type($_FILES['kyc_doc']['tmp_name']);
@@ -77,26 +77,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif ($kf_size > 5 * 1024 * 1024) {
             $_SESSION['error'] = "File too large. Max 5 MB.";
         } else {
-            // Secure upload directory in project root (not public)
-            $upload_dir = BASE_PATH . '/uploads/kyc/';
-            if (!is_dir($upload_dir)) {
-                if (!@mkdir($upload_dir, 0775, true)) {
-                    error_log("[USMS] Failed to create KYC upload directory: " . $upload_dir);
-                    $_SESSION['error'] = "System error: Upload directory not writable. Please contact admin.";
-                    header("Location: profile.php"); exit;
-                }
-            }
+            // Read file content for BLOB storage
+            $file_content = file_get_contents($_FILES['kyc_doc']['tmp_name']);
+            $original_filename = basename($_FILES['kyc_doc']['name']);
+            $file_path = "{$doc_type}_{$member_id}_" . time();
             
-            $ext      = pathinfo($_FILES['kyc_doc']['name'], PATHINFO_EXTENSION);
-            $new_name = "{$doc_type}_{$member_id}_".time().".{$ext}";
-            if (move_uploaded_file($_FILES['kyc_doc']['tmp_name'], $upload_dir.$new_name)) {
-                $stmt = $conn->prepare("INSERT INTO member_documents (member_id, document_type, file_path, status) VALUES (?, ?, ?, 'pending') ON DUPLICATE KEY UPDATE file_path=VALUES(file_path), status='pending', uploaded_at=NOW()");
-                $stmt->bind_param("iss", $member_id, $doc_type, $new_name); $stmt->execute(); $stmt->close();
+            $stmt = $conn->prepare("
+                INSERT INTO member_documents (member_id, document_type, file_path, file_content, file_type, original_filename, status) 
+                VALUES (?, ?, ?, ?, ?, ?, 'pending') 
+                ON DUPLICATE KEY UPDATE 
+                file_content=VALUES(file_content), file_type=VALUES(file_type), 
+                original_filename=VALUES(original_filename), file_path=VALUES(file_path), 
+                status='pending', uploaded_at=NOW()
+            ");
+            $null = null;
+            $stmt->bind_param("issbss", $member_id, $doc_type, $file_path, $null, $kf_type, $original_filename);
+            $stmt->send_long_data(3, $file_content);
+            
+            if ($stmt->execute()) {
                 $conn->query("UPDATE members SET kyc_status='pending' WHERE member_id=$member_id AND kyc_status='not_submitted'");
             } else {
-                $_SESSION['error'] = "Failed to save uploaded file. Check server permissions.";
-                error_log("[USMS] move_uploaded_file failed for member $member_id to " . $upload_dir.$new_name);
+                $_SESSION['error'] = "Failed to save document: " . $stmt->error;
+                error_log("[USMS] KYC BLOB insert failed for member $member_id: " . $stmt->error);
             }
+            $stmt->close();
         }
     }
 
