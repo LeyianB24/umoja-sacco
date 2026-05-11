@@ -154,10 +154,10 @@ $assets = defined('ASSET_BASE') ? ASSET_BASE : $base . '/public/assets';
 
 <aside class="hd-sidebar" id="sidebar" role="navigation" aria-label="Main Navigation">
 
-    <a href="<?= $base ?>/public/index.php" class="hd-brand">
+    <a href="<?= $base ?>/public/index.php" class="hd-brand" style="text-decoration: none;">
         <div class="hd-brand-inner">
             <div class="hd-logo-wrap">
-                <img src="<?= $assets ?>/images/people_logo.png" alt="<?= defined('SITE_NAME') ? htmlspecialchars(SITE_NAME) : 'Logo' ?>">
+                <img src="<?= htmlspecialchars(SITE_LOGO ?? '') ?>" alt="<?= defined('SITE_NAME') ? htmlspecialchars(SITE_NAME) : 'Logo' ?>" onerror="this.style.opacity='0.3'">
             </div>
             <div class="hd-brand-text">
                 <div class="hd-brand-name"><?= defined('SITE_NAME') ? htmlspecialchars(SITE_NAME) : 'UMOJA SACCO' ?></div>

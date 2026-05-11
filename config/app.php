@@ -44,6 +44,11 @@ if (!defined('OFFICE_LOCATION')) define('OFFICE_LOCATION', COMPANY_OFFICE . ', '
 if (!defined('TAGLINE'))         define('TAGLINE',         SITE_TAGLINE);
 
 // 4.1 BRANDING & ASSETS
+// Ensure ASSET_BASE is properly defined before using
+if (!defined('ASSET_BASE')) {
+    $fallback_asset_base = (defined('BASE_URL') ? BASE_URL : '') . '/public/assets';
+    define('ASSET_BASE', rtrim($fallback_asset_base, '/'));
+}
 if (!defined('SITE_LOGO'))        define('SITE_LOGO',        ASSET_BASE . '/images/people_logo.png');
 if (!defined('SITE_FAVICON'))     define('SITE_FAVICON',     ASSET_BASE . '/images/people_logo.png');
 if (!defined('BACKGROUND_IMAGE')) define('BACKGROUND_IMAGE', ASSET_BASE . '/images/sacco13.jpg');

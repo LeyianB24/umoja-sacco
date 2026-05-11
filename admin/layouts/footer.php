@@ -23,8 +23,8 @@ $perf_color = $execution_time < 0.5 ? '#16a34a' : ($execution_time < 1.5 ? '#d97
             <!-- Left: Brand -->
             <a href="<?= BASE_URL ?>/public/index.php" class="footer-brand text-decoration-none">
                 <div class="brand-line">
-                    <img src="<?= SITE_LOGO ?>" alt="Logo" style="width: 24px; height: 24px; object-fit: contain; margin-right: 8px;">
-                    <span class="brand-name"><?= defined('SITE_NAME') ? SITE_NAME : 'Umoja Sacco' ?></span>
+                    <img src="<?= htmlspecialchars(SITE_LOGO ?? '') ?>" alt="Logo" style="width: 24px; height: 24px; object-fit: contain; margin-right: 8px;" onerror="this.style.opacity='0.3'">
+                    <span class="brand-name"><?= defined('SITE_NAME') ? htmlspecialchars(SITE_NAME) : 'Umoja Sacco' ?></span>
                     <span class="version-chip">v1.0 Pro</span>
                 </div>
                 <div class="brand-tagline">Empowering Financial Growth &mdash; &copy; <?= date('Y') ?></div>

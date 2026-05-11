@@ -264,8 +264,9 @@ if (session_status() === PHP_SESSION_NONE) session_start();
 
                 <a href="<?= BASE_URL ?>/public/index.php" class="mf-brand-row">
                     <div class="mf-brand-icon">
-                        <img src="<?= defined('SITE_LOGO') ? SITE_LOGO : '' ?>"
-                             alt="<?= defined('SITE_NAME') ? htmlspecialchars(SITE_NAME) : 'Logo' ?>">
+                        <img src="<?= htmlspecialchars(SITE_LOGO ?? '') ?>" 
+                             alt="<?= defined('SITE_NAME') ? htmlspecialchars(SITE_NAME) : 'Logo' ?>"
+                             onerror="this.style.opacity='0.3'">
                     </div>
                     <div>
                         <div class="mf-brand-name"><?= defined('SITE_NAME') ? htmlspecialchars(SITE_NAME) : 'Umoja Sacco' ?></div>

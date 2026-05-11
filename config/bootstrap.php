@@ -32,23 +32,21 @@ if (!defined('BASE_URL')) {
 }
 
 if (!defined('PUBLIC_URL')) {
-    // Detect if we are already serving from the public directory (common in production)
+    // Robust detection of PUBLIC_URL for both local and remote deployments
     $script_name = $_SERVER['SCRIPT_NAME'] ?? '';
-    if (strpos($script_name, '/public/') === false && file_exists(BASE_PATH . '/public/index.php')) {
-        // If /public/ is NOT in the URL but the folder exists, we might be serving from it.
-        // Let's check the DOCUMENT_ROOT vs BASE_PATH.
-        $doc_root = realpath($_SERVER['DOCUMENT_ROOT'] ?? '');
-        $public_path = realpath(BASE_PATH . '/public');
-        if ($doc_root && $public_path && strcasecmp($doc_root, $public_path) === 0) {
-             // We are serving FROM the public directory as the root
-             define('PUBLIC_URL', BASE_URL);
-        } else {
-             // We are serving from a parent directory, so we must include /public
-             define('PUBLIC_URL', BASE_URL . '/public');
-        }
+    $doc_root = realpath($_SERVER['DOCUMENT_ROOT'] ?? '');
+    $public_path = realpath(BASE_PATH . '/public');
+    
+    // Check if we're serving FROM the public directory as the document root (Railway production setup)
+    if ($doc_root && $public_path && strcasecmp($doc_root, $public_path) === 0) {
+        // We are serving from the public directory as root
+        define('PUBLIC_URL', BASE_URL);
+    } elseif (file_exists(BASE_PATH . '/public/index.php')) {
+        // We are serving from a parent directory, public folder exists
+        define('PUBLIC_URL', BASE_URL . '/public');
     } else {
-        // Fallback or explicit public in URL
-        define('PUBLIC_URL', BASE_URL . (strpos($script_name, '/public/') !== false ? '/public' : '/public'));
+        // Fallback: assume public is accessible via BASE_URL/public
+        define('PUBLIC_URL', BASE_URL . '/public');
     }
 }
 if (!defined('ASSET_BASE')) define('ASSET_BASE', rtrim(PUBLIC_URL, '/') . '/assets');

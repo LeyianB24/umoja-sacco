@@ -340,9 +340,9 @@ require_once __DIR__ . '/../../inc/sidebar_styles.php';
 <aside class="hd-sidebar" id="sidebar">
 
     <!-- ─── Brand ── -->
-    <a href="<?= $base ?>/public/index.php" class="hd-brand">
+    <a href="<?= $base ?>/public/index.php" class="hd-brand" style="text-decoration: none;">
         <div class="hd-logo-wrap">
-            <img src="<?= SITE_LOGO ?>" alt="Logo" class="hd-logo-img">
+            <img src="<?= htmlspecialchars(SITE_LOGO ?? '') ?>" alt="Logo" class="hd-logo-img" onerror="this.style.opacity='0.3'">
         </div>
         <div class="hd-brand-text">
             <div class="hd-brand-name"><?= defined('SITE_NAME') ? htmlspecialchars(SITE_NAME) : 'UMOJA SACCO' ?></div>
