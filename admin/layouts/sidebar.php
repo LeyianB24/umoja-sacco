@@ -10,8 +10,7 @@ $assets = defined('ASSET_BASE') ? ASSET_BASE : $base . '/public/assets';
 
 require_once __DIR__ . '/../../inc/sidebar_styles.php';
 
-// Active Link Helper is now centrally defined in inc/header.php
-require_once __DIR__ . '/../../inc/header.php';
+// Active Link Helper is now centrally defined in inc/functions.php
 
 ?>
 

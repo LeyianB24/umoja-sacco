@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../../config/app.php';
 
+// Security headers
+\USMS\Config\EnvLoader::addSecurityHeaders();
+
 // CSRF token seeding
 if (class_exists('USMS\\Middleware\\CsrfMiddleware')) {
     \USMS\Middleware\CsrfMiddleware::token();

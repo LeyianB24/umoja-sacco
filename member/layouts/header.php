@@ -3,6 +3,9 @@
 if (session_status() === PHP_SESSION_NONE) session_start();
 require_once __DIR__ . '/../../config/app.php';
 
+// Security headers
+\USMS\Config\EnvLoader::addSecurityHeaders();
+
 // Force Member Login Check if not already handled
 if (!isset($_SESSION['member_id'])) {
     header("Location: " . BASE_URL . "/public/login.php");
