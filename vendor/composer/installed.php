@@ -3,7 +3,7 @@
         'name' => 'leyianb24/umoja-sacco',
         'pretty_version' => 'dev-main',
         'version' => 'dev-main',
-        'reference' => 'cee485629b0c06ef340c2c69e9690cf845a4d190',
+        'reference' => 'ce024ca161cd8074d06a4ae23b204c6ab20ee2cf',
         'type' => 'project',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -49,7 +49,7 @@
         'leyianb24/umoja-sacco' => array(
             'pretty_version' => 'dev-main',
             'version' => 'dev-main',
-            'reference' => 'cee485629b0c06ef340c2c69e9690cf845a4d190',
+            'reference' => 'ce024ca161cd8074d06a4ae23b204c6ab20ee2cf',
             'type' => 'project',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
@@ -378,6 +378,15 @@
             'install_path' => __DIR__ . '/../sebastian/version',
             'aliases' => array(),
             'dev_requirement' => true,
+        ),
+        'setasign/fpdf' => array(
+            'pretty_version' => '1.8.6',
+            'version' => '1.8.6.0',
+            'reference' => '0838e0ee4925716fcbbc50ad9e1799b5edfae0a0',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../setasign/fpdf',
+            'aliases' => array(),
+            'dev_requirement' => false,
         ),
         'theseer/tokenizer' => array(
             'pretty_version' => '1.3.1',
