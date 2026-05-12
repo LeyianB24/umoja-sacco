@@ -545,7 +545,7 @@ textarea.form-control { resize: vertical; min-height: 80px; }
                         <span class="viability-pill <?= $pill_class ?>"><?= $pill_text ?></span>
                     </div>
                     <div class="asset-category"><?= ucwords(str_replace('_', ' ', $inv['category'])) ?></div>
-                    <div class="asset-title"><?= htmlspecialchars($inv['title']) ?></div>
+                    <div class="asset-title"><?= htmlspecialchars((string)($inv['title'] ?? 'N/A')) ?></div>
                     <div class="asset-revenue">KES <?= number_format((float)$inv['period_revenue']) ?></div>
                     <div class="asset-target"><i class="bi bi-bullseye"></i>Target: KES <?= number_format((float)$inv['target_amount']) ?></div>
                     <div class="achieve-row">
@@ -606,7 +606,7 @@ textarea.form-control { resize: vertical; min-height: 80px; }
                                 <select name="asset_id" class="filter-select" onchange="this.form.submit()">
                                     <option value="0">All Investment Sources</option>
                                     <?php foreach ($investments_select_list as $inv): ?>
-                                        <option value="<?= $inv['investment_id'] ?>" <?= $filter_asset_id == $inv['investment_id'] ? 'selected' : '' ?>><?= htmlspecialchars($inv['title']) ?></option>
+                                        <option value="<?= $inv['investment_id'] ?>" <?= $filter_asset_id == $inv['investment_id'] ? 'selected' : '' ?>><?= htmlspecialchars((string)($inv['title'] ?? 'Asset ' . $inv['investment_id'])) ?></option>
                                     <?php endforeach; ?>
                                 </select>
                             </div>
@@ -661,7 +661,7 @@ textarea.form-control { resize: vertical; min-height: 80px; }
                                 <tr class="revenue-row">
                                     <td style="padding-left:20px">
                                         <div class="rev-date"><?= date('d M Y', strtotime($row['transaction_date'])) ?></div>
-                                        <div class="rev-ref"><?= htmlspecialchars($row['reference_no']) ?></div>
+                                        <div class="rev-ref"><?= htmlspecialchars((string)($row['reference_no'] ?? '')) ?></div>
                                     </td>
                                     <td>
                                         <div class="rev-source"><?= htmlspecialchars($row['source_name'] ?: 'General Fund') ?></div>
@@ -744,7 +744,7 @@ textarea.form-control { resize: vertical; min-height: 80px; }
                                     <option value="other_0">General Fund / Unassigned</option>
                                     <optgroup label="Active Portfolio">
                                         <?php foreach ($investments_select_list as $inv): ?>
-                                            <option value="inv_<?= $inv['investment_id'] ?>"><?= htmlspecialchars($inv['title']) ?></option>
+                                            <option value="inv_<?= $inv['investment_id'] ?>"><?= htmlspecialchars((string)($inv['title'] ?? 'Asset ' . $inv['investment_id'])) ?></option>
                                         <?php endforeach; ?>
                                     </optgroup>
                                 </select>
