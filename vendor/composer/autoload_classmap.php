@@ -128,7 +128,7 @@ return array(
     'Dompdf\\Renderer\\TableCell' => $vendorDir . '/dompdf/dompdf/src/Renderer/TableCell.php',
     'Dompdf\\Renderer\\TableRowGroup' => $vendorDir . '/dompdf/dompdf/src/Renderer/TableRowGroup.php',
     'Dompdf\\Renderer\\Text' => $vendorDir . '/dompdf/dompdf/src/Renderer/Text.php',
-    'FPDF' => $vendorDir . '/fpdf/fpdf.php',
+    'FPDF' => $vendorDir . '/setasign/fpdf/fpdf.php',
     'FontLib\\AdobeFontMetrics' => $vendorDir . '/phenx/php-font-lib/src/FontLib/AdobeFontMetrics.php',
     'FontLib\\BinaryStream' => $vendorDir . '/phenx/php-font-lib/src/FontLib/BinaryStream.php',
     'FontLib\\EOT\\File' => $vendorDir . '/phenx/php-font-lib/src/FontLib/EOT/File.php',

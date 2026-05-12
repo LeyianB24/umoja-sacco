@@ -17,9 +17,7 @@
         "psr-4": {
             "USMS\\": "core/"
         },
-        "classmap": [
-            "vendor/fpdf/fpdf.php"
-        ],
+        "classmap": [],
         "files": [
             "config/app.php",
             "inc/functions.php",
