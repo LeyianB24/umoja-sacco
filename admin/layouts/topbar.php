@@ -476,7 +476,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const html        = document.documentElement;
     const themeIcon   = document.getElementById('themeIcon');
     const themeToggle = document.getElementById('themeToggle');
+    const sidebar     = document.getElementById('sidebar');
+    const backdrop    = document.getElementById('sidebarBackdrop');
+    const mobileBtn   = document.getElementById('mobileSidebarToggle');
 
+    // ─── THEME TOGGLE ───────────────────────────
     const applyTheme = (theme) => {
         html.setAttribute('data-bs-theme', theme);
         localStorage.setItem('theme', theme);
@@ -496,5 +500,39 @@ document.addEventListener('DOMContentLoaded', () => {
     themeToggle?.addEventListener('click', () => {
         applyTheme(html.getAttribute('data-bs-theme') === 'dark' ? 'light' : 'dark');
     });
+
+    // ─── MOBILE SIDEBAR TOGGLE ──────────────────
+    if (mobileBtn && sidebar) {
+        mobileBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            sidebar.classList.toggle('mobile-open');
+            backdrop?.classList.toggle('show');
+        });
+
+        // Close sidebar when clicking on a nav item
+        const navItems = sidebar.querySelectorAll('a.hd-nav-item');
+        navItems.forEach(item => {
+            item.addEventListener('click', () => {
+                if (window.innerWidth < 992) {
+                    sidebar.classList.remove('mobile-open');
+                    backdrop?.classList.remove('show');
+                }
+            });
+        });
+
+        // Close sidebar when clicking backdrop
+        backdrop?.addEventListener('click', () => {
+            sidebar.classList.remove('mobile-open');
+            backdrop.classList.remove('show');
+        });
+
+        // Close sidebar on Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && sidebar.classList.contains('mobile-open')) {
+                sidebar.classList.remove('mobile-open');
+                backdrop?.classList.remove('show');
+            }
+        });
+    }
 });
 </script>
