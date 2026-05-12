@@ -68,26 +68,42 @@ class ExportManager {
         $outputMode = $options['output_mode'] ?? 'D';
         $orientation = $options['orientation'] ?? 'P';
         
-        $pdf = new PdfTemplate($orientation);
-        
-        $pdf->setMetadata($title, $module);
-        $pdf->AddPage();
-        
-        if (count($data) > 0) {
-            $pdf->UniversalTable($headers, $data);
-        } else {
-            $pdf->SetFont('Arial', 'I', 10);
-            $pdf->Cell(0, 10, 'No data to display.', 0, 1, 'C');
-        }
-        
-        // Output
-        if ($outputMode === 'S') {
-            return $pdf->Output('S');
-        } else {
-            $filename = strtolower(str_replace(' ', '_', $title)) . '_' . date('Ymd') . '.pdf';
-            // Drain ALL output buffer levels so headers can be sent cleanly
+        try {
+            $pdf = new PdfTemplate($orientation);
+            $pdf->setMetadata($title, $module);
+            $pdf->AddPage();
+            
+            if (count($data) > 0) {
+                $pdf->UniversalTable($headers, $data);
+            } else {
+                $pdf->SetFont('Arial', 'I', 10);
+                $pdf->Cell(0, 10, 'No data to display.', 0, 1, 'C');
+            }
+            
+            // Output
+            if ($outputMode === 'S') {
+                return $pdf->Output('S');
+            } else {
+                $filename = strtolower(str_replace(' ', '_', $title)) . '_' . date('Ymd') . '.pdf';
+                // Drain ALL output buffer levels so headers can be sent cleanly
+                while (ob_get_level() > 0) { ob_end_clean(); }
+                $pdf->Output('D', $filename);
+                exit;
+            }
+        } catch (\Throwable $e) {
+            error_log("[ExportManager] PDF Generation Error: " . $e->getMessage() . "\n" . $e->getTraceAsString());
+            
+            // Show error only in development
+            if (defined('APP_ENV') && APP_ENV === 'development') {
+                throw $e;
+            }
+            
+            // Production: Return generic error page
             while (ob_get_level() > 0) { ob_end_clean(); }
-            $pdf->Output('D', $filename);
+            http_response_code(500);
+            header('Content-Type: text/plain');
+            echo "PDF Export Error: Unable to generate document. Please try again later.\n";
+            echo "[Debug: " . (defined('APP_ENV') && APP_ENV === 'production' ? 'Check server logs' : $e->getMessage()) . "]\n";
             exit;
         }
     }

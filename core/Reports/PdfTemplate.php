@@ -71,10 +71,16 @@ class PdfTemplate extends FPDF {
     }
 
     public function Header() {
-        // 1. Logo
-        $logoPath = realpath(BASE_PATH . '/public/assets/images/people_logo.png');
-        if ($logoPath && file_exists($logoPath)) {
-            $this->Image($logoPath, 15, 10, 20);
+        // 1. Logo (with fallback on Railway/production)
+        try {
+            $logoPath = BASE_PATH . '/public/assets/images/people_logo.png';
+            // Don't use realpath() - it fails on some cloud environments
+            if (is_file($logoPath)) {
+                $this->Image($logoPath, 15, 10, 20);
+            }
+        } catch (\Throwable $e) {
+            // Silently skip logo on error - don't crash the whole PDF
+            error_log("[PdfTemplate] Logo loading failed (non-fatal): " . $e->getMessage());
         }
 
         // 2. Organization Details (Right Aligned)
@@ -145,50 +151,63 @@ class PdfTemplate extends FPDF {
     public function UniversalTable($headers, $data) {
         if (empty($headers)) return;
 
-        // Table Header
-        $this->SetFillColor(230, 230, 230);
-        $this->SetTextColor(0, 0, 0);
-        $this->SetDrawColor(200, 200, 200);
-        $this->SetLineWidth(0.3);
-        $this->SetFont('Arial', 'B', 9);
+        try {
+            // Table Header
+            $this->SetFillColor(230, 230, 230);
+            $this->SetTextColor(0, 0, 0);
+            $this->SetDrawColor(200, 200, 200);
+            $this->SetLineWidth(0.3);
+            $this->SetFont('Arial', 'B', 9);
 
-        // Calculate widths
-        $pageWidth = $this->GetPageWidth() - 30; // Margins 15+15
-        $colCount = count($headers);
-        $w = $pageWidth / $colCount;
-        $widths = array_fill(0, $colCount, $w);
-        $aligns = array_fill(0, $colCount, 'L');
+            // Calculate widths
+            $pageWidth = $this->GetPageWidth() - 30; // Margins 15+15
+            $colCount = count($headers);
+            $w = $pageWidth / $colCount;
+            $widths = array_fill(0, $colCount, $w);
+            $aligns = array_fill(0, $colCount, 'L');
 
-        // Header Row
-        foreach ($headers as $i => $header) {
-            $this->Cell($widths[$i], 8, strtoupper($header), 1, 0, 'C', true);
-        }
-        $this->Ln();
-
-        // Data
-        $this->SetFont('Arial', '', 9);
-        $fill = false;
-        
-        foreach ($data as $row) {
-            $this->SetFillColor(250, 250, 250); // Zebra
-            
-            // Ensure row is indexed array matching headers
-            $rowValues = array_values($row);
-            
-            // Calculate alignments based on content type
-            for ($i = 0; $i < $colCount; $i++) {
-                $colValue = isset($rowValues[$i]) ? $rowValues[$i] : '';
-                if (is_numeric(str_replace([',', ' '], '', $colValue))) {
-                    $aligns[$i] = 'R';
-                } else {
-                    $aligns[$i] = 'L';
-                }
+            // Header Row
+            foreach ($headers as $i => $header) {
+                $this->Cell($widths[$i], 8, strtoupper($header), 1, 0, 'C', true);
             }
+            $this->Ln();
 
-            // Use the Row helper which handles MultiCell and Page Breaks
-            $this->Row($rowValues, $widths, $aligns, 5, $fill);
+            // Data
+            $this->SetFont('Arial', '', 9);
+            $fill = false;
             
-            $fill = !$fill;
+            foreach ($data as $row) {
+                $this->SetFillColor(250, 250, 250); // Zebra
+                
+                // Ensure row is indexed array matching headers
+                $rowValues = array_values($row);
+                
+                // Calculate alignments based on content type
+                for ($i = 0; $i < $colCount; $i++) {
+                    $colValue = isset($rowValues[$i]) ? $rowValues[$i] : '';
+                    if (is_numeric(str_replace([',', ' '], '', $colValue))) {
+                        $aligns[$i] = 'R';
+                    } else {
+                        $aligns[$i] = 'L';
+                    }
+                }
+
+                // Use the Row helper which handles MultiCell and Page Breaks
+                $this->Row($rowValues, $widths, $aligns, 5, $fill);
+                
+                $fill = !$fill;
+            }
+        } catch (\Throwable $e) {
+            // Log error but don't crash - try simple fallback
+            error_log("[PdfTemplate] UniversalTable Error: " . $e->getMessage());
+            // Try simple fallback - just output all data as plain text
+            $this->SetFont('Arial', '', 10);
+            foreach ($data as $row) {
+                foreach ($row as $cell) {
+                    $this->Cell(0, 8, (string)$cell . '  |  ', 0, 0);
+                }
+                $this->Ln();
+            }
         }
     }
 
