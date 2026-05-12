@@ -157,6 +157,19 @@ class DeviceDetectionAPI
 // ROUTE HANDLING
 // ═════════════════════════════════════════════════════════════════════════
 
+// When called through the router, the action is in the endpoint path
+// Otherwise, check the 'action' parameter for backward compatibility
+$routeAction = null;
+$endpoint = $_GET['endpoint'] ?? null;
+
+if ($endpoint) {
+    // Extract action from endpoint path (e.g., 'device/detect' -> 'detect')
+    $parts = explode('/', $endpoint);
+    $routeAction = end($parts);
+}
+
+$action = $routeAction ?? $_GET['action'] ?? $_POST['action'] ?? 'detect';
+
 $response = [
     'success' => false,
     'action' => $action,
@@ -198,6 +211,7 @@ try {
             $response['data'] = $pauseState;
             break;
 
+        case 'state':
         case 'getState':
             $response['success'] = true;
             $response['data'] = DeviceDetectionAPI::getPauseState();

@@ -55,8 +55,18 @@ $routes = [
     // Admin API — Charts
     'GET:get_chart_data'        => ['file' => 'get_chart_data.php',        'auth' => 'admin'],
 
+    // Admin API — Performance & Monitoring
+    'GET:admin/performance'     => ['file' => 'admin/performance.php',     'auth' => 'admin'],
+
     // Shared — Search
     'GET:search_members'        => ['file' => 'search_members.php',        'auth' => 'admin'],
+
+    // Shared — Device Detection
+    'GET:device/detect'         => ['file' => 'device-detection.php',      'auth' => 'none'],
+    'POST:device/pause'         => ['file' => 'device-detection.php',      'auth' => 'none'],
+    'POST:device/resume'        => ['file' => 'device-detection.php',      'auth' => 'none'],
+    'POST:device/toggle'        => ['file' => 'device-detection.php',      'auth' => 'none'],
+    'GET:device/state'          => ['file' => 'device-detection.php',      'auth' => 'none'],
 ];
 
 // ── Resolve the Incoming Request ──────────────────────────────────────────────
@@ -87,10 +97,22 @@ match ($route['auth']) {
 };
 
 // ── Dispatch ──────────────────────────────────────────────────────────────────
-$handlerPath = __DIR__ . '/' . $route['file'];
+$handlerFile = $route['file'];
+
+// Security: Ensure handler path is within api/v1 directory
+if (preg_match('#\.\.#', $handlerFile)) {
+    api_error('Invalid handler path', 403);
+}
+
+$handlerPath = __DIR__ . '/' . $handlerFile;
 
 if (!file_exists($handlerPath)) {
     api_error('Handler not found for endpoint: ' . htmlspecialchars($endpoint), 500);
+}
+
+// Verify handler is actually a .php file
+if (!str_ends_with($handlerPath, '.php')) {
+    api_error('Invalid handler file type', 403);
 }
 
 // Make helpers available to the handler
