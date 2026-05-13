@@ -70,10 +70,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $stmt_ref->execute(); $stmt_ref->close();
                 }
 
-                $notif_msg   = "Ticket #$ticket_id ($category) submitted. Our team will review it shortly.";
-                $admin_notif = "New ticket #$ticket_id ($category) from Member ID: $member_id. Priority: $priority.";
-                $conn->query("INSERT INTO notifications (member_id,title,message,status,user_type,user_id,created_at) VALUES ($member_id,'Ticket #$ticket_id','$notif_msg','unread','member',$member_id,NOW())");
-                $conn->query("INSERT INTO notifications (title,message,status,user_type,user_id,created_at) SELECT 'New Ticket #$ticket_id','$admin_notif','unread','admin',admin_id,NOW() FROM admins WHERE role_id=$assigned_role_id OR role_id=1");
+                $notif_msg      = "Ticket #$ticket_id ($category) submitted. Our team will review it shortly.";
+                $admin_notif    = "New ticket #$ticket_id ($category) from Member ID: $member_id. Priority: $priority.";
+                $member_to_role = 'member';
+                $admin_to_role  = $target_name ?: 'all';
+
+                $stmt_member_notif = $conn->prepare("INSERT INTO notifications (member_id, title, message, status, user_type, user_id, to_role, created_at) VALUES (?, ?, ?, 'unread', 'member', ?, ?, NOW())");
+                $member_title = "Ticket #$ticket_id";
+                $stmt_member_notif->bind_param("issis", $member_id, $member_title, $notif_msg, $member_id, $member_to_role);
+                $stmt_member_notif->execute();
+                $stmt_member_notif->close();
+
+                $stmt_admin_notif = $conn->prepare("
+                    INSERT INTO notifications (title, message, status, user_type, user_id, to_role, created_at)
+                    SELECT ?, ?, 'unread', 'admin', admin_id, ?, NOW()
+                    FROM admins
+                    WHERE role_id = ? OR role_id = 1
+                ");
+                $admin_title = "New Ticket #$ticket_id";
+                $stmt_admin_notif->bind_param("sssi", $admin_title, $admin_notif, $admin_to_role, $assigned_role_id);
+                $stmt_admin_notif->execute();
+                $stmt_admin_notif->close();
 
                 $success = "Ticket #$ticket_id has been submitted. We'll respond within 24 hours.";
             } else {

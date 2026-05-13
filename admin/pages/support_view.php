@@ -75,8 +75,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // a) In-App Notification
                 $notif_title = "Update: Ticket #$support_id";
                 $notif_msg = "Admin has responded to your ticket. Status: $new_status";
-                $stmt_notif = $db->prepare("INSERT INTO notifications (member_id, title, message, status, user_type, user_id, created_at) VALUES (?, ?, ?, 'unread', 'member', ?, NOW())");
-                $stmt_notif->bind_param("issi", $member_id_target, $notif_title, $notif_msg, $member_id_target);
+                $notif_to_role = 'member';
+                $stmt_notif = $db->prepare("INSERT INTO notifications (member_id, title, message, status, user_type, user_id, to_role, created_at) VALUES (?, ?, ?, 'unread', 'member', ?, ?, NOW())");
+                $stmt_notif->bind_param("issis", $member_id_target, $notif_title, $notif_msg, $member_id_target, $notif_to_role);
                 $stmt_notif->execute();
 
                 // b) Insert into Messages (Member Inbox)

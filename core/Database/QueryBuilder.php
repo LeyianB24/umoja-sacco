@@ -13,7 +13,7 @@ class QueryBuilder
     private \USMS\Cache\CacheManager $cache;
     private string $sql = '';
     private array $params = [];
-    private array $types = '';
+    private string $types = '';
     private bool $usedCache = false;
     private string $cacheKey = '';
     private int $cacheTTL = 3600;
