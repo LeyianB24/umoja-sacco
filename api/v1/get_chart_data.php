@@ -10,6 +10,7 @@ if (session_status() === PHP_SESSION_NONE) session_start();
 
 require_once __DIR__ . '/../../config/app.php';
 require_once __DIR__ . '/../../inc/auth.php';
+\USMS\Database\SchemaGuard::ensureVehicleIncome($conn);
 
 // 1. Auth Guard
 try {

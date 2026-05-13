@@ -9,6 +9,7 @@ require_once __DIR__ . '/../../inc/SupportTicketWidget.php';
 require_once __DIR__ . '/../../inc/ShareValuationEngine.php';
 
 \USMS\Middleware\AuthMiddleware::requireModulePermission('shares');
+\USMS\Database\SchemaGuard::ensureShareTransactions($conn);
 $layout = LayoutManager::create('admin');
 
 $pageTitle = "Equity & Share Management";

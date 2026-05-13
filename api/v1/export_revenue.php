@@ -8,6 +8,7 @@ use USMS\Services\UniversalExportEngine;
 
 require_admin();
 require_permission('revenue.php');
+\USMS\Database\SchemaGuard::ensureVehicleIncome($conn);
 
 $format = $_GET['format'] ?? 'pdf';
 
@@ -17,14 +18,14 @@ $sql = "
         (SELECT i_inc.income_date as date, i.title as source, 'Income' as type, i_inc.amount, i_inc.description
          FROM investment_income i_inc JOIN investments i ON i_inc.investment_id = i.investment_id)
         UNION ALL
-        (SELECT v_inc.income_date as date, i.reg_no as source, 'Income' as type, v_inc.amount, v_inc.description
-         FROM vehicle_income v_inc JOIN investments i ON v_inc.vehicle_id = i.investment_id)
+        (SELECT v_inc.income_date as date, v.reg_no as source, 'Income' as type, v_inc.amount, v_inc.description
+         FROM vehicle_income v_inc JOIN vehicles v ON v_inc.vehicle_id = v.vehicle_id)
         UNION ALL
         (SELECT i_exp.expense_date as date, i.title as source, 'Expense' as type, i_exp.amount, i_exp.description
          FROM investment_expenses i_exp JOIN investments i ON i_exp.investment_id = i.investment_id)
         UNION ALL
-        (SELECT v_exp.expense_date as date, i.reg_no as source, 'Expense' as type, v_exp.amount, v_exp.description
-         FROM vehicle_expenses v_exp JOIN investments i ON v_exp.vehicle_id = i.investment_id)
+        (SELECT v_exp.expense_date as date, v.reg_no as source, 'Expense' as type, v_exp.amount, v_exp.description
+         FROM vehicle_expenses v_exp JOIN vehicles v ON v_exp.vehicle_id = v.vehicle_id)
     ) as combined
     ORDER BY date DESC
 ";

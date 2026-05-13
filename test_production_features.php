@@ -21,6 +21,9 @@ session_start();
 
 require_once __DIR__ . '/config/app.php';
 require_once __DIR__ . '/config/environment.php';
+require_once __DIR__ . '/inc/ReportGenerator.php';
+
+use USMS\Config\EnvLoader;
 
 echo "\n╔════════════════════════════════════════════════════════════════╗\n";
 echo "║      PRODUCTION FEATURES TEST & VERIFICATION                  ║\n";
@@ -84,8 +87,8 @@ echo "2️⃣  PDF EXPORT FUNCTIONALITY\n";
 echo "───────────────────────────────────────────────────────────────\n";
 
 try {
-    // Check if FPDF exists
-    if (file_exists(__DIR__ . '/fpdf/fpdf.php')) {
+    // Check if FPDF exists via Composer or legacy path
+    if (class_exists('FPDF') || file_exists(__DIR__ . '/fpdf/fpdf.php')) {
         echo "   ✅ FPDF library found\n";
     } else {
         echo "   ⚠️  FPDF library not found\n";

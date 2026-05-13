@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace USMS\Services;
 
 use USMS\Database\Database;
+use USMS\Database\SchemaGuard;
 use USMS\Services\TransactionService;
 use Exception;
 use PDO;
@@ -18,6 +19,7 @@ class DividendService {
 
     public function __construct() {
         $this->db = Database::getInstance()->getPdo();
+        SchemaGuard::ensureShareTransactionsPdo($this->db);
     }
 
     /**

@@ -21,6 +21,7 @@ if (isset($_GET['msg']) && $_GET['msg'] === 'exit_requested') {
 }
 
 require_once __DIR__ . '/../../inc/ShareValuationEngine.php';
+\USMS\Database\SchemaGuard::ensureShareTransactions($conn);
 $svEngine            = new ShareValuationEngine($conn);
 $valuation           = $svEngine->getValuation();
 $current_share_price = $valuation['price'];
