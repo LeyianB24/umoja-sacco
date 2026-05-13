@@ -20,7 +20,7 @@ if ($loan_id <= 0) {
 
 try {
     // 1. Fetch Loan Details
-    $stmt = $conn->prepare("SELECT l.*, m.full_name, m.national_id, m.phone, m.profile_pic FROM loans l JOIN members m ON l.member_id = m.member_id WHERE l.loan_id = ?");
+    $stmt = $conn->prepare("SELECT l.*, m.full_name, m.national_id, m.phone FROM loans l JOIN members m ON l.member_id = m.member_id WHERE l.loan_id = ?");
     $stmt->bind_param("i", $loan_id);
     $stmt->execute();
     $loan = $stmt->get_result()->fetch_assoc();
@@ -58,14 +58,9 @@ try {
         'loan' => $loan,
         'guarantors' => $guarantors,
         'payments' => $payments
-    ]);
+    ], JSON_INVALID_UTF8_SUBSTITUTE);
 
 } catch (Exception $e) {
-    echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+    echo json_encode(['success' => false, 'message' => $e->getMessage()], JSON_INVALID_UTF8_SUBSTITUTE);
 }
-?>
-    </div> <!-- /container-fluid -->
-    <?php $layout->footer(); ?>
-</div> <!-- /main-content-wrapper -->
-</body>
-</html>
+exit;
