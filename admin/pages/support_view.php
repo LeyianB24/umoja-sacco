@@ -12,6 +12,7 @@ require_admin();
 
 // Initialize Layout Manager
 $layout = LayoutManager::create('admin');
+\USMS\Middleware\AuthMiddleware::requireModulePermission('support', 'view');
 require_permission();
 
 $admin_id   = $_SESSION['admin_id'];

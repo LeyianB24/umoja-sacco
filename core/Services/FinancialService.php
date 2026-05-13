@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace USMS\Services;
 
 use USMS\Database\Database;
+use USMS\Cache\CacheManager;
 use Exception;
 use PDO;
 
@@ -28,10 +29,12 @@ class FinancialService {
 
     private PDO $db;
     private ?int $recorded_by;
+    private CacheManager $cache;
 
     public function __construct(?int $recorded_by = null) {
         $this->db = Database::getInstance()->getPdo();
         $this->recorded_by = $recorded_by ?? (isset($_SESSION['admin_id']) ? (int)$_SESSION['admin_id'] : null);
+        $this->cache = new CacheManager();
     }
 
     /**
@@ -252,6 +255,11 @@ class FinancialService {
 
             $this->syncLegacyTransactions($txn_id, $member_id, $amount, $action_type, $reference, $notes, $related_id, $related_table);
 
+            // Invalidate balance cache for the affected member
+            if ($member_id) {
+                $this->cache->delete("balances_member_{$member_id}");
+            }
+
             if ($transactionStarted && $this->db->inTransaction()) {
                 $this->db->commit();
             }
@@ -365,12 +373,27 @@ class FinancialService {
     }
 
     public function getBalances(?int $mid): array {
+        if (!$mid) return ['wallet' => 0, 'savings' => 0, 'loans' => 0, 'shares' => 0, 'welfare' => 0];
+        
+        $cacheKey = "balances_member_{$mid}";
+        
+        // Try cache first
+        $cached = $this->cache->get($cacheKey);
+        if ($cached !== null) {
+            return $cached;
+        }
+        
+        // Fetch from database
         $bal = ['wallet' => 0, 'savings' => 0, 'loans' => 0, 'shares' => 0, 'welfare' => 0];
         $stmt = $this->db->prepare("SELECT category, current_balance FROM ledger_accounts WHERE member_id = ?");
         $stmt->execute([$mid]);
         while ($row = $stmt->fetch()) {
             $bal[$row['category']] = (float)$row['current_balance'];
         }
+        
+        // Cache for 5 minutes (balances don't change that frequently)
+        $this->cache->set($cacheKey, $bal, 300);
+        
         return $bal;
     }
 

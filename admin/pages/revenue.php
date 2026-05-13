@@ -13,7 +13,7 @@ $layout = LayoutManager::create('admin');
 require_once __DIR__ . '/../../inc/TransactionHelper.php';
 require_once __DIR__ . '/../../inc/InvestmentViabilityEngine.php';
 Auth::requireAdmin();
-require_permission();
+require_permission('record_income');
 
 $viability_engine = new InvestmentViabilityEngine($conn);
 
