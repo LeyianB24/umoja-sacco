@@ -14,12 +14,13 @@ class GatewayFactory {
      */
     public static function get($provider = 'mpesa'): PaymentGatewayInterface {
         $env_config = require __DIR__ . '/../config/environment.php';
-        $current_env = defined('APP_ENV') ? APP_ENV : 'sandbox';
+        $mpesa_env = defined('MPESA_ENV') ? MPESA_ENV : (defined('APP_ENV') ? APP_ENV : 'sandbox');
+        $paystack_env = defined('PAYSTACK_ENV') ? PAYSTACK_ENV : (defined('APP_ENV') ? APP_ENV : 'sandbox');
         
         if ($provider === 'mpesa') {
-            return new \USMS\Services\Gateways\MpesaService($env_config['mpesa'], $current_env);
+            return new \USMS\Services\Gateways\MpesaService($env_config['mpesa'], $mpesa_env);
         } elseif ($provider === 'paystack') {
-            return new \USMS\Services\Gateways\PaystackService($env_config['paystack'], $current_env);
+            return new \USMS\Services\Gateways\PaystackService($env_config['paystack'], $paystack_env);
         }
         
         throw new Exception("Unsupported Payment Provider: $provider");

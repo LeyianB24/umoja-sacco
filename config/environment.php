@@ -76,39 +76,71 @@ $environments = [
 ];
 
 // M-Pesa Environment Detection: Explicit MPESA_ENV > Auto-fallback > APP_ENV
+$force_sandbox = EnvLoader::getBool('FORCE_SANDBOX_MODE', false);
 $mpesa_env = EnvLoader::get('MPESA_ENV');
+$paystack_env = EnvLoader::get('PAYSTACK_ENV');
+
+if ($force_sandbox) {
+    $mpesa_env = 'sandbox';
+    $paystack_env = 'sandbox';
+    error_log("[INFO] FORCE_SANDBOX_MODE enabled: Using sandbox for all payment gateways.");
+}
+
 if (!$mpesa_env) {
-    // In production, prefer live keys; otherwise use sandbox
     if (APP_ENV === 'production') {
         $live_key = EnvLoader::get('MPESA_LIVE_CONSUMER_KEY');
         if (!empty($live_key)) {
             $mpesa_env = 'production';
         } else {
-            // Production mode but no live keys - use sandbox with warning
             $sandbox_key = EnvLoader::get('MPESA_SANDBOX_CONSUMER_KEY');
             if (!empty($sandbox_key)) {
                 $mpesa_env = 'sandbox';
-                error_log("[WARNING] M-Pesa: Production environment detected but MPESA_LIVE_CONSUMER_KEY is not set. Falling back to SANDBOX mode. To use production M-Pesa, set MPESA_LIVE_CONSUMER_KEY, MPESA_LIVE_CONSUMER_SECRET, etc. in your environment variables.");
+                error_log("[WARNING] M-Pesa: Production environment detected but MPESA_LIVE_CONSUMER_KEY is not set. Falling back to SANDBOX mode.");
             } else {
-                // Neither live nor sandbox keys configured - critical error
-                error_log("[CRITICAL] M-Pesa: No keys configured for either production or sandbox. Set MPESA_LIVE_* or MPESA_SANDBOX_* keys.");
+                error_log("[CRITICAL] M-Pesa: No keys configured for either production or sandbox. Falling back to sandbox.");
                 $mpesa_env = 'sandbox';
             }
         }
     } else {
-        // Development/Sandbox environment
         $mpesa_env = 'sandbox';
     }
 }
 
+if (!$paystack_env) {
+    if (APP_ENV === 'production') {
+        $live_key = EnvLoader::get('PAYSTACK_LIVE_SECRET_KEY');
+        if (!empty($live_key)) {
+            $paystack_env = 'production';
+        } else {
+            $sandbox_key = EnvLoader::get('PAYSTACK_TEST_SECRET_KEY');
+            if (!empty($sandbox_key)) {
+                $paystack_env = 'sandbox';
+                error_log("[WARNING] Paystack: Production environment detected but PAYSTACK_LIVE_SECRET_KEY is not set. Falling back to SANDBOX mode.");
+            } else {
+                error_log("[CRITICAL] Paystack: No keys configured for either production or sandbox. Falling back to sandbox.");
+                $paystack_env = 'sandbox';
+            }
+        }
+    } else {
+        $paystack_env = 'sandbox';
+    }
+}
+
+$global_env = $mpesa_env;
+if ($global_env !== $paystack_env) {
+    $global_env = 'sandbox';
+    error_log("[WARNING] Mixed gateway environment detected (M-Pesa=$mpesa_env, Paystack=$paystack_env). Using sandbox globally.");
+}
+
 // Current environment config - Fallback to sandbox if key doesn't exist
-$current_env = array_key_exists($mpesa_env, $environments) ? $mpesa_env : 'sandbox';
-if ($current_env !== $mpesa_env) {
-    error_log("M-Pesa environment '$mpesa_env' not found, falling back to '$current_env'");
+$current_env = array_key_exists($global_env, $environments) ? $global_env : 'sandbox';
+if ($current_env !== $global_env) {
+    error_log("Environment '$global_env' not found, falling back to '$current_env'");
 }
 $config = $environments[$current_env];
 
 if (!defined('MPESA_ENV')) define('MPESA_ENV', $current_env);
+if (!defined('PAYSTACK_ENV')) define('PAYSTACK_ENV', $current_env);
 
 // Define constants for global use
 if (!defined('MPESA_BASE_URL')) define('MPESA_BASE_URL', $config['mpesa']['base_url']);

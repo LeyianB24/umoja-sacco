@@ -381,6 +381,26 @@ $pageTitle = "My Loans";
             .d-flex.text-end.d-none.d-sm-flex {
                 display: none !important;
             }
+
+            .row.g-2 .col-6 {
+                max-width: 100%;
+                flex: 1 1 100%;
+            }
+
+            .table-premium th,
+            .table-premium td {
+                white-space: nowrap;
+            }
+
+            .offcanvas.offcanvas-end {
+                width: min(100%, 450px) !important;
+            }
+
+            .offcanvas-header,
+            .offcanvas-body {
+                padding-left: 1rem;
+                padding-right: 1rem;
+            }
         }
 
         /* Status Badges */

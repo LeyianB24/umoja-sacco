@@ -138,6 +138,7 @@ if (!defined('EMAIL_FROM_NAME')) define('EMAIL_FROM_NAME', SITE_NAME);
 if (!defined('SMS_ENABLED'))     define('SMS_ENABLED',     EnvLoader::getBool('SMS_ENABLED', true));
 if (!defined('SMS_SENDER_ID'))   define('SMS_SENDER_ID',   EnvLoader::get('SMS_SENDER_ID', 'UMOJA_SACCO'));
 if (!defined('SMS_API_KEY'))     define('SMS_API_KEY',     EnvLoader::get('SMS_API_KEY', ''));
+if (!defined('SMS_ENV'))         define('SMS_ENV',         EnvLoader::get('SMS_ENV', 'sandbox'));
 
 if (!defined('SMTP_HOST'))       define('SMTP_HOST',       EnvLoader::get('SMTP_HOST', 'smtp.gmail.com'));
 if (!defined('SMTP_PORT'))       define('SMTP_PORT',       EnvLoader::getInt('SMTP_PORT', 587));

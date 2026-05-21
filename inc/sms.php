@@ -8,17 +8,17 @@ function send_sms($phone, $message) {
     // 1. CONFIGURATION
     // ============================================================
     
-    // Your Live Credentials
-    $username = 'USMS'; 
-    $apiKey   = 'atsk_aac0d19755a64e3664f9bcb4653fa983e3e94fc90acdff7bca92c1b859e4f4c6aede328c'; 
+    // Credentials
+    $username = defined('SMS_SENDER_ID') ? SMS_SENDER_ID : 'USMS';
+    $apiKey   = defined('SMS_API_KEY') && SMS_API_KEY !== '' ? SMS_API_KEY : 'atsk_aac0d19755a64e3664f9bcb4653fa983e3e94fc90acdff7bca92c1b859e4f4c6aede328c';
     
     // Environment: 'sandbox' or 'live'
-    $env = 'live'; 
+    $env = defined('SMS_ENV') ? SMS_ENV : 'sandbox';
 
     // Sender ID (Alphanumeric)
     // Leave NULL if using the default gateway shortcode (e.g., 20414)
     // Only set this to 'UMOJA' if you have received approval email from Africa's Talking.
-    $senderId = 'USMS'; // e.g., 'UMOJA' or null
+    $senderId = defined('SMS_SENDER_ID') ? SMS_SENDER_ID : 'USMS'; // e.g., 'UMOJA' or null
 
     // ============================================================
     // 2. LOGIC
