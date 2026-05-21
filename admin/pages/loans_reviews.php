@@ -44,15 +44,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $details    = "Approved Loan #$loan_id. Queued for disbursement.";
 
             $min_guarantors  = (int)SettingsHelper::get('min_guarantor_count', 2);
-            $resG            = $db->query("SELECT COUNT(*) FROM loan_guarantors WHERE loan_id = $loan_id");
+            $stmt_gua        = $db->prepare("SELECT COUNT(*) FROM loan_guarantors WHERE loan_id = ?");
+            $stmt_gua->bind_param("i", $loan_id);
+            $stmt_gua->execute();
+            $resG            = $stmt_gua->get_result();
             $guarantor_count = (int)($resG->fetch_row()[0] ?? 0);
 
             if ($guarantor_count < $min_guarantors) {
-                flash_set("Approval Failed: This loan requires at least $min_guarantors guarantors (Current: $guarantor_count).", "danger");
+                flash_set("❌ Approval Failed: This loan requires at least <strong>$min_guarantors guarantors</strong> (Current: $guarantor_count). Please add guarantors before approval.", "danger");
                 header("Location: loans.php"); exit;
             }
 
-            $q_loan    = $db->query("SELECT member_id, amount FROM loans WHERE loan_id = $loan_id");
+            $stmt_loan = $db->prepare("SELECT member_id, amount FROM loans WHERE loan_id = ?");
+            $stmt_loan->bind_param("i", $loan_id);
+            $stmt_loan->execute();
+            $q_loan    = $stmt_loan->get_result();
             $loan_info = $q_loan->fetch_assoc();
             if ($loan_info) {
                 require_once __DIR__ . '/../../inc/FinancialEngine.php';
@@ -80,7 +86,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 $stmt->execute();
                 if ($stmt->affected_rows === 0) throw new Exception("Loan not found or already processed.");
 
-                $db->query("UPDATE loan_guarantors SET status = '" . ($action === 'approve' ? 'approved' : 'rejected') . "' WHERE loan_id = $loan_id");
+                $guarantor_status = ($action === 'approve' ? 'approved' : 'rejected');
+                $stmt_gua_upd = $db->prepare("UPDATE loan_guarantors SET status = ? WHERE loan_id = ?");
+                $stmt_gua_upd->bind_param("si", $guarantor_status, $loan_id);
+                $stmt_gua_upd->execute();
 
                 $res_data = $db->query("SELECT member_id, amount FROM loans WHERE loan_id = $loan_id");
                 if ($res_data && $res_data->num_rows > 0) {

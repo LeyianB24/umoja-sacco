@@ -23,8 +23,15 @@ $pageTitle = "Payroll Management";
 // 1. HANDLE POST ACTIONS
 // ---------------------------------------------------------
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // CSRF Protection
+    verify_csrf_token();
 
     if (isset($_POST['action']) && $_POST['action'] === 'start_run') {
+        // Validate month format
+        if (!preg_match('/\d{4}-\d{2}/', $_POST['month_selector'] ?? '')) {
+            flash_set("Invalid month format. Expected YYYY-MM.", "danger");
+            header("Location: payroll.php"); exit;
+        }
         try {
             $month = $_POST['month_selector'];
             $engine->startRun($month, $_SESSION['admin_id']);
@@ -59,13 +66,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (isset($_POST['action']) && $_POST['action'] === 'download_payslip') {
         $pid = intval($_POST['payroll_id']);
-        $pq  = $db->query("SELECT p.*, e.full_name, e.employee_no, e.company_email, e.personal_email, e.email,
+        $stmt_slip = $db->prepare("SELECT p.*, e.full_name, e.employee_no, e.company_email, e.personal_email, e.email,
                             e.job_title, e.kra_pin, e.nssf_no, e.sha_no, e.bank_name, e.bank_account, sg.grade_name,
                             a.email as admin_email
                             FROM payroll p JOIN employees e ON p.employee_id = e.employee_id
                             LEFT JOIN salary_grades sg ON e.grade_id = sg.id
                             LEFT JOIN admins a ON e.admin_id = a.admin_id
-                            WHERE p.id = $pid");
+                            WHERE p.id = ?");
+        $stmt_slip->bind_param("i", $pid);
+        $stmt_slip->execute();
+        $pq = $stmt_slip->get_result();
         if ($pq->num_rows > 0) {
             $row  = $pq->fetch_assoc();
             $data = ['employee' => $row, 'payroll' => $row];
@@ -81,10 +91,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (isset($_POST['action']) && $_POST['action'] === 'email_payslip') {
         $pid = intval($_POST['payroll_id']);
-        $pq  = $db->query("SELECT p.*, e.full_name, e.employee_no, e.company_email, e.personal_email, e.email,
+        $stmt_email = $db->prepare("SELECT p.*, e.full_name, e.employee_no, e.company_email, e.personal_email, e.email,
                             e.job_title, e.kra_pin, e.nssf_no, e.sha_no, e.bank_name, e.bank_account, sg.grade_name
                             FROM payroll p JOIN employees e ON p.employee_id = e.employee_id
-                            LEFT JOIN salary_grades sg ON e.grade_id = sg.id WHERE p.id = $pid");
+                            LEFT JOIN salary_grades sg ON e.grade_id = sg.id WHERE p.id = ?");
+        $stmt_email->bind_param("i", $pid);
+        $stmt_email->execute();
+        $pq = $stmt_email->get_result();
         if ($pq->num_rows > 0) {
             $row   = $pq->fetch_assoc();
             $email = $row['company_email'] ?: ($row['personal_email'] ?: ($row['email'] ?: ($row['admin_email'] ?? null)));
@@ -107,12 +120,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['action']) && $_POST['action'] === 'email_batch') {
         $run_id = intval($_POST['run_id']);
         $sent_count = $failed_count = $missing_email_count = 0;
-        $pq = $db->query("SELECT p.*, e.full_name, e.employee_no, e.company_email, e.personal_email, e.email,
+        $stmt_batch = $db->prepare("SELECT p.*, e.full_name, e.employee_no, e.company_email, e.personal_email, e.email,
                           e.job_title, e.kra_pin, e.nssf_no, e.sha_no, e.bank_name, e.bank_account, sg.grade_name, a.email as admin_email
                           FROM payroll p JOIN employees e ON p.employee_id = e.employee_id
                           LEFT JOIN salary_grades sg ON e.grade_id = sg.id
                           LEFT JOIN admins a ON e.admin_id = a.admin_id
-                          WHERE p.payroll_run_id = $run_id");
+                          WHERE p.payroll_run_id = ?");
+        $stmt_batch->bind_param("i", $run_id);
+        $stmt_batch->execute();
+        $pq = $stmt_batch->get_result();
         while ($row = $pq->fetch_assoc()) {
             $email = $row['company_email'] ?: ($row['personal_email'] ?: ($row['email'] ?: ($row['admin_email'] ?? null)));
             if (!$email) { $missing_email_count++; continue; }

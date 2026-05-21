@@ -50,6 +50,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf_token();
 
     if (isset($_POST['action']) && $_POST['action'] === 'add_employee') {
+        // Validate employee data
+        $errors = [];
+        if (strlen(trim($_POST['full_name'] ?? '')) < 3) $errors[] = 'Full name must be at least 3 characters';
+        if (!preg_match('/^\d{5,8}$/', $_POST['national_id'] ?? '')) $errors[] = 'Invalid national ID format (5-8 digits)';
+        if (!preg_match('/^(\+254|0)[0-9]{9}$/', $_POST['phone'] ?? '')) $errors[] = 'Invalid phone format (e.g., 0722123456)';
+        if ((float)($_POST['salary'] ?? 0) <= 0 || (float)$_POST['salary'] > 9999999) $errors[] = 'Salary must be between 0 and 9,999,999';
+        if ($_POST['grade_id'] && !in_array((int)$_POST['grade_id'], array_column($grades, 'id'))) $errors[] = 'Invalid salary grade selected';
+        if ($_POST['hire_date'] && strtotime($_POST['hire_date']) > time()) $errors[] = 'Hire date cannot be in the future';
+        if ($_POST['kra_pin'] && !preg_match('/^A\d{9}[A-Z]$/', $_POST['kra_pin'])) $errors[] = 'Invalid KRA PIN format (e.g., A123456789X)';
+
+        if (!empty($errors)) {
+            flash_set("❌ Validation failed: " . implode("; ", $errors), 'danger');
+            header("Location: employees.php?view=hr"); exit;
+        }
+
         $employeeData = ['full_name'=>trim($_POST['full_name']),'national_id'=>trim($_POST['national_id']),'phone'=>trim($_POST['phone']),'job_title'=>trim($_POST['job_title']),'grade_id'=>(int)$_POST['grade_id'],'personal_email'=>trim($_POST['personal_email']??''),'salary'=>(float)$_POST['salary'],'kra_pin'=>strtoupper(trim($_POST['kra_pin']??'')),'nssf_no'=>trim($_POST['nssf_no']??''),'sha_no'=>trim($_POST['sha_no']??''),'bank_name'=>trim($_POST['bank_name']??''),'bank_account'=>trim($_POST['bank_account']??''),'hire_date'=>$_POST['hire_date']];
         $result = $hrService->createEmployee($employeeData);
         if ($result['success']) {
@@ -57,7 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $userData = ['employee_no'=>$result['employee_no'],'company_email'=>$result['company_email'],'full_name'=>$employeeData['full_name']];
             $userResult = $systemUserService->createSystemUser($userData, $roleId);
             if ($userResult['success']) { $stmt=$db->prepare("UPDATE employees SET admin_id=? WHERE employee_id=?"); $stmt->bind_param("ii",$userResult['admin_id'],$result['employee_id']); $stmt->execute(); }
-            flash_set("Employee onboarded successfully. ID: {$result['employee_no']}", 'success');
+            flash_set("✓ Employee <strong>{$result['employee_no']}</strong> ({$result['company_email']}) onboarded successfully.", 'success');
         } else { flash_set("Error: ".$result['error'], 'error'); }
         header("Location: employees.php?view=hr"); exit;
     }
@@ -81,15 +96,28 @@ while ($g = $g_q->fetch_assoc()) $grades[] = $g;
 $data_rows = [];
 if ($current_view === 'hr') {
     $filter_status = $_GET['status'] ?? 'active'; $search = trim($_GET['q'] ?? '');
-    $where = [];
-    if ($filter_status !== 'all') $where[] = "e.status='$filter_status'";
-    if ($search) $where[] = "(e.full_name LIKE '%$search%' OR e.national_id LIKE '%$search%')";
+    $where = []; $params = []; $types = "";
+    if ($filter_status !== 'all') { $where[] = "e.status = ?"; $params[] = $filter_status; $types .= "s"; }
+    if ($search) { $sq = "%$search%"; $where[] = "(e.full_name LIKE ? OR e.national_id LIKE ?)"; $params[] = $sq; $params[] = $sq; $types .= "ss"; }
     $where_sql = $where ? "WHERE ".implode(" AND ",$where) : "";
-    $res = $db->query("SELECT e.*,r.name as admin_role,sg.grade_name FROM employees e LEFT JOIN admins a ON e.admin_id=a.admin_id LEFT JOIN roles r ON a.role_id=r.id LEFT JOIN salary_grades sg ON e.grade_id=sg.id $where_sql ORDER BY e.full_name ASC");
+    $stmt_hr = $db->prepare("SELECT e.*,r.name as admin_role,sg.grade_name FROM employees e LEFT JOIN admins a ON e.admin_id=a.admin_id LEFT JOIN roles r ON a.role_id=r.id LEFT JOIN salary_grades sg ON e.grade_id=sg.id $where_sql ORDER BY e.full_name ASC");
+    if (!empty($params)) $stmt_hr->bind_param($types, ...$params);
+    $stmt_hr->execute();
+    $res = $stmt_hr->get_result();
     while ($row = $res->fetch_assoc()) $data_rows[] = $row;
 } elseif ($current_view === 'leave') {
-    $search = trim($_GET['q'] ?? ''); $where_sql = $search ? "WHERE e.full_name LIKE '%$search%' OR e.employee_no LIKE '%$search%'" : "";
-    $res = $db->query("SELECT e.*,sg.grade_name FROM employees e LEFT JOIN salary_grades sg ON e.grade_id=sg.id $where_sql ORDER BY e.full_name ASC");
+    $search = trim($_GET['q'] ?? ''); $params_leave = []; $types_leave = "";
+    $where_sql = "";
+    if ($search) {
+        $sq = "%$search%";
+        $where_sql = "WHERE e.full_name LIKE ? OR e.employee_no LIKE ?";
+        $params_leave = [$sq, $sq];
+        $types_leave = "ss";
+    }
+    $stmt_leave = $db->prepare("SELECT e.*,sg.grade_name FROM employees e LEFT JOIN salary_grades sg ON e.grade_id=sg.id $where_sql ORDER BY e.full_name ASC");
+    if (!empty($params_leave)) $stmt_leave->bind_param($types_leave, ...$params_leave);
+    $stmt_leave->execute();
+    $res = $stmt_leave->get_result();
     while ($row = $res->fetch_assoc()) $data_rows[] = $row;
 }
 
