@@ -25,6 +25,12 @@ class ErrorHandler {
         if (!(error_reporting() & $severity)) {
             return false;
         }
+
+        if ($severity === E_DEPRECATED || $severity === E_USER_DEPRECATED) {
+            error_log("[USMS DEPRECATED] {$message} in {$file}:{$line}");
+            return true;
+        }
+
         throw new \ErrorException($message, 0, $severity, $file, $line);
     }
 

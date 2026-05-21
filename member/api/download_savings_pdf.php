@@ -12,6 +12,7 @@ set_time_limit(300);
 
 session_start();
 require_once __DIR__ . '/../../config/app.php';
+require_once __DIR__ . '/../../core/finance/FinancialExportEngine.php';
 
 // Classes autoloaded via Composer PSR-4 (USMS\Services, USMS\Reports)
 

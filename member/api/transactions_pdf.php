@@ -6,15 +6,14 @@
 
 declare(strict_types=1);
 
-session_start();
+if (session_status() === PHP_SESSION_NONE) session_start();
 
-// --- Configuration ---
-define('ROOT_PATH', __DIR__ . '/..');
-
-require_once ROOT_PATH . '/inc/SystemPDF.php';
+require_once __DIR__ . '/../../config/app.php';
+require_once __DIR__ . '/../../inc/auth.php';
+require_once __DIR__ . '/../../core/finance/FinancialExportEngine.php';
 
 // --- Auth Check ---
-if (!isset($_SESSION['member_id']) || !isset($conn)) {
+if (!isset($_SESSION['member_id'])) {
     header("Location: " . BASE_URL . "/public/login.php");
     exit;
 }
@@ -69,9 +68,6 @@ $stmt->execute();
 $result = $stmt->get_result();
 $transactions = $result->fetch_all(MYSQLI_ASSOC);
 $stmt->close();
-
-// --- 3. Centralized Export Generation ---
-require_once ROOT_PATH . '/core/finance/FinancialExportEngine.php';
 
 // Fetch member details for metadata
 $stmt_m = $conn->prepare("SELECT full_name, member_reg_no FROM members WHERE member_id = ?");

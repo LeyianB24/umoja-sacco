@@ -8,7 +8,7 @@ require_once __DIR__ . '/../../inc/ExportHelper.php';
 // Auth Check
 if (!isset($_SESSION['member_id'])) die("Access Denied");
 $member_id = $_SESSION['member_id'];
-$member_name = $_SESSION['member_name'];
+$member_name = $_SESSION['member_name'] ?? 'Member';
 
 $format = $_GET['format'] ?? 'pdf';
 $type   = $_GET['type'] ?? 'contributions'; // 'contributions' or 'support'
@@ -19,8 +19,9 @@ if ($type === 'support') {
     $headers = ['Date Granted', 'Reason', 'Status', 'Amount (KES)'];
     $title = "WELFARE SUPPORT RECEIVED - " . strtoupper($member_name);
 } else {
-    $sql = "SELECT created_at, reference_no, status, amount FROM contributions 
-            WHERE member_id = ? AND contribution_type IN ('welfare', 'welfare_case') 
+    $sql = "SELECT created_at, reference_no, 'completed' AS status, amount FROM transactions
+            WHERE member_id = ?
+              AND (related_table = 'welfare' OR transaction_type IN ('welfare','welfare_contribution') OR notes LIKE '%Welfare%')
             ORDER BY created_at DESC";
     $headers = ['Date', 'Reference', 'Status', 'Amount (KES)'];
     $title = "WELFARE CONTRIBUTIONS - " . strtoupper($member_name);

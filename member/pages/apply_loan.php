@@ -56,7 +56,7 @@ if ($stmt_existing->get_result()->fetch_assoc()['count'] > 0) {
 $stmt_existing->close();
 
 // 2. Process Form
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     
     // A. Sanitize Input
     $loan_type = filter_input(INPUT_POST, 'loan_type', FILTER_SANITIZE_SPECIAL_CHARS);

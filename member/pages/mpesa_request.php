@@ -88,7 +88,7 @@ $url_case_id = filter_input(INPUT_GET, 'case_id', FILTER_SANITIZE_NUMBER_INT) ??
 $error = $success = '';
 
 // ---------- Handle POST (Form submit) ----------
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     // 1. Verify CSRF (Dies on failure)
     verify_csrf_token();
 

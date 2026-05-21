@@ -57,6 +57,44 @@ class PdfTemplate extends FPDF {
         }
     }
 
+    private function pdfText($value): string {
+        if ($value === null) {
+            return '';
+        }
+
+        if (is_bool($value)) {
+            return $value ? 'Yes' : 'No';
+        }
+
+        if (!is_scalar($value)) {
+            $encoded = json_encode($value, JSON_UNESCAPED_UNICODE);
+            $value = $encoded === false ? '' : $encoded;
+        }
+
+        $text = str_replace(["\r\n", "\r"], "\n", (string)$value);
+
+        if (function_exists('iconv')) {
+            $converted = @iconv('UTF-8', 'windows-1252//TRANSLIT//IGNORE', $text);
+            if ($converted !== false) {
+                return $converted;
+            }
+        }
+
+        return preg_replace('/[^\x09\x0A\x0D\x20-\x7E]/', '?', $text) ?? '';
+    }
+
+    public function Cell($w, $h = 0, $txt = '', $border = 0, $ln = 0, $align = '', $fill = false, $link = '') {
+        return parent::Cell($w, $h, $this->pdfText($txt), $border, $ln, $align, $fill, $link);
+    }
+
+    public function MultiCell($w, $h, $txt, $border = 0, $align = 'J', $fill = false) {
+        return parent::MultiCell($w, $h, $this->pdfText($txt), $border, $align, $fill);
+    }
+
+    public function Write($h, $txt, $link = '') {
+        return parent::Write($h, $this->pdfText($txt), $link);
+    }
+
     protected function hexToRgb($hex) {
         $hex = ltrim($hex, '#');
         if (strlen($hex) == 3) {
@@ -181,11 +219,12 @@ class PdfTemplate extends FPDF {
                 
                 // Ensure row is indexed array matching headers
                 $rowValues = array_values($row);
+                $rowValues = array_pad(array_slice($rowValues, 0, $colCount), $colCount, '');
                 
                 // Calculate alignments based on content type
                 for ($i = 0; $i < $colCount; $i++) {
-                    $colValue = isset($rowValues[$i]) ? $rowValues[$i] : '';
-                    if (is_numeric(str_replace([',', ' '], '', $colValue))) {
+                    $colValue = (string)($rowValues[$i] ?? '');
+                    if (is_numeric(str_replace([',', ' ', 'KES'], '', $colValue))) {
                         $aligns[$i] = 'R';
                     } else {
                         $aligns[$i] = 'L';
@@ -215,6 +254,8 @@ class PdfTemplate extends FPDF {
      * Draw a row with MultiCell support and Pagination
      */
     public function Row($data, $widths, $aligns, $lineHeight=5, $fill=false) {
+        $data = array_map(fn($value) => $this->pdfText($value), $data);
+
         // Calculate the height of the row
         $nb = 0;
         for($i=0; $i<count($data); $i++) {
@@ -267,6 +308,7 @@ class PdfTemplate extends FPDF {
      */
     public function NbLines($w, $txt) {
         $cw = &$this->CurrentFont['cw'];
+        $txt = $this->pdfText($txt);
         if($w == 0)
             $w = $this->w - $this->rMargin - $this->x;
         $wmax = ($w - 2 * $this->cMargin) * 1000 / $this->FontSize;

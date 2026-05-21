@@ -13,7 +13,7 @@ $success   = "";
 $error     = "";
 
 // ── Handle Submission ──────────────────────────────────────
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     $category     = $_POST['category']     ?? 'general';
     $subject      = trim($_POST['subject']  ?? '');
     $message      = trim($_POST['message']  ?? '');
@@ -936,7 +936,7 @@ document.querySelectorAll('.pri-pill').forEach(pill => {
 });
 
 /* ── If form was just submitted with error, show ticket pane ── */
-<?php if ($error && $_SERVER['REQUEST_METHOD'] === 'POST'): ?>
+<?php if ($error && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST'): ?>
 // keep new ticket tab active (already default)
 <?php endif; ?>
 

@@ -29,7 +29,7 @@ if (!function_exists('time_elapsed_string')) {
 
 // POST: new case
 $success = $error = "";
-if ($_SERVER['REQUEST_METHOD']==='POST' && isset($_POST['submit_case'])) {
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['submit_case'])) {
     $title   = trim($_POST['title']);
     $desc    = trim($_POST['description']);
     $req_amt = floatval($_POST['requested_amount']);

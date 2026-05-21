@@ -29,7 +29,7 @@ $member_name = $_SESSION['member_name'] ?? 'Member';
 $engine = new FinancialEngine($conn);
 
 // --- HANDLE POST ACTIONS ---
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['action'])) {
     verify_csrf_token();
     $action = $_POST['action'];
 

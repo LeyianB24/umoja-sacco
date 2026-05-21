@@ -8,7 +8,7 @@ require_once __DIR__ . '/../../inc/ExportHelper.php';
 // Auth Check
 if (!isset($_SESSION['member_id'])) die("Access Denied");
 $member_id = $_SESSION['member_id'];
-$member_name = $_SESSION['member_name'];
+$member_name = $_SESSION['member_name'] ?? 'Member';
 
 $format = $_GET['format'] ?? 'pdf';
 $typeFilter = $_GET['type'] ?? '';
@@ -16,14 +16,14 @@ $startDate  = $_GET['start_date'] ?? '';
 $endDate    = $_GET['end_date'] ?? '';
 
 // Build Query
-$where = "WHERE member_id = ?";
+$where = "WHERE member_id = ? AND transaction_type IN ('deposit','contribution','savings_deposit','withdrawal','withdrawal_initiate','withdrawal_finalize')";
 $params = [$member_id];
 $types = "i";
 
-if ($typeFilter && in_array($typeFilter, ['deposit', 'withdrawal'])) {
-    $where .= " AND transaction_type = ?";
-    $params[] = $typeFilter;
-    $types .= "s";
+if ($typeFilter === 'deposit') {
+    $where .= " AND transaction_type IN ('deposit','contribution','savings_deposit')";
+} elseif ($typeFilter === 'withdrawal') {
+    $where .= " AND transaction_type IN ('withdrawal','withdrawal_initiate','withdrawal_finalize')";
 }
 if ($startDate && $endDate) {
     $where .= " AND DATE(created_at) BETWEEN ? AND ?";
@@ -32,7 +32,7 @@ if ($startDate && $endDate) {
     $types .= "ss";
 }
 
-$sql = "SELECT created_at, transaction_type, amount, description, status FROM savings $where ORDER BY created_at DESC";
+$sql = "SELECT created_at, transaction_type, amount, COALESCE(notes, description, payment_channel, '') AS description, 'completed' AS status FROM transactions $where ORDER BY created_at DESC";
 $stmt = $conn->prepare($sql);
 if (!empty($params)) {
     $stmt->bind_param($types, ...$params);

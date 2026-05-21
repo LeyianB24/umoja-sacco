@@ -16,132 +16,179 @@ if (!isset($_SESSION['member_id'])) {
 $member_id = $_SESSION['member_id'];
 
 // Handle POST
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     verify_csrf_token();
+
+    $upload_errors = [
+        UPLOAD_ERR_INI_SIZE   => "File exceeds the server upload limit. Please compress it and try again.",
+        UPLOAD_ERR_FORM_SIZE  => "File exceeds the form upload limit.",
+        UPLOAD_ERR_PARTIAL    => "File was only partially uploaded.",
+        UPLOAD_ERR_NO_FILE    => "No file was selected.",
+        UPLOAD_ERR_NO_TMP_DIR => "Server temporary directory missing.",
+        UPLOAD_ERR_CANT_WRITE => "Server failed to write file to disk.",
+        UPLOAD_ERR_EXTENSION  => "A PHP extension blocked the upload.",
+    ];
+
+    $action = $_POST['profile_action'] ?? (!empty($_FILES['kyc_doc']['name']) ? 'upload_kyc' : 'update_profile');
+
+    if ($action === 'upload_kyc') {
+        $allowed_docs = ['national_id_front', 'national_id_back', 'passport_photo', 'kra_pin', 'signature', 'other'];
+        $doc_type = $_POST['doc_type'] ?? '';
+        $file = $_FILES['kyc_doc'] ?? null;
+
+        if (!in_array($doc_type, $allowed_docs, true)) {
+            $_SESSION['error'] = "Invalid KYC document type.";
+        } elseif (!$file || ($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+            $code = $file['error'] ?? UPLOAD_ERR_NO_FILE;
+            $_SESSION['error'] = $upload_errors[$code] ?? "Upload error code: " . $code;
+        } else {
+            $kf_type = mime_content_type($file['tmp_name']) ?: '';
+            $kf_size = (int)$file['size'];
+
+            if (!in_array($kf_type, ['image/jpeg', 'image/png', 'application/pdf'], true)) {
+                $_SESSION['error'] = "Invalid file type. Only JPG, PNG and PDF allowed.";
+            } elseif ($kf_size > 5 * 1024 * 1024) {
+                $_SESSION['error'] = "File too large. Max 5 MB.";
+            } else {
+                $file_content = file_get_contents($file['tmp_name']);
+                if ($file_content === false || strlen($file_content) === 0) {
+                    $_SESSION['error'] = "Failed to read uploaded document. Please try again.";
+                } else {
+                    $original_filename = basename($file['name']);
+                    $file_path = "{$doc_type}_{$member_id}_" . time();
+
+                    try {
+                        $stmt = $conn->prepare("
+                            INSERT INTO member_documents (member_id, document_type, file_path, file_content, file_type, original_filename, status)
+                            VALUES (?, ?, ?, ?, ?, ?, 'pending')
+                            ON DUPLICATE KEY UPDATE
+                            file_content=VALUES(file_content), file_type=VALUES(file_type),
+                            original_filename=VALUES(original_filename), file_path=VALUES(file_path),
+                            status='pending', uploaded_at=NOW()
+                        ");
+                        $null = null;
+                        $stmt->bind_param("issbss", $member_id, $doc_type, $file_path, $null, $kf_type, $original_filename);
+                        $stmt->send_long_data(3, $file_content);
+                        $stmt->execute();
+                        $stmt->close();
+
+                        $stmt = $conn->prepare("UPDATE members SET kyc_status='pending' WHERE member_id=? AND kyc_status='not_submitted'");
+                        $stmt->bind_param("i", $member_id);
+                        $stmt->execute();
+                        $stmt->close();
+
+                        $_SESSION['success'] = "KYC document uploaded successfully. It is now pending review.";
+                    } catch (Throwable $e) {
+                        error_log("[USMS] KYC upload failed for member $member_id: " . $e->getMessage());
+                        $_SESSION['error'] = "Failed to save the KYC document. Please contact support if this continues.";
+                    }
+                }
+            }
+        }
+
+        header("Location: profile.php");
+        exit;
+    }
 
     $email      = trim($_POST['email']       ?? '');
     $phone      = trim($_POST['phone']       ?? '');
     $address    = trim($_POST['address']     ?? '');
-    $gender     = trim($_POST['gender']      ?? '');
-    $dob        = trim($_POST['dob']         ?? '')  ?: null;
+    $dob        = trim($_POST['dob']         ?? '') ?: null;
     $occupation = trim($_POST['occupation']  ?? '');
     $nok_name   = trim($_POST['nok_name']    ?? '');
     $nok_phone  = trim($_POST['nok_phone']   ?? '');
     $remove_pic = isset($_POST['remove_pic']);
 
-    $update_pic  = false;
-    $new_pic     = null;  // null = keep existing, false = set NULL (remove)
+    if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $_SESSION['error'] = "Please enter a valid email address.";
+        header("Location: profile.php");
+        exit;
+    }
+
+    $update_pic = false;
+    $new_pic    = null; // null = keep existing, false = remove, string = replace
 
     if ($remove_pic) {
         $update_pic = true;
-        $new_pic    = false; // will store NULL
+        $new_pic = false;
     } elseif (!empty($_FILES['profile_pic']['name']) && $_FILES['profile_pic']['error'] === UPLOAD_ERR_OK) {
         $f_tmp  = $_FILES['profile_pic']['tmp_name'];
-        $f_type = mime_content_type($f_tmp);
-        $f_size = $_FILES['profile_pic']['size'];
-        if (!in_array($f_type, ['image/jpeg','image/png','image/jpg','image/webp'])) {
+        $f_type = mime_content_type($f_tmp) ?: '';
+        $f_size = (int)$_FILES['profile_pic']['size'];
+
+        if (!in_array($f_type, ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'], true)) {
             $_SESSION['error'] = "Invalid file type. Upload JPG, PNG or WEBP.";
             header("Location: profile.php"); exit;
         }
+
         if ($f_size > 5 * 1024 * 1024) {
             $_SESSION['error'] = "Image too large (max 5 MB). Please compress it.";
             header("Location: profile.php"); exit;
         }
+
         $raw = file_get_contents($f_tmp);
         if ($raw === false || strlen($raw) === 0) {
             $_SESSION['error'] = "Failed to read uploaded file. Please try again.";
             header("Location: profile.php"); exit;
         }
+
         $update_pic = true;
-        $new_pic    = $raw;
+        $new_pic = $raw;
     } elseif (!empty($_FILES['profile_pic']['name']) && $_FILES['profile_pic']['error'] !== UPLOAD_ERR_NO_FILE) {
-        // PHP-level upload error (size limit, etc.)
-        $upload_errors = [
-            UPLOAD_ERR_INI_SIZE   => "File exceeds server upload limit (max ~2 MB). Please compress the image.",
-            UPLOAD_ERR_FORM_SIZE  => "File exceeds form upload limit.",
-            UPLOAD_ERR_PARTIAL    => "File was only partially uploaded.",
-            UPLOAD_ERR_NO_TMP_DIR => "Server temporary directory missing.",
-            UPLOAD_ERR_CANT_WRITE => "Server failed to write file to disk.",
-        ];
         $_SESSION['error'] = $upload_errors[$_FILES['profile_pic']['error']] ?? "Upload error code: " . $_FILES['profile_pic']['error'];
         header("Location: profile.php"); exit;
     }
 
-    // KYC upload — Store as BLOB in database
-    if (!empty($_FILES['kyc_doc']['name']) && $_FILES['kyc_doc']['error'] === UPLOAD_ERR_OK) {
-        $doc_type = $_POST['doc_type'] ?? '';
-        $kf_type  = mime_content_type($_FILES['kyc_doc']['tmp_name']);
-        $kf_size  = $_FILES['kyc_doc']['size'];
-        if (!in_array($kf_type, ['image/jpeg','image/png','application/pdf'])) {
-            $_SESSION['error'] = "Invalid file type. Only JPG, PNG and PDF allowed.";
-        } elseif ($kf_size > 5 * 1024 * 1024) {
-            $_SESSION['error'] = "File too large. Max 5 MB.";
-        } else {
-            // Read file content for BLOB storage
-            $file_content = file_get_contents($_FILES['kyc_doc']['tmp_name']);
-            $original_filename = basename($_FILES['kyc_doc']['name']);
-            $file_path = "{$doc_type}_{$member_id}_" . time();
-            
-            $stmt = $conn->prepare("
-                INSERT INTO member_documents (member_id, document_type, file_path, file_content, file_type, original_filename, status) 
-                VALUES (?, ?, ?, ?, ?, ?, 'pending') 
-                ON DUPLICATE KEY UPDATE 
-                file_content=VALUES(file_content), file_type=VALUES(file_type), 
-                original_filename=VALUES(original_filename), file_path=VALUES(file_path), 
-                status='pending', uploaded_at=NOW()
-            ");
-            $null = null;
-            $stmt->bind_param("issbss", $member_id, $doc_type, $file_path, $null, $kf_type, $original_filename);
-            $stmt->send_long_data(3, $file_content);
-            
-            if ($stmt->execute()) {
-                $conn->query("UPDATE members SET kyc_status='pending' WHERE member_id=$member_id AND kyc_status='not_submitted'");
-            } else {
-                $_SESSION['error'] = "Failed to save document: " . $stmt->error;
-                error_log("[USMS] KYC BLOB insert failed for member $member_id: " . $stmt->error);
-            }
-            $stmt->close();
-        }
-    }
-
-    // ── 1. Update text fields (always) ──────────────────────────────────────
-    $sql  = "UPDATE members SET email=?, phone=?, address=?, gender=?, dob=?, occupation=?, next_of_kin_name=?, next_of_kin_phone=? WHERE member_id=?";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("ssssssssi", $email, $phone, $address, $gender, $dob, $occupation, $nok_name, $nok_phone, $member_id);
-    $text_ok = $stmt->execute();
-    $text_err = $conn->error;
-    $stmt->close();
-
-    // ── 2. Update profile picture only if changed ────────────────────────────
+    $text_ok = false;
+    $text_err = '';
     $pic_ok = true;
-    if ($update_pic) {
-        $stmt = $conn->prepare("UPDATE members SET profile_pic=? WHERE member_id=?");
-        $null = null;
-        $stmt->bind_param("bi", $null, $member_id);
-        if ($new_pic !== false && $new_pic !== null) {
-            // Send actual image data
-            $stmt->send_long_data(0, $new_pic);
-        }
-        // When $new_pic is false (remove), $null stays null → sets column to NULL
-        $pic_ok  = $stmt->execute();
-        $pic_err = $conn->error;
+
+    try {
+        $sql = "UPDATE members SET email=?, phone=?, address=?, dob=?, occupation=?, next_of_kin_name=?, next_of_kin_phone=? WHERE member_id=?";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("sssssssi", $email, $phone, $address, $dob, $occupation, $nok_name, $nok_phone, $member_id);
+        $text_ok = $stmt->execute();
         $stmt->close();
 
-        if (!$pic_ok) {
-            error_log("[USMS] Profile pic update failed for member $member_id: " . ($pic_err ?? ''));
+        if ($update_pic) {
+            if ($new_pic === false) {
+                $stmt = $conn->prepare("UPDATE members SET profile_pic=NULL WHERE member_id=?");
+                $stmt->bind_param("i", $member_id);
+                $pic_ok = $stmt->execute();
+                $stmt->close();
+            } else {
+                $stmt = $conn->prepare("UPDATE members SET profile_pic=? WHERE member_id=?");
+                $blob = null;
+                $stmt->bind_param("bi", $blob, $member_id);
+                $stmt->send_long_data(0, $new_pic);
+                $pic_ok = $stmt->execute();
+                $stmt->close();
+            }
         }
+    } catch (Throwable $e) {
+        $text_ok = false;
+        $text_err = $e->getMessage();
+        error_log("[USMS] Profile update failed for member $member_id: " . $text_err);
     }
 
     if ($text_ok) {
-        require_once __DIR__ . '/../../inc/notification_helpers.php';
-        send_notification($conn, (int)$member_id, 'profile_updated');
+        try {
+            require_once __DIR__ . '/../../inc/notification_helpers.php';
+            send_notification($conn, (int)$member_id, 'profile_updated');
+        } catch (Throwable $e) {
+            error_log("[USMS] Profile notification failed for member $member_id: " . $e->getMessage());
+        }
+
         $_SESSION['success'] = $update_pic && !$pic_ok
-            ? "Profile updated, but photo could not be saved (image may be too large for database)."
+            ? "Profile updated, but photo could not be saved. Please try a smaller image."
             : "Profile updated successfully!";
-        header("Location: profile.php"); exit;
-    } else {
-        $_SESSION['error'] = "Update failed: " . $text_err;
+        header("Location: profile.php");
+        exit;
     }
+
+    $_SESSION['error'] = "Update failed" . ($text_err ? ": " . $text_err : ".");
+    header("Location: profile.php");
+    exit;
 }
 
 
@@ -151,7 +198,7 @@ $stmt->bind_param("i", $member_id); $stmt->execute();
 $member = $stmt->get_result()->fetch_assoc(); $stmt->close();
 
 // Registration fee tx
-$fee_stmt = $conn->prepare("SELECT * FROM transactions WHERE member_id = ? AND transaction_type = 'registration_fee' OR (related_table = 'members' AND description LIKE '%Registration%') ORDER BY created_at DESC LIMIT 1");
+$fee_stmt = $conn->prepare("SELECT * FROM transactions WHERE member_id = ? AND (transaction_type = 'registration_fee' OR (related_table = 'members' AND description LIKE '%Registration%')) ORDER BY created_at DESC LIMIT 1");
 $fee_stmt->bind_param("i", $member_id); $fee_stmt->execute();
 $fee_txn = $fee_stmt->get_result()->fetch_assoc(); $fee_stmt->close();
 
@@ -469,6 +516,7 @@ body.sb-collapsed .main-content-wrapper{margin-left:72px}
     <!-- Main form -->
     <form method="POST" enctype="multipart/form-data">
         <?= csrf_field() ?>
+        <input type="hidden" name="profile_action" value="update_profile">
         <input type="file" name="profile_pic" id="profile_pic_input" accept="image/*" class="d-none" onchange="previewImage(event)">
 
         <div class="row g-3">
@@ -677,6 +725,7 @@ body.sb-collapsed .main-content-wrapper{margin-left:72px}
                         <?php else: ?>
                         <form method="POST" enctype="multipart/form-data">
                             <?= csrf_field() ?>
+                            <input type="hidden" name="profile_action" value="upload_kyc">
                             <input type="hidden" name="doc_type" value="<?= $type ?>">
                             <div class="kyc-file-wrap">
                                 <input type="file" name="kyc_doc" class="kyc-file" required accept="image/*,application/pdf">

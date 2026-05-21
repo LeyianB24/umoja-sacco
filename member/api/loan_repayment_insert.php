@@ -7,7 +7,7 @@ if (!isset($_SESSION['member_id'])) {
     exit();
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     $member_id = $_SESSION['member_id']; // Kept for session check, but not inserted into repayments
     $loan_id = intval($_POST['loan_id']);
     $amount = floatval($_POST['amount']);

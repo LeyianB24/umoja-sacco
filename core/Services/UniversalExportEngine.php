@@ -38,7 +38,12 @@ class UniversalExportEngine {
         // 2. Audit Logging
         // We log before generating. If generation fails, we still have a record of the attempt (or could update status later).
         // For now, we log as 'success' optimistically or 'initiated'. Let's stick to what we established.
-        $logId = ExportAuditLogger::log($module, $format, $recordCount, $totalValue, "Title: $title");
+        $logId = false;
+        try {
+            $logId = ExportAuditLogger::log($module, $format, $recordCount, $totalValue, "Title: $title");
+        } catch (\Throwable $e) {
+            error_log("UniversalExportEngine: Audit Log Failed for $title - " . $e->getMessage());
+        }
         
         if (!$logId) {
             // If strictly enforced:
@@ -78,7 +83,7 @@ class UniversalExportEngine {
                 default:
                     \USMS\Http\ErrorHandler::abort(400, "Invalid Export Format: {$format}");
             }
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
             error_log("Export Generation Error: " . $e->getMessage());
             \USMS\Http\ErrorHandler::abort(500, "An error occurred while generating the export. Please contact support.");
         }

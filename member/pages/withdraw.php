@@ -104,7 +104,7 @@ $success = '';
 $error = '';
 
 // Handle withdrawal request
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['withdraw'])) {
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['withdraw'])) {
     verify_csrf_token();
     
     $amount = floatval($_POST['amount']);

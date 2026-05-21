@@ -17,7 +17,7 @@ $member_id = $_SESSION['member_id'];
 $success_message = $error_message = "";
 
 // Handle form submissions
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
 
     if (isset($_POST['update_profile'])) {
         verify_csrf_token();

@@ -36,7 +36,7 @@ if (($_SESSION['registration_fee_status'] ?? 'unpaid') === 'paid' || ($member['r
 
 // Handle Payment Simulation
 // In a real app, this would integrate with M-Pesa STK Push
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['pay_fee'])) {
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['pay_fee'])) {
     verify_csrf_token();
     
     $amount = 1000.00; // Database Default
