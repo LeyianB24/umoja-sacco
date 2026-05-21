@@ -17,20 +17,20 @@ echo "════════════════════════�
 // Test 1: Check environment variables
 echo "✓ STEP 1: Reading Environment Variables\n";
 echo "   ├─ APP_ENV: " . (EnvLoader::get('APP_ENV') ?? 'NOT SET') . "\n";
-echo "   ├─ MYSQLHOST: " . (EnvLoader::get('MYSQLHOST') ?? EnvLoader::get('DB_HOST') ?? 'NOT SET') . "\n";
-echo "   ├─ MYSQLPORT: " . (EnvLoader::get('MYSQLPORT') ?? EnvLoader::get('DB_PORT') ?? 'NOT SET') . "\n";
-echo "   ├─ MYSQLUSER: " . (EnvLoader::get('MYSQLUSER') ?? EnvLoader::get('DB_USER') ?? 'NOT SET') . "\n";
-echo "   ├─ MYSQLPASSWORD: " . (EnvLoader::get('MYSQLPASSWORD') ? '***' . substr(EnvLoader::get('MYSQLPASSWORD'), -4) : 'NOT SET') . "\n";
-echo "   └─ MYSQLDATABASE: " . (EnvLoader::get('MYSQLDATABASE') ?? EnvLoader::get('DB_NAME') ?? 'NOT SET') . "\n\n";
+echo "   ├─ MYSQLHOST: " . (EnvLoader::getAny(['MYSQLHOST', 'MYSQL_HOST']) ?? EnvLoader::get('DB_HOST') ?? 'NOT SET') . "\n";
+echo "   ├─ MYSQLPORT: " . (EnvLoader::getAny(['MYSQLPORT', 'MYSQL_PORT']) ?? EnvLoader::get('DB_PORT') ?? 'NOT SET') . "\n";
+echo "   ├─ MYSQLUSER: " . (EnvLoader::getAny(['MYSQLUSER', 'MYSQL_USER']) ?? EnvLoader::get('DB_USER') ?? 'NOT SET') . "\n";
+echo "   ├─ MYSQLPASSWORD: " . (EnvLoader::getAny(['MYSQLPASSWORD', 'MYSQL_PASSWORD']) ? '***' . substr(EnvLoader::getAny(['MYSQLPASSWORD', 'MYSQL_PASSWORD']), -4) : 'NOT SET') . "\n";
+echo "   └─ MYSQLDATABASE: " . (EnvLoader::getAny(['MYSQLDATABASE', 'MYSQL_DATABASE']) ?? EnvLoader::get('DB_NAME') ?? 'NOT SET') . "\n\n";
 
 // Test 2: Attempt connection using same priority logic as db_connect.php
 echo "✓ STEP 2: Attempting Database Connection\n";
 
-$host   = EnvLoader::get('MYSQLHOST') ?? EnvLoader::get('DB_HOST') ?? 'localhost';
-$user   = EnvLoader::get('MYSQLUSER') ?? EnvLoader::get('DB_USER') ?? 'root';
-$pass   = EnvLoader::get('MYSQLPASSWORD') ?? EnvLoader::get('DB_PASS') ?? '';
-$port   = EnvLoader::get('MYSQLPORT') ?? EnvLoader::get('DB_PORT') ?? 3306;
-$dbname = EnvLoader::get('MYSQLDATABASE') ?? EnvLoader::get('DB_NAME') ?? 'umoja_drivers_sacco';
+$host   = EnvLoader::getAny(['MYSQLHOST', 'MYSQL_HOST']) ?? EnvLoader::get('DB_HOST') ?? 'localhost';
+$user   = EnvLoader::getAny(['MYSQLUSER', 'MYSQL_USER']) ?? EnvLoader::get('DB_USER') ?? 'root';
+$pass   = EnvLoader::getAny(['MYSQLPASSWORD', 'MYSQL_PASSWORD']) ?? EnvLoader::get('DB_PASS') ?? '';
+$port   = EnvLoader::getAny(['MYSQLPORT', 'MYSQL_PORT']) ?? EnvLoader::get('DB_PORT') ?? 3306;
+$dbname = EnvLoader::getAny(['MYSQLDATABASE', 'MYSQL_DATABASE']) ?? EnvLoader::get('DB_NAME') ?? 'umoja_drivers_sacco';
 
 echo "   Connecting to: $host:$port as $user...\n";
 

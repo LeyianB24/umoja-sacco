@@ -66,7 +66,7 @@ if (!defined('SITE_URL')) define('SITE_URL', rtrim($site_url, '/'));
  */
 try {
     // Check if we have Railway MySQL variables OR local DB variables
-    $has_mysql_vars = EnvLoader::has('MYSQLHOST') && EnvLoader::has('MYSQLUSER') && EnvLoader::has('MYSQLDATABASE');
+    $has_mysql_vars = EnvLoader::hasAny(['MYSQLHOST', 'MYSQL_HOST']) && EnvLoader::hasAny(['MYSQLUSER', 'MYSQL_USER']) && EnvLoader::hasAny(['MYSQLDATABASE', 'MYSQL_DATABASE']);
     $has_db_vars = EnvLoader::has('DB_HOST') && EnvLoader::has('DB_USER') && EnvLoader::has('DB_NAME');
 
     if (!$has_mysql_vars && !$has_db_vars) {

@@ -91,6 +91,35 @@ class EnvLoader
     }
 
     /**
+     * Get the first defined environment variable from a list of keys.
+     */
+    public static function getAny(array $keys, mixed $default = null): mixed
+    {
+        foreach ($keys as $key) {
+            $value = self::get($key, null);
+            if ($value !== null) {
+                return $value;
+            }
+        }
+
+        return $default;
+    }
+
+    /**
+     * Check if any of the provided environment variable keys are defined.
+     */
+    public static function hasAny(array $keys): bool
+    {
+        foreach ($keys as $key) {
+            if (self::has($key)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Get environment variable as boolean
      */
     public static function getBool(string $key, bool $default = false): bool
