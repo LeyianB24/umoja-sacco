@@ -324,8 +324,9 @@ $admin_id = $_SESSION['admin_id'];
 // 1. HANDLE POST ACTIONS
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf_token();
+    $inv_action = sanitize_select($_POST['action'] ?? '', ['add_asset', 'update_asset', 'edit_investment', 'sell_asset'], '');
     
-    if (isset($_POST['action']) && $_POST['action'] === 'add_asset') {
+    if ($inv_action === 'add_asset') {
         $title    = trim($_POST['title']);
         $category = $_POST['category'];
         $cost     = floatval($_POST['purchase_cost']);
@@ -361,20 +362,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    if (isset($_POST['action']) && $_POST['action'] === 'update_asset') {
+    if ($inv_action === 'update_asset') {
         $inv_id = intval($_POST['investment_id']);
         $val    = floatval($_POST['current_value']);
-        $status = $_POST['status'];
+        $status = sanitize_select($_POST['status'] ?? 'active', ['active', 'pending', 'sold', 'disposed'], 'active');
         $stmt = $conn->prepare("UPDATE investments SET current_value = ?, status = ? WHERE investment_id = ?");
         $stmt->bind_param("dsi", $val, $status, $inv_id);
         if ($stmt->execute()) {
-            $conn->query("INSERT INTO audit_logs (admin_id, action, details, ip_address) VALUES ($admin_id, 'update_asset', 'Updated investment #$inv_id status to $status', '{$_SERVER['REMOTE_ADDR']}')");
+            $details = "Updated investment #$inv_id status to $status";
+            $log_stmt = $conn->prepare("INSERT INTO audit_logs (admin_id, action, details, ip_address) VALUES (?, 'update_asset', ?, ?)");
+            $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+            $log_stmt->bind_param("iss", $admin_id, $details, $ip);
+            $log_stmt->execute();
             flash_set("Asset status updated.", 'success');
         }
         header("Location: investments.php"); exit;
     }
 
-    if (isset($_POST['action']) && $_POST['action'] === 'edit_investment') {
+    if ($inv_action === 'edit_investment') {
         $inv_id   = intval($_POST['investment_id']);
         $title    = trim($_POST['title']);
         $category = $_POST['category'];
@@ -387,14 +392,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt = $conn->prepare("UPDATE investments SET title = ?, category = ?, description = ?, target_amount = ?, target_period = ? WHERE investment_id = ?");
             $stmt->bind_param("sssdsi", $title, $category, $desc, $target, $period, $inv_id);
             if ($stmt->execute()) {
-                $conn->query("INSERT INTO audit_logs (admin_id, action, details, ip_address) VALUES ($admin_id, 'edit_investment', 'Edited investment #$inv_id', '{$_SERVER['REMOTE_ADDR']}')");
+                $details = "Edited investment #$inv_id";
+                $log_stmt = $conn->prepare("INSERT INTO audit_logs (admin_id, action, details, ip_address) VALUES (?, 'edit_investment', ?, ?)");
+                $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+                $log_stmt->bind_param("iss", $admin_id, $details, $ip);
+                $log_stmt->execute();
                 flash_set("Investment updated successfully.", 'success');
             } else { flash_set("Database error: " . $stmt->error, 'error'); }
         }
         header("Location: investments.php"); exit;
     }
 
-    if (isset($_POST['action']) && $_POST['action'] === 'sell_asset') {
+    if ($inv_action === 'sell_asset') {
         $inv_id = intval($_POST['investment_id']);
         $price  = floatval($_POST['sale_price']);
         $date   = $_POST['sale_date'];
@@ -404,7 +413,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($stmt->execute()) {
             require_once __DIR__ . '/../../inc/TransactionHelper.php';
             TransactionHelper::record(['type' => 'income','category' => 'asset_sale','amount' => $price,'notes' => "Proceeds from sale of asset #$inv_id. Reason: $reason",'related_table' => 'investments','related_id' => $inv_id]);
-            $conn->query("INSERT INTO audit_logs (admin_id, action, details, ip_address) VALUES ($admin_id, 'dispose_asset', 'Sold Asset #$inv_id for KES $price', '{$_SERVER['REMOTE_ADDR']}')");
+            $details = "Sold Asset #$inv_id for KES $price";
+            $log_stmt = $conn->prepare("INSERT INTO audit_logs (admin_id, action, details, ip_address) VALUES (?, 'dispose_asset', ?, ?)");
+            $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+            $log_stmt->bind_param("iss", $admin_id, $details, $ip);
+            $log_stmt->execute();
             flash_set("Asset disposed successfully. Sale proceeds recorded in ledger.", 'success');
         }
         header("Location: investments.php"); exit;
@@ -423,14 +436,15 @@ if ($search) {
 }
 
 // Export Handler
-if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_excel', 'print_report'])) {
-    if ($_GET['action'] !== 'print_report') { require_once __DIR__ . '/../../inc/ExportHelper.php'; }
+$investment_export_action = sanitize_select($_GET['action'] ?? '', ['export_pdf', 'export_excel', 'print_report'], '');
+if ($investment_export_action !== '') {
+    if ($investment_export_action !== 'print_report') { require_once __DIR__ . '/../../inc/ExportHelper.php'; }
     else { require_once __DIR__ . '/../../core/exports/UniversalExportEngine.php'; }
     $where_e = count($where) > 0 ? "WHERE " . implode(" AND ", $where) : "";
     $stmt_e = $conn->prepare("SELECT title, category, reg_no, purchase_cost, current_value, status, purchase_date FROM investments $where_e ORDER BY purchase_date DESC");
     if (!empty($params)) $stmt_e->bind_param($types, ...$params);
     $stmt_e->execute(); $raw_data = $stmt_e->get_result();
-    $format = match($_GET['action']) { 'export_excel' => 'excel', 'print_report' => 'print', default => 'pdf' };
+    $format = match($investment_export_action) { 'export_excel' => 'excel', 'print_report' => 'print', default => 'pdf' };
     $data = []; $total_val = 0;
     while($a = $raw_data->fetch_assoc()) {
         $total_val += (float)$a['current_value'];

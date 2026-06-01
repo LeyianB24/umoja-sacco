@@ -11,6 +11,7 @@ require_admin();
 require_permission();
 
 $layout = LayoutManager::create('admin');
+require_once __DIR__ . '/../../inc/functions.php';
 
 /**
  * admin/transactions.php
@@ -19,12 +20,21 @@ $layout = LayoutManager::create('admin');
 
 // 2. Fetch Params
 $filter_related_id = isset($_GET['filter']) ? intval($_GET['filter']) : null;
-$filter_table      = $_GET['related_table'] ?? '';
+$filter_table      = sanitize_select($_GET['related_table'] ?? '', ['investments','loans','withdrawal_requests','expenses','members'], '');
 $filter_member_id  = isset($_GET['member_id']) ? intval($_GET['member_id']) : null;
-$filter_type       = $_GET['type'] ?? '';
-$search_query      = $_GET['search'] ?? '';
-$start_date        = $_GET['start_date'] ?? '';
-$end_date          = $_GET['end_date'] ?? '';
+$filter_type       = sanitize_select($_GET['type'] ?? '', ['deposit','withdrawal','loan_repayment','share_capital','expense','income','revenue_inflow'], '');
+$search_query      = trim($_GET['search'] ?? '');
+$start_date        = normalize_date_or_default($_GET['start_date'] ?? '', '');
+$end_date          = normalize_date_or_default($_GET['end_date'] ?? '', '');
+
+// If both dates provided and start > end, swap them
+if ($start_date && $end_date) {
+    $sTs = strtotime($start_date);
+    $eTs = strtotime($end_date);
+    if ($sTs > $eTs) {
+        [$start_date, $end_date] = [$end_date, $start_date];
+    }
+}
 
 // 3. Build SQL
 $where = "1=1";

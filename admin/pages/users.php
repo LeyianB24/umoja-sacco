@@ -18,93 +18,96 @@ require_superadmin();
 // ---------------------------------------------------------
 // 1. POST ACTIONS — must run before any HTML output
 // ---------------------------------------------------------
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
-    verify_csrf_token();
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $action = sanitize_select($_POST['action'] ?? '', ['add_user', 'edit_user'], '');
+    if ($action !== '') {
+        verify_csrf_token();
 
-    if ($_POST['action'] === 'add_user') {
-        $fullname = trim($_POST['full_name']);
-        $email    = trim($_POST['email']);
-        $username = trim($_POST['username']);
-        $role_id  = (int)$_POST['role_id'];
-        $password = trim($_POST['password']);
+        if ($action === 'add_user') {
+            $fullname = trim($_POST['full_name']);
+            $email    = trim($_POST['email']);
+            $username = trim($_POST['username']);
+            $role_id  = (int)$_POST['role_id'];
+            $password = trim($_POST['password']);
 
-        $check = $conn->prepare("SELECT admin_id FROM admins WHERE email = ? OR username = ?");
-        $check->bind_param("ss", $email, $username);
-        $check->execute();
-        if ($check->get_result()->num_rows > 0) {
-            flash_set("Email or Username already exists.", "danger");
-        } else {
-            $userData = ['employee_no' => $username, 'company_email' => $email, 'full_name' => $fullname];
-            $result = $systemUserService->createSystemUser($userData, $role_id);
-
-            if ($result['success']) {
-                if (!empty($password) && $password !== $username) {
-                    $systemUserService->resetPassword($result['admin_id'], $password);
-                }
-                // Sync to employees table
-                $empData = [
-                    'full_name'  => $fullname,
-                    'national_id'=> 'SYS-' . $result['admin_id'],
-                    'phone'      => '',
-                    'job_title'  => 'System Administrator',
-                    'grade_id'   => 1,
-                    'salary'     => 0.00,
-                    'hire_date'  => date('Y-m-d')
-                ];
-                $empResult = $hrService->createEmployee($empData);
-                if ($empResult['success']) {
-                    $stmt = $conn->prepare("UPDATE employees SET admin_id = ? WHERE employee_id = ?");
-                    $stmt->bind_param("ii", $result['admin_id'], $empResult['employee_id']);
-                    $stmt->execute();
-                }
-                flash_set("Staff account created successfully.", "success");
+            $check = $conn->prepare("SELECT admin_id FROM admins WHERE email = ? OR username = ?");
+            $check->bind_param("ss", $email, $username);
+            $check->execute();
+            if ($check->get_result()->num_rows > 0) {
+                flash_set("Email or Username already exists.", "danger");
             } else {
-                flash_set("Error: " . $result['error'], "danger");
+                $userData = ['employee_no' => $username, 'company_email' => $email, 'full_name' => $fullname];
+                $result = $systemUserService->createSystemUser($userData, $role_id);
+
+                if ($result['success']) {
+                    if (!empty($password) && $password !== $username) {
+                        $systemUserService->resetPassword($result['admin_id'], $password);
+                    }
+                    // Sync to employees table
+                    $empData = [
+                        'full_name'  => $fullname,
+                        'national_id'=> 'SYS-' . $result['admin_id'],
+                        'phone'      => '',
+                        'job_title'  => 'System Administrator',
+                        'grade_id'   => 1,
+                        'salary'     => 0.00,
+                        'hire_date'  => date('Y-m-d')
+                    ];
+                    $empResult = $hrService->createEmployee($empData);
+                    if ($empResult['success']) {
+                        $stmt = $conn->prepare("UPDATE employees SET admin_id = ? WHERE employee_id = ?");
+                        $stmt->bind_param("ii", $result['admin_id'], $empResult['employee_id']);
+                        $stmt->execute();
+                    }
+                    flash_set("Staff account created successfully.", "success");
+                } else {
+                    flash_set("Error: " . $result['error'], "danger");
+                }
             }
         }
-    }
 
-    if ($_POST['action'] === 'edit_user') {
-        $id       = (int)$_POST['admin_id'];
-        $fullname = trim($_POST['full_name']);
-        $email    = trim($_POST['email']);
-        $role_id  = (int)$_POST['role_id'];
-        $password = trim($_POST['password'] ?? '');
+        if ($action === 'edit_user') {
+            $id       = (int)$_POST['admin_id'];
+            $fullname = trim($_POST['full_name']);
+            $email    = trim($_POST['email']);
+            $role_id  = (int)$_POST['role_id'];
+            $password = trim($_POST['password'] ?? '');
 
-        if ($id > 0) {
-            // Direct mysqli update — avoids PDO/mysqli mismatch on $systemUserService
-            $stmt = $conn->prepare("UPDATE admins SET full_name = ?, email = ?, role_id = ? WHERE admin_id = ?");
-            $stmt->bind_param("ssii", $fullname, $email, $role_id, $id);
-            $stmt->execute();
+            if ($id > 0) {
+                // Direct mysqli update — avoids PDO/mysqli mismatch on $systemUserService
+                $stmt = $conn->prepare("UPDATE admins SET full_name = ?, email = ?, role_id = ? WHERE admin_id = ?");
+                $stmt->bind_param("ssii", $fullname, $email, $role_id, $id);
+                $stmt->execute();
 
-            if (!empty($password)) {
-                $hashed = password_hash($password, PASSWORD_BCRYPT);
-                $ps = $conn->prepare("UPDATE admins SET password = ? WHERE admin_id = ?");
-                $ps->bind_param("si", $hashed, $id);
-                $ps->execute();
+                if (!empty($password)) {
+                    $hashed = password_hash($password, PASSWORD_BCRYPT);
+                    $ps = $conn->prepare("UPDATE admins SET password = ? WHERE admin_id = ?");
+                    $ps->bind_param("si", $hashed, $id);
+                    $ps->execute();
+                }
+
+                // Sync full_name to linked employee record
+                $sync = $conn->prepare("UPDATE employees SET full_name = ? WHERE admin_id = ?");
+                $sync->bind_param("si", $fullname, $id);
+                $sync->execute();
+
+                // Audit log
+                $admin_id   = $_SESSION['admin_id'] ?? 0;
+                $log_detail = "Edited system user ID $id (name: $fullname, role: $role_id).";
+                $ip         = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+                $log_action = 'User Updated';
+                $stmt_log   = $conn->prepare("INSERT INTO audit_logs (admin_id, action, details, ip_address, created_at) VALUES (?, ?, ?, ?, NOW())");
+                $stmt_log->bind_param("isss", $admin_id, $log_action, $log_detail, $ip);
+                $stmt_log->execute();
+
+                flash_set("User profile updated successfully.", "success");
+            } else {
+                flash_set("Invalid user ID.", "danger");
             }
-
-            // Sync full_name to linked employee record
-            $sync = $conn->prepare("UPDATE employees SET full_name = ? WHERE admin_id = ?");
-            $sync->bind_param("si", $fullname, $id);
-            $sync->execute();
-
-            // Audit log
-            $admin_id   = $_SESSION['admin_id'] ?? 0;
-            $log_detail = "Edited system user ID $id (name: $fullname, role: $role_id).";
-            $ip         = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
-            $log_action = 'User Updated';
-            $stmt_log   = $conn->prepare("INSERT INTO audit_logs (admin_id, action, details, ip_address, created_at) VALUES (?, ?, ?, ?, NOW())");
-            $stmt_log->bind_param("isss", $admin_id, $log_action, $log_detail, $ip);
-            $stmt_log->execute();
-
-            flash_set("User profile updated successfully.", "success");
-        } else {
-            flash_set("Invalid user ID.", "danger");
         }
-    }
 
-    header("Location: users.php"); exit;
+        header("Location: users.php"); exit;
+    }
 }
 
 // ---------------------------------------------------------

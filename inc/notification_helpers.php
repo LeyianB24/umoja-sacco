@@ -49,9 +49,31 @@ function send_notification($conn, $member_id, $type, $data = []) {
                 'reg_no'  => $member['member_reg_no'] ?? 'N/A',
                 'balance' => $data['balance'] ?? $savings_bal
             ];
-            
-            // This now handles both SMTP and Database Notification insertion
-            sendEmail($email, $notification['email_subject'], $notification['email_body'], $member_id, null, $metadata);
+
+            // Prefer non-DB asynchronous delivery: spawn a background PHP process
+            // that will send the email without touching the application's DB.
+            $payload = [
+                'to' => $email,
+                'subject' => $notification['email_subject'],
+                'body' => $notification['email_body']
+            ];
+
+            $tmp = tempnam(sys_get_temp_dir(), 'usms_email_');
+            if ($tmp) {
+                file_put_contents($tmp, json_encode($payload));
+                $php = PHP_BINARY;
+                $script = __DIR__ . '/../bin/send_raw_email.php';
+                $cmd = escapeshellarg($php) . ' ' . escapeshellarg($script) . ' ' . escapeshellarg($tmp);
+                if (strncasecmp(PHP_OS, 'WIN', 3) === 0) {
+                    // Windows: use start /B to background the process
+                    pclose(popen('start /B "" ' . $cmd, 'r'));
+                } else {
+                    exec($cmd . ' > /dev/null 2>&1 &');
+                }
+            } else {
+                // Fallback to synchronous send
+                sendEmail($email, $notification['email_subject'], $notification['email_body'], $member_id, null, $metadata);
+            }
         } catch (Throwable $e) {
             error_log("Notification system failed: " . $e->getMessage());
             $success = false;
@@ -213,7 +235,27 @@ function add_notification($member_id, $title, $message, $type = 'info', $link = 
     $stmt->close();
 
     if ($email) {
-        return sendEmail($email, $title, $body, $member_id);
+        // Queue admin-facing notification email if queue service exists
+        try {
+            // Use the background sender instead of DB queueing to avoid schema writes
+            $payload = ['to' => $email, 'subject' => $title, 'body' => $body];
+            $tmp = tempnam(sys_get_temp_dir(), 'usms_email_');
+            if ($tmp) {
+                file_put_contents($tmp, json_encode($payload));
+                $php = PHP_BINARY;
+                $script = __DIR__ . '/../bin/send_raw_email.php';
+                $cmd = escapeshellarg($php) . ' ' . escapeshellarg($script) . ' ' . escapeshellarg($tmp);
+                if (strncasecmp(PHP_OS, 'WIN', 3) === 0) {
+                    pclose(popen('start /B "" ' . $cmd, 'r'));
+                } else {
+                    exec($cmd . ' > /dev/null 2>&1 &');
+                }
+                return true;
+            }
+            return sendEmail($email, $title, $body, $member_id);
+        } catch (Throwable $e) {
+            error_log('add_notification email background failed: ' . $e->getMessage());
+        }
     }
     
     // Fallback if no email: JUST insert into DB notifications

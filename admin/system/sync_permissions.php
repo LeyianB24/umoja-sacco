@@ -16,8 +16,11 @@ $added = 0;
 foreach ($files as $file) {
     $slug = basename($file);
     
-    // Check if exists
-    $check = $conn->query("SELECT id FROM permissions WHERE slug = '$slug'");
+    // Check if exists (use prepared to avoid injection if filenames are unexpected)
+    $stmt_check = $conn->prepare("SELECT id FROM permissions WHERE slug = ?");
+    $stmt_check->bind_param('s', $slug);
+    $stmt_check->execute();
+    $check = $stmt_check->get_result();
     if ($check->num_rows == 0) {
         $name = ucwords(str_replace(['_', '.php'], [' ', ''], $slug));
         $desc = "Access to $name page";
@@ -27,7 +30,9 @@ foreach ($files as $file) {
         $stmt->execute();
         $added++;
         echo "Added: $slug\n";
+        $stmt->close();
     }
+    $stmt_check->close();
 }
 
 echo "Scan complete. Added $added new permissions.\n";

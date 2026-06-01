@@ -5,6 +5,7 @@ if (session_status() === PHP_SESSION_NONE) session_start();
 require_once __DIR__ . '/../../config/app.php';
 require_once __DIR__ . '/../../inc/auth.php';
 require_once __DIR__ . '/../../inc/LayoutManager.php';
+require_once __DIR__ . '/../../inc/functions.php';
 
 $layout = LayoutManager::create('admin');
 
@@ -88,7 +89,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // KYC Verify/Reject
     if (isset($_POST['kyc_action'])) {
         $doc_id = intval($_POST['doc_id']);
-        $action = $_POST['kyc_action'];
+        $action = sanitize_select($_POST['kyc_action'] ?? '', ['verify', 'reject'], 'verify');
         $notes  = trim($_POST['verification_notes'] ?? '');
         $status = ($action === 'verify') ? 'verified' : 'rejected';
         $stmt   = $conn->prepare("UPDATE member_documents SET status = ?, verification_notes = ?, verified_by = ?, verified_at = NOW() WHERE document_id = ? AND member_id = ?");
@@ -97,12 +98,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $q = $conn->query("SELECT status FROM member_documents WHERE member_id = $member_id AND document_type IN ('national_id_front', 'national_id_back', 'passport_photo')");
             $all_docs = $q->fetch_all(MYSQLI_ASSOC);
             $vc = 0; $rc = 0;
-            foreach ($all_docs as $d) { if ($d['status']==='verified') $vc++; if ($d['status']==='rejected') $rc++; }
-            $new_kyc    = $vc >= 3 ? 'approved' : ($rc > 0 ? 'rejected' : 'pending');
-            $sql_update = "UPDATE members SET kyc_status = '$new_kyc'" . ($action==='reject' ? ", kyc_notes = '".$conn->real_escape_string($notes)."'" : "") . " WHERE member_id = $member_id";
-            $conn->query($sql_update);
-            flash_set("Document " . ($action === 'verify' ? 'approved' : 'rejected') . " successfully.", "success");
-        } else { flash_set("Action failed: " . $conn->error, "danger"); }
+            foreach ($all_docs as $d) { if ($d['status'] === 'verified') $vc++; if ($d['status'] === 'rejected') $rc++; }
+            $new_kyc = $vc >= 3 ? 'approved' : ($rc > 0 ? 'rejected' : 'pending');
+            $sql_update = 'UPDATE members SET kyc_status = ?';
+            if ($action === 'reject') {
+                $sql_update .= ', kyc_notes = ?';
+            }
+            $sql_update .= ' WHERE member_id = ?';
+
+            $update_stmt = $conn->prepare($sql_update);
+            if ($action === 'reject') {
+                $update_stmt->bind_param('ssi', $new_kyc, $notes, $member_id);
+            } else {
+                $update_stmt->bind_param('si', $new_kyc, $member_id);
+            }
+            $update_stmt->execute();
+
+            flash_set('Document ' . ($action === 'verify' ? 'approved' : 'rejected') . ' successfully.', 'success');
+        } else {
+            flash_set('Action failed: ' . $conn->error, 'danger');
+        }
         header("Location: member_profile.php?id=$member_id#kyc"); exit;
     }
 

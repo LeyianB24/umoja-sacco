@@ -72,35 +72,43 @@ function sendEmailWithNotification($to_email, $subject, $body_content, $member_i
     </div>";
 
     // 2. SEND EMAIL
-    $mail = new PHPMailer(true);
+    // Prefer asynchronous queueing where available to avoid blocking web requests
     try {
-        // Load email config from environment.php
-        $env_config = require_once(__DIR__ . '/../config/environment.php');
-        $email_config = $env_config['email'] ?? [];
-        
-        $mail->isSMTP();
-        $mail->Host       = $email_config['smtp_host'] ?? (defined('SMTP_HOST') ? SMTP_HOST : 'smtp.gmail.com');
-        $mail->SMTPAuth   = true;
-        $mail->Username   = $email_config['smtp_username'] ?? (defined('SMTP_USERNAME') ? SMTP_USERNAME : '');
-        $mail->Password   = $email_config['smtp_password'] ?? (defined('SMTP_PASSWORD') ? SMTP_PASSWORD : '');
-        $mail->SMTPSecure = ($email_config['smtp_port'] ?? 587) == 465 ? PHPMailer::ENCRYPTION_SMTPS : PHPMailer::ENCRYPTION_STARTTLS;
-        $mail->Port       = $email_config['smtp_port'] ?? 587;
-        $mail->SMTPOptions = ['ssl' => ['verify_peer' => false, 'verify_peer_name' => false, 'allow_self_signed' => true]];
+        if (class_exists('\\USMS\\Services\\EmailQueueService')) {
+            $queue = new \USMS\Services\EmailQueueService();
+            // Queue the already rendered HTML body so worker can send branded template
+            $queue->queueEmail($to_email, '', $subject, $body_html, 5);
+            $email_success = true; // queued successfully (not yet delivered)
+        } else {
+            $mail = new PHPMailer(true);
+            // Load email config from environment.php
+            $env_config = require_once(__DIR__ . '/../config/environment.php');
+            $email_config = $env_config['email'] ?? [];
 
-        $from_email = $email_config['from_email'] ?? (defined('SMTP_USERNAME') ? SMTP_USERNAME : 'info@umojadrivers.co.ke');
-        $from_name = $email_config['from_name'] ?? $site_name;
-        
-        $mail->setFrom($from_email, $from_name);
-        $mail->addAddress($to_email);
-        $mail->isHTML(true);
-        $mail->Subject = $subject;
-        $mail->Body    = $body_html;
-        $mail->AltBody = strip_tags($body_content);
+            $mail->isSMTP();
+            $mail->Host       = $email_config['smtp_host'] ?? (defined('SMTP_HOST') ? SMTP_HOST : 'smtp.gmail.com');
+            $mail->SMTPAuth   = true;
+            $mail->Username   = $email_config['smtp_username'] ?? (defined('SMTP_USERNAME') ? SMTP_USERNAME : '');
+            $mail->Password   = $email_config['smtp_password'] ?? (defined('SMTP_PASSWORD') ? SMTP_PASSWORD : '');
+            $mail->SMTPSecure = ($email_config['smtp_port'] ?? 587) == 465 ? PHPMailer::ENCRYPTION_SMTPS : PHPMailer::ENCRYPTION_STARTTLS;
+            $mail->Port       = $email_config['smtp_port'] ?? 587;
+            $mail->SMTPOptions = ['ssl' => ['verify_peer' => false, 'verify_peer_name' => false, 'allow_self_signed' => true]];
 
-        $mail->send();
-        $email_success = true;
+            $from_email = $email_config['from_email'] ?? (defined('SMTP_USERNAME') ? SMTP_USERNAME : 'info@umojadrivers.co.ke');
+            $from_name = $email_config['from_name'] ?? $site_name;
+
+            $mail->setFrom($from_email, $from_name);
+            $mail->addAddress($to_email);
+            $mail->isHTML(true);
+            $mail->Subject = $subject;
+            $mail->Body    = $body_html;
+            $mail->AltBody = strip_tags($body_content);
+
+            $mail->send();
+            $email_success = true;
+        }
     } catch (Exception $e) {
-        $delivery_error = $mail->ErrorInfo;
+        $delivery_error = $mail->ErrorInfo ?? $e->getMessage();
         error_log("Mailer Error: " . $delivery_error);
     }
 

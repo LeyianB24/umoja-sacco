@@ -103,14 +103,19 @@ class MpesaService implements PaymentGatewayInterface {
                 CURLOPT_POST => true,
                 CURLOPT_POSTFIELDS => json_encode($payload),
                 CURLOPT_SSL_VERIFYPEER => false,
-                CURLOPT_SSL_VERIFYHOST => 0
+                CURLOPT_SSL_VERIFYHOST => 0,
+                CURLOPT_CONNECTTIMEOUT => 10,
+                CURLOPT_TIMEOUT => 30
             ]);
 
             $response = curl_exec($ch);
             $error = curl_error($ch);
+            $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             curl_close($ch);
 
-            if ($response === false) return ['success' => false, 'message' => $error];
+            if ($response === false) {
+                return ['success' => false, 'message' => 'M-Pesa request failed: ' . $error];
+            }
             $json = json_decode($response, true);
 
             if (isset($json['ResponseCode']) && $json['ResponseCode'] === '0') {
@@ -164,11 +169,19 @@ class MpesaService implements PaymentGatewayInterface {
             CURLOPT_POST => true,
             CURLOPT_POSTFIELDS => json_encode($payload),
             CURLOPT_SSL_VERIFYPEER => false,
-            CURLOPT_SSL_VERIFYHOST => 0
+            CURLOPT_SSL_VERIFYHOST => 0,
+            CURLOPT_CONNECTTIMEOUT => 10,
+            CURLOPT_TIMEOUT => 30
         ]);
-        
+
         $response = curl_exec($ch);
+        $error = curl_error($ch);
+        $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
+
+        if ($response === false) {
+            return ['success' => false, 'message' => 'M-Pesa B2C request failed: ' . $error];
+        }
 
         $json = json_decode($response, true);
         if (isset($json['ResultCode']) && $json['ResultCode'] === '0') {

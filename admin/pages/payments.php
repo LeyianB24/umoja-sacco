@@ -8,6 +8,7 @@ require_once __DIR__ . '/../../inc/LayoutManager.php';
 require_once __DIR__ . '/../../inc/SupportTicketWidget.php';
 
 $layout = LayoutManager::create('admin');
+require_once __DIR__ . '/../../inc/functions.php';
 
 require_once __DIR__ . '/../../inc/FinancialEngine.php';
 require_once __DIR__ . '/../../inc/TransactionHelper.php';
@@ -19,11 +20,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     verify_csrf_token();
 
     $member_id = !empty($_POST['member_id']) ? intval($_POST['member_id']) : null;
-    $type      = $_POST['transaction_type'] ?? '';
-    $amount    = floatval($_POST['amount'] ?? 0);
+    $type      = sanitize_select($_POST['transaction_type'] ?? '', ['deposit','withdrawal','loan_repayment','share_capital','expense','income','revenue_inflow'], '');
+    $amount    = max(0.0, floatval($_POST['amount'] ?? 0));
     $notes     = trim($_POST['notes'] ?? '');
     $ref_no    = trim($_POST['reference_no'] ?? '');
-    $date      = $_POST['txn_date'] ?? date('Y-m-d');
+    $date      = normalize_date_or_default($_POST['txn_date'] ?? '', date('Y-m-d'));
+    $method    = sanitize_select($_POST['payment_method'] ?? 'cash', ['cash','mpesa','bank','card'], 'cash');
 
     if ($amount <= 0) {
         $_SESSION['error'] = "Amount must be greater than zero.";
@@ -48,17 +50,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             $related_table = null;
 
             if ($type === 'loan_repayment' && $member_id) {
-                $l_res = $conn->query("SELECT loan_id FROM loans WHERE member_id = $member_id AND status = 'disbursed' LIMIT 1");
-                if ($l_res && $l_res->num_rows > 0) {
-                    $related_id = $l_res->fetch_assoc()['loan_id'];
+                $stmt_l = $conn->prepare("SELECT loan_id FROM loans WHERE member_id = ? AND status = ? LIMIT 1");
+                $status = 'disbursed';
+                $stmt_l->bind_param('is', $member_id, $status);
+                $stmt_l->execute();
+                $r = $stmt_l->get_result();
+                if ($r && $r->num_rows > 0) {
+                    $related_id = (int)$r->fetch_assoc()['loan_id'];
                     $related_table = 'loans';
                 }
+                $stmt_l->close();
             } elseif (in_array($type, ['expense', 'income'])) {
                 $unified_id = $_POST['unified_asset_id'] ?? 'other_0';
-                if ($unified_id !== 'other_0') {
-                    list($source, $related_id) = explode('_', $unified_id);
-                    $related_id = (int)$related_id;
-                    $related_table = 'investments';
+                if ($unified_id !== 'other_0' && preg_match('/^([a-zA-Z0-9]+)_(\d+)$/', $unified_id, $m)) {
+                    $source = $m[1];
+                    $rid = (int)$m[2];
+                    if ($rid > 0) {
+                        $related_id = $rid;
+                        // Map known sources to tables
+                        $map = ['investment' => 'investments', 'investments' => 'investments'];
+                        $related_table = $map[strtolower($source)] ?? 'investments';
+                    }
                 }
             }
 
@@ -107,13 +119,16 @@ $where = "1";
 $params = [];
 $types = "";
 
-if (!empty($_GET['type'])) {
+$type_filter = sanitize_select($_GET['type'] ?? '', ['deposit','withdrawal','loan_repayment','share_capital','expense','income','revenue_inflow'], '');
+$search_raw  = trim($_GET['search'] ?? '');
+
+if ($type_filter !== '') {
     $where .= " AND t.transaction_type = ?";
-    $params[] = $_GET['type'];
+    $params[] = $type_filter;
     $types .= "s";
 }
-if (!empty($_GET['search'])) {
-    $search = "%" . $_GET['search'] . "%";
+if ($search_raw !== '') {
+    $search = "%" . $search_raw . "%";
     $where .= " AND (t.reference_no LIKE ? OR m.full_name LIKE ?)";
     $params[] = $search; $params[] = $search;
     $types .= "ss";
@@ -220,8 +235,9 @@ if (isset($_GET['action']) && $_GET['action'] === 'download_receipt') {
 }
 
 // HANDLE EXPORT
-if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_excel', 'print_report'])) {
-    if ($_GET['action'] === 'export_pdf' || $_GET['action'] === 'export_excel') {
+$export_action = sanitize_select($_GET['action'] ?? '', ['export_pdf', 'export_excel', 'print_report'], '');
+if ($export_action !== '') {
+    if ($export_action === 'export_pdf' || $export_action === 'export_excel') {
         require_once __DIR__ . '/../../inc/ExportHelper.php';
     } else {
         require_once __DIR__ . '/../../core/exports/UniversalExportEngine.php';
@@ -233,7 +249,7 @@ if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_e
     $stmt_e->execute();
     $export_data_raw = $stmt_e->get_result()->fetch_all(MYSQLI_ASSOC);
 
-    $format = match($_GET['action']) { 'export_excel' => 'excel', 'print_report' => 'print', default => 'pdf' };
+    $format = match($export_action) { 'export_excel' => 'excel', 'print_report' => 'print', default => 'pdf' };
 
     $data = []; $total_val = 0;
     foreach ($export_data_raw as $row) {

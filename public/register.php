@@ -102,7 +102,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $_SESSION['gender'] = $gender;
                     
                     require_once __DIR__ . '/../inc/notification_helpers.php';
-                    send_notification($conn, (int)$newMemberId, 'registration_success', ['member_no' => $reg_no]);
+                    // Avoid sending synchronous emails/SMS during registration (can block due to SMTP timeouts).
+                    // Instead record an in-app admin notification so staff can follow up asynchronously.
+                    $adminMsg = "New member registered: {$full_name} ({$reg_no}). National ID: {$national_id}.";
+                    add_admin_notification('New Member Registered', $adminMsg, 'manager');
                     
                     $ins->close();
                     header("Location: ../member/pages/dashboard.php"); exit;
@@ -520,7 +523,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="rl-step-num">3</div>
                 <div>
                     <div class="rl-step-title">Portal Access</div>
-                    <div class="rl-step-sub">Pay registration fee & go live</div>
+                    <div class="rl-step-sub">Complete KYC to activate your account</div>
                 </div>
             </div>
         </div>

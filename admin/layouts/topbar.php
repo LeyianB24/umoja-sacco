@@ -34,8 +34,12 @@ if (isset($conn) && isset($_SESSION['admin_id'])) {
         $stmt->close();
     }
 
-    $res = $conn->query("SELECT COUNT(*) as cnt FROM messages WHERE to_admin_id = $admin_id AND is_read = 0");
-    if ($row = $res->fetch_assoc()) $unread_msgs = $row['cnt'];
+    $stmt_cnt = $conn->prepare("SELECT COUNT(*) as cnt FROM messages WHERE to_admin_id = ? AND is_read = 0");
+    $stmt_cnt->bind_param('i', $admin_id);
+    $stmt_cnt->execute();
+    $r_cnt = $stmt_cnt->get_result();
+    if ($row = $r_cnt->fetch_assoc()) $unread_msgs = $row['cnt'];
+    $stmt_cnt->close();
 
     // NOTIFICATIONS
     if ($conn->query("SHOW TABLES LIKE 'notifications'")->num_rows > 0) {

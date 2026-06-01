@@ -14,6 +14,8 @@ require_permission();
 Auth::requireAdmin();
 $layout = LayoutManager::create('admin');
 
+require_once __DIR__ . '/../../inc/functions.php';
+
 if (!function_exists('calc_growth')) {
     function calc_growth($current, $previous) {
         if ($previous == 0) return $current > 0 ? 100 : 0;
@@ -21,10 +23,29 @@ if (!function_exists('calc_growth')) {
     }
 }
 
+if (!function_exists('is_valid_iso_date')) {
+    function is_valid_iso_date($date) {
+        $dt = DateTime::createFromFormat('Y-m-d', $date);
+        return $dt && $dt->format('Y-m-d') === $date;
+    }
+}
+
 // --- Filter Logic ---
-$duration   = $_GET['duration']   ?? 'monthly';
-$start_date = $_GET['start_date'] ?? date('Y-m-01');
-$end_date   = $_GET['end_date']   ?? date('Y-m-d');
+$allowedDurations = ['today', 'weekly', 'monthly', '3months', 'yearly', 'all', 'custom'];
+$duration = sanitize_select($_GET['duration'] ?? 'monthly', $allowedDurations, 'monthly');
+
+$start_date = normalize_date_or_default($_GET['start_date'] ?? '', date('Y-m-01'));
+$end_date   = normalize_date_or_default($_GET['end_date']   ?? '', date('Y-m-d'));
+
+if (!is_valid_iso_date($start_date) || !is_valid_iso_date($end_date)) {
+    $duration   = 'monthly';
+    $start_date = date('Y-m-01');
+    $end_date   = date('Y-m-d');
+}
+
+if (strtotime($start_date) > strtotime($end_date)) {
+    [$start_date, $end_date] = [$end_date, $start_date];
+}
 
 if ($duration !== 'custom') {
     switch ($duration) {
@@ -37,9 +58,10 @@ if ($duration !== 'custom') {
     }
 }
 
-$days_diff       = (strtotime($end_date) - strtotime($start_date)) / (60 * 60 * 24);
-$prev_end_date   = date('Y-m-d', strtotime($start_date . ' -1 day'));
-$prev_start_date = date('Y-m-d', strtotime($prev_end_date . ' -' . $days_diff . ' days'));
+$days_diff         = (strtotime($end_date) - strtotime($start_date)) / (60 * 60 * 24);
+$prev_end_date     = date('Y-m-d', strtotime($start_date . ' -1 day'));
+$prev_start_date   = date('Y-m-d', strtotime($prev_end_date . ' -' . $days_diff . ' days'));
+$reportPeriodLabel = date('d M, Y', strtotime($start_date)) . ' - ' . date('d M, Y', strtotime($end_date));
 
 $liquidity_names = "'Cash at Hand', 'M-Pesa Float', 'Bank Account', 'Paystack Clearing Account'";
 
@@ -113,52 +135,70 @@ while($row = $res_dist->fetch_assoc()) {
 $reportGen   = new ReportGenerator($conn);
 $balanceData = $reportGen->getBalanceSheetData($start_date, $end_date);
 
-if (isset($_GET['action']) || isset($_POST['send_to_all'])) {
+$action = sanitize_select($_GET['action'] ?? '', ['export_pdf', 'export_excel'], '');
+if ($action !== '' || isset($_POST['send_to_all'])) {
     set_time_limit(0); ignore_user_abort(true);
 }
 
-if (isset($_GET['action'])) {
+if ($action !== '') {
     if (ob_get_length()) ob_clean();
-    if ($_GET['action'] === 'export_pdf') {
-        $reportGen->generatePDF("Financial Report (".date('d M', strtotime($start_date))." - ".date('d M', strtotime($end_date)).")", $balanceData);
+    if ($action === 'export_pdf') {
+        $reportGen->generatePDF("Financial Report ({$reportPeriodLabel})", $balanceData);
         exit;
-    } elseif ($_GET['action'] === 'export_excel') {
+    } elseif ($action === 'export_excel') {
         $reportGen->generateExcel($balanceData); exit;
     }
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_to_all'])) {
+    if (!EMAIL_ENABLED || empty(SMTP_HOST) || empty(SMTP_USERNAME) || empty(SMTP_PASSWORD)) {
+        flash_set('Unable to send report: SMTP is not configured. Please set SMTP_HOST, SMTP_USERNAME and SMTP_PASSWORD in your environment.', 'warning');
+        header('Location: reports.php'); exit;
+    }
+
     $members = $conn->query("SELECT email, full_name FROM members WHERE status='active' AND email LIKE '%@%'");
     $sentCount = 0; $errCount = 0;
-    $pdfContent = $reportGen->generatePDF("Performance Report", $balanceData, true);
+    $pdfContent = $reportGen->generatePDF('Performance Report (' . $reportPeriodLabel . ')', $balanceData, true);
     $mail = new PHPMailer(true);
     try {
-        $mail->isSMTP(); $mail->Host = 'smtp.gmail.com'; $mail->SMTPAuth = true;
-        $mail->SMTPKeepAlive = true; $mail->Username = 'leyianbeza24@gmail.com';
-        $mail->Password = 'duzb mbqt fnsz ipkg'; $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-        $mail->Port = 587; $mail->Timeout = 60;
+        $mail->isSMTP();
+        $mail->Host = SMTP_HOST;
+        $mail->SMTPAuth = true;
+        $mail->SMTPKeepAlive = true;
+        $mail->Username = SMTP_USERNAME;
+        $mail->Password = SMTP_PASSWORD;
+        $mail->SMTPSecure = SMTP_SECURE === 'ssl' ? PHPMailer::ENCRYPTION_SMTPS : PHPMailer::ENCRYPTION_STARTTLS;
+        $mail->Port = SMTP_PORT;
+        $mail->Timeout = 60;
         $mail->SMTPOptions = ['ssl' => ['verify_peer' => false, 'verify_peer_name' => false, 'allow_self_signed' => true]];
-        $mail->setFrom('leyianbeza24@gmail.com', 'Umoja Drivers Sacco');
-        $mail->Subject = 'Executive Performance Report - ' . date('F Y');
-    } catch (Exception $e) { $errCount++; }
+        $mail->setFrom(EMAIL_FROM, SMTP_FROM_NAME ?: SITE_NAME);
+        $mail->Subject = 'Executive Performance Report - ' . $reportPeriodLabel;
+    } catch (Exception $e) {
+        flash_set('Unable to initialize email delivery. Please verify SMTP settings.', 'warning');
+        header('Location: reports.php'); exit;
+    }
     $errStrings = [];
     while ($m = $members->fetch_assoc()) {
         try {
             $mail->clearAllRecipients(); $mail->clearAttachments();
             $mail->addAddress($m['email'], $m['full_name']);
-            $mail->Body = "Dear {$m['full_name']},\n\nAttached is the latest financial performance report.\n\nRegards,\nUmoja Sacco Admin";
-            $mail->addStringAttachment($pdfContent, 'Financial_Report.pdf');
+            $mail->Body = "Dear {$m['full_name']},\n\nAttached is the latest financial performance report for the period {$reportPeriodLabel}.\n\nRegards,\n" . SITE_NAME . ' Admin';
+            $mail->addStringAttachment($pdfContent, 'Financial_Report_' . str_replace([' ', ',',], ['_', ''], $reportPeriodLabel) . '.pdf');
             $mail->send(); $sentCount++;
         } catch (Exception $e) {
             $errCount++;
-            if (count($errStrings) < 3) $errStrings[] = "{$m['email']}: {$mail->ErrorInfo}";
+            if (count($errStrings) < 3) {
+                $errStrings[] = "{$m['email']}: {$mail->ErrorInfo}";
+            }
         }
     }
     $mail->smtpClose();
     $flashMsg = "Report sent to $sentCount members. Failed: $errCount.";
-    if ($errCount > 0 && !empty($errStrings)) $flashMsg .= " Errors: ".implode(" | ", $errStrings);
-    flash_set($flashMsg, $errCount > 0 ? "warning" : "success");
-    header("Location: reports.php"); exit;
+    if ($errCount > 0 && !empty($errStrings)) {
+        $flashMsg .= ' Errors: ' . implode(' | ', $errStrings);
+    }
+    flash_set($flashMsg, $errCount > 0 ? 'warning' : 'success');
+    header('Location: reports.php'); exit;
 }
 
 $pageTitle = "Executive Reports";
@@ -408,10 +448,10 @@ h1,h2,h3,h4,h5,h6,p,span,div,label,a,.modal,.offcanvas {
                                 <i class="bi bi-file-earmark-arrow-down me-2"></i>Export
                             </button>
                             <ul class="dropdown-menu shadow-lg border-0 mt-2">
-                                <li><a class="dropdown-item" href="?action=export_pdf&duration=<?= $duration ?>&start_date=<?= $start_date ?>&end_date=<?= $end_date ?>">
+                                <li><a class="dropdown-item" href="?action=export_pdf&duration=<?= urlencode($duration) ?>&start_date=<?= urlencode($start_date) ?>&end_date=<?= urlencode($end_date) ?>">
                                     <i class="bi bi-file-pdf text-danger me-2"></i>PDF Document
                                 </a></li>
-                                <li><a class="dropdown-item" href="?action=export_excel&duration=<?= $duration ?>&start_date=<?= $start_date ?>&end_date=<?= $end_date ?>">
+                                <li><a class="dropdown-item" href="?action=export_excel&duration=<?= urlencode($duration) ?>&start_date=<?= urlencode($start_date) ?>&end_date=<?= urlencode($end_date) ?>">
                                     <i class="bi bi-file-excel text-success me-2"></i>Excel Sheet
                                 </a></li>
                             </ul>
@@ -426,7 +466,7 @@ h1,h2,h3,h4,h5,h6,p,span,div,label,a,.modal,.offcanvas {
                         <div class="hero-period-label">Active Period</div>
                         <div class="hero-period-value">
                             <i class="bi bi-calendar3 me-1" style="font-size:0.75rem;"></i>
-                            <?= date('M d, Y', strtotime($start_date)) ?> &mdash; <?= date('M d, Y', strtotime($end_date)) ?>
+                            <?= htmlspecialchars(date('M d, Y', strtotime($start_date)), ENT_QUOTES, 'UTF-8') ?> &mdash; <?= htmlspecialchars(date('M d, Y', strtotime($end_date)), ENT_QUOTES, 'UTF-8') ?>
                         </div>
                     </div>
                 </div>
@@ -451,9 +491,9 @@ h1,h2,h3,h4,h5,h6,p,span,div,label,a,.modal,.offcanvas {
                         <option value="custom"  <?= $duration==='custom'  ?'selected':''?>>Custom Range</option>
                     </select>
                     <div id="customDateRange" class="d-flex gap-2 align-items-center <?= $duration !== 'custom' ? 'd-none' : '' ?>">
-                        <input type="date" name="start_date" class="form-control-enh" value="<?= $start_date ?>">
+                        <input type="date" name="start_date" class="form-control-enh" value="<?= htmlspecialchars($start_date, ENT_QUOTES, 'UTF-8') ?>">
                         <span style="color:var(--text-muted);font-weight:600;font-size:0.8rem;">to</span>
-                        <input type="date" name="end_date" class="form-control-enh" value="<?= $end_date ?>">
+                        <input type="date" name="end_date" class="form-control-enh" value="<?= htmlspecialchars($end_date, ENT_QUOTES, 'UTF-8') ?>">
                     </div>
                     <button type="submit" class="btn-filter-apply ms-auto">
                         <i class="bi bi-check2 me-1"></i>Apply

@@ -7,6 +7,7 @@ require_once __DIR__ . '/../../inc/LayoutManager.php';
 require_once __DIR__ . '/../../inc/SupportTicketWidget.php';
 
 $layout = LayoutManager::create('admin');
+require_once __DIR__ . '/../../inc/functions.php';
 
 // ---------------------------------------------------------
 // POST HANDLER — approve / suspend / reactivate
@@ -66,7 +67,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'], $_POST['mem
         flash_set('Invalid action or member ID.', 'danger');
     }
 
-    header('Location: ' . $_SERVER['PHP_SELF'] . '?' . http_build_query(['status' => $_GET['status'] ?? 'all', 'q' => $_GET['q'] ?? '']));
+    $redir_status = sanitize_select($_GET['status'] ?? 'all', ['all','active','suspended','inactive','pending'], 'all');
+    $redir_q = trim($_GET['q'] ?? '');
+    header('Location: ' . $_SERVER['PHP_SELF'] . '?' . http_build_query(['status' => $redir_status, 'q' => $redir_q]));
     exit;
 }
 
@@ -79,8 +82,8 @@ $stats = $conn->query("SELECT
 FROM members")->fetch_assoc();
 
 // 2. Fetch Members Table
-$filter = $_GET['status'] ?? 'all';
-$search = $_GET['q'] ?? '';
+$filter = sanitize_select($_GET['status'] ?? 'all', ['all','active','suspended','inactive','pending'], 'all');
+$search = trim($_GET['q'] ?? '');
 $where  = "1=1";
 $params = [];
 $types  = "";

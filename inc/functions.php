@@ -211,6 +211,29 @@ if (!function_exists('old')) {
     }
 }
 
+if (!function_exists('sanitize_select')) {
+    function sanitize_select(string $value, array $allowed, string $default = ''): string
+    {
+        return in_array($value, $allowed, true) ? $value : $default;
+    }
+}
+
+if (!function_exists('is_valid_iso_date')) {
+    function is_valid_iso_date(?string $value): bool
+    {
+        return is_string($value)
+            && preg_match('/^\d{4}-\d{2}-\d{2}$/', $value) === 1
+            && strtotime($value) !== false;
+    }
+}
+
+if (!function_exists('normalize_date_or_default')) {
+    function normalize_date_or_default(?string $value, string $fallback): string
+    {
+        return is_valid_iso_date($value) ? $value : $fallback;
+    }
+}
+
 /* ==========================================================================
    NAVIGATION & HTTP
    ========================================================================== */

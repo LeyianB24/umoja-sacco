@@ -132,11 +132,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
             ];
             $txn_desc = $txn_desc_map[$type] ?? 'Payment';
 
-            // Simulated realistic processing delays (2–5 seconds) in sandbox
-            if ($gateway->getEnvironment() === 'sandbox') {
-                sleep(rand(2, 4));
-            }
-
+            // Skip simulated delays; rely on gateway timeout config instead
             $result = $gateway->initiateDeposit($phone, (float)$amount, $ref, $txn_desc);
 
             if (!$result['success']) {

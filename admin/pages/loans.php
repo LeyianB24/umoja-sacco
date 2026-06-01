@@ -9,6 +9,7 @@ require_once __DIR__ . '/../../inc/FinancialEngine.php';
 require_once __DIR__ . '/../../inc/notification_helpers.php';
 
 $layout = LayoutManager::create('admin');
+require_once __DIR__ . '/../../inc/functions.php';
 Auth::requireAdmin();
 require_permission();
 
@@ -24,7 +25,7 @@ if ($loan_id <= 0) {
 // --- HANDLE POST ACTIONS ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf_token();
-    $action = $_POST['action'] ?? '';
+    $action = sanitize_select($_POST['action'] ?? '', ['approve','reject','disburse','record_repayment'], '');
 
     $permissions = $_SESSION['permissions'] ?? [];
     $is_super    = ($_SESSION['role_id'] ?? 0) == 1;
@@ -37,27 +38,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt = $conn->prepare("UPDATE loans SET status='approved', approved_by=?, approval_date=NOW() WHERE loan_id=?");
             $stmt->bind_param("ii", $admin_id, $loan_id);
             $stmt->execute();
-            $res_l = $conn->query("SELECT member_id, amount, reference_no FROM loans WHERE loan_id = $loan_id");
-            if ($l_row = $res_l->fetch_assoc()) {
+
+            $stmt_sel = $conn->prepare("SELECT member_id, amount, reference_no FROM loans WHERE loan_id = ?");
+            $stmt_sel->bind_param('i', $loan_id);
+            $stmt_sel->execute();
+            $r = $stmt_sel->get_result();
+            if ($l_row = $r->fetch_assoc()) {
                 send_notification($conn, (int)$l_row['member_id'], 'loan_approved', ['amount' => $l_row['amount'], 'ref' => $l_row['reference_no']]);
             }
+            $stmt_sel->close();
+
             flash_set("Loan #$loan_id approved successfully.", "success");
 
         } elseif ($action === 'reject' && $can_approve) {
-            $reason = htmlspecialchars(trim($_POST['rejection_reason'] ?? ''));
-            $stmt = $conn->prepare("UPDATE loans SET status='rejected', notes=CONCAT(IFNULL(notes,''), ' [Rejected: ?]') WHERE loan_id=?");
+            $reason = trim($_POST['rejection_reason'] ?? '');
+            $stmt = $conn->prepare("UPDATE loans SET status='rejected', notes=CONCAT(IFNULL(notes,''), ' [Rejected: ', ?, ']') WHERE loan_id=?");
             $stmt->bind_param("si", $reason, $loan_id);
             $stmt->execute();
-            $conn->query("UPDATE loan_guarantors SET status='rejected' WHERE loan_id=$loan_id");
-            $res_l = $conn->query("SELECT member_id, amount, reference_no FROM loans WHERE loan_id = $loan_id");
-            if ($l_row = $res_l->fetch_assoc()) {
+
+            $stmt_g = $conn->prepare("UPDATE loan_guarantors SET status='rejected' WHERE loan_id=?");
+            $stmt_g->bind_param('i', $loan_id);
+            $stmt_g->execute();
+            $stmt_g->close();
+
+            $stmt_sel = $conn->prepare("SELECT member_id, amount, reference_no FROM loans WHERE loan_id = ?");
+            $stmt_sel->bind_param('i', $loan_id);
+            $stmt_sel->execute();
+            $r = $stmt_sel->get_result();
+            if ($l_row = $r->fetch_assoc()) {
                 send_notification($conn, (int)$l_row['member_id'], 'loan_rejected', ['amount' => $l_row['amount'], 'rejection_reason' => $reason, 'ref' => $l_row['reference_no']]);
             }
+            $stmt_sel->close();
+
             flash_set("Loan #$loan_id rejected.", "warning");
 
         } elseif ($action === 'disburse' && $can_disburse) {
-            $ref    = !empty($_POST['ref_no']) ? $_POST['ref_no'] : ("DSB-" . date('Ymd') . "-" . rand(1000,9999));
-            $method = $_POST['payment_method'] ?? 'cash';
+            $ref    = !empty($_POST['ref_no']) ? trim($_POST['ref_no']) : ("DSB-" . date('Ymd') . "-" . rand(1000,9999));
+            $method = sanitize_select($_POST['payment_method'] ?? 'cash', ['cash','mpesa','bank','card'], 'cash');
 
             $stmt = $conn->prepare("SELECT amount, member_id FROM loans WHERE loan_id=?");
             $stmt->bind_param("i", $loan_id);
@@ -76,14 +93,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'related_table' => 'loans',
                 'notes'         => "Loan Disbursement via $method. Ref: $ref"
             ]);
-            $conn->query("UPDATE loans SET current_balance=amount, status='disbursed', disbursement_date=NOW() WHERE loan_id=$loan_id");
+
+            $stmt_u = $conn->prepare("UPDATE loans SET current_balance=amount, status='disbursed', disbursement_date=NOW() WHERE loan_id=?");
+            $stmt_u->bind_param('i', $loan_id);
+            $stmt_u->execute();
+            $stmt_u->close();
+
             send_notification($conn, (int)$l_chk['member_id'], 'loan_disbursed', ['amount' => (float)$l_chk['amount'], 'ref' => $ref]);
             flash_set("Loan #$loan_id disbursed. Ref: $ref", "success");
 
         } elseif ($action === 'record_repayment' && $can_disburse) {
-            $rep_amount = (float)($_POST['repayment_amount'] ?? 0);
-            $rep_method = $_POST['repayment_method'] ?? 'cash';
-            $rep_ref    = !empty($_POST['repayment_ref']) ? $_POST['repayment_ref'] : ("REP-" . date('Ymd') . "-" . rand(1000,9999));
+            $rep_amount = max(0.0, (float)($_POST['repayment_amount'] ?? 0));
+            $rep_method = sanitize_select($_POST['repayment_method'] ?? 'cash', ['cash','mpesa','bank','card'], 'cash');
+            $rep_ref    = !empty($_POST['repayment_ref']) ? trim($_POST['repayment_ref']) : ("REP-" . date('Ymd') . "-" . rand(1000,9999));
 
             if ($rep_amount <= 0) throw new Exception("Repayment amount must be greater than zero.");
 

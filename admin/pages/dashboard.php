@@ -13,16 +13,25 @@ $admin_name = htmlspecialchars($_SESSION['admin_name'] ?? 'System Admin');
 
 // Role-based visibility: Filter tickets by assigned_role_id
 $my_role_id = (int)($_SESSION['role_id'] ?? 0);
-$where_clauses = ["s.status != 'Closed'"];
+$where_clauses = ["s.status != ?"];
+$where_params = ['Closed'];
+$where_types = 's';
 
 if ($my_role_id !== 1) {
-    $where_clauses[] = "s.assigned_role_id = $my_role_id";
+    $where_clauses[] = "s.assigned_role_id = ?";
+    $where_params[] = $my_role_id;
+    $where_types   .= 'i';
 }
 
 $where_sql = "WHERE " . implode(' AND ', $where_clauses);
 
 // 1. Core Counts
-$open_tickets = $conn->query("SELECT COUNT(*) AS c FROM support_tickets s $where_sql")->fetch_assoc()['c'] ?? 0;
+$open_stmt = $conn->prepare("SELECT COUNT(*) AS c FROM support_tickets s $where_sql");
+$open_stmt->bind_param($where_types, ...$where_params);
+$open_stmt->execute();
+$open_tickets = $open_stmt->get_result()->fetch_assoc()['c'] ?? 0;
+$open_stmt->close();
+
 $today_logs = $conn->query("SELECT COUNT(*) AS c FROM audit_logs WHERE DATE(created_at)=CURDATE()")->fetch_assoc()['c'] ?? 0;
 
 // 2. Member Metrics (Active vs Total)
@@ -78,7 +87,11 @@ for ($i = 6; $i >= 0; $i--) {
 }
 
 // 7. Recent Items
-$tickets = $conn->query("SELECT s.*, COALESCE(m.full_name,'Guest') AS sender FROM support_tickets s LEFT JOIN members m ON s.member_id=m.member_id $where_sql ORDER BY s.created_at DESC LIMIT 5")->fetch_all(MYSQLI_ASSOC);
+$tickets_stmt = $conn->prepare("SELECT s.*, COALESCE(m.full_name,'Guest') AS sender FROM support_tickets s LEFT JOIN members m ON s.member_id=m.member_id $where_sql ORDER BY s.created_at DESC LIMIT 5");
+$tickets_stmt->bind_param($where_types, ...$where_params);
+$tickets_stmt->execute();
+$tickets = $tickets_stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+$tickets_stmt->close();
 
 require_once __DIR__ . '/../../inc/SystemHealthHelper.php';
 $health = getSystemHealth($conn);

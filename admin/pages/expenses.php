@@ -15,16 +15,18 @@ require_permission();
 $pageTitle = "Expenditure Portal";
 
 // 2. Handle Form Submission
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'add_expense') {
+$expense_action = sanitize_select($_POST['action'] ?? '', ['add_expense', 'settle_expense'], '');
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && $expense_action === 'add_expense') {
     verify_csrf_token();
 
     $amount     = floatval($_POST['amount']);
-    $category   = $_POST['category'];
+    $category   = trim($_POST['category'] ?? '');
     $payee      = trim($_POST['payee']);
     $date       = $_POST['expense_date'];
     $ref_no     = trim($_POST['ref_no']);
     $desc       = trim($_POST['description']);
     $is_pending = isset($_POST['is_pending']);
+    $method     = sanitize_select($_POST['payment_method'] ?? 'cash', ['cash','mpesa','bank','card'], 'cash');
 
     validate_not_future($date, "expenses.php");
 
@@ -122,12 +124,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 }
 
 // 3. Data Fetching
+$duration        = sanitize_select($_GET['duration'] ?? '3months', ['today', 'weekly', 'monthly', '3months', 'all'], '3months');
+$start_date      = normalize_date_or_default($_GET['start_date'] ?? '', date('Y-m-d', strtotime('-3 months')));
+$end_date        = normalize_date_or_default($_GET['end_date'] ?? '', date('Y-m-d'));
 
-$duration   = $_GET['duration'] ?? '3months';
-$start_date = $_GET['start_date'] ?? date('Y-m-d', strtotime('-3 months'));
-$end_date   = $_GET['end_date']   ?? date('Y-m-d');
-
-$date_filter = "";
 if ($duration !== 'all') {
     switch ($duration) {
         case 'today':   $start_date = $end_date = date('Y-m-d'); break;
@@ -135,12 +135,30 @@ if ($duration !== 'all') {
         case 'monthly': $start_date = date('Y-m-01'); $end_date = date('Y-m-t'); break;
         case '3months': $start_date = date('Y-m-d', strtotime('-3 months')); break;
     }
-    $date_filter = " AND created_at BETWEEN '$start_date 00:00:00' AND '$end_date 23:59:59'";
 }
 
-$where  = "transaction_type IN ('expense', 'expense_outflow', 'expense_incurred') $date_filter";
-$sql    = "SELECT * FROM transactions WHERE $where ORDER BY created_at DESC";
-$result = $conn->query($sql);
+if ($start_date > $end_date) {
+    [$start_date, $end_date] = [$end_date, $start_date];
+}
+
+$where  = "transaction_type IN ('expense', 'expense_outflow', 'expense_incurred')";
+$params = [];
+$types  = '';
+
+if ($duration !== 'all') {
+    $where .= " AND created_at BETWEEN ? AND ?";
+    $params[] = $start_date . ' 00:00:00';
+    $params[] = $end_date . ' 23:59:59';
+    $types   .= 'ss';
+}
+
+$sql = "SELECT * FROM transactions WHERE $where ORDER BY created_at DESC";
+$stmt = $conn->prepare($sql);
+if ($types !== '') {
+    $stmt->bind_param($types, ...$params);
+}
+$stmt->execute();
+$result = $stmt->get_result();
 
 $expenses             = [];
 $total_period_expense = 0;
@@ -159,14 +177,15 @@ if ($result) {
 }
 
 // Handle Export
-if (isset($_GET['action']) && in_array($_GET['action'], ['export_pdf', 'export_excel', 'print_report'])) {
-    if ($_GET['action'] === 'export_pdf' || $_GET['action'] === 'export_excel') {
+$export_action = sanitize_select($_GET['action'] ?? '', ['export_pdf', 'export_excel', 'print_report'], '');
+if ($export_action !== '') {
+    if ($export_action === 'export_pdf' || $export_action === 'export_excel') {
         require_once __DIR__ . '/../../inc/ExportHelper.php';
     } else {
         require_once __DIR__ . '/../../core/exports/UniversalExportEngine.php';
     }
 
-    $format      = match($_GET['action']) { 'export_excel' => 'excel', 'print_report' => 'print', default => 'pdf' };
+    $format = match($export_action) { 'export_excel' => 'excel', 'print_report' => 'print', default => 'pdf' };
     $export_data = [];
     foreach ($expenses as $ex) {
         preg_match('/\[(.*?)\]/', $ex['notes'], $cat_match);

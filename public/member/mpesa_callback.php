@@ -329,7 +329,20 @@ if (isset($response['Body']['stkCallback'])) {
             <p><strong>Reason:</strong> $resultDesc</p>
             <p>Please try again.</p>
         ";
-        try { sendEmail($email, $subject, $body, $member_id); } catch (Exception $e) {}
+        // Spawn async background process to send email (non-blocking)
+        $payload = ['to' => $email, 'subject' => $subject, 'body' => $body];
+        $tmp = tempnam(sys_get_temp_dir(), 'usms_email_');
+        if ($tmp) {
+            file_put_contents($tmp, json_encode($payload));
+            $php = PHP_BINARY;
+            $script = __DIR__ . '/../../bin/send_raw_email.php';
+            $cmd = escapeshellarg($php) . ' ' . escapeshellarg($script) . ' ' . escapeshellarg($tmp);
+            if (strncasecmp(PHP_OS, 'WIN', 3) === 0) {
+                @pclose(@popen('start /B "" ' . $cmd, 'r'));
+            } else {
+                @exec($cmd . ' > /dev/null 2>&1 &');
+            }
+        }
 
         file_put_contents($logFile,
             "FAILED: Ref $reference_no - Reason: $resultDesc\n",
@@ -482,7 +495,20 @@ if (isset($response['Result'])) {
                          <p><strong>Reason:</strong> $resultDesc</p>
                          <p>The funds have been returned to your account.</p>
                          <p>Please contact support if you have any questions.</p>";
-                try { sendEmail($m['email'], $subject, $body, $member_id); } catch (Exception $e) {}
+                // Spawn async background process to send email (non-blocking)
+                $payload = ['to' => $m['email'], 'subject' => $subject, 'body' => $body];
+                $tmp = tempnam(sys_get_temp_dir(), 'usms_email_');
+                if ($tmp) {
+                    file_put_contents($tmp, json_encode($payload));
+                    $php = PHP_BINARY;
+                    $script = __DIR__ . '/../../bin/send_raw_email.php';
+                    $cmd = escapeshellarg($php) . ' ' . escapeshellarg($script) . ' ' . escapeshellarg($tmp);
+                    if (strncasecmp(PHP_OS, 'WIN', 3) === 0) {
+                        @pclose(@popen('start /B "" ' . $cmd, 'r'));
+                    } else {
+                        @exec($cmd . ' > /dev/null 2>&1 &');
+                    }
+                }
             }
         }
         

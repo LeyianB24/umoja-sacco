@@ -20,11 +20,21 @@ require_once __DIR__ . '/../../inc/SupportTicketWidget.php';
 $layout = LayoutManager::create('admin');
 $admin_id = $_SESSION['admin_id'];
 
+require_once __DIR__ . '/../../inc/functions.php';
+
 $pageTitle = "Welfare Management";
 
 // --- Data Aggregation ---
-$filter = $_GET['filter'] ?? 'all';
-$cases = $conn->query("SELECT c.*, m.full_name, m.phone, m.national_id, m.profile_pic FROM welfare_cases c JOIN members m ON c.related_member_id = m.member_id WHERE c.status = '$filter' OR '$filter' = 'all' ORDER BY c.created_at DESC");
+// Sanitize filter
+$filter = sanitize_select($_GET['filter'] ?? 'all', ['pending','active','funded','disbursed','all'], 'all');
+if ($filter === 'all') {
+    $cases = $conn->query("SELECT c.*, m.full_name, m.phone, m.national_id, m.profile_pic FROM welfare_cases c JOIN members m ON c.related_member_id = m.member_id ORDER BY c.created_at DESC");
+} else {
+    $stmt = $conn->prepare("SELECT c.*, m.full_name, m.phone, m.national_id, m.profile_pic FROM welfare_cases c JOIN members m ON c.related_member_id = m.member_id WHERE c.status = ? ORDER BY c.created_at DESC");
+    $stmt->bind_param('s', $filter);
+    $stmt->execute();
+    $cases = $stmt->get_result();
+}
 
 $stats = $conn->query("SELECT 
     COUNT(CASE WHEN status='pending' THEN 1 END) as pending, 

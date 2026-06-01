@@ -7,6 +7,7 @@ if (session_status() === PHP_SESSION_NONE) session_start();
 require_once __DIR__ . '/../../config/app.php';
 require_once __DIR__ . '/../../inc/auth.php';
 require_once __DIR__ . '/../../inc/LayoutManager.php';
+require_once __DIR__ . '/../../inc/functions.php';
 require_once __DIR__ . '/../../inc/TransactionHelper.php';
 require_once __DIR__ . '/../../inc/InvestmentViabilityEngine.php';
 
@@ -60,43 +61,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['record_revenue'])) {
 }
 
 // ── 2. Filters ────────────────────────────────────────────────────────────────
-$duration        = $_GET['duration'] ?? 'monthly';
-$filter_asset_id = !empty($_GET['asset_id']) ? (int)$_GET['asset_id'] : 0;
+$duration        = sanitize_select($_GET['duration'] ?? 'monthly', ['today', 'weekly', 'monthly', 'custom', 'all'], 'monthly');
+$filter_asset_id = isset($_GET['asset_id']) ? (int)$_GET['asset_id'] : 0;
 
-// Sanitise dates — strtotime prevents injection, date() normalises format
-$start_date = date('Y-m-d', strtotime($_GET['start_date'] ?? date('Y-m-01')));
-$end_date   = date('Y-m-d', strtotime($_GET['end_date']   ?? date('Y-m-t')));
+$start_date = normalize_date_or_default($_GET['start_date'] ?? '', date('Y-m-01'));
+$end_date   = normalize_date_or_default($_GET['end_date']   ?? '', date('Y-m-t'));
 
-$date_filter = '';
-if ($duration !== 'all') {
-    switch ($duration) {
-        case 'today':
-            $start_date = $end_date = date('Y-m-d');
-            break;
-        case 'weekly':
-            $start_date = date('Y-m-d', strtotime('-7 days'));
-            $end_date   = date('Y-m-d');
-            break;
-        case 'monthly':
-            $start_date = date('Y-m-01');
-            $end_date   = date('Y-m-t');
-            break;
-        case 'custom':
-            // already set from sanitised $_GET above
-            break;
+if ($duration === 'custom') {
+    if (!is_valid_iso_date($_GET['start_date'] ?? '') || !is_valid_iso_date($_GET['end_date'] ?? '')) {
+        $duration   = 'monthly';
+        $start_date = date('Y-m-01');
+        $end_date   = date('Y-m-t');
+        flash_set('Invalid custom date range selected. Showing current month.', 'warning');
     }
-    $date_filter = " AND t.transaction_date BETWEEN '$start_date' AND '$end_date'";
+}
+
+if ($start_date > $end_date) {
+    [$start_date, $end_date] = [$end_date, $start_date];
 }
 
 // ── 3. Revenue Ledger Query ───────────────────────────────────────────────────
-$rev_types    = "'income', 'revenue_inflow'";
-$where_clause = "t.transaction_type IN ($rev_types) $date_filter";
-
-if ($filter_asset_id > 0) {
-    $where_clause .= " AND t.related_table = 'investments' AND t.related_id = $filter_asset_id";
-}
-
-$revenue_res  = $conn->query("
+$rev_types     = "'income', 'revenue_inflow'";
+$revenue_sql   = "
     SELECT t.*,
         CASE
             WHEN t.related_table = 'investments'
@@ -104,11 +90,31 @@ $revenue_res  = $conn->query("
             ELSE 'General Fund'
         END AS source_name
     FROM transactions t
-    WHERE $where_clause
-    ORDER BY t.transaction_date DESC, t.created_at DESC
-    LIMIT 100
-");
-$revenue_data     = $revenue_res ? $revenue_res->fetch_all(MYSQLI_ASSOC) : [];
+    WHERE t.transaction_type IN ($rev_types)";
+$revenue_params = [];
+$revenue_types  = '';
+
+if ($duration !== 'all') {
+    $revenue_sql .= " AND t.transaction_date BETWEEN ? AND ?";
+    $revenue_params[] = $start_date;
+    $revenue_params[] = $end_date;
+    $revenue_types   .= 'ss';
+}
+
+if ($filter_asset_id > 0) {
+    $revenue_sql .= " AND t.related_table = 'investments' AND t.related_id = ?";
+    $revenue_params[] = $filter_asset_id;
+    $revenue_types   .= 'i';
+}
+
+$revenue_sql .= " ORDER BY t.transaction_date DESC, t.created_at DESC LIMIT 100";
+$stmt_rev = $conn->prepare($revenue_sql);
+if ($revenue_types !== '') {
+    $stmt_rev->bind_param($revenue_types, ...$revenue_params);
+}
+$stmt_rev->execute();
+$revenue_res = $stmt_rev->get_result();
+$revenue_data = $revenue_res ? $revenue_res->fetch_all(MYSQLI_ASSOC) : [];
 $total_period_rev = array_sum(array_column($revenue_data, 'amount'));
 
 // ── 4. Portfolio Target Summary ───────────────────────────────────────────────
@@ -170,8 +176,8 @@ while ($row = $inv_res->fetch_assoc()) {
 }
 
 // ── 7. Export Handler ─────────────────────────────────────────────────────────
-$action = $_GET['action'] ?? '';
-if (in_array($action, ['export_pdf', 'export_excel', 'print_report'], true)) {
+$action = sanitize_select($_GET['action'] ?? '', ['export_pdf', 'export_excel', 'print_report'], '');
+if ($action !== '') {
 
     $export_rows = [];
     foreach ($revenue_data as $row) {

@@ -116,18 +116,25 @@ $where = "1";
 $params = [];
 $types = "";
 
-if (!empty($_GET['status'])) {
-    if ($_GET['status'] === 'overdue') {
+$status_filter = sanitize_select($_GET['status'] ?? '', ['pending', 'approved', 'disbursed', 'rejected', 'overdue'], '');
+if ($status_filter !== '') {
+    if ($status_filter === 'overdue') {
         $where .= " AND l.status = 'disbursed' AND DATE(l.next_repayment_date) < CURDATE()";
     } else {
         $where .= " AND l.status = ?";
-        $params[] = $_GET['status']; $types .= "s";
+        $params[] = $status_filter;
+        $types   .= "s";
     }
 }
-if (!empty($_GET['search'])) {
-    $s = "%" . $_GET['search'] . "%";
+
+$search_keyword = trim($_GET['search'] ?? '');
+if ($search_keyword !== '') {
+    $like_search = "%{$search_keyword}%";
     $where .= " AND (m.full_name LIKE ? OR m.national_id LIKE ? OR l.loan_id = ?)";
-    $params[] = $s; $params[] = $s; $params[] = $_GET['search']; $types .= "ssi";
+    $params[] = $like_search;
+    $params[] = $like_search;
+    $params[] = $search_keyword;
+    $types   .= "ssi";
 }
 
 $sql = "SELECT l.*, m.full_name, m.national_id, m.phone,
@@ -140,7 +147,7 @@ $sql = "SELECT l.*, m.full_name, m.national_id, m.phone,
         ORDER BY FIELD(l.status, 'approved', 'disbursed', 'pending', 'rejected'), l.created_at DESC";
 
 $stmt = $conn->prepare($sql);
-if (!empty($params)) { $stmt->bind_param($types, ...$params); }
+if ($types !== '') { $stmt->bind_param($types, ...$params); }
 $stmt->execute();
 $loans = $stmt->get_result();
 

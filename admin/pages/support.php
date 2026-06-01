@@ -5,6 +5,7 @@ if (session_status() === PHP_SESSION_NONE) session_start();
 require_once __DIR__ . '/../../config/app.php';
 require_once __DIR__ . '/../../inc/auth.php';
 require_once __DIR__ . '/../../inc/LayoutManager.php';
+require_once __DIR__ . '/../../inc/functions.php';
 
 \USMS\Middleware\AuthMiddleware::requireModulePermission('support', 'view');
 $layout = LayoutManager::create('admin');
@@ -23,19 +24,37 @@ $stats = $db->query("SELECT
     SUM(CASE WHEN status='Closed'  THEN 1 ELSE 0 END) as closed
     FROM support_tickets WHERE $role_where")->fetch_assoc();
 
-$status_filter   = $_GET['status']   ?? 'all';
+$status_filter   = sanitize_select($_GET['status'] ?? 'all', ['all', 'Pending', 'Open', 'Closed'], 'all');
 $category_filter = $_GET['category'] ?? 'all';
-$search_query    = trim($_GET['q']   ?? '');
+$search_query    = trim($_GET['q'] ?? '');
 $where_clauses   = [];
+$bind_types      = '';
+$bind_params     = [];
 
-if ($my_role_id !== 1) $where_clauses[] = "s.assigned_role_id = $my_role_id";
-if ($status_filter   !== 'all') $where_clauses[] = "s.status   = '" . $db->real_escape_string($status_filter)   . "'";
-if ($category_filter !== 'all') $where_clauses[] = "s.category = '" . $db->real_escape_string($category_filter) . "'";
-if ($search_query) {
-    $q = $db->real_escape_string($search_query);
-    $where_clauses[] = "(s.subject LIKE '%$q%' OR s.message LIKE '%$q%' OR s.support_id LIKE '%$q%')";
+if ($my_role_id !== 1) {
+    $where_clauses[] = 's.assigned_role_id = ?';
+    $bind_types .= 'i';
+    $bind_params[] = $my_role_id;
 }
-$where_sql = count($where_clauses) > 0 ? "WHERE " . implode(' AND ', $where_clauses) : "";
+if ($status_filter !== 'all') {
+    $where_clauses[] = 's.status = ?';
+    $bind_types .= 's';
+    $bind_params[] = $status_filter;
+}
+if ($category_filter !== 'all') {
+    $where_clauses[] = 's.category = ?';
+    $bind_types .= 's';
+    $bind_params[] = $category_filter;
+}
+if ($search_query) {
+    $where_clauses[] = '(s.subject LIKE ? OR s.message LIKE ? OR s.support_id LIKE ?)';
+    $bind_types .= 'sss';
+    $search_param = '%' . $search_query . '%';
+    $bind_params[] = $search_param;
+    $bind_params[] = $search_param;
+    $bind_params[] = $search_param;
+}
+$where_sql = count($where_clauses) > 0 ? 'WHERE ' . implode(' AND ', $where_clauses) : '';
 
 $sql = "SELECT s.support_id, s.member_id, s.subject, s.message,
     s.status, s.created_at, s.attachment, s.category,
@@ -46,7 +65,16 @@ $sql = "SELECT s.support_id, s.member_id, s.subject, s.message,
     $where_sql
     ORDER BY s.created_at DESC";
 
-$res = $db->query($sql);
+$stmt = $db->prepare($sql);
+if ($stmt) {
+    if (!empty($bind_params)) {
+        $stmt->bind_param($bind_types, ...$bind_params);
+    }
+    $stmt->execute();
+    $res = $stmt->get_result();
+} else {
+    $res = $db->query($sql);
+}
 $tickets = [];
 while ($row = $res->fetch_assoc()) $tickets[] = $row;
 

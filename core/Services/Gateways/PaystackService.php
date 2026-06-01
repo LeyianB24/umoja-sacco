@@ -56,10 +56,18 @@ class PaystackService implements PaymentGatewayInterface {
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_POST => true,
             CURLOPT_POSTFIELDS => json_encode($fields),
-            CURLOPT_HTTPHEADER => ["Authorization: Bearer " . $apiKey, "Content-Type: application/json"]
+            CURLOPT_HTTPHEADER => ["Authorization: Bearer " . $apiKey, "Content-Type: application/json"],
+            CURLOPT_CONNECTTIMEOUT => 10,
+            CURLOPT_TIMEOUT => 30
         ]);
         
         $result = curl_exec($ch);
+        $curl_err = curl_error($ch);
+        if ($result === false) {
+            curl_close($ch);
+            return ['success' => false, 'message' => 'Paystack connection error: ' . $curl_err];
+        }
+
         $recipient_data = json_decode((string)$result, true);
         
         if (!($recipient_data['status'] ?? false)) {
@@ -82,8 +90,13 @@ class PaystackService implements PaymentGatewayInterface {
         curl_setopt($ch, CURLOPT_URL, $urlTransfer);
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($transferFields));
         $resultTransfer = curl_exec($ch);
+        $curl_err2 = curl_error($ch);
+        if ($resultTransfer === false) {
+            curl_close($ch);
+            return ['success' => false, 'message' => 'Paystack transfer connection error: ' . $curl_err2];
+        }
         curl_close($ch);
-        
+
         $json = json_decode((string)$resultTransfer, true);
         if (($json['status'] ?? false) === true) {
             return [
