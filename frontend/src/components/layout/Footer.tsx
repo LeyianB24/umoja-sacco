@@ -162,8 +162,10 @@ export function Footer() {
           color: 'rgba(255, 255, 255, 0.5)',
         }}
       >
-        <div>
-          &copy; {new Date().getFullYear()} Umoja Drivers & Allied Sacco Society Ltd. All rights reserved.
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          <span>&copy; {new Date().getFullYear()} Umoja Drivers & Allied Sacco Society Ltd. All rights reserved.</span>
+          <span>&bull;</span>
+          <span>Built by <a href="https://www.bezalel.website/" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--brand-lime)', textDecoration: 'none', fontWeight: 600 }}>Bezalel Technologies</a></span>
         </div>
         <div style={{ display: 'flex', gap: '16px' }}>
           <Link href="/terms">Terms</Link>
