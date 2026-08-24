@@ -1,0 +1,1217 @@
+// prisma/schema.prisma
+// Generated for Umoja SACCO Management System (USMS)
+// Target: PostgreSQL (Neon) with Connection Pooling
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==========================================
+// Model: Migrations (Table: _migrations)
+// ==========================================
+model Migrations {
+  id                       Int          @id @default(autoincrement())
+  filename                 String       @unique @db.VarChar(255)
+  batch                    Int          @default(1)
+  applied_at               DateTime     @default(now())
+  @@map("_migrations")
+}
+
+// ==========================================
+// Model: AdminModulePermissions (Table: admin_module_permissions)
+// ==========================================
+model AdminModulePermissions {
+  id                       Int          @id @default(autoincrement())
+  role_id                  Int         
+  module_id                Int         
+  can_view                 Boolean?     @default(0)
+  can_create               Boolean?     @default(0)
+  can_edit                 Boolean?     @default(0)
+  can_delete               Boolean?     @default(0)
+  created_at               DateTime     @default(now())
+  @@map("admin_module_permissions")
+}
+
+// ==========================================
+// Model: Admins (Table: admins)
+// ==========================================
+model Admins {
+  admin_id                 Int          @id @default(autoincrement())
+  username                 String       @unique @db.VarChar(80)
+  full_name                String       @db.VarChar(150)
+  email                    String       @unique @db.VarChar(150)
+  password                 String?      @db.VarChar(255)
+  temp_password            String?      @db.VarChar(100)
+  created_at               DateTime     @default(now())
+  last_login               DateTime?   
+  remember_token           String?      @db.VarChar(255)
+  remember_expires         DateTime?   
+  remember_ua              String?      @db.VarChar(255)
+  role_id                  Int?         @default(4)
+  profile_pic              Bytes?      
+  phone                    String?      @db.VarChar(50)
+  @@map("admins")
+}
+
+// ==========================================
+// Model: AuditLogs (Table: audit_logs)
+// ==========================================
+model AuditLogs {
+  audit_id                 Int          @id @default(autoincrement())
+  admin_id                 Int?        
+  user_id                  Int?        
+  user_type                String?      @db.VarChar(50)
+  severity                 String?      @db.VarChar(50) @default("info")
+  member_id                Int?        
+  action                   String       @db.VarChar(150)
+  details                  String?      @db.Text
+  ip_address               String?      @db.VarChar(45)
+  user_agent               String?      @db.VarChar(500)
+  created_at               DateTime?    @default(now())
+  @@map("audit_logs")
+}
+
+// ==========================================
+// Model: CallbackLogs (Table: callback_logs)
+// ==========================================
+model CallbackLogs {
+  log_id                   Int          @id @default(autoincrement())
+  callback_type            String?      @db.VarChar(50) @default("UNKNOWN")
+  merchant_request_id      String?      @db.VarChar(100)
+  checkout_request_id      String?      @db.VarChar(100)
+  result_code              Int?        
+  result_desc              String?      @db.VarChar(255)
+  amount                   Decimal?     @db.Decimal(15, 2)
+  mpesa_receipt_number     String?      @db.VarChar(50)
+  transaction_date         DateTime?   
+  phone_number             String?      @db.VarChar(20)
+  raw_payload              String?      @db.Text
+  processed                Boolean?     @default(0)
+  processed_at             DateTime?   
+  created_at               DateTime     @default(now())
+  received_at              DateTime     @default(now())
+  member_id                Int?        
+  last_error               String?      @db.Text
+  processing_attempts      Int?         @default(0)
+  @@map("callback_logs")
+}
+
+// ==========================================
+// Model: Contributions (Table: contributions)
+// ==========================================
+model Contributions {
+  contribution_id          Int          @id @default(autoincrement())
+  member_id                Int         
+  contribution_type        String       @db.VarChar(50) @default("savings")
+  amount                   Decimal      @db.Decimal(12, 2)
+  contribution_date        DateTime?    @default(now())
+  payment_method           String?      @db.VarChar(50) @default("M-Pesa")
+  reference_no             String?      @db.VarChar(150)
+  status                   String?      @db.VarChar(50) @default("pending")
+  created_by_admin         Int?        
+  created_at               DateTime     @default(now())
+  callback_received_at     DateTime?   
+  @@map("contributions")
+}
+
+// ==========================================
+// Model: CronRuns (Table: cron_runs)
+// ==========================================
+model CronRuns {
+  id                       Int          @id @default(autoincrement())
+  job_name                 String       @db.VarChar(80)
+  status                   String       @db.VarChar(50) @default("running")
+  started_at               DateTime    
+  finished_at              DateTime?   
+  duration_ms              Int?        
+  records_processed        Int          @default(0)
+  output                   String?      @db.Text
+  @@map("cron_runs")
+}
+
+// ==========================================
+// Model: DividendPayouts (Table: dividend_payouts)
+// ==========================================
+model DividendPayouts {
+  payout_id                Int          @id @default(autoincrement())
+  period_id                Int         
+  member_id                Int         
+  share_capital_snapshot   Decimal?     @db.Decimal(20, 2) @default(0.00)
+  weighted_units           Decimal?     @db.Decimal(20, 4) @default(0.0000)
+  gross_amount             Decimal?     @db.Decimal(20, 2) @default(0.00)
+  wht_tax                  Decimal?     @db.Decimal(20, 2) @default(0.00)
+  net_amount               Decimal?     @db.Decimal(20, 2) @default(0.00)
+  status                   String?      @db.VarChar(50) @default("pending")
+  paid_at                  DateTime?   
+  created_at               DateTime     @default(now())
+  @@map("dividend_payouts")
+}
+
+// ==========================================
+// Model: DividendPeriods (Table: dividend_periods)
+// ==========================================
+model DividendPeriods {
+  period_id                Int          @id @default(autoincrement())
+  fiscal_year              Int         
+  start_date               DateTime?    @db.Date
+  end_date                 DateTime?    @db.Date
+  total_pool               Decimal?     @db.Decimal(20, 2) @default(0.00)
+  rate_percentage          Decimal?     @db.Decimal(10, 4) @default(0.0000)
+  declared_by              Int?        
+  status                   String?      @db.VarChar(50) @default("draft")
+  created_at               DateTime     @default(now())
+  @@map("dividend_periods")
+}
+
+// ==========================================
+// Model: EmailQueue (Table: email_queue)
+// ==========================================
+model EmailQueue {
+  queue_id                 Int          @id @default(autoincrement())
+  recipient_email          String       @db.VarChar(255)
+  recipient_name           String       @db.VarChar(255)
+  subject                  String       @db.VarChar(255)
+  body                     String       @db.Text
+  priority                 Int?         @default(5)
+  status                   String?      @db.VarChar(50) @default("pending")
+  attempts                 Int?         @default(0)
+  max_attempts             Int?         @default(3)
+  scheduled_for            DateTime?   
+  sent_at                  DateTime?   
+  last_error               String?      @db.Text
+  created_at               DateTime     @default(now())
+  @@map("email_queue")
+}
+
+// ==========================================
+// Model: EmployeeSalaryHistory (Table: employee_salary_history)
+// ==========================================
+model EmployeeSalaryHistory {
+  id                       Int          @id @default(autoincrement())
+  employee_id              Int         
+  old_salary               Decimal?     @db.Decimal(12, 2)
+  new_salary               Decimal?     @db.Decimal(12, 2)
+  grade_id                 Int?        
+  reason                   String?      @db.VarChar(255)
+  effective_date           DateTime     @db.Date
+  changed_by               Int         
+  created_at               DateTime     @default(now())
+  @@map("employee_salary_history")
+}
+
+// ==========================================
+// Model: Employees (Table: employees)
+// ==========================================
+model Employees {
+  employee_id              Int          @id @default(autoincrement())
+  employee_no              String?      @unique @db.VarChar(20)
+  full_name                String       @db.VarChar(150)
+  national_id              String       @db.VarChar(50)
+  kra_pin                  String?      @db.VarChar(20)
+  nssf_no                  String?      @db.VarChar(20)
+  sha_no                   String?      @db.VarChar(50)
+  phone                    String       @db.VarChar(30)
+  company_email            String?      @unique @db.VarChar(100)
+  personal_email           String?      @db.VarChar(100)
+  email                    String?      @db.VarChar(150)
+  job_title                String       @db.VarChar(100)
+  salary                   Decimal?     @db.Decimal(12, 2) @default(0.00)
+  grade_id                 Int?        
+  status                   String?      @db.VarChar(50) @default("active")
+  hire_date                DateTime?    @db.Date @default("curdate()")
+  created_at               DateTime     @default(now())
+  admin_id                 Int?        
+  bank_name                String?      @db.VarChar(50)
+  bank_account             String?      @db.VarChar(50)
+  @@map("employees")
+}
+
+// ==========================================
+// Model: ExportLogs (Table: export_logs)
+// ==========================================
+model ExportLogs {
+  id                       Int          @id @default(autoincrement())
+  user_id                  Int?        
+  user_role                String?      @db.VarChar(50)
+  module                   String       @db.VarChar(100)
+  export_type              String       @db.VarChar(20)
+  exported_at              DateTime?    @default(now())
+  ip_address               String?      @db.VarChar(45)
+  record_count             Int?         @default(0)
+  total_value              Decimal?     @db.Decimal(15, 2) @default(0.00)
+  status                   String?      @db.VarChar(20) @default("success")
+  details                  String?      @db.Text
+  @@map("export_logs")
+}
+
+// ==========================================
+// Model: FinancialExportLogs (Table: financial_export_logs)
+// ==========================================
+model FinancialExportLogs {
+  export_id                Int          @id @default(autoincrement())
+  user_id                  Int?        
+  user_role                String?      @db.VarChar(50)
+  financial_module         String       @db.VarChar(100)
+  export_format            String       @db.VarChar(50)
+  export_date              DateTime?    @default(now())
+  ip_address               String?      @db.VarChar(45)
+  record_count             Int?         @default(0)
+  total_value              Decimal?     @db.Decimal(20, 2) @default(0.00)
+  status                   String?      @db.VarChar(50) @default("success")
+  @@map("financial_export_logs")
+}
+
+// ==========================================
+// Model: Fines (Table: fines)
+// ==========================================
+model Fines {
+  fine_id                  Int          @id @default(autoincrement())
+  loan_id                  Int         
+  amount                   Decimal      @db.Decimal(12, 2)
+  date_applied             DateTime     @db.Date
+  created_at               DateTime     @default(now())
+  @@map("fines")
+}
+
+// ==========================================
+// Model: IntegrityChecks (Table: integrity_checks)
+// ==========================================
+model IntegrityChecks {
+  id                       Int          @id @default(autoincrement())
+  check_type               String       @db.VarChar(100)
+  status                   String?      @db.VarChar(50) @default("passed")
+  details                  String?      @db.Text
+  created_at               DateTime     @default(now())
+  @@map("integrity_checks")
+}
+
+// ==========================================
+// Model: InvestmentExpenses (Table: investment_expenses)
+// ==========================================
+model InvestmentExpenses {
+  id                       Int          @id @default(autoincrement())
+  investment_id            Int         
+  amount                   Decimal      @db.Decimal(12, 2)
+  expense_date             DateTime?    @default(now())
+  description              String?      @db.VarChar(255)
+  recorded_by              Int?        
+  @@map("investment_expenses")
+}
+
+// ==========================================
+// Model: InvestmentIncome (Table: investment_income)
+// ==========================================
+model InvestmentIncome {
+  income_id                Int          @id @default(autoincrement())
+  investment_id            Int         
+  amount                   Decimal      @db.Decimal(14, 2)
+  income_date              DateTime?    @db.Date @default("curdate()")
+  description              String?      @db.VarChar(255)
+  recorded_by              Int?        
+  @@map("investment_income")
+}
+
+// ==========================================
+// Model: Investments (Table: investments)
+// ==========================================
+model Investments {
+  investment_id            Int          @id @default(autoincrement())
+  title                    String       @db.VarChar(150)
+  category                 String?      @db.VarChar(50) @default("other")
+  reg_no                   String?      @db.VarChar(50)
+  model                    String?      @db.VarChar(100)
+  capacity                 String?      @db.VarChar(50)
+  assigned_route           String?      @db.VarChar(150)
+  description              String?      @db.Text
+  purchase_date            DateTime?    @db.Date
+  purchase_cost            Decimal?     @db.Decimal(14, 2)
+  current_value            Decimal?     @db.Decimal(14, 2)
+  target_amount            Decimal?     @db.Decimal(14, 2) @default(0.00)
+  target_period            String?      @db.VarChar(50) @default("monthly")
+  target_start_date        DateTime?    @db.Date
+  viability_status         String?      @db.VarChar(50) @default("pending")
+  last_viability_check     DateTime?   
+  status                   Int?         @default("active")
+  sale_date                DateTime?    @db.Date
+  sale_price               Decimal?     @db.Decimal(14, 2)
+  manager_admin_id         Int?        
+  created_at               DateTime?    @default(now())
+  @@map("investments")
+}
+
+// ==========================================
+// Model: JobRoleMapping (Table: job_role_mapping)
+// ==========================================
+model JobRoleMapping {
+  id                       Int          @id @default(autoincrement())
+  job_title                String       @unique @db.VarChar(100)
+  role_id                  Int         
+  created_at               DateTime     @default(now())
+  @@map("job_role_mapping")
+}
+
+// ==========================================
+// Model: JobTitles (Table: job_titles)
+// ==========================================
+model JobTitles {
+  id                       Int          @id @default(autoincrement())
+  title                    String       @unique @db.VarChar(100)
+  role_id                  Int         
+  description              String?      @db.Text
+  created_at               DateTime     @default(now())
+  @@map("job_titles")
+}
+
+// ==========================================
+// Model: LedgerAccounts (Table: ledger_accounts)
+// ==========================================
+model LedgerAccounts {
+  account_id               Int          @id @default(autoincrement())
+  account_name             String       @db.VarChar(255)
+  account_type             String       @db.VarChar(50)
+  member_id                Int?        
+  category                 String?      @db.VarChar(50) @default("general")
+  current_balance          Decimal?     @db.Decimal(15, 2) @default(0.00)
+  status                   String?      @db.VarChar(50) @default("active")
+  created_at               DateTime     @default(now())
+  @@map("ledger_accounts")
+}
+
+// ==========================================
+// Model: LedgerEntries (Table: ledger_entries)
+// ==========================================
+model LedgerEntries {
+  entry_id                 Int          @id @default(autoincrement())
+  transaction_id           Int         
+  account_id               Int         
+  debit                    Decimal?     @db.Decimal(15, 2) @default(0.00)
+  credit                   Decimal?     @db.Decimal(15, 2) @default(0.00)
+  balance_after            Decimal?     @db.Decimal(15, 2) @default(0.00)
+  created_at               DateTime     @default(now())
+  @@map("ledger_entries")
+}
+
+// ==========================================
+// Model: LedgerTransactions (Table: ledger_transactions)
+// ==========================================
+model LedgerTransactions {
+  transaction_id           Int          @id @default(autoincrement())
+  reference_no             String       @unique @db.VarChar(100)
+  transaction_date         DateTime     @db.Date
+  description              String?      @db.Text
+  action_type              String?      @db.VarChar(50)
+  recorded_by              Int?        
+  created_at               DateTime     @default(now())
+  @@map("ledger_transactions")
+}
+
+// ==========================================
+// Model: LegacyExpensesBackup (Table: legacy_expenses_backup)
+// ==========================================
+model LegacyExpensesBackup {
+  expense_id               Int          @id @default(autoincrement())
+  category                 String       @db.VarChar(50) @default("operational")
+  amount                   Decimal      @db.Decimal(12, 2)
+  expense_date             DateTime     @db.Date
+  description              String?      @db.Text
+  investment_id            Int?        
+  recorded_by              Int?        
+  created_at               DateTime     @default(now())
+  @@map("legacy_expenses_backup")
+}
+
+// ==========================================
+// Model: LegacyVehicleExpensesBackup (Table: legacy_vehicle_expenses_backup)
+// ==========================================
+model LegacyVehicleExpensesBackup {
+  vehicle_expense_id       Int          @id @default(autoincrement())
+  vehicle_id               Int         
+  amount                   Decimal      @db.Decimal(12, 2)
+  expense_date             DateTime?    @default(now())
+  category                 String?      @db.VarChar(100)
+  description              String?      @db.VarChar(255)
+  recorded_by              Int?        
+  @@map("legacy_vehicle_expenses_backup")
+}
+
+// ==========================================
+// Model: LegacyVehicleIncomeBackup (Table: legacy_vehicle_income_backup)
+// ==========================================
+model LegacyVehicleIncomeBackup {
+  vehicle_income_id        Int          @id @default(autoincrement())
+  vehicle_id               Int         
+  amount                   Decimal      @db.Decimal(12, 2)
+  income_date              DateTime?    @default(now())
+  description              String?      @db.VarChar(255)
+  recorded_by              Int?        
+  @@map("legacy_vehicle_income_backup")
+}
+
+// ==========================================
+// Model: LegacyVehiclesBackup (Table: legacy_vehicles_backup)
+// ==========================================
+model LegacyVehiclesBackup {
+  vehicle_id               Int          @id @default(autoincrement())
+  reg_no                   String       @unique @db.VarChar(50)
+  model                    String?      @db.VarChar(100)
+  year                     String?     
+  status                   Int?         @default("active")
+  investment_id            Int?        
+  purchase_cost            Decimal?     @db.Decimal(12, 2)
+  created_at               DateTime?    @default(now())
+  assigned_route           String       @db.VarChar(20)
+  capacity                 String       @db.VarChar(20)
+  target_daily_revenue     String       @db.VarChar(20)
+  @@map("legacy_vehicles_backup")
+}
+
+// ==========================================
+// Model: LoanGuarantors (Table: loan_guarantors)
+// ==========================================
+model LoanGuarantors {
+  id                       Int          @id @default(autoincrement())
+  loan_id                  Int         
+  member_id                Int         
+  amount_locked            Decimal?     @db.Decimal(15, 2) @default(0.00)
+  status                   String?      @db.VarChar(50) @default("pending")
+  created_at               DateTime     @default(now())
+  @@map("loan_guarantors")
+}
+
+// ==========================================
+// Model: LoanRepayments (Table: loan_repayments)
+// ==========================================
+model LoanRepayments {
+  repayment_id             Int          @id @default(autoincrement())
+  loan_id                  Int         
+  amount_paid              Decimal      @db.Decimal(12, 2)
+  payment_date             DateTime?    @default(now())
+  payment_method           String?      @db.VarChar(50) @default("mpesa")
+  reference_no             String?      @db.VarChar(150)
+  mpesa_receipt            String?      @db.VarChar(50)
+  remaining_balance        Decimal?     @db.Decimal(12, 2)
+  created_by_admin         Int?        
+  status                   String?      @db.VarChar(20) @default("Pending")
+  created_at               DateTime     @default(now())
+  @@map("loan_repayments")
+}
+
+// ==========================================
+// Model: Loans (Table: loans)
+// ==========================================
+model Loans {
+  loan_id                  Int          @id @default(autoincrement())
+  member_id                Int         
+  loan_type                String?      @db.VarChar(50) @default("development")
+  amount                   Decimal      @db.Decimal(15, 2)
+  interest_rate            Decimal?     @db.Decimal(5, 2)
+  duration_months          Int?         @default(12)
+  status                   String?      @db.VarChar(50) @default("pending")
+  application_date         DateTime?    @default(now())
+  approved_by              Int?        
+  approval_date            DateTime?   
+  disbursed_amount         Decimal?     @db.Decimal(12, 2)
+  disbursed_date           DateTime?   
+  last_repayment_date      DateTime?   
+  next_repayment_date      DateTime?   
+  notes                    String?      @db.Text
+  created_at               DateTime     @default(now())
+  total_payable            Decimal      @db.Decimal(15, 2)
+  current_balance          Decimal?     @db.Decimal(12, 2) @default(0.00)
+  @@map("loans")
+}
+
+// ==========================================
+// Model: MemberDocuments (Table: member_documents)
+// ==========================================
+model MemberDocuments {
+  document_id              Int          @id @default(autoincrement())
+  member_id                Int         
+  document_type            String       @db.VarChar(50)
+  file_path                String       @db.VarChar(255)
+  file_content             Bytes?      
+  file_type                String?      @db.VarChar(100)
+  original_filename        String?      @db.VarChar(255)
+  uploaded_at              DateTime?    @default(now())
+  status                   String?      @db.VarChar(50) @default("pending")
+  verification_notes       String?      @db.Text
+  verified_by              Int?        
+  verified_at              DateTime?   
+  @@map("member_documents")
+}
+
+// ==========================================
+// Model: MemberShareholdings (Table: member_shareholdings)
+// ==========================================
+model MemberShareholdings {
+  member_id                Int          @id
+  units_owned              Decimal?     @db.Decimal(20, 4) @default(0.0000)
+  total_amount_paid        Decimal?     @db.Decimal(30, 2) @default(0.00)
+  average_purchase_price   Decimal?     @db.Decimal(20, 2) @default(0.00)
+  last_updated             DateTime?    @default(now())
+  @@map("member_shareholdings")
+}
+
+// ==========================================
+// Model: Members (Table: members)
+// ==========================================
+model Members {
+  member_id                Int          @id @default(autoincrement())
+  member_reg_no            String?      @unique @db.VarChar(20)
+  full_name                String       @db.VarChar(150)
+  email                    String       @unique @db.VarChar(150)
+  phone                    String?      @unique @db.VarChar(30)
+  dob                      DateTime?    @db.Date
+  _deprecated_account_balance Decimal?     @db.Decimal(15, 2) @default(0.00)
+  national_id              String?      @unique @db.VarChar(50)
+  password                 String?      @db.VarChar(255)
+  remember_token           String?      @db.VarChar(255)
+  remember_expires         DateTime?   
+  remember_ua              String?      @db.VarChar(255)
+  temp_password            String?      @db.VarChar(100)
+  address                  String?      @db.VarChar(255)
+  next_of_kin_name         String?      @db.VarChar(150)
+  next_of_kin_phone        String?      @db.VarChar(30)
+  occupation               String?      @db.VarChar(100)
+  join_date                DateTime?    @db.Date @default("curdate()")
+  status                   String?      @db.VarChar(50) @default("active")
+  registration_fee_status  String?      @db.VarChar(50) @default("unpaid")
+  kyc_status               String?      @db.VarChar(50) @default("not_submitted")
+  profile_picture          Bytes?      
+  kyc_notes                String?      @db.Text
+  reg_fee_paid             Boolean?     @default(0)
+  profile_pic              Bytes?      
+  created_at               DateTime     @default(now())
+  updated_at               DateTime?   
+  gender                   String?      @db.VarChar(50) @default("male")
+  @@map("members")
+}
+
+// ==========================================
+// Model: Messages (Table: messages)
+// ==========================================
+model Messages {
+  message_id               Int          @id @default(autoincrement())
+  from_member_id           Int?        
+  to_admin_id              Int?        
+  from_admin_id            Int?        
+  to_member_id             Int?        
+  subject                  String?      @db.VarChar(150)
+  body                     String?      @db.Text
+  attachment               String?      @db.VarChar(255)
+  is_read                  Boolean?     @default(0)
+  sent_at                  DateTime?    @default(now())
+  @@map("messages")
+}
+
+// ==========================================
+// Model: ModuleAuditTrail (Table: module_audit_trail)
+// ==========================================
+model ModuleAuditTrail {
+  id                       Int          @id @default(autoincrement())
+  admin_id                 Int?        
+  action                   String?      @db.VarChar(50)
+  module_id                Int?        
+  details                  String?      @db.Text
+  created_at               DateTime     @default(now())
+  @@map("module_audit_trail")
+}
+
+// ==========================================
+// Model: MpesaRequests (Table: mpesa_requests)
+// ==========================================
+model MpesaRequests {
+  id                       Int          @id @default(autoincrement())
+  member_id                Int?        
+  phone                    String       @db.VarChar(20)
+  amount                   Decimal      @db.Decimal(10, 2)
+  checkout_request_id      String       @db.VarChar(100)
+  status                   String?      @db.VarChar(50) @default("pending")
+  reference_no             String?      @db.VarChar(100)
+  mpesa_receipt            String?      @db.VarChar(50)
+  notes                    String?      @db.Text
+  created_at               DateTime     @default(now())
+  updated_at               DateTime?   
+  callback_log_id          Int?        
+  @@map("mpesa_requests")
+}
+
+// ==========================================
+// Model: NextOfKin (Table: next_of_kin)
+// ==========================================
+model NextOfKin {
+  id                       Int          @id @default(autoincrement())
+  member_id                Int         
+  full_name                String       @db.VarChar(100)
+  relationship             String?      @db.VarChar(50)
+  phone                    String?      @db.VarChar(20)
+  id_number                String?      @db.VarChar(20)
+  allocation_percent       Decimal?     @db.Decimal(5, 2) @default(100.00)
+  @@map("next_of_kin")
+}
+
+// ==========================================
+// Model: Notifications (Table: notifications)
+// ==========================================
+model Notifications {
+  notification_id          Int          @id @default(autoincrement())
+  member_id                Int?        
+  admin_id                 Int?        
+  to_role                  String       @db.VarChar(255)
+  comms_type               String?      @db.VarChar(50) @default("in-app")
+  delivery_status          String?      @db.VarChar(50) @default("sent")
+  delivery_error           String?      @db.Text
+  recipient                String?      @db.VarChar(255)
+  metadata                 String?      @db.Text
+  status                   String       @db.VarChar(50)
+  title                    String?      @db.VarChar(255)
+  message                  String       @db.Text
+  is_read                  Boolean?     @default(0)
+  created_at               DateTime?    @default(now())
+  user_type                String?      @db.VarChar(255)
+  user_id                  Int?        
+  @@map("notifications")
+}
+
+// ==========================================
+// Model: PasswordResetTokens (Table: password_reset_tokens)
+// ==========================================
+model PasswordResetTokens {
+  token_id                 Int          @id @default(autoincrement())
+  user_type                String       @db.VarChar(50)
+  user_id                  Int         
+  token                    String       @db.VarChar(255)
+  expires_at               DateTime    
+  created_at               DateTime?    @default(now())
+  @@map("password_reset_tokens")
+}
+
+// ==========================================
+// Model: PaymentChannels (Table: payment_channels)
+// ==========================================
+model PaymentChannels {
+  id                       Int          @id @default(autoincrement())
+  name                     String       @db.VarChar(100)
+  provider                 String       @db.VarChar(50)
+  settlement_account_id    Int         
+  status                   String?      @db.VarChar(50) @default("active")
+  created_at               DateTime     @default(now())
+  @@map("payment_channels")
+}
+
+// ==========================================
+// Model: Payroll (Table: payroll)
+// ==========================================
+model Payroll {
+  id                       Int          @id @default(autoincrement())
+  payroll_run_id           Int         
+  employee_id              Int         
+  month                    String?      @db.VarChar(7)
+  year                     Int?        
+  basic_salary             Decimal?     @db.Decimal(15, 2)
+  allowances               Decimal?     @db.Decimal(12, 2)
+  gross_pay                Decimal?     @db.Decimal(12, 2)
+  deductions               Decimal?     @db.Decimal(12, 2)
+  tax_paye                 Decimal?     @db.Decimal(12, 2)
+  tax_nssf                 Decimal?     @db.Decimal(12, 2)
+  tax_sha                  Decimal?     @db.Decimal(12, 2)
+  tax_housing              Decimal?     @db.Decimal(12, 2)
+  net_pay                  Decimal?     @db.Decimal(12, 2)
+  status                   String?      @db.VarChar(50) @default("draft")
+  payment_date             DateTime?    @db.Date
+  transaction_id           Int?        
+  created_at               DateTime     @default(now())
+  @@map("payroll")
+}
+
+// ==========================================
+// Model: PayrollItems (Table: payroll_items)
+// ==========================================
+model PayrollItems {
+  id                       Int          @id @default(autoincrement())
+  payroll_run_id           Int         
+  employee_id              Int         
+  employee_no              String       @db.VarChar(20)
+  employee_name            String       @db.VarChar(255)
+  basic_salary             Decimal      @db.Decimal(12, 2)
+  house_allowance          Decimal?     @db.Decimal(12, 2) @default(0.00)
+  transport_allowance      Decimal?     @db.Decimal(12, 2) @default(0.00)
+  other_allowances         Decimal?     @db.Decimal(12, 2) @default(0.00)
+  bonus                    Decimal?     @db.Decimal(12, 2) @default(0.00)
+  gross_pay                Decimal      @db.Decimal(12, 2)
+  paye                     Decimal?     @db.Decimal(12, 2) @default(0.00)
+  nssf                     Decimal?     @db.Decimal(12, 2) @default(0.00)
+  nhif                     Decimal?     @db.Decimal(12, 2) @default(0.00)
+  housing_levy             Decimal?     @db.Decimal(12, 2) @default(0.00)
+  other_deductions         Decimal?     @db.Decimal(12, 2) @default(0.00)
+  total_deductions         Decimal      @db.Decimal(12, 2)
+  net_pay                  Decimal      @db.Decimal(12, 2)
+  notes                    String?      @db.Text
+  created_at               DateTime     @default(now())
+  @@map("payroll_items")
+}
+
+// ==========================================
+// Model: PayrollRuns (Table: payroll_runs)
+// ==========================================
+model PayrollRuns {
+  id                       Int          @id @default(autoincrement())
+  month                    String?      @db.VarChar(7)
+  run_date                 DateTime     @db.Date
+  period_start             DateTime     @db.Date
+  period_end               DateTime     @db.Date
+  run_name                 String?      @db.VarChar(100)
+  status                   String?      @db.VarChar(50) @default("draft")
+  total_gross              Decimal?     @db.Decimal(15, 2) @default(0.00)
+  total_net                Decimal?     @db.Decimal(15, 2) @default(0.00)
+  employee_count           Int?         @default(0)
+  created_by               Int?        
+  approved_by              Int?        
+  approved_at              DateTime?   
+  created_at               DateTime     @default(now())
+  @@map("payroll_runs")
+}
+
+// ==========================================
+// Model: Payslips (Table: payslips)
+// ==========================================
+model Payslips {
+  id                       Int          @id @default(autoincrement())
+  payroll_item_id          Int         
+  employee_id              Int         
+  period                   String       @db.VarChar(7)
+  pdf_path                 String?      @db.VarChar(255)
+  email_sent               Boolean?     @default(0)
+  email_sent_at            DateTime?   
+  created_at               DateTime     @default(now())
+  @@map("payslips")
+}
+
+// ==========================================
+// Model: Permissions (Table: permissions)
+// ==========================================
+model Permissions {
+  id                       Int          @id @default(autoincrement())
+  slug                     String       @unique @db.VarChar(50)
+  name                     String       @db.VarChar(100)
+  category                 String?      @db.VarChar(50) @default("General")
+  @@map("permissions")
+}
+
+// ==========================================
+// Model: Properties (Table: properties)
+// ==========================================
+model Properties {
+  property_id              Int          @id @default(autoincrement())
+  title                    String       @db.VarChar(150)
+  category                 String?      @db.VarChar(50) @default("plot")
+  location                 String?      @db.VarChar(255)
+  size_description         String?      @db.VarChar(100)
+  purchase_cost            Decimal?     @db.Decimal(14, 2)
+  asking_price             Decimal?     @db.Decimal(14, 2)
+  status                   String?      @db.VarChar(50) @default("available")
+  investment_id            Int?        
+  created_at               DateTime?    @default(now())
+  @@map("properties")
+}
+
+// ==========================================
+// Model: PropertySales (Table: property_sales)
+// ==========================================
+model PropertySales {
+  sale_id                  Int          @id @default(autoincrement())
+  property_id              Int         
+  buyer_name               String       @db.VarChar(150)
+  buyer_contact            String?      @db.VarChar(80)
+  sale_price               Decimal      @db.Decimal(14, 2)
+  sale_date                DateTime?    @default(now())
+  recorded_by              Int?        
+  @@map("property_sales")
+}
+
+// ==========================================
+// Model: ReconciliationLogs (Table: reconciliation_logs)
+// ==========================================
+model ReconciliationLogs {
+  log_id                   Int          @id @default(autoincrement())
+  account_id               Int         
+  ledger_sum               Decimal      @db.Decimal(15, 2)
+  account_balance          Decimal      @db.Decimal(15, 2)
+  difference               Decimal      @db.Decimal(15, 2)
+  status                   String?      @db.VarChar(50) @default("flagged")
+  created_at               DateTime     @default(now())
+  @@map("reconciliation_logs")
+}
+
+// ==========================================
+// Model: RolePermissions (Table: role_permissions)
+// ==========================================
+model RolePermissions {
+  role_id                  Int         
+  permission_id            Int         
+  @@id([role_id, permission_id])
+  @@map("role_permissions")
+}
+
+// ==========================================
+// Model: Roles (Table: roles)
+// ==========================================
+model Roles {
+  id                       Int          @id @default(autoincrement())
+  name                     String       @unique @db.VarChar(50)
+  description              String?      @db.VarChar(255)
+  @@map("roles")
+}
+
+// ==========================================
+// Model: SalaryGrades (Table: salary_grades)
+// ==========================================
+model SalaryGrades {
+  id                       Int          @id @default(autoincrement())
+  grade_name               String       @db.VarChar(50)
+  basic_salary             Decimal?     @db.Decimal(15, 2) @default(0.00)
+  house_allowance          Decimal?     @db.Decimal(15, 2) @default(0.00)
+  transport_allowance      Decimal?     @db.Decimal(15, 2) @default(0.00)
+  risk_allowance           Decimal?     @db.Decimal(15, 2) @default(0.00)
+  description              String?      @db.Text
+  created_at               DateTime     @default(now())
+  @@map("salary_grades")
+}
+
+// ==========================================
+// Model: Savings (Table: savings)
+// ==========================================
+model Savings {
+  saving_id                Int          @id @default(autoincrement())
+  member_id                Int         
+  amount                   Decimal      @db.Decimal(15, 2)
+  reference_no             String?      @db.VarChar(50)
+  transaction_type         String?      @db.VarChar(50) @default("deposit")
+  description              String?      @db.VarChar(255)
+  created_at               DateTime     @default(now())
+  reference_id             String?      @db.VarChar(50)
+  @@map("savings")
+}
+
+// ==========================================
+// Model: ShareSettings (Table: share_settings)
+// ==========================================
+model ShareSettings {
+  id                       Int          @id @default(autoincrement())
+  total_authorized_units   Decimal?     @db.Decimal(20, 4) @default(1000000.0000)
+  initial_unit_price       Decimal?     @db.Decimal(20, 2) @default(100.00)
+  par_value                Decimal?     @db.Decimal(20, 2) @default(100.00)
+  last_valuation_date      DateTime?    @default(now())
+  created_at               DateTime?    @default(now())
+  @@map("share_settings")
+}
+
+// ==========================================
+// Model: ShareTransactions (Table: share_transactions)
+// ==========================================
+model ShareTransactions {
+  share_transaction_id     Int          @id @default(autoincrement())
+  member_id                Int         
+  units                    Decimal      @db.Decimal(18, 4) @default(0.0000)
+  unit_price               Decimal      @db.Decimal(15, 2) @default(0.00)
+  total_value              Decimal      @db.Decimal(15, 2) @default(0.00)
+  transaction_type         String       @db.VarChar(32) @default("purchase")
+  reference_no             String?      @db.VarChar(100)
+  created_at               DateTime     @default(now())
+  @@map("share_transactions")
+}
+
+// ==========================================
+// Model: Shares (Table: shares)
+// ==========================================
+model Shares {
+  share_id                 Int          @id @default(autoincrement())
+  member_id                Int         
+  share_units              Int          @default(0)
+  unit_price               Decimal?     @db.Decimal(10, 2) @default(1.00)
+  total_value              Decimal?     @db.Decimal(12, 2)
+  purchase_date            DateTime?    @default(now())
+  reference_no             String?      @db.VarChar(50)
+  created_at               DateTime     @default(now())
+  @@map("shares")
+}
+
+// ==========================================
+// Model: StatutoryDeductions (Table: statutory_deductions)
+// ==========================================
+model StatutoryDeductions {
+  id                       Int          @id @default(autoincrement())
+  name                     String       @db.VarChar(50)
+  type                     String?      @db.VarChar(50) @default("percentage")
+  value                    String?      @db.Text
+  is_active                Boolean?     @default(1)
+  @@map("statutory_deductions")
+}
+
+// ==========================================
+// Model: StatutoryRules (Table: statutory_rules)
+// ==========================================
+model StatutoryRules {
+  id                       Int          @id @default(autoincrement())
+  name                     String       @db.VarChar(50)
+  type                     String       @db.VarChar(50)
+  value                    Decimal?     @db.Decimal(10, 4)
+  min_amount               Decimal?     @db.Decimal(12, 2)
+  max_amount               Decimal?     @db.Decimal(12, 2)
+  effective_from           DateTime     @db.Date
+  effective_to             DateTime?    @db.Date
+  is_active                Boolean?     @default(1)
+  created_at               DateTime     @default(now())
+  @@map("statutory_rules")
+}
+
+// ==========================================
+// Model: SupportReplies (Table: support_replies)
+// ==========================================
+model SupportReplies {
+  reply_id                 Int          @id @default(autoincrement())
+  support_id               Int         
+  sender_type              String       @db.VarChar(50)
+  sender_id                Int         
+  message                  String       @db.Text
+  user_role                String       @db.VarChar(255)
+  created_at               DateTime     @default(now())
+  attachment               String?      @db.VarChar(255)
+  @@map("support_replies")
+}
+
+// ==========================================
+// Model: SupportTickets (Table: support_tickets)
+// ==========================================
+model SupportTickets {
+  support_id               Int          @id @default(autoincrement())
+  module_id                Int?        
+  admin_id                 Int?        
+  member_id                Int         
+  subject                  String       @db.VarChar(255)
+  message                  String       @db.Text
+  category                 String?      @db.VarChar(50) @default("general")
+  assigned_role_id         Int?        
+  priority                 String?      @db.VarChar(50) @default("medium")
+  status                   String?      @db.VarChar(20) @default("Pending")
+  is_resolved              Boolean?     @default(0)
+  created_at               DateTime     @default(now())
+  updated_at               DateTime     @default(now())
+  attachment               String?      @db.VarChar(255)
+  @@map("support_tickets")
+}
+
+// ==========================================
+// Model: SystemConfig (Table: system_config)
+// ==========================================
+model SystemConfig {
+  id                       Int          @id @default(autoincrement())
+  setting_key              String       @unique @db.VarChar(50)
+  setting_value            String?      @db.Text
+  description              String?      @db.VarChar(255)
+  updated_at               DateTime     @default(now())
+  @@map("system_config")
+}
+
+// ==========================================
+// Model: SystemModulePages (Table: system_module_pages)
+// ==========================================
+model SystemModulePages {
+  id                       Int          @id @default(autoincrement())
+  module_id                Int         
+  page_path                String       @unique @db.VarChar(255)
+  is_entry_point           Boolean?     @default(0)
+  created_at               DateTime     @default(now())
+  @@map("system_module_pages")
+}
+
+// ==========================================
+// Model: SystemModules (Table: system_modules)
+// ==========================================
+model SystemModules {
+  module_id                Int          @id @default(autoincrement())
+  module_name              String       @unique @db.VarChar(100)
+  module_slug              String       @unique @db.VarChar(50)
+  module_icon              String?      @db.VarChar(50) @default("bi-box")
+  is_active                Boolean?     @default(1)
+  created_at               DateTime     @default(now())
+  updated_at               DateTime     @default(now())
+  @@map("system_modules")
+}
+
+// ==========================================
+// Model: SystemSettings (Table: system_settings)
+// ==========================================
+model SystemSettings {
+  setting_key              String       @id @db.VarChar(50)
+  setting_value            String       @db.Text
+  description              String?      @db.VarChar(255)
+  updated_at               DateTime     @default(now())
+  @@map("system_settings")
+}
+
+// ==========================================
+// Model: TransactionAlerts (Table: transaction_alerts)
+// ==========================================
+model TransactionAlerts {
+  alert_id                 Int          @id @default(autoincrement())
+  alert_type               String       @db.VarChar(50)
+  severity                 String?      @db.VarChar(50) @default("warning")
+  contribution_id          Int         
+  member_id                Int?        
+  message                  String       @db.Text
+  acknowledged             Boolean?     @default(0)
+  acknowledged_at          DateTime?   
+  acknowledged_by          Int?        
+  created_at               DateTime     @default(now())
+  @@map("transaction_alerts")
+}
+
+// ==========================================
+// Model: Transactions (Table: transactions)
+// ==========================================
+model Transactions {
+  transaction_id           Int          @id @default(autoincrement())
+  ledger_transaction_id    Int?        
+  member_id                Int?        
+  transaction_type         String       @db.VarChar(50)
+  amount                   Decimal      @db.Decimal(15, 2)
+  type                     String       @db.VarChar(50) @default("credit")
+  category                 String?      @db.VarChar(100) @default("General")
+  reference_no             String?      @db.VarChar(50)
+  related_id               Int?        
+  related_table            String?      @db.VarChar(50)
+  recorded_by              Int?        
+  transaction_date         DateTime?    @default(now())
+  payment_channel          String?      @db.VarChar(80)
+  description              String?      @db.VarChar(255)
+  notes                    String?      @db.Text
+  created_by_admin         Int?        
+  created_at               DateTime     @default(now())
+  mpesa_request_id         String?      @db.VarChar(100)
+  @@map("transactions")
+}
+
+// ==========================================
+// Model: VehicleExpenses (Table: vehicle_expenses)
+// ==========================================
+model VehicleExpenses {
+  vehicle_expense_id       Int          @id @default(autoincrement())
+  vehicle_id               Int         
+  amount                   Decimal      @db.Decimal(12, 2)
+  expense_date             DateTime?    @default(now())
+  category                 String?      @db.VarChar(100)
+  description              String?      @db.VarChar(255)
+  recorded_by              Int?        
+  @@map("vehicle_expenses")
+}
+
+// ==========================================
+// Model: VehicleIncome (Table: vehicle_income)
+// ==========================================
+model VehicleIncome {
+  vehicle_income_id        Int          @id @default(autoincrement())
+  vehicle_id               Int         
+  amount                   Decimal      @db.Decimal(12, 2)
+  income_date              DateTime?    @default(now())
+  description              String?      @db.VarChar(255)
+  recorded_by              Int?        
+  @@map("vehicle_income")
+}
+
+// ==========================================
+// Model: Vehicles (Table: vehicles)
+// ==========================================
+model Vehicles {
+  vehicle_id               Int          @id @default(autoincrement())
+  reg_no                   String       @db.VarChar(50)
+  model                    String?      @db.VarChar(100)
+  year                     String?     
+  status                   String?      @db.VarChar(32) @default("active")
+  investment_id            Int?        
+  purchase_cost            Decimal?     @db.Decimal(12, 2)
+  created_at               DateTime?    @default(now())
+  assigned_route           String?      @db.VarChar(150) @default("")
+  capacity                 String?      @db.VarChar(50) @default("")
+  target_daily_revenue     String?      @db.VarChar(50) @default("")
+  @@map("vehicles")
+}
+
+// ==========================================
+// Model: WelfareCases (Table: welfare_cases)
+// ==========================================
+model WelfareCases {
+  case_id                  Int          @id @default(autoincrement())
+  related_member_id        Int?        
+  case_type                String?      @db.VarChar(50) @default("other")
+  title                    String       @db.VarChar(255)
+  description              String       @db.Text
+  admin_notes              String?      @db.Text
+  requested_amount         Decimal?     @db.Decimal(15, 2) @default(0.00)
+  approved_amount          Decimal?     @db.Decimal(15, 2) @default(0.00)
+  total_raised             Decimal?     @db.Decimal(15, 2) @default(0.00)
+  total_disbursed          Decimal?     @db.Decimal(15, 2) @default(0.00)
+  target_amount            Decimal      @db.Decimal(15, 2) @default(0.00)
+  status                   String       @db.VarChar(50) @default("pending")
+  created_by               Int?        
+  created_at               DateTime     @default(now())
+  @@map("welfare_cases")
+}
+
+// ==========================================
+// Model: WelfareDonations (Table: welfare_donations)
+// ==========================================
+model WelfareDonations {
+  donation_id              Int          @id @default(autoincrement())
+  case_id                  Int         
+  member_id                Int         
+  amount                   Decimal      @db.Decimal(15, 2)
+  reference_no             String       @db.VarChar(50)
+  created_at               DateTime     @default(now())
+  @@map("welfare_donations")
+}
+
+// ==========================================
+// Model: WelfareSupport (Table: welfare_support)
+// ==========================================
+model WelfareSupport {
+  support_id               Int          @id @default(autoincrement())
+  member_id                Int         
+  amount                   Decimal      @db.Decimal(15, 2)
+  reference_no             String?      @db.VarChar(50)
+  reason                   String?      @db.VarChar(255)
+  case_id                  Int?        
+  granted_by               Int?        
+  date_granted             DateTime?    @default(now())
+  status                   String?      @db.VarChar(50) @default("pending")
+  created_at               DateTime     @default(now())
+  @@map("welfare_support")
+}
+
+// ==========================================
+// Model: WithdrawalRequests (Table: withdrawal_requests)
+// ==========================================
+model WithdrawalRequests {
+  withdrawal_id            Int          @id @default(autoincrement())
+  member_id                Int         
+  ref_no                   String       @unique @db.VarChar(50)
+  amount                   Decimal      @db.Decimal(15, 2)
+  source_ledger            String?      @db.VarChar(50) @default("savings")
+  phone_number             String       @db.VarChar(30)
+  status                   String?      @db.VarChar(50) @default("initiated")
+  mpesa_conversation_id    String?      @db.VarChar(100)
+  mpesa_receipt            String?      @db.VarChar(50)
+  result_code              Int?        
+  result_desc              String?      @db.Text
+  notes                    String?      @db.Text
+  callback_received_at     DateTime?   
+  created_at               DateTime     @default(now())
+  updated_at               DateTime?   
+  @@map("withdrawal_requests")
+}
+
