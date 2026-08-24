@@ -1,0 +1,101 @@
+/* Umoja SACCO V12 Styles - Hope UI Production Standard (Yesterday 10 a.m. EAT Baseline) */
+
+:root {
+    --forest-deep: #0F2E25;
+    --forest-medium: #164e3f;
+    --lime-vibrant: #D0F35D;
+    --lime-soft: #c0e04b;
+    --glass-bg: rgba(255, 255, 255, 0.95);
+    --glass-border: rgba(15, 46, 37, 0.05);
+    --glass-shadow: 0 10px 30px rgba(15, 46, 37, 0.08);
+    --glass-shadow-hover: 0 15px 40px rgba(15, 46, 37, 0.12);
+    --white: #ffffff;
+    --text-primary: #1e293b;
+}
+
+body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+}
+
+/* GLASS CARD */
+.glass-card {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    box-shadow: var(--glass-shadow);
+    padding: 1.5rem;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.glass-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--glass-shadow-hover);
+}
+
+/* BUTTONS */
+.btn-primary {
+    background: var(--forest-deep);
+    border-color: var(--forest-deep);
+    color: white;
+    font-weight: 600;
+    border-radius: 10px;
+    padding: 0.625rem 1.5rem;
+    transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+    background: var(--forest-medium);
+    border-color: var(--forest-medium);
+    box-shadow: 0 4px 12px rgba(15, 46, 37, 0.3);
+}
+
+.btn-accent {
+    background-color: var(--lime-vibrant);
+    color: var(--forest-deep);
+    font-weight: 600;
+    border: none;
+    border-radius: 10px;
+    padding: 0.625rem 1.5rem;
+}
+
+/* TABLES */
+.table-custom {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.table-custom thead {
+    background-color: var(--forest-deep);
+    color: white;
+}
+
+.table-custom thead th {
+    padding: 1rem 1.25rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+}
+
+/* STAT CARDS */
+.stat-card {
+    background: white;
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: var(--glass-shadow);
+}
+
+.stat-card .stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--forest-deep);
+}

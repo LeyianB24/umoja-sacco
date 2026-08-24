@@ -1,0 +1,17 @@
+# Backend .htaccess for Umoja Sacco
+RewriteEngine On
+
+# 1. Protect Sensitive Directories
+RewriteRule ^(inc|config|core|database|storage|vendor|scripts|cron|tests|tools)/.*$ - [F,L]
+
+# 2. Protect environment and hidden files
+RewriteRule ^\.(env|git|vscode|vs|phpunit).*$ - [F,L]
+
+# 3. Rewrite API requests to api/v1/index.php
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^api/v1/(.*)$ api/v1/index.php [QSA,L]
+
+# 4. Redirect root to public/index.php if no specific file is requested
+RewriteCond %{REQUEST_URI} ^/$
+RewriteRule ^$ public/index.php [L]
