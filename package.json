@@ -6,6 +6,10 @@
     "dev": "npm --prefix umoja-sacco run dev",
     "build": "npm --prefix umoja-sacco run build",
     "start": "npm --prefix umoja-sacco run start",
-    "postinstall": "cd umoja-sacco && npx prisma generate"
+    "postinstall": "cd umoja-sacco && npx prisma@5.22.0 generate"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "prisma": "^5.22.0"
   }
 }
