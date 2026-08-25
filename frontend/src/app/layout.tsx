@@ -7,6 +7,11 @@ import { ToastProvider } from '@/context/ToastContext';
 export const metadata: Metadata = {
   title: 'Umoja Sacco — Savings & Credit Cooperative Society',
   description: 'Empowering drivers, operators, and allied professionals across Kenya through transparent savings, affordable credit, and welfare solidarity.',
+  icons: {
+    icon: '/assets/images/people_logo.png',
+    shortcut: '/assets/images/people_logo.png',
+    apple: '/assets/images/people_logo.png',
+  },
 };
 
 export default function RootLayout({
@@ -17,6 +22,8 @@ export default function RootLayout({
   return (
     <html lang="en" data-bs-theme="light" suppressHydrationWarning>
       <head>
+        <link rel="icon" type="image/png" href="/assets/images/people_logo.png" />
+        <link rel="apple-touch-icon" href="/assets/images/people_logo.png" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
