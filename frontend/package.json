@@ -6,7 +6,9 @@
     "dev": "next dev -p 3000",
     "build": "next build",
     "start": "next start -p 3000",
-    "lint": "next lint"
+    "lint": "next lint",
+    "job": "ts-node src/jobs/runner.ts",
+    "worker": "ts-node src/jobs/worker.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",

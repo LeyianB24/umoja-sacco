@@ -11,16 +11,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ==========================================
-// Model: Migrations (Table: _migrations)
-// ==========================================
-model Migrations {
-  id                       Int          @id @default(autoincrement())
-  filename                 String       @unique @db.VarChar(255)
-  batch                    Int          @default(1)
-  applied_at               DateTime     @default(now())
-  @@map("_migrations")
-}
 
 // ==========================================
 // Model: AdminModulePermissions (Table: admin_module_permissions)
@@ -1214,4 +1204,20 @@ model WithdrawalRequests {
   updated_at               DateTime?   
   @@map("withdrawal_requests")
 }
+
+// ==========================================
+// Model: CronLogs (Table: cron_logs)
+// ==========================================
+model CronLogs {
+  log_id                   Int          @id @default(autoincrement())
+  job_name                 String       @db.VarChar(100)
+  status                   String       @db.VarChar(50)
+  message                  String?      @db.Text
+  duration_ms              Int?
+  records_processed        Int?         @default(0)
+  run_at                   DateTime     @default(now())
+  @@map("cron_logs")
+}
+
+
 
