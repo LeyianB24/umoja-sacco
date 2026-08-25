@@ -1,7 +1,6 @@
 import { NextRequest } from 'next/server';
-import jwt from 'jsonwebtoken';
+import jwt, { SignOptions } from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
-import { prisma } from './prisma';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'umoja_sacco_super_secure_jwt_secret_key_2026_bezalel_tech';
 
@@ -13,8 +12,9 @@ export interface AuthSession {
   email?: string;
 }
 
-export function signToken(payload: AuthSession, expiresIn: string = '7d'): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn });
+export function signToken(payload: AuthSession, expiresIn: SignOptions['expiresIn'] = '7d'): string {
+  const options: SignOptions = { expiresIn };
+  return jwt.sign(payload, JWT_SECRET, options);
 }
 
 export function verifyToken(token: string): AuthSession | null {

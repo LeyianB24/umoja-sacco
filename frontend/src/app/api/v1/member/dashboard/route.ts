@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthSession } from '@/lib/auth';
+import { getMemberBalances } from '@/lib/financial';
 import { apiSuccess, apiError } from '@/lib/api-response';
 
 export async function GET(request: NextRequest) {
@@ -19,9 +20,7 @@ export async function GET(request: NextRequest) {
       return apiError('Member not found', 404);
     }
 
-    const savings = Number(member.savings_balance || 0);
-    const shares = Number(member.shares_balance || 0);
-    const wallet = Number(member.wallet_balance || 0);
+    const balances = await getMemberBalances(memberId);
 
     // Active loans
     const loans = await prisma.loans.findMany({
@@ -30,8 +29,6 @@ export async function GET(request: NextRequest) {
         status: { in: ['approved', 'disbursed', 'active', 'repaying'] },
       },
     }).catch(() => []);
-
-    const totalLoans = loans.reduce((acc, l) => acc + Number(l.amount || 0), 0);
 
     // Recent transactions
     const transactions = await prisma.transactions.findMany({
@@ -50,13 +47,7 @@ export async function GET(request: NextRequest) {
         status: member.status,
         kyc_status: member.kyc_status,
       },
-      balances: {
-        wallet,
-        savings,
-        shares,
-        loans: totalLoans,
-        net_worth: savings + shares - totalLoans,
-      },
+      balances,
       recent_transactions: transactions,
       active_loans: loans,
     });

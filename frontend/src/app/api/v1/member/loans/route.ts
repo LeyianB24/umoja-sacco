@@ -43,13 +43,17 @@ export async function POST(request: NextRequest) {
       return apiError('Please enter a valid loan amount.', 422);
     }
 
+    const totalPayable = amount * (1 + (interestRate / 100));
+
     const newLoan = await prisma.loans.create({
       data: {
         member_id: session.userId,
         amount: amount,
         loan_type: loanType,
         interest_rate: interestRate,
-        repayment_period_months: duration,
+        duration_months: duration,
+        total_payable: totalPayable,
+        current_balance: totalPayable,
         status: 'pending',
         application_date: new Date(),
         created_at: new Date(),

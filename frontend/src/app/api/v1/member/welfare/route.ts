@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
 
     const myDonations = await prisma.welfareDonations.findMany({
       where: { member_id: memberId },
-      orderBy: { donation_date: 'desc' },
+      orderBy: { created_at: 'desc' },
     }).catch(() => []);
 
     const totalDonated = myDonations.reduce((sum, d) => sum + Number(d.amount || 0), 0);

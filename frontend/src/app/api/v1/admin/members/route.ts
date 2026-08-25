@@ -95,9 +95,6 @@ export async function POST(request: NextRequest) {
         gender: body.gender || 'male',
         address: body.address || '',
         occupation: body.occupation || 'Driver',
-        wallet_balance: 0,
-        savings_balance: 0,
-        shares_balance: 0,
       },
     });
 

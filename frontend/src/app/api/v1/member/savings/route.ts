@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthSession } from '@/lib/auth';
+import { getMemberBalances } from '@/lib/financial';
 import { apiSuccess, apiError } from '@/lib/api-response';
 
 export async function GET(request: NextRequest) {
@@ -19,13 +20,15 @@ export async function GET(request: NextRequest) {
       return apiError('Member not found', 404);
     }
 
+    const balances = await getMemberBalances(memberId);
+
     const savingsHistory = await prisma.savings.findMany({
       where: { member_id: memberId },
-      orderBy: { deposit_date: 'desc' },
+      orderBy: { created_at: 'desc' },
     }).catch(() => []);
 
     return apiSuccess({
-      savings_balance: Number(member.savings_balance || 0),
+      savings_balance: balances.savings,
       interest_earned: 0,
       monthly_target: 5000,
       history: savingsHistory,

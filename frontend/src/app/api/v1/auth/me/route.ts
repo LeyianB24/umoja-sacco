@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthSession } from '@/lib/auth';
+import { getMemberBalances } from '@/lib/financial';
 import { apiSuccess, apiError } from '@/lib/api-response';
 
 export async function GET(request: NextRequest) {
@@ -47,7 +48,7 @@ export async function GET(request: NextRequest) {
       }).catch(() => 0);
 
       const unreadMsgs = await prisma.messages.count({
-        where: { status: 'unread' },
+        where: { is_read: false },
       }).catch(() => 0);
 
       return apiSuccess({
@@ -82,27 +83,15 @@ export async function GET(request: NextRequest) {
         return apiError('Member not found', 404);
       }
 
-      // Compute balances
-      const savings = Number(member.savings_balance || 0);
-      const shares = Number(member.shares_balance || 0);
-      const wallet = Number(member.wallet_balance || 0);
-
-      // Active loans balance
-      const activeLoans = await prisma.loans.findMany({
-        where: {
-          member_id: member.member_id,
-          status: { in: ['approved', 'disbursed', 'active', 'repaying'] },
-        },
-      }).catch(() => []);
-
-      const loansTotal = activeLoans.reduce((sum, l) => sum + Number(l.amount || 0), 0);
+      // Compute balances dynamically
+      const balances = await getMemberBalances(member.member_id);
 
       const unreadNotifs = await prisma.notifications.count({
         where: { member_id: member.member_id, is_read: false },
       }).catch(() => 0);
 
       const unreadMsgs = await prisma.messages.count({
-        where: { member_id: member.member_id, status: 'unread' },
+        where: { to_member_id: member.member_id, is_read: false },
       }).catch(() => 0);
 
       return apiSuccess({
@@ -125,13 +114,7 @@ export async function GET(request: NextRequest) {
           user_type: 'member',
           created_at: member.created_at,
         },
-        balances: {
-          wallet,
-          savings,
-          shares,
-          loans: loansTotal,
-          net_worth: savings + shares - loansTotal,
-        },
+        balances,
         permissions: [],
         topbar: {
           unread_notifications: unreadNotifs,
