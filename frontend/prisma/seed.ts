@@ -9,7 +9,7 @@ async function main() {
   // 1. Seed Roles
   await prisma.roles.upsert({
     where: { id: 1 },
-    update: {},
+    update: { name: 'superadmin', description: 'Full system control and administrative access' },
     create: {
       id: 1,
       name: 'superadmin',
@@ -19,7 +19,7 @@ async function main() {
 
   await prisma.roles.upsert({
     where: { id: 2 },
-    update: {},
+    update: { name: 'manager', description: 'Operations and Branch Manager' },
     create: {
       id: 2,
       name: 'manager',
@@ -29,7 +29,7 @@ async function main() {
 
   await prisma.roles.upsert({
     where: { id: 3 },
-    update: {},
+    update: { name: 'accountant', description: 'Financial accounting and reconciliation' },
     create: {
       id: 3,
       name: 'accountant',
@@ -37,33 +37,112 @@ async function main() {
     },
   });
 
-  console.log('✅ Roles seeded');
-
-  // 2. Seed Default Superadmin
-  const adminPassword = await bcrypt.hash('admin123', 10);
-  await prisma.admins.upsert({
-    where: { admin_id: 1 },
-    update: {},
+  await prisma.roles.upsert({
+    where: { id: 4 },
+    update: { name: 'admin', description: 'IT Administrator & System Support' },
     create: {
-      admin_id: 1,
-      username: 'superadmin',
-      full_name: 'System Administrator',
-      email: 'admin@umojasacco.co.ke',
-      password: adminPassword,
-      role_id: 1,
-      phone: '+254700000000',
+      id: 4,
+      name: 'admin',
+      description: 'IT Administrator & System Support',
     },
   });
 
-  console.log('✅ Superadmin user seeded (admin@umojasacco.co.ke / admin123)');
+  console.log('✅ Roles seeded (superadmin, manager, accountant, admin)');
+
+  // 2. Hash Passwords
+  const superadminPwd = await bcrypt.hash('admin123', 10);
+  const accountantPwd = await bcrypt.hash('accountant123', 10);
+  const managerPwd = await bcrypt.hash('manager123', 10);
+  const adminItPwd = await bcrypt.hash('adminIT123', 10);
+
+  // 2.1 superadmin (superadmin / admin123)
+  await prisma.admins.upsert({
+    where: { username: 'superadmin' },
+    update: {
+      full_name: 'Super Administrator',
+      email: 'superadmin@umojasacco.co.ke',
+      password: superadminPwd,
+      role_id: 1,
+    },
+    create: {
+      username: 'superadmin',
+      full_name: 'Super Administrator',
+      email: 'superadmin@umojasacco.co.ke',
+      password: superadminPwd,
+      role_id: 1,
+      phone: '+254700000001',
+    },
+  });
+  console.log('✅ 1. superadmin seeded (superadmin / admin123)');
+
+  // 2.2 accountant (accountant / accountant123)
+  await prisma.admins.upsert({
+    where: { username: 'accountant' },
+    update: {
+      full_name: 'Senior Accountant',
+      email: 'accountant@umojasacco.co.ke',
+      password: accountantPwd,
+      role_id: 3,
+    },
+    create: {
+      username: 'accountant',
+      full_name: 'Senior Accountant',
+      email: 'accountant@umojasacco.co.ke',
+      password: accountantPwd,
+      role_id: 3,
+      phone: '+254700000002',
+    },
+  });
+  console.log('✅ 2. accountant seeded (accountant / accountant123)');
+
+  // 2.3 manager (manager / manager123)
+  await prisma.admins.upsert({
+    where: { username: 'manager' },
+    update: {
+      full_name: 'Operations Manager',
+      email: 'manager@umojasacco.co.ke',
+      password: managerPwd,
+      role_id: 2,
+    },
+    create: {
+      username: 'manager',
+      full_name: 'Operations Manager',
+      email: 'manager@umojasacco.co.ke',
+      password: managerPwd,
+      role_id: 2,
+      phone: '+254700000003',
+    },
+  });
+  console.log('✅ 3. manager seeded (manager / manager123)');
+
+  // 2.4 Admin (Admin / adminIT123)
+  await prisma.admins.upsert({
+    where: { username: 'Admin' },
+    update: {
+      full_name: 'IT Administrator',
+      email: 'admin@umojasacco.co.ke',
+      password: adminItPwd,
+      role_id: 4,
+    },
+    create: {
+      username: 'Admin',
+      full_name: 'IT Administrator',
+      email: 'admin@umojasacco.co.ke',
+      password: adminItPwd,
+      role_id: 4,
+      phone: '+254700000004',
+    },
+  });
+  console.log('✅ 4. Admin seeded (Admin / adminIT123)');
 
   // 3. Seed Default Member
   const memberPassword = await bcrypt.hash('password123', 10);
   await prisma.members.upsert({
-    where: { member_id: 1 },
-    update: {},
+    where: { email: 'leyianbeza24@gmail.com' },
+    update: {
+      password: memberPassword,
+    },
     create: {
-      member_id: 1,
       member_reg_no: 'UDS-2025-0001',
       full_name: 'Bezalel Leyian',
       email: 'leyianbeza24@gmail.com',
@@ -77,8 +156,7 @@ async function main() {
       join_date: new Date(),
     },
   });
-
-  console.log('✅ Default member seeded (leyianbeza24@gmail.com / password123)');
+  console.log('✅ Member seeded (leyianbeza24@gmail.com / password123)');
 
   // 4. Seed Core Ledger Accounts
   const coreAccounts = [
