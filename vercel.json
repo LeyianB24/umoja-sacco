@@ -1,5 +1,0 @@
-{
-  "buildCommand": "cd umoja-sacco && npm run build",
-  "outputDirectory": "umoja-sacco/.next",
-  "framework": "nextjs"
-}

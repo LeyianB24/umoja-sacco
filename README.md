@@ -16,10 +16,7 @@ A comprehensive cooperative management and fintech platform empowering drivers, 
 
 ## 🚀 Getting Started
 
-Navigate to the `umoja-sacco` directory and launch the development server:
-
 ```bash
-cd umoja-sacco
 npm install
 npm run dev
 ```
