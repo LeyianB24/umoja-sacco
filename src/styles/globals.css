@@ -409,3 +409,163 @@ button, input, select, textarea {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-dim);
 }
+
+/* ────────────────────────────────────────────────────────────────────────────
+   11. RESPONSIVE BREAKPOINTS & MOBILE ADAPTATIONS
+   ──────────────────────────────────────────────────────────────────────── */
+
+/* Global Display Helpers */
+.d-none { display: none !important; }
+.d-flex { display: flex !important; }
+.d-block { display: block !important; }
+.d-grid { display: grid !important; }
+
+/* Large Desktop (> 992px) */
+@media (min-width: 992px) {
+  .d-lg-none { display: none !important; }
+  .d-lg-flex { display: flex !important; }
+  .d-lg-block { display: block !important; }
+  .d-lg-grid { display: grid !important; }
+  .desktop-links { display: flex !important; }
+  .mobile-toggle { display: none !important; }
+}
+
+/* Tablet & Mobile (< 992px) */
+@media (max-width: 991.98px) {
+  .d-lg-none { display: flex !important; }
+  .desktop-links { display: none !important; }
+  .mobile-toggle { display: flex !important; }
+
+  /* Full-width main wrapper on mobile */
+  .main-content-wrapper {
+    margin-left: 0 !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Slide-out mobile sidebars */
+  .member-sidebar, .admin-sidebar {
+    transform: translateX(-100%) !important;
+    width: 280px !important;
+    z-index: 1060 !important;
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.4) !important;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  }
+
+  .member-sidebar.mobile-open, .admin-sidebar.mobile-open {
+    transform: translateX(0) !important;
+  }
+
+  /* Mobile Topbar & Main Padding */
+  main {
+    padding: 16px !important;
+  }
+}
+
+/* Medium Tablets & Mobile (< 768px) */
+@media (max-width: 767.98px) {
+  .d-md-flex { display: none !important; }
+  .d-md-none { display: flex !important; }
+
+  /* Login & Register Containers Stack Vertically */
+  .login-container-responsive {
+    flex-direction: column !important;
+    max-width: 100% !important;
+    border-radius: 18px !important;
+  }
+
+  .login-brand-side {
+    padding: 30px 20px !important;
+    min-height: 200px !important;
+  }
+
+  .login-form-side {
+    padding: 28px 20px !important;
+  }
+
+  /* Responsive Grid Card Layouts */
+  .grid-responsive-cards {
+    grid-template-columns: 1fr !important;
+  }
+
+  .grid-2col-mobile-1col {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Metric Cards stack gracefully */
+  .metric-card-grid {
+    grid-template-columns: repeat(auto-fit, minmax(100%, 1fr)) !important;
+  }
+
+  /* Tables horizontal scroll container */
+  .table-container {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    width: 100% !important;
+    border-radius: 12px !important;
+  }
+
+  .data-table, .table-sacco {
+    min-width: 580px !important;
+  }
+
+  /* Hero Section Typography */
+  .hero-heading {
+    font-size: 2.2rem !important;
+    line-height: 1.15 !important;
+  }
+
+  /* Modals Full Width */
+  .modal-dialog {
+    width: 95vw !important;
+    max-width: 95vw !important;
+    margin: 10px auto !important;
+    padding: 18px !important;
+  }
+
+  /* Form Row Stacking */
+  .form-row {
+    flex-direction: column !important;
+    gap: 12px !important;
+  }
+
+  /* Action Buttons Full Width on Small Screens */
+  .btn-mobile-block {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+}
+
+/* Extra Small Phones (< 480px) */
+@media (max-width: 479.98px) {
+  html, body {
+    font-size: 14px;
+  }
+
+  .hero-heading {
+    font-size: 1.85rem !important;
+  }
+
+  .btn {
+    padding: 9px 18px;
+    font-size: 0.85rem;
+  }
+
+  .btn-lg {
+    padding: 12px 22px;
+    font-size: 0.95rem;
+  }
+
+  /* 3D Poker Hero Slideshow mobile adaptation */
+  .poker-slideshow-container {
+    height: 280px !important;
+    max-width: 280px !important;
+    margin: 20px auto 0 !important;
+  }
+
+  .poker-card-hero {
+    width: 170px !important;
+    height: 240px !important;
+  }
+}

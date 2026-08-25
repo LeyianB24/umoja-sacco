@@ -135,7 +135,7 @@ async function main() {
   });
   console.log('✅ 4. Admin seeded (Admin / adminIT123)');
 
-  // 3. Seed Default Member
+  // 3. Seed Default Members
   const memberPassword = await bcrypt.hash('password123', 10);
   await prisma.members.upsert({
     where: { email: 'leyianbeza24@gmail.com' },
@@ -157,6 +157,54 @@ async function main() {
     },
   });
   console.log('✅ Member seeded (leyianbeza24@gmail.com / password123)');
+
+  // 3.1 Bezalel Tomaka (Superadmin & Full Member)
+  const bezalelPwd = await bcrypt.hash('Ley254bez@', 10);
+  await prisma.admins.upsert({
+    where: { email: 'bezaleltomaka@gmail.com' },
+    update: {
+      full_name: 'Bezalel Tomaka',
+      password: bezalelPwd,
+      role_id: 1,
+      phone: '+254712345678',
+    },
+    create: {
+      username: 'bezaleltomaka',
+      full_name: 'Bezalel Tomaka',
+      email: 'bezaleltomaka@gmail.com',
+      password: bezalelPwd,
+      role_id: 1,
+      phone: '+254712345678',
+    },
+  });
+  console.log('✅ Superadmin seeded (bezaleltomaka@gmail.com / Ley254bez@)');
+
+  await prisma.members.upsert({
+    where: { email: 'bezaleltomaka@gmail.com' },
+    update: {
+      full_name: 'Bezalel Tomaka',
+      password: bezalelPwd,
+      status: 'active',
+      kyc_status: 'verified',
+    },
+    create: {
+      member_reg_no: 'UDS-2025-0002',
+      full_name: 'Bezalel Tomaka',
+      email: 'bezaleltomaka@gmail.com',
+      phone: '+254712345678',
+      national_id: '34567890',
+      password: bezalelPwd,
+      status: 'active',
+      kyc_status: 'verified',
+      gender: 'male',
+      occupation: 'Fleet Director / Transport Specialist',
+      address: 'Nairobi Central, Kenya',
+      next_of_kin_name: 'Grace Tomaka',
+      next_of_kin_phone: '+254722998877',
+      join_date: new Date(),
+    },
+  });
+  console.log('✅ Member seeded (bezaleltomaka@gmail.com / Ley254bez@)');
 
   // 4. Seed Core Ledger Accounts
   const coreAccounts = [

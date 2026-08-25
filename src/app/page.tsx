@@ -202,8 +202,9 @@ export default function LandingPage() {
             </div>
 
             {/* Right Column: 3D Poker Card Interactive Slideshow */}
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
               <div
+                className="poker-slideshow-container"
                 style={{
                   perspective: '1200px',
                   width: '100%',
@@ -232,11 +233,11 @@ export default function LandingPage() {
                     zIndex = 10;
                     pointerEvents = 'auto';
                   } else if (isLeft) {
-                    transform = 'rotateY(20deg) translateX(-140px) translateZ(-80px) scale(0.88)';
+                    transform = 'rotateY(20deg) translateX(-110px) translateZ(-80px) scale(0.85)';
                     opacity = 0.6;
                     zIndex = 5;
                   } else if (isRight) {
-                    transform = 'rotateY(-20deg) translateX(140px) translateZ(-80px) scale(0.88)';
+                    transform = 'rotateY(-20deg) translateX(110px) translateZ(-80px) scale(0.85)';
                     opacity = 0.6;
                     zIndex = 5;
                   }
@@ -244,6 +245,7 @@ export default function LandingPage() {
                   return (
                     <div
                       key={idx}
+                      className="poker-card-hero"
                       onClick={() => setCurrentSlide(idx)}
                       style={{
                         position: 'absolute',

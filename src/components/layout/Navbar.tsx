@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import {
@@ -10,9 +9,7 @@ import {
   X,
   Sun,
   Moon,
-  Shield,
   ArrowRight,
-  User,
   LayoutDashboard,
 } from 'lucide-react';
 
@@ -156,13 +153,13 @@ export function Navbar() {
 
         {user ? (
           <Link
-            href={user.role === 'member' ? '/member' : '/admin'}
+            href={user.user_type === 'member' ? '/member' : '/admin'}
             className="btn btn-lime"
           >
             <LayoutDashboard size={16} /> Portal Dashboard
           </Link>
         ) : (
-          <>
+          <div className="desktop-links" style={{ display: 'flex', gap: '10px' }}>
             <Link
               href="/login"
               className="btn btn-outline-lime"
@@ -177,23 +174,142 @@ export function Navbar() {
             >
               Join Sacco <ArrowRight size={16} />
             </Link>
-          </>
+          </div>
         )}
 
-        {/* Mobile Toggle */}
+        {/* Mobile Hamburger Toggle Button */}
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          title="Toggle Navigation Menu"
           style={{
-            background: 'none',
+            background: 'rgba(255, 255, 255, 0.1)',
             border: 'none',
+            borderRadius: '10px',
+            width: '40px',
+            height: '40px',
             color: '#FFFFFF',
             display: 'none',
+            alignItems: 'center',
+            justifyContent: 'center',
             cursor: 'pointer',
           }}
           className="mobile-toggle"
         >
-          {mobileMenuOpen ? <X size={26} /> : <Menu size={26} />}
+          {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
+      </div>
+
+      {/* Mobile Drawer */}
+      {mobileMenuOpen && (
+        <div
+          onClick={() => setMobileMenuOpen(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.65)',
+            backdropFilter: 'blur(4px)',
+            zIndex: 998,
+          }}
+        />
+      )}
+
+      <div
+        style={{
+          position: 'fixed',
+          top: '80px',
+          left: 0,
+          right: 0,
+          backgroundColor: '#0F392B',
+          borderBottom: '2px solid var(--brand-lime)',
+          padding: '24px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '16px',
+          zIndex: 999,
+          transform: mobileMenuOpen ? 'translateY(0)' : 'translateY(-120%)',
+          opacity: mobileMenuOpen ? 1 : 0,
+          pointerEvents: mobileMenuOpen ? 'auto' : 'none',
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          boxShadow: '0 20px 40px rgba(0,0,0,0.5)',
+          maxHeight: 'calc(100vh - 80px)',
+          overflowY: 'auto',
+        }}
+        className="mobile-nav-menu"
+      >
+        <Link
+          href="/#wealth-model"
+          onClick={() => setMobileMenuOpen(false)}
+          style={{ fontSize: '1rem', fontWeight: 600, color: '#FFFFFF', padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.08)' }}
+        >
+          How It Works
+        </Link>
+        <Link
+          href="/#services"
+          onClick={() => setMobileMenuOpen(false)}
+          style={{ fontSize: '1rem', fontWeight: 600, color: '#FFFFFF', padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.08)' }}
+        >
+          Services
+        </Link>
+        <Link
+          href="/#calculator"
+          onClick={() => setMobileMenuOpen(false)}
+          style={{ fontSize: '1rem', fontWeight: 600, color: '#FFFFFF', padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.08)' }}
+        >
+          Loan Calculator
+        </Link>
+        <Link
+          href="/#portfolio"
+          onClick={() => setMobileMenuOpen(false)}
+          style={{ fontSize: '1rem', fontWeight: 600, color: '#FFFFFF', padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.08)' }}
+        >
+          Investments
+        </Link>
+        <Link
+          href="/faqs"
+          onClick={() => setMobileMenuOpen(false)}
+          style={{ fontSize: '1rem', fontWeight: 600, color: '#FFFFFF', padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.08)' }}
+        >
+          FAQs
+        </Link>
+        <Link
+          href="/contact"
+          onClick={() => setMobileMenuOpen(false)}
+          style={{ fontSize: '1rem', fontWeight: 600, color: '#FFFFFF', padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.08)' }}
+        >
+          Contact Support Desk
+        </Link>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '10px' }}>
+          {user ? (
+            <Link
+              href={user.user_type === 'member' ? '/member' : '/admin'}
+              onClick={() => setMobileMenuOpen(false)}
+              className="btn btn-lime"
+              style={{ width: '100%', justifyContent: 'center' }}
+            >
+              <LayoutDashboard size={18} /> Go to Dashboard
+            </Link>
+          ) : (
+            <>
+              <Link
+                href="/login"
+                onClick={() => setMobileMenuOpen(false)}
+                className="btn btn-outline-lime"
+                style={{ width: '100%', justifyContent: 'center', color: '#FFFFFF', borderColor: 'var(--brand-lime)' }}
+              >
+                Sign In
+              </Link>
+              <Link
+                href="/register"
+                onClick={() => setMobileMenuOpen(false)}
+                className="btn btn-lime"
+                style={{ width: '100%', justifyContent: 'center' }}
+              >
+                Join Sacco <ArrowRight size={18} />
+              </Link>
+            </>
+          )}
+        </div>
       </div>
     </nav>
   );
