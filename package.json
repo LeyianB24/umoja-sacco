@@ -1,0 +1,11 @@
+{
+  "name": "umoja-sacco-root",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix umoja-sacco run dev",
+    "build": "npm --prefix umoja-sacco run build",
+    "start": "npm --prefix umoja-sacco run start",
+    "postinstall": "cd umoja-sacco && npx prisma generate"
+  }
+}
