@@ -1000,4 +1000,118 @@ button, input, select, textarea {
   box-shadow: 0 14px 28px rgba(0,0,0,0.08);
 }
 
+/* Preset Buttons */
+.preset-chip {
+  padding: 5px 12px;
+  border-radius: 8px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid var(--border-color);
+  background: var(--surface-2);
+  color: var(--text-main);
+  transition: all 0.15s ease;
+}
+.preset-chip:hover {
+  background: var(--brand-forest);
+  color: #ffffff;
+  border-color: var(--brand-forest);
+  transform: translateY(-1px);
+}
+.preset-chip.active {
+  background: var(--brand-forest);
+  color: var(--brand-lime);
+  border-color: var(--brand-forest);
+}
+
+/* Floating Quick Assistant */
+.floating-assistant-btn {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 990;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border-radius: 50px;
+  background: var(--brand-forest);
+  color: var(--brand-lime);
+  border: 1px solid rgba(163, 230, 53, 0.4);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+  font-weight: 700;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.floating-assistant-btn:hover {
+  transform: translateY(-3px) scale(1.03);
+  background: #071911;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.45);
+}
+
+.floating-scroll-top {
+  position: fixed;
+  bottom: 24px;
+  left: 24px;
+  z-index: 990;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--bg-surface);
+  color: var(--text-main);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.floating-scroll-top:hover {
+  transform: translateY(-2px);
+  border-color: var(--brand-forest);
+  color: var(--brand-forest);
+}
+
+/* Live Social Proof Toast */
+.social-proof-toast {
+  position: fixed;
+  bottom: 86px;
+  right: 24px;
+  z-index: 989;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-left: 4px solid var(--brand-lime);
+  border-radius: 14px;
+  padding: 12px 18px;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 380px;
+  animation: slideInRight 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+@keyframes slideInRight {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+/* Micro-interactive Progress Bar */
+.autoplay-progress-bar {
+  height: 3px;
+  background: rgba(163, 230, 53, 0.25);
+  border-radius: 2px;
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+}
+.autoplay-progress-fill {
+  height: 100%;
+  background: var(--brand-lime);
+  border-radius: 2px;
+  transition: width 0.1s linear;
+}
+
+
 

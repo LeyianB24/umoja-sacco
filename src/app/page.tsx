@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
@@ -41,6 +41,13 @@ import {
   ChevronUp,
   Landmark,
   FileText,
+  Play,
+  Pause,
+  Copy,
+  Check,
+  Layers,
+  ArrowUp,
+  Info,
 } from 'lucide-react';
 import { formatKES, formatNumber } from '@/lib/utils';
 
@@ -209,7 +216,7 @@ const SACCO_ASSETS: SaccoAsset[] = [
     categoryLabel: 'Apiculture & Honey',
     location: 'Kitui Agro-Forestry Reserve',
     annualRoi: '25.2% p.a.',
-    description: 'Modern modern Langstroth beehive apiary producing premium organic raw honey and beeswax for export and retail.',
+    description: 'Modern Langstroth beehive apiary producing premium organic raw honey and beeswax for export and retail.',
     valuation: 'KES 18M',
   },
   {
@@ -362,16 +369,19 @@ export default function LandingPage() {
   // Slideshow State (19 Sacco Asset Images)
   const totalSlides = SACCO_ASSETS.length;
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [isAutoPlaying, setIsAutoPlaying] = useState(true);
   const [isHoveringSlideshow, setIsHoveringSlideshow] = useState(false);
+  const [slideProgress, setSlideProgress] = useState(0);
 
   // Selected Asset for Lightbox Modal
-  const [selectedAsset, setSelectedAsset] = useState<SaccoAsset | null>(null);
+  const [selectedAssetIndex, setSelectedAssetIndex] = useState<number | null>(null);
 
   // Selected Product for Details Modal
   const [selectedProduct, setSelectedProduct] = useState<SaccoProduct | null>(null);
 
   // Active Category Filter for Portfolio Gallery
   const [portfolioCategory, setPortfolioCategory] = useState<string>('all');
+  const [portfolioSearch, setPortfolioSearch] = useState<string>('');
 
   // Calculator Tab: 'loan' or 'savings'
   const [calcTab, setCalcTab] = useState<'loan' | 'savings'>('loan');
@@ -380,6 +390,8 @@ export default function LandingPage() {
   const [loanType, setLoanType] = useState<'express' | 'dev' | 'asset' | 'emergency'>('dev');
   const [loanAmount, setLoanAmount] = useState<number>(150000);
   const [loanMonths, setLoanMonths] = useState<number>(12);
+  const [showAmortization, setShowAmortization] = useState(false);
+  const [copiedQuote, setCopiedQuote] = useState(false);
 
   // Rates based on type
   const loanRates = {
@@ -393,6 +405,29 @@ export default function LandingPage() {
   const totalInterest = loanAmount * (currentRateObj.rate * (loanMonths / 12));
   const totalRepayable = loanAmount + totalInterest;
   const monthlyInstallment = totalRepayable / loanMonths;
+
+  // Generate interactive Amortization Schedule
+  const amortizationSchedule = useMemo(() => {
+    const rows = [];
+    const monthlyRate = currentRateObj.rate / 12;
+    const monthlyPayment = totalRepayable / loanMonths;
+    let balance = totalRepayable;
+
+    for (let i = 1; i <= loanMonths; i++) {
+      const interestPortion = (loanAmount * currentRateObj.rate) / 12;
+      const principalPortion = monthlyPayment - interestPortion;
+      balance = Math.max(0, balance - monthlyPayment);
+
+      rows.push({
+        month: i,
+        payment: monthlyPayment,
+        principal: principalPortion,
+        interest: interestPortion,
+        remaining: balance,
+      });
+    }
+    return rows;
+  }, [loanAmount, loanMonths, currentRateObj, totalRepayable]);
 
   // Savings / Compound Wealth Projector State
   const [monthlySavings, setMonthlySavings] = useState<number>(5000);
@@ -413,11 +448,24 @@ export default function LandingPage() {
     const totalDividendsEarned = Math.max(0, balance - totalDeposited);
     const loanBorrowingCapacity = balance * 3;
 
+    // Milestone calculations
+    const calcAtYear = (yr: number) => {
+      let b = 0;
+      for (let m = 1; m <= yr * 12; m++) {
+        b = (b + monthlySavings) * (1 + monthlyRate);
+      }
+      return b;
+    };
+
     return {
       finalBalance: balance,
       totalDeposited,
       totalDividendsEarned,
       loanBorrowingCapacity,
+      y1: calcAtYear(1),
+      y3: calcAtYear(3),
+      y5: calcAtYear(5),
+      y10: calcAtYear(10),
     };
   }, [monthlySavings, savingsYears, annualDividendRate]);
 
@@ -428,6 +476,17 @@ export default function LandingPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const [faqSearch, setFaqSearch] = useState<string>('');
   const [faqCategory, setFaqCategory] = useState<string>('all');
+
+  // Floating Calculator Drawer State
+  const [floatingDrawerOpen, setFloatingDrawerOpen] = useState(false);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+
+  // Social Proof Toast State
+  const [socialToast, setSocialToast] = useState<{ name: string; action: string; time: string } | null>({
+    name: 'Josephat K. from Nairobi',
+    action: 'received KES 120,000 Asset Loan',
+    time: '2 mins ago',
+  });
 
   const faqs = [
     {
@@ -479,9 +538,15 @@ export default function LandingPage() {
 
   // Filtered Assets for Gallery
   const filteredAssets = useMemo(() => {
-    if (portfolioCategory === 'all') return SACCO_ASSETS;
-    return SACCO_ASSETS.filter((a) => a.category === portfolioCategory);
-  }, [portfolioCategory]);
+    return SACCO_ASSETS.filter((a) => {
+      const matchCat = portfolioCategory === 'all' || a.category === portfolioCategory;
+      const matchSearch =
+        a.title.toLowerCase().includes(portfolioSearch.toLowerCase()) ||
+        a.location.toLowerCase().includes(portfolioSearch.toLowerCase()) ||
+        a.description.toLowerCase().includes(portfolioSearch.toLowerCase());
+      return matchCat && matchSearch;
+    });
+  }, [portfolioCategory, portfolioSearch]);
 
   // Filtered Products
   const filteredProducts = useMemo(() => {
@@ -489,28 +554,90 @@ export default function LandingPage() {
     return SACCO_PRODUCTS.filter((p) => p.category === productCategory);
   }, [productCategory]);
 
-  // Auto slide timer
+  // Auto slide timer with progress bar
   useEffect(() => {
-    if (isHoveringSlideshow) return;
+    if (!isAutoPlaying || isHoveringSlideshow || selectedAssetIndex !== null) return;
+    const intervalMs = 4500;
+    const stepMs = 50;
+    let elapsed = 0;
+
     const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % totalSlides);
-    }, 4500);
+      elapsed += stepMs;
+      setSlideProgress((elapsed / intervalMs) * 100);
+
+      if (elapsed >= intervalMs) {
+        elapsed = 0;
+        setCurrentSlide((prev) => (prev + 1) % totalSlides);
+      }
+    }, stepMs);
+
     return () => clearInterval(timer);
-  }, [totalSlides, isHoveringSlideshow]);
+  }, [totalSlides, isAutoPlaying, isHoveringSlideshow, selectedAssetIndex]);
+
+  // Scroll listener for back-to-top button
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowScrollTop(window.scrollY > 450);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Keyboard navigation for Lightbox & Slideshow
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (selectedAssetIndex !== null) {
+        if (e.key === 'ArrowRight') {
+          setSelectedAssetIndex((prev) => (prev !== null ? (prev + 1) % totalSlides : 0));
+        } else if (e.key === 'ArrowLeft') {
+          setSelectedAssetIndex((prev) => (prev !== null ? (prev - 1 + totalSlides) % totalSlides : 0));
+        } else if (e.key === 'Escape') {
+          setSelectedAssetIndex(null);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedAssetIndex, totalSlides]);
+
+  // Social proof rotating notifications
+  useEffect(() => {
+    const notifications = [
+      { name: 'Josephat K. from Nairobi', action: 'received KES 150,000 PSV Financing', time: '2m ago' },
+      { name: 'Mary W. from Nakuru', action: 'deposited KES 10,000 monthly shares', time: '5m ago' },
+      { name: 'Peter O. from Eldoret', action: 'approved for KES 45,000 Mobile Express', time: '8m ago' },
+      { name: 'Brian M. from Kiambu', action: 'joined Umoja Sacco today', time: '12m ago' },
+    ];
+    let idx = 0;
+    const interval = setInterval(() => {
+      idx = (idx + 1) % notifications.length;
+      setSocialToast(notifications[idx]);
+    }, 9000);
+    return () => clearInterval(interval);
+  }, []);
 
   const prevSlide = () => {
+    setSlideProgress(0);
     setCurrentSlide((prev) => (prev - 1 + totalSlides) % totalSlides);
   };
 
   const nextSlide = () => {
+    setSlideProgress(0);
     setCurrentSlide((prev) => (prev + 1) % totalSlides);
+  };
+
+  const copyQuote = () => {
+    const text = `Umoja Sacco Loan Quote:\nLoan Type: ${currentRateObj.label}\nPrincipal: ${formatKES(loanAmount)}\nDuration: ${loanMonths} Months\nMonthly EMI: ${formatKES(monthlyInstallment)}\nTotal Interest: ${formatKES(totalInterest)}\nTotal Repayable: ${formatKES(totalRepayable)}`;
+    navigator.clipboard.writeText(text);
+    setCopiedQuote(true);
+    setTimeout(() => setCopiedQuote(false), 2500);
   };
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--bg-primary)' }}>
       {/* ═════════════════════════════════════════════════════════════════════
           TOP ANNOUNCEMENT & LIVE TICKER BAR
-      ═════════════════════════════════════════════════════════════════════ */}
+      ═════════════════════════════════════════════ */}
       <div
         style={{
           backgroundColor: '#07140F',
@@ -686,7 +813,7 @@ export default function LandingPage() {
               onMouseEnter={() => setIsHoveringSlideshow(true)}
               onMouseLeave={() => setIsHoveringSlideshow(false)}
             >
-              {/* Top Slide Counter & Header */}
+              {/* Top Controls: Counter & Play/Pause */}
               <div
                 style={{
                   display: 'flex',
@@ -694,13 +821,33 @@ export default function LandingPage() {
                   justifyContent: 'space-between',
                   width: '100%',
                   maxWidth: '380px',
-                  marginBottom: '12px',
+                  marginBottom: '10px',
                   padding: '0 8px',
                 }}
               >
-                <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--brand-lime)', letterSpacing: '0.5px', textTransform: 'uppercase' }}>
-                  Cooperative Asset Showcase
-                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <button
+                    onClick={() => setIsAutoPlaying(!isAutoPlaying)}
+                    title={isAutoPlaying ? 'Pause Slideshow' : 'Resume Slideshow'}
+                    style={{
+                      background: 'rgba(255,255,255,0.1)',
+                      border: 'none',
+                      color: 'var(--brand-lime)',
+                      borderRadius: '50%',
+                      width: '28px',
+                      height: '28px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {isAutoPlaying ? <Pause size={13} /> : <Play size={13} />}
+                  </button>
+                  <span style={{ fontSize: '0.76rem', fontWeight: 700, color: 'var(--brand-lime)', textTransform: 'uppercase' }}>
+                    Asset #{currentSlide + 1} of {totalSlides}
+                  </span>
+                </div>
                 <span
                   style={{
                     fontSize: '0.75rem',
@@ -713,6 +860,13 @@ export default function LandingPage() {
                 >
                   {String(currentSlide + 1).padStart(2, '0')} / {totalSlides}
                 </span>
+              </div>
+
+              {/* Countdown Progress Bar */}
+              <div style={{ width: '100%', maxWidth: '380px', marginBottom: '12px', padding: '0 8px' }}>
+                <div className="autoplay-progress-bar">
+                  <div className="autoplay-progress-fill" style={{ width: isAutoPlaying ? `${slideProgress}%` : '0%' }} />
+                </div>
               </div>
 
               {/* 3D Stack Container */}
@@ -758,8 +912,8 @@ export default function LandingPage() {
                     <div
                       key={asset.id}
                       className="poker-card-hero"
-                      onClick={() => (isActive ? setSelectedAsset(asset) : setCurrentSlide(idx))}
-                      title={isActive ? 'Click to inspect asset details' : `View Asset #${asset.id}`}
+                      onClick={() => (isActive ? setSelectedAssetIndex(idx) : setCurrentSlide(idx))}
+                      title={isActive ? 'Click to inspect high-resolution details' : `View Asset #${asset.id}`}
                       style={{
                         position: 'absolute',
                         width: '280px',
@@ -804,7 +958,7 @@ export default function LandingPage() {
                         <span
                           style={{
                             background: 'rgba(7, 20, 15, 0.85)',
-                            backdropFilter: 'blur(8px)',
+                            backdropFilter: 'blur(6px)',
                             color: 'var(--brand-lime)',
                             fontSize: '0.68rem',
                             fontWeight: 800,
@@ -820,7 +974,7 @@ export default function LandingPage() {
                           <span
                             style={{
                               background: 'rgba(7, 20, 15, 0.85)',
-                              backdropFilter: 'blur(8px)',
+                              backdropFilter: 'blur(6px)',
                               color: '#FFFFFF',
                               fontSize: '0.65rem',
                               fontWeight: 700,
@@ -861,8 +1015,46 @@ export default function LandingPage() {
                 })}
               </div>
 
-              {/* Slideshow Controls & Thumbnail Dots */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginTop: '16px', zIndex: 20 }}>
+              {/* Interactive Thumbnail Selector Bar */}
+              <div
+                style={{
+                  display: 'flex',
+                  gap: '6px',
+                  maxWidth: '380px',
+                  overflowX: 'auto',
+                  padding: '8px 4px',
+                  marginTop: '12px',
+                  zIndex: 20,
+                  WebkitOverflowScrolling: 'touch',
+                }}
+              >
+                {SACCO_ASSETS.map((asset, idx) => (
+                  <button
+                    key={asset.id}
+                    onClick={() => {
+                      setSlideProgress(0);
+                      setCurrentSlide(idx);
+                    }}
+                    title={`Jump to ${asset.title}`}
+                    style={{
+                      width: idx === currentSlide ? '32px' : '22px',
+                      height: '24px',
+                      borderRadius: '6px',
+                      border: idx === currentSlide ? '2px solid var(--brand-lime)' : '1px solid rgba(255,255,255,0.2)',
+                      padding: 0,
+                      cursor: 'pointer',
+                      overflow: 'hidden',
+                      flexShrink: 0,
+                      transition: 'all 0.2s',
+                    }}
+                  >
+                    <img src={asset.image} alt={asset.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  </button>
+                ))}
+              </div>
+
+              {/* Slideshow Controls */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginTop: '8px', zIndex: 20 }}>
                 <button
                   onClick={prevSlide}
                   title="Previous Asset"
@@ -883,29 +1075,13 @@ export default function LandingPage() {
                   <ChevronLeft size={20} />
                 </button>
 
-                {/* Direct Mini Progress Bar / Indicators */}
-                <div style={{ display: 'flex', gap: '4px', maxWidth: '180px', overflowX: 'auto', padding: '4px 0' }}>
-                  {SACCO_ASSETS.slice(0, 12).map((_, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => setCurrentSlide(idx)}
-                      title={`Go to asset #${idx + 1}`}
-                      style={{
-                        width: idx === currentSlide ? '18px' : '6px',
-                        height: '6px',
-                        borderRadius: '3px',
-                        backgroundColor: idx === currentSlide ? 'var(--brand-lime)' : 'rgba(255, 255, 255, 0.25)',
-                        border: 'none',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s',
-                        padding: 0,
-                      }}
-                    />
-                  ))}
-                  {totalSlides > 12 && (
-                    <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.65rem', alignSelf: 'center' }}>+7</span>
-                  )}
-                </div>
+                <button
+                  onClick={() => setSelectedAssetIndex(currentSlide)}
+                  className="btn btn-outline-lime"
+                  style={{ padding: '6px 16px', fontSize: '0.82rem' }}
+                >
+                  <Maximize2 size={13} /> View Full Specs
+                </button>
 
                 <button
                   onClick={nextSlide}
@@ -1187,13 +1363,13 @@ export default function LandingPage() {
                   display: 'grid',
                   gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
                   gap: '48px',
-                  alignItems: 'center',
+                  alignItems: 'start',
                 }}
               >
                 {/* Sliders & Option Selectors */}
                 <div>
                   {/* Loan Type Selector */}
-                  <div style={{ marginBottom: '28px' }}>
+                  <div style={{ marginBottom: '24px' }}>
                     <label className="input-label" style={{ marginBottom: '10px' }}>Select Loan Category</label>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
                       {(Object.keys(loanRates) as Array<keyof typeof loanRates>).map((k) => (
@@ -1202,8 +1378,8 @@ export default function LandingPage() {
                           type="button"
                           onClick={() => {
                             setLoanType(k);
-                            setLoanAmount(Math.min(loanAmount, loanRates[k].maxAmt));
-                            setLoanMonths(Math.min(loanMonths, loanRates[k].maxMos));
+                            setLoanAmount(Math.min(Math.max(loanAmount, loanRates[k].minAmt), loanRates[k].maxAmt));
+                            setLoanMonths(Math.min(Math.max(loanMonths, loanRates[k].minMos), loanRates[k].maxMos));
                           }}
                           style={{
                             padding: '12px 14px',
@@ -1225,8 +1401,8 @@ export default function LandingPage() {
                     </div>
                   </div>
 
-                  {/* Loan Amount Slider */}
-                  <div style={{ marginBottom: '30px' }}>
+                  {/* Loan Amount Slider & Quick Presets */}
+                  <div style={{ marginBottom: '26px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
                       <label className="input-label" style={{ margin: 0 }}>Borrowing Amount</label>
                       <span style={{ fontWeight: 800, color: 'var(--brand-forest)', fontSize: '1.3rem' }}>
@@ -1237,19 +1413,31 @@ export default function LandingPage() {
                       type="range"
                       min={currentRateObj.minAmt}
                       max={currentRateObj.maxAmt}
-                      step={loanAmount > 100000 ? 50000 : 5000}
+                      step={loanAmount > 100000 ? 25000 : 5000}
                       value={loanAmount}
                       onChange={(e) => setLoanAmount(Number(e.target.value))}
                       className="landing-slider"
                     />
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '8px' }}>
-                      <span>{formatKES(currentRateObj.minAmt)}</span>
-                      <span>{formatKES(currentRateObj.maxAmt)}</span>
+                    
+                    {/* Quick Amount Presets */}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '10px' }}>
+                      {[25000, 50000, 100000, 250000, 500000, 1000000]
+                        .filter((amt) => amt >= currentRateObj.minAmt && amt <= currentRateObj.maxAmt)
+                        .map((preset) => (
+                          <button
+                            key={preset}
+                            type="button"
+                            onClick={() => setLoanAmount(preset)}
+                            className={`preset-chip ${loanAmount === preset ? 'active' : ''}`}
+                          >
+                            {formatKES(preset).replace('.00', '')}
+                          </button>
+                        ))}
                     </div>
                   </div>
 
-                  {/* Duration Slider */}
-                  <div>
+                  {/* Duration Slider & Quick Presets */}
+                  <div style={{ marginBottom: '24px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
                       <label className="input-label" style={{ margin: 0 }}>Repayment Period</label>
                       <span style={{ fontWeight: 800, color: 'var(--brand-forest)', fontSize: '1.3rem' }}>
@@ -1265,11 +1453,82 @@ export default function LandingPage() {
                       onChange={(e) => setLoanMonths(Number(e.target.value))}
                       className="landing-slider"
                     />
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '8px' }}>
-                      <span>{currentRateObj.minMos} Mo</span>
-                      <span>{currentRateObj.maxMos} Months</span>
+                    
+                    {/* Quick Tenure Presets */}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '10px' }}>
+                      {[1, 3, 6, 12, 24, 36, 48]
+                        .filter((m) => m >= currentRateObj.minMos && m <= currentRateObj.maxMos)
+                        .map((preset) => (
+                          <button
+                            key={preset}
+                            type="button"
+                            onClick={() => setLoanMonths(preset)}
+                            className={`preset-chip ${loanMonths === preset ? 'active' : ''}`}
+                          >
+                            {preset} {preset === 1 ? 'Month' : 'Mos'}
+                          </button>
+                        ))}
                     </div>
                   </div>
+
+                  {/* Toggle Amortization Schedule */}
+                  <button
+                    type="button"
+                    onClick={() => setShowAmortization(!showAmortization)}
+                    style={{
+                      background: 'none',
+                      border: '1px dashed var(--border-color)',
+                      padding: '10px 16px',
+                      borderRadius: '12px',
+                      color: 'var(--brand-forest)',
+                      fontWeight: 700,
+                      fontSize: '0.85rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      cursor: 'pointer',
+                      width: '100%',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Layers size={16} />
+                    {showAmortization ? 'Hide Month-by-Month Amortization' : 'View Full Amortization Schedule'}
+                  </button>
+
+                  {/* Amortization Table Accordion */}
+                  {showAmortization && (
+                    <div
+                      style={{
+                        marginTop: '16px',
+                        maxHeight: '260px',
+                        overflowY: 'auto',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: '12px',
+                        backgroundColor: 'var(--surface-2)',
+                      }}
+                    >
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem', textAlign: 'left' }}>
+                        <thead style={{ position: 'sticky', top: 0, backgroundColor: 'var(--brand-forest)', color: '#FFFFFF' }}>
+                          <tr>
+                            <th style={{ padding: '8px 12px' }}>Month</th>
+                            <th style={{ padding: '8px 12px' }}>Payment</th>
+                            <th style={{ padding: '8px 12px' }}>Interest</th>
+                            <th style={{ padding: '8px 12px' }}>Balance</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {amortizationSchedule.map((row) => (
+                            <tr key={row.month} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                              <td style={{ padding: '6px 12px', fontWeight: 700 }}>Mo. {row.month}</td>
+                              <td style={{ padding: '6px 12px' }}>{formatKES(row.payment)}</td>
+                              <td style={{ padding: '6px 12px', color: 'var(--brand-forest)' }}>{formatKES(row.interest)}</td>
+                              <td style={{ padding: '6px 12px', fontWeight: 600 }}>{formatKES(row.remaining)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </div>
 
                 {/* Calculation Breakdown Card */}
@@ -1291,7 +1550,7 @@ export default function LandingPage() {
                     <span style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.6)', fontWeight: 600 }}> / mo</span>
                   </div>
 
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', borderTop: '1px solid rgba(255,255,255,0.15)', paddingTop: '20px', marginBottom: '28px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', borderTop: '1px solid rgba(255,255,255,0.15)', paddingTop: '20px', marginBottom: '24px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
                       <span style={{ color: 'rgba(255,255,255,0.7)' }}>Principal Amount:</span>
                       <span style={{ fontWeight: 700 }}>{formatKES(loanAmount)}</span>
@@ -1310,9 +1569,38 @@ export default function LandingPage() {
                     </div>
                   </div>
 
-                  <Link href="/register" className="btn btn-lime" style={{ width: '100%', padding: '14px', fontSize: '1rem' }}>
-                    Apply for this Loan Now <ArrowRight size={16} />
-                  </Link>
+                  <div style={{ display: 'flex', gap: '10px', marginBottom: '14px' }}>
+                    <Link
+                      href={`/register?type=loan&amount=${loanAmount}&months=${loanMonths}&product=${loanType}`}
+                      className="btn btn-lime"
+                      style={{ flex: 1, padding: '14px', fontSize: '1rem', justifyContent: 'center' }}
+                    >
+                      Apply for this Loan <ArrowRight size={16} />
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={copyQuote}
+                      title="Copy Quote Details"
+                      style={{
+                        background: 'rgba(255,255,255,0.12)',
+                        border: '1px solid rgba(255,255,255,0.25)',
+                        borderRadius: '50px',
+                        color: '#FFFFFF',
+                        padding: '0 16px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {copiedQuote ? <Check size={18} color="var(--brand-lime)" /> : <Copy size={18} />}
+                    </button>
+                  </div>
+                  {copiedQuote && (
+                    <div style={{ textAlign: 'center', fontSize: '0.76rem', color: 'var(--brand-lime)' }}>
+                      ✓ Loan calculation copied to clipboard!
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -1329,12 +1617,12 @@ export default function LandingPage() {
                   display: 'grid',
                   gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
                   gap: '48px',
-                  alignItems: 'center',
+                  alignItems: 'start',
                 }}
               >
-                {/* Sliders */}
+                {/* Sliders & Presets */}
                 <div>
-                  <div style={{ marginBottom: '30px' }}>
+                  <div style={{ marginBottom: '26px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
                       <label className="input-label" style={{ margin: 0 }}>Monthly Deposit Amount</label>
                       <span style={{ fontWeight: 800, color: 'var(--brand-forest)', fontSize: '1.3rem' }}>
@@ -1350,13 +1638,23 @@ export default function LandingPage() {
                       onChange={(e) => setMonthlySavings(Number(e.target.value))}
                       className="landing-slider"
                     />
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '8px' }}>
-                      <span>KES 1,000 / mo</span>
-                      <span>KES 50,000 / mo</span>
+                    
+                    {/* Quick Monthly Presets */}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '10px' }}>
+                      {[2000, 5000, 10000, 20000, 50000].map((preset) => (
+                        <button
+                          key={preset}
+                          type="button"
+                          onClick={() => setMonthlySavings(preset)}
+                          className={`preset-chip ${monthlySavings === preset ? 'active' : ''}`}
+                        >
+                          {formatKES(preset).replace('.00', '')}
+                        </button>
+                      ))}
                     </div>
                   </div>
 
-                  <div style={{ marginBottom: '30px' }}>
+                  <div style={{ marginBottom: '26px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
                       <label className="input-label" style={{ margin: 0 }}>Investment Horizon</label>
                       <span style={{ fontWeight: 800, color: 'var(--brand-forest)', fontSize: '1.3rem' }}>
@@ -1372,31 +1670,42 @@ export default function LandingPage() {
                       onChange={(e) => setSavingsYears(Number(e.target.value))}
                       className="landing-slider"
                     />
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '8px' }}>
-                      <span>1 Year</span>
-                      <span>10 Years</span>
+                    
+                    {/* Quick Year Presets */}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '10px' }}>
+                      {[1, 2, 3, 5, 10].map((preset) => (
+                        <button
+                          key={preset}
+                          type="button"
+                          onClick={() => setSavingsYears(preset)}
+                          className={`preset-chip ${savingsYears === preset ? 'active' : ''}`}
+                        >
+                          {preset} {preset === 1 ? 'Year' : 'Years'}
+                        </button>
+                      ))}
                     </div>
                   </div>
 
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-                      <label className="input-label" style={{ margin: 0 }}>Projected Annual Dividend Rate</label>
-                      <span style={{ fontWeight: 800, color: 'var(--brand-forest)', fontSize: '1.3rem' }}>
-                        {annualDividendRate.toFixed(1)}% p.a.
-                      </span>
-                    </div>
-                    <input
-                      type="range"
-                      min={10}
-                      max={18}
-                      step={0.5}
-                      value={annualDividendRate}
-                      onChange={(e) => setAnnualDividendRate(Number(e.target.value))}
-                      className="landing-slider"
-                    />
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '8px' }}>
-                      <span>10.0% (Conservative)</span>
-                      <span>18.0% (High Growth)</span>
+                  {/* Growth Milestone Cards Grid */}
+                  <div style={{ marginTop: '24px' }}>
+                    <label className="input-label" style={{ marginBottom: '10px' }}>Projected Growth Milestones</label>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
+                      <div style={{ backgroundColor: 'var(--surface-2)', padding: '12px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Year 1 Balance</div>
+                        <div style={{ fontWeight: 800, color: 'var(--brand-forest)', fontSize: '0.95rem', marginTop: '2px' }}>{formatKES(savingsProjection.y1)}</div>
+                      </div>
+                      <div style={{ backgroundColor: 'var(--surface-2)', padding: '12px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Year 3 Balance</div>
+                        <div style={{ fontWeight: 800, color: 'var(--brand-forest)', fontSize: '0.95rem', marginTop: '2px' }}>{formatKES(savingsProjection.y3)}</div>
+                      </div>
+                      <div style={{ backgroundColor: 'var(--surface-2)', padding: '12px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Year 5 Balance</div>
+                        <div style={{ fontWeight: 800, color: 'var(--brand-forest)', fontSize: '0.95rem', marginTop: '2px' }}>{formatKES(savingsProjection.y5)}</div>
+                      </div>
+                      <div style={{ backgroundColor: 'var(--surface-2)', padding: '12px', borderRadius: '12px', border: '1px solid var(--brand-forest)' }}>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--brand-forest)', textTransform: 'uppercase', fontWeight: 700 }}>Year 10 Wealth</div>
+                        <div style={{ fontWeight: 800, color: 'var(--brand-forest)', fontSize: '0.95rem', marginTop: '2px' }}>{formatKES(savingsProjection.y10)}</div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1454,7 +1763,7 @@ export default function LandingPage() {
                     </div>
                   </div>
 
-                  <Link href="/register" className="btn btn-lime" style={{ width: '100%', padding: '14px', fontSize: '1rem' }}>
+                  <Link href="/register" className="btn btn-lime" style={{ width: '100%', padding: '14px', fontSize: '1rem', justifyContent: 'center' }}>
                     Start Building Wealth Today <ArrowRight size={16} />
                   </Link>
                 </div>
@@ -1585,14 +1894,52 @@ export default function LandingPage() {
                 Every single shilling you contribute is backed by real, income-generating physical property across Kenya.
               </p>
 
+              {/* Asset Search & Filter Controls */}
+              <div style={{ maxWidth: '520px', margin: '24px auto 0', position: 'relative' }}>
+                <Search size={18} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                <input
+                  type="text"
+                  placeholder="Filter 19 assets by name, location, or crop..."
+                  value={portfolioSearch}
+                  onChange={(e) => setPortfolioSearch(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '12px 18px 12px 46px',
+                    borderRadius: '50px',
+                    border: '1px solid var(--border-color)',
+                    backgroundColor: 'var(--bg-surface)',
+                    color: 'var(--text-main)',
+                    outline: 'none',
+                    fontSize: '0.9rem',
+                  }}
+                />
+                {portfolioSearch && (
+                  <button
+                    onClick={() => setPortfolioSearch('')}
+                    style={{
+                      position: 'absolute',
+                      right: '14px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      color: 'var(--text-muted)',
+                    }}
+                  >
+                    <X size={16} />
+                  </button>
+                )}
+              </div>
+
               {/* Portfolio Filter Pills */}
-              <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: '10px', marginTop: '28px' }}>
+              <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: '10px', marginTop: '20px' }}>
                 {[
                   { id: 'all', label: `All Assets (${totalSlides})` },
-                  { id: 'fleet', label: 'Commercial Fleets' },
+                  { id: 'agri', label: 'Agribusiness & Crops' },
                   { id: 'real-estate', label: 'Commercial Real Estate' },
-                  { id: 'agri', label: 'Agribusiness Hubs' },
                   { id: 'fuel', label: 'Fueling Stations' },
+                  { id: 'fleet', label: 'Machinery & Transit' },
                   { id: 'welfare', label: 'Welfare Assets' },
                 ].map((pill) => (
                   <button
@@ -1614,67 +1961,70 @@ export default function LandingPage() {
                 gap: '24px',
               }}
             >
-              {filteredAssets.map((asset) => (
-                <div
-                  key={asset.id}
-                  className="gallery-card"
-                  onClick={() => setSelectedAsset(asset)}
-                  style={{ cursor: 'pointer' }}
-                >
-                  <div style={{ height: '210px', position: 'relative', overflow: 'hidden' }}>
-                    <img
-                      src={asset.image}
-                      alt={asset.title}
-                      className="img-zoom"
-                      style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                    />
-                    <div style={{ position: 'absolute', top: '12px', left: '12px' }}>
-                      <span
-                        style={{
-                          backgroundColor: 'rgba(7, 20, 15, 0.85)',
-                          backdropFilter: 'blur(6px)',
-                          color: 'var(--brand-lime)',
-                          fontSize: '0.7rem',
-                          fontWeight: 800,
-                          padding: '4px 10px',
-                          borderRadius: '50px',
-                        }}
-                      >
-                        {asset.categoryLabel}
-                      </span>
+              {filteredAssets.map((asset) => {
+                const globalIndex = SACCO_ASSETS.findIndex((a) => a.id === asset.id);
+                return (
+                  <div
+                    key={asset.id}
+                    className="gallery-card"
+                    onClick={() => setSelectedAssetIndex(globalIndex)}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <div style={{ height: '210px', position: 'relative', overflow: 'hidden' }}>
+                      <img
+                        src={asset.image}
+                        alt={asset.title}
+                        className="img-zoom"
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                      />
+                      <div style={{ position: 'absolute', top: '12px', left: '12px' }}>
+                        <span
+                          style={{
+                            backgroundColor: 'rgba(7, 20, 15, 0.85)',
+                            backdropFilter: 'blur(6px)',
+                            color: 'var(--brand-lime)',
+                            fontSize: '0.7rem',
+                            fontWeight: 800,
+                            padding: '4px 10px',
+                            borderRadius: '50px',
+                          }}
+                        >
+                          {asset.categoryLabel}
+                        </span>
+                      </div>
+                      <div style={{ position: 'absolute', bottom: '10px', right: '12px' }}>
+                        <span
+                          style={{
+                            backgroundColor: 'rgba(7, 20, 15, 0.85)',
+                            color: '#FFFFFF',
+                            fontSize: '0.72rem',
+                            fontWeight: 700,
+                            padding: '3px 8px',
+                            borderRadius: '6px',
+                          }}
+                        >
+                          Val: {asset.valuation}
+                        </span>
+                      </div>
                     </div>
-                    <div style={{ position: 'absolute', bottom: '10px', right: '12px' }}>
-                      <span
-                        style={{
-                          backgroundColor: 'rgba(7, 20, 15, 0.85)',
-                          color: '#FFFFFF',
-                          fontSize: '0.72rem',
-                          fontWeight: 700,
-                          padding: '3px 8px',
-                          borderRadius: '6px',
-                        }}
-                      >
-                        Val: {asset.valuation}
-                      </span>
-                    </div>
-                  </div>
 
-                  <div style={{ padding: '20px' }}>
-                    <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '8px', lineHeight: 1.3 }}>
-                      {asset.title}
-                    </h3>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', lineHeight: 1.5, marginBottom: '14px' }}>
-                      {asset.description}
-                    </p>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-subtle)', paddingTop: '12px', fontSize: '0.8rem' }}>
-                      <span style={{ color: 'var(--text-dim)' }}>{asset.location}</span>
-                      <span style={{ color: 'var(--brand-forest)', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '3px' }}>
-                        Yield: {asset.annualRoi}
-                      </span>
+                    <div style={{ padding: '20px' }}>
+                      <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '8px', lineHeight: 1.3 }}>
+                        {asset.title}
+                      </h3>
+                      <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', lineHeight: 1.5, marginBottom: '14px' }}>
+                        {asset.description}
+                      </p>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-subtle)', paddingTop: '12px', fontSize: '0.8rem' }}>
+                        <span style={{ color: 'var(--text-dim)' }}>{asset.location}</span>
+                        <span style={{ color: 'var(--brand-forest)', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '3px' }}>
+                          Yield: {asset.annualRoi}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </section>
@@ -2110,16 +2460,16 @@ export default function LandingPage() {
       </main>
 
       {/* ═════════════════════════════════════════════════════════════════════
-          ASSET DETAIL MODAL / LIGHTBOX
+          ASSET DETAIL MODAL / LIGHTBOX (WITH INTERACTIVE PREV / NEXT)
       ═════════════════════════════════════════════ */}
-      {selectedAsset && (
+      {selectedAssetIndex !== null && (
         <div
-          onClick={() => setSelectedAsset(null)}
+          onClick={() => setSelectedAssetIndex(null)}
           style={{
             position: 'fixed',
             inset: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.82)',
-            backdropFilter: 'blur(8px)',
+            backgroundColor: 'rgba(0, 0, 0, 0.88)',
+            backdropFilter: 'blur(10px)',
             zIndex: 1000,
             display: 'flex',
             alignItems: 'center',
@@ -2132,21 +2482,75 @@ export default function LandingPage() {
             style={{
               backgroundColor: 'var(--bg-surface)',
               borderRadius: '24px',
-              maxWidth: '680px',
+              maxWidth: '720px',
               width: '100%',
               overflow: 'hidden',
-              boxShadow: '0 25px 60px rgba(0,0,0,0.5)',
+              boxShadow: '0 25px 60px rgba(0,0,0,0.6)',
               border: '1px solid var(--border-color)',
+              position: 'relative',
             }}
           >
-            <div style={{ height: '320px', position: 'relative' }}>
+            {/* Image Header with Navigation Arrows */}
+            <div style={{ height: '360px', position: 'relative' }}>
               <img
-                src={selectedAsset.image}
-                alt={selectedAsset.title}
+                src={SACCO_ASSETS[selectedAssetIndex].image}
+                alt={SACCO_ASSETS[selectedAssetIndex].title}
                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
               />
+
+              {/* Prev Button */}
               <button
-                onClick={() => setSelectedAsset(null)}
+                onClick={() => setSelectedAssetIndex((selectedAssetIndex - 1 + totalSlides) % totalSlides)}
+                title="Previous Asset (Left Arrow)"
+                style={{
+                  position: 'absolute',
+                  left: '16px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '50%',
+                  backgroundColor: 'rgba(0,0,0,0.65)',
+                  color: '#FFFFFF',
+                  border: 'none',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'all 0.2s',
+                }}
+              >
+                <ChevronLeft size={22} />
+              </button>
+
+              {/* Next Button */}
+              <button
+                onClick={() => setSelectedAssetIndex((selectedAssetIndex + 1) % totalSlides)}
+                title="Next Asset (Right Arrow)"
+                style={{
+                  position: 'absolute',
+                  right: '16px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '50%',
+                  backgroundColor: 'rgba(0,0,0,0.65)',
+                  color: '#FFFFFF',
+                  border: 'none',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'all 0.2s',
+                }}
+              >
+                <ChevronRight size={22} />
+              </button>
+
+              {/* Close Button */}
+              <button
+                onClick={() => setSelectedAssetIndex(null)}
                 style={{
                   position: 'absolute',
                   top: '16px',
@@ -2154,7 +2558,7 @@ export default function LandingPage() {
                   width: '36px',
                   height: '36px',
                   borderRadius: '50%',
-                  backgroundColor: 'rgba(0,0,0,0.6)',
+                  backgroundColor: 'rgba(0,0,0,0.65)',
                   color: '#FFFFFF',
                   border: 'none',
                   cursor: 'pointer',
@@ -2165,17 +2569,30 @@ export default function LandingPage() {
               >
                 <X size={18} />
               </button>
-              <div style={{ position: 'absolute', bottom: '16px', left: '16px' }}>
-                <span className="badge badge-lime">{selectedAsset.categoryLabel}</span>
+
+              <div style={{ position: 'absolute', bottom: '16px', left: '16px', display: 'flex', gap: '8px' }}>
+                <span className="badge badge-lime">{SACCO_ASSETS[selectedAssetIndex].categoryLabel}</span>
+                <span
+                  style={{
+                    backgroundColor: 'rgba(0,0,0,0.7)',
+                    color: '#FFFFFF',
+                    padding: '4px 10px',
+                    borderRadius: '50px',
+                    fontSize: '0.72rem',
+                    fontWeight: 700,
+                  }}
+                >
+                  Asset {selectedAssetIndex + 1} of {totalSlides}
+                </span>
               </div>
             </div>
 
             <div style={{ padding: '28px' }}>
               <h3 style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '10px' }}>
-                {selectedAsset.title}
+                {SACCO_ASSETS[selectedAssetIndex].title}
               </h3>
               <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem', lineHeight: 1.6, marginBottom: '20px' }}>
-                {selectedAsset.description}
+                {SACCO_ASSETS[selectedAssetIndex].description}
               </p>
 
               <div
@@ -2191,29 +2608,38 @@ export default function LandingPage() {
               >
                 <div>
                   <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Location</div>
-                  <div style={{ fontWeight: 700, fontSize: '0.88rem', marginTop: '2px', color: 'var(--text-main)' }}>{selectedAsset.location}</div>
+                  <div style={{ fontWeight: 700, fontSize: '0.88rem', marginTop: '2px', color: 'var(--text-main)' }}>
+                    {SACCO_ASSETS[selectedAssetIndex].location}
+                  </div>
                 </div>
                 <div>
                   <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Annual ROI Yield</div>
-                  <div style={{ fontWeight: 800, fontSize: '0.88rem', marginTop: '2px', color: 'var(--brand-forest)' }}>{selectedAsset.annualRoi}</div>
+                  <div style={{ fontWeight: 800, fontSize: '0.88rem', marginTop: '2px', color: 'var(--brand-forest)' }}>
+                    {SACCO_ASSETS[selectedAssetIndex].annualRoi}
+                  </div>
                 </div>
                 <div>
                   <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Asset Valuation</div>
-                  <div style={{ fontWeight: 800, fontSize: '0.88rem', marginTop: '2px', color: 'var(--brand-forest)' }}>{selectedAsset.valuation}</div>
+                  <div style={{ fontWeight: 800, fontSize: '0.88rem', marginTop: '2px', color: 'var(--brand-forest)' }}>
+                    {SACCO_ASSETS[selectedAssetIndex].valuation}
+                  </div>
                 </div>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-                <button
-                  type="button"
-                  onClick={() => setSelectedAsset(null)}
-                  className="btn btn-ghost"
-                >
-                  Close
-                </button>
-                <Link href="/register" className="btn btn-lime">
-                  Become a Co-Owner <ArrowRight size={16} />
-                </Link>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Use arrow keys ◀ ▶ to navigate</span>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedAssetIndex(null)}
+                    className="btn btn-ghost"
+                  >
+                    Close
+                  </button>
+                  <Link href="/register" className="btn btn-lime">
+                    Become a Co-Owner <ArrowRight size={16} />
+                  </Link>
+                </div>
               </div>
             </div>
           </div>
@@ -2310,11 +2736,198 @@ export default function LandingPage() {
               >
                 Close
               </button>
-              <Link href="/register" className="btn btn-lime">
+              <Link href={`/register?product=${selectedProduct.id}`} className="btn btn-lime">
                 Apply for this Product <ArrowRight size={16} />
               </Link>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* ═════════════════════════════════════════════════════════════════════
+          FLOATING QUICK LOAN ESTIMATOR BUTTON & DRAWER
+      ═════════════════════════════════════════════ */}
+      <button
+        onClick={() => setFloatingDrawerOpen(true)}
+        className="floating-assistant-btn"
+        title="Quick Loan Calculator"
+      >
+        <Zap size={16} /> Quick Loan Calculator
+      </button>
+
+      {/* Quick Calculator Slide-Out Drawer */}
+      {floatingDrawerOpen && (
+        <div
+          onClick={() => setFloatingDrawerOpen(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.6)',
+            backdropFilter: 'blur(4px)',
+            zIndex: 1050,
+            display: 'flex',
+            justifyContent: 'flex-end',
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: '100%',
+              maxWidth: '420px',
+              height: '100%',
+              backgroundColor: 'var(--bg-surface)',
+              boxShadow: '-10px 0 30px rgba(0,0,0,0.3)',
+              padding: '30px 24px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+              overflowY: 'auto',
+            }}
+          >
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Calculator size={20} color="var(--brand-forest)" />
+                  <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-main)' }}>Instant Loan Estimate</h3>
+                </div>
+                <button
+                  onClick={() => setFloatingDrawerOpen(false)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div style={{ marginBottom: '20px' }}>
+                <label className="input-label">Loan Type</label>
+                <select
+                  value={loanType}
+                  onChange={(e) => setLoanType(e.target.value as any)}
+                  className="form-select"
+                >
+                  <option value="express">15-Min Mobile Express (8% p.a.)</option>
+                  <option value="dev">Super Development Loan (10% p.a.)</option>
+                  <option value="asset">Vehicle & Matatu Financing (12% p.a.)</option>
+                  <option value="emergency">Emergency Relief (6% p.a.)</option>
+                </select>
+              </div>
+
+              <div style={{ marginBottom: '20px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                  <label className="input-label" style={{ margin: 0 }}>Amount</label>
+                  <span style={{ fontWeight: 800, color: 'var(--brand-forest)' }}>{formatKES(loanAmount)}</span>
+                </div>
+                <input
+                  type="range"
+                  min={currentRateObj.minAmt}
+                  max={currentRateObj.maxAmt}
+                  step={5000}
+                  value={loanAmount}
+                  onChange={(e) => setLoanAmount(Number(e.target.value))}
+                  className="landing-slider"
+                />
+              </div>
+
+              <div style={{ marginBottom: '24px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                  <label className="input-label" style={{ margin: 0 }}>Duration</label>
+                  <span style={{ fontWeight: 800, color: 'var(--brand-forest)' }}>{loanMonths} Months</span>
+                </div>
+                <input
+                  type="range"
+                  min={currentRateObj.minMos}
+                  max={currentRateObj.maxMos}
+                  step={1}
+                  value={loanMonths}
+                  onChange={(e) => setLoanMonths(Number(e.target.value))}
+                  className="landing-slider"
+                />
+              </div>
+
+              {/* Quick Results Box */}
+              <div
+                style={{
+                  backgroundColor: 'var(--brand-forest)',
+                  color: '#FFFFFF',
+                  padding: '20px',
+                  borderRadius: '16px',
+                  marginBottom: '20px',
+                }}
+              >
+                <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.7)' }}>Estimated Monthly Payment</div>
+                <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--brand-lime)', margin: '4px 0 12px' }}>
+                  {formatKES(monthlyInstallment)}
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', borderTop: '1px solid rgba(255,255,255,0.15)', paddingTop: '10px' }}>
+                  <span>Total Repayable:</span>
+                  <b>{formatKES(totalRepayable)}</b>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <Link
+                href={`/register?type=loan&amount=${loanAmount}&months=${loanMonths}&product=${loanType}`}
+                onClick={() => setFloatingDrawerOpen(false)}
+                className="btn btn-lime"
+                style={{ width: '100%', justifyContent: 'center', padding: '12px' }}
+              >
+                Proceed to Apply <ArrowRight size={16} />
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═════════════════════════════════════════════════════════════════════
+          FLOATING SCROLL-TO-TOP BUTTON
+      ═════════════════════════════════════════════ */}
+      {showScrollTop && (
+        <button
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          className="floating-scroll-top"
+          title="Scroll to top"
+        >
+          <ArrowUp size={18} />
+        </button>
+      )}
+
+      {/* ═════════════════════════════════════════════════════════════════════
+          LIVE SOCIAL PROOF TICKER TOAST
+      ═════════════════════════════════════════════ */}
+      {socialToast && (
+        <div className="social-proof-toast">
+          <div
+            style={{
+              width: '36px',
+              height: '36px',
+              borderRadius: '50%',
+              backgroundColor: 'var(--brand-forest)',
+              color: 'var(--brand-lime)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontWeight: 800,
+              fontSize: '0.85rem',
+              flexShrink: 0,
+            }}
+          >
+            ⚡
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontWeight: 700, fontSize: '0.82rem', color: 'var(--text-main)' }}>
+              {socialToast.name}
+            </div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+              {socialToast.action} • <span style={{ color: 'var(--brand-forest)', fontWeight: 600 }}>{socialToast.time}</span>
+            </div>
+          </div>
+          <button
+            onClick={() => setSocialToast(null)}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: '2px' }}
+          >
+            <X size={14} />
+          </button>
         </div>
       )}
 
