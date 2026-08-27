@@ -1,69 +1,120 @@
-/* Design System for Umoja Sacco (USMS) */
+/* ────────────────────────────────────────────────────────────────────────────
+   UMOJA SACCO: "Forest & Lime" Design System Tokens
+   ──────────────────────────────────────────────────────────────────────── */
+
 :root {
-  --font-main: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-  
-  /* Primary Branding Colors - Forest Green & Lime */
-  --brand-forest: #0F392B;
-  --brand-forest-mid: #134e3b;
-  --brand-forest-light: #2d7a56;
-  --brand-forest-dark: #0a2419;
-  --brand-lime: #D0F764;
-  --brand-lime-hover: #bce04b;
-  --brand-lime-soft: rgba(208, 247, 100, 0.12);
+  /* Typography Fonts */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: 'SF Mono', 'Courier New', Courier, monospace;
+  --font-main: var(--font-sans);
+
+  /* Primary Palette */
+  --color-forest: #0b2419;
+  --color-forest-hover: #081d14;
+  --color-lime: #a3e635;
+  --color-lime-hover: #90d322;
+  --color-lime-light: rgba(163, 230, 53, 0.15);
+
+  /* Neutrals */
+  --color-white: #ffffff;
+  --color-gray-light: #f5f5f5;
+  --color-gray-border: #e5e7eb;
+  --color-gray-medium: #999999;
+  --color-gray-dark: #666666;
+  --color-charcoal: #333333;
+
+  /* Semantics */
+  --color-success: #a3e635;
+  --color-warning: #f59e0b;
+  --color-warning-light: rgba(245, 158, 11, 0.12);
+  --color-error: #ef4444;
+  --color-error-light: rgba(239, 68, 68, 0.1);
+  --color-info: #3b82f6;
+  --color-info-light: rgba(59, 130, 246, 0.1);
+
+  /* Aliases & Compatibility */
+  --brand-forest: #0b2419;
+  --brand-forest-mid: #103425;
+  --brand-lime: #a3e635;
+  --brand-lime-hover: #90d322;
+  --brand-lime-soft: rgba(163, 230, 53, 0.15);
   --brand-gold: #E2B34A;
-  --brand-gold-hover: #d4a438;
-
-  /* Aliases */
-  --sacco-green: #0F392B;
-  --sacco-gold: #E2B34A;
   
-  /* Light Mode Palette */
-  --bg-primary: #F0F7F4;
-  --bg-surface: #FFFFFF;
-  --surface-1: #FFFFFF;
-  --surface-2: #F8FAF9;
-  --surface-3: #E8F5E9;
-  --text-main: #111827;
-  --text-muted: #6B7280;
-  --text-dim: #9CA3AF;
-  --border-color: #E5E7EB;
-  --border-subtle: #F3F4F6;
+  --bg-primary: #f5f5f5;
+  --bg-surface: #ffffff;
+  --surface-1: #ffffff;
+  --surface-2: #f5f5f5;
+  --surface-3: #e8f5e9;
   
-  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.08);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+  --text-main: #333333;
+  --text-body: #666666;
+  --text-muted: #999999;
+  --text-dim: #999999;
+  --border-color: #e5e7eb;
+  --border-subtle: #f5f5f5;
 
-  /* Sidebar */
-  --sb-width: 280px;
-  --sb-collapsed: 86px;
-  --sb-bg: #FFFFFF;
-  --sb-border: #F3F4F6;
-  --sb-text: #6B7280;
-  --sb-hover-bg: #F9FAFB;
-  --sb-hover-text: #111827;
-  --active-bg: #0F392B;
-  --active-text: #FFFFFF;
-  --accent-lime: #D0F764;
+  /* Spacing Scale */
+  --space-0: 0px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* Border Radius */
+  --radius-none: 0px;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-full: 9999px;
+
+  /* Elevation & Shadows */
+  --shadow-subtle: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+
+  /* Sidebar Tokens */
+  --sb-width: 260px;
+  --sb-collapsed: 80px;
+  --sb-bg: #ffffff;
+  --sb-border: #e5e7eb;
+  --sb-text: #666666;
+  --sb-hover-bg: #f5f5f5;
+  --sb-hover-text: #333333;
+  --active-bg: #0b2419;
+  --active-text: #ffffff;
+  --accent-lime: #a3e635;
 }
 
 [data-bs-theme="dark"],
 .dark {
-  --bg-primary: #07140F;
-  --bg-surface: #0E241B;
-  --surface-1: #0E241B;
-  --surface-2: #132D23;
-  --surface-3: #18382C;
-  --text-main: #F9FAFB;
-  --text-muted: #9CA3AF;
-  --text-dim: #6B7280;
-  --border-color: rgba(255, 255, 255, 0.08);
-  --border-subtle: rgba(255, 255, 255, 0.05);
+  --color-white: #111827;
+  --color-gray-light: #1f2937;
+  --color-gray-border: #374151;
+  --color-gray-medium: #9ca3af;
+  --color-gray-dark: #d1d5db;
+  --color-charcoal: #f9fafb;
 
-  --sb-bg: #0A1C15;
+  --bg-primary: #0b1712;
+  --bg-surface: #10231b;
+  --surface-1: #10231b;
+  --surface-2: #163025;
+  --surface-3: #1c3c2e;
+  
+  --text-main: #f9fafb;
+  --text-body: #d1d5db;
+  --text-muted: #9ca3af;
+  --border-color: rgba(255, 255, 255, 0.08);
+
+  --sb-bg: #0e1e17;
   --sb-border: rgba(255, 255, 255, 0.06);
-  --sb-text: #9CA3AF;
+  --sb-text: #9ca3af;
   --sb-hover-bg: rgba(255, 255, 255, 0.06);
-  --sb-hover-text: #F3F4F6;
-  --active-bg: #134e3b;
+  --sb-hover-text: #f3f4f6;
+  --active-bg: #163e2c;
 }
