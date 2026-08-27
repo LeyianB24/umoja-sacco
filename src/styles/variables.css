@@ -94,12 +94,20 @@
 [data-bs-theme="dark"],
 [data-theme="dark"],
 .dark,
-html.dark {
+html.dark,
+body.dark,
+html[data-bs-theme="dark"],
+body[data-bs-theme="dark"] {
+  --color-forest: #a3e635;
+  --color-forest-hover: #bef264;
+  --brand-forest: #a3e635;
+  --brand-forest-mid: #4ade80;
+
   --color-white: #0a0a0a;
   --color-gray-light: #121212;
   --color-gray-border: #222222;
-  --color-gray-medium: #888888;
-  --color-gray-dark: #cccccc;
+  --color-gray-medium: #a1a1aa;
+  --color-gray-dark: #e4e4e7;
   --color-charcoal: #ffffff;
 
   --bg-primary: #000000;
@@ -110,17 +118,18 @@ html.dark {
   
   --text-main: #ffffff;
   --text-body: #d4d4d4;
-  --text-muted: #8e8e93;
-  --text-dim: #636366;
+  --text-muted: #a1a1aa;
+  --text-dim: #71717a;
   --border-color: rgba(255, 255, 255, 0.12);
   --border-subtle: rgba(255, 255, 255, 0.06);
 
   --sb-bg: #050505;
   --sb-border: rgba(255, 255, 255, 0.08);
-  --sb-text: #8e8e93;
+  --sb-text: #a1a1aa;
   --sb-hover-bg: rgba(255, 255, 255, 0.07);
   --sb-hover-text: #ffffff;
   --active-bg: #1a1a1a;
   --active-text: #a3e635;
+  --accent-lime: #a3e635;
 }
 
