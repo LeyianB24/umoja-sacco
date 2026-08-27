@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useTheme } from '@/context/ThemeContext';
 
 interface MetricCardProps {
   title: string;
@@ -19,6 +20,8 @@ export function MetricCard({
   variant = 'default',
   action,
 }: MetricCardProps) {
+  const { theme } = useTheme();
+
   let bg = 'var(--bg-surface)';
   let textColor = 'var(--text-main)';
   let titleColor = 'var(--text-muted)';
@@ -26,7 +29,9 @@ export function MetricCard({
   let iconColor = 'var(--brand-forest)';
 
   if (variant === 'forest') {
-    bg = 'linear-gradient(135deg, #0B1E17 0%, #0F392B 100%)';
+    bg = theme === 'dark' 
+      ? 'linear-gradient(135deg, #0e0e0e 0%, #181818 100%)' 
+      : 'linear-gradient(135deg, #0B1E17 0%, #0F392B 100%)';
     textColor = '#FFFFFF';
     titleColor = 'rgba(255, 255, 255, 0.7)';
     iconBg = 'rgba(208, 247, 100, 0.15)';
@@ -38,7 +43,9 @@ export function MetricCard({
     iconBg = 'rgba(15, 57, 43, 0.1)';
     iconColor = '#0F392B';
   } else if (variant === 'gold') {
-    bg = 'linear-gradient(135deg, #E2B34A 0%, #D4A438 100%)';
+    bg = theme === 'dark'
+      ? 'linear-gradient(135deg, #1c1608 0%, #29200f 100%)'
+      : 'linear-gradient(135deg, #E2B34A 0%, #D4A438 100%)';
     textColor = '#FFFFFF';
     titleColor = 'rgba(255, 255, 255, 0.8)';
     iconBg = 'rgba(255, 255, 255, 0.2)';

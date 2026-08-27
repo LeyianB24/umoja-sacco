@@ -639,17 +639,16 @@ export default function LandingPage() {
           TOP ANNOUNCEMENT & LIVE TICKER BAR
       ═════════════════════════════════════════════ */}
       <div
+        className="landing-notice-bar"
         style={{
-          backgroundColor: '#07140F',
-          color: '#FFFFFF',
           padding: '8px 16px',
           fontSize: '0.76rem',
-          borderBottom: '1px solid rgba(208, 247, 100, 0.15)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           flexWrap: 'wrap',
           gap: '8px',
+          transition: 'background-color 0.3s ease, border-color 0.3s ease',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
@@ -674,12 +673,11 @@ export default function LandingPage() {
             HERO SECTION WITH 3D POKER CARD SLIDESHOW
         ═════════════════════════════════════════════ */}
         <section
+          className="landing-hero-section"
           style={{
-            position: 'relative',
-            background: `linear-gradient(155deg, rgba(7, 20, 15, 0.96) 0%, rgba(11, 36, 25, 0.93) 50%, rgba(5, 15, 11, 0.98) 100%), url('/assets/images/sacco3.jpg') center/cover no-repeat`,
-            color: '#FFFFFF',
             padding: '70px 20px 90px',
             overflow: 'hidden',
+            transition: 'background 0.3s ease',
           }}
         >
           {/* Ambient Lighting Orbs */}
@@ -1113,11 +1111,11 @@ export default function LandingPage() {
             LIVE METRICS & REGULATORY TRUST RIBBON
         ═════════════════════════════════════════════ */}
         <section
+          className="metrics-ribbon"
           style={{
-            background: 'linear-gradient(135deg, #0B2419 0%, #103425 100%)',
             padding: '36px 24px',
             color: '#FFFFFF',
-            borderBottom: '1px solid rgba(163, 230, 53, 0.2)',
+            transition: 'background 0.3s ease, border-color 0.3s ease',
           }}
         >
           <div
@@ -2056,7 +2054,7 @@ export default function LandingPage() {
               <thead>
                 <tr>
                   <th style={{ width: '30%' }}>Comparison Factor</th>
-                  <th style={{ width: '35%', backgroundColor: '#0B2419', color: 'var(--brand-lime)' }}>
+                  <th style={{ width: '35%', backgroundColor: 'var(--brand-forest)', color: 'var(--brand-lime)' }}>
                     ✨ Umoja Drivers Sacco
                   </th>
                   <th style={{ width: '35%', backgroundColor: '#334155' }}>Commercial Banks</th>
@@ -2392,13 +2390,14 @@ export default function LandingPage() {
             HIGH-CONVERSION CTA BANNER
         ═════════════════════════════════════════════ */}
         <section
+          className="cta-banner-gradient"
           style={{
-            background: 'linear-gradient(145deg, #07140F 0%, #0B2419 50%, #0F392B 100%)',
             color: '#FFFFFF',
             padding: '90px 24px',
             textAlign: 'center',
             position: 'relative',
             overflow: 'hidden',
+            transition: 'background 0.3s ease',
           }}
         >
           {/* Ambient Orb */}

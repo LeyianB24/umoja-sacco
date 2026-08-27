@@ -202,17 +202,18 @@ export default function RegisterPage() {
         className="register-form-side"
         style={{
           flex: 1,
-          backgroundColor: '#F7FBF9',
+          backgroundColor: 'var(--bg-surface)',
           overflowY: 'auto',
           padding: '48px 52px',
           position: 'relative',
+          transition: 'background-color 0.3s ease',
         }}
       >
         <div style={{ maxWidth: '680px', margin: '0 auto' }}>
           {/* Header */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '32px' }}>
             <div>
-              <h2 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--brand-forest)', letterSpacing: '-0.5px' }}>
+              <h2 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.5px' }}>
                 Create Account
               </h2>
               <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '2px' }}>

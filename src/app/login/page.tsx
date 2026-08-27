@@ -172,7 +172,7 @@ export default function LoginPage() {
           }}
         >
           <div style={{ marginBottom: '24px' }}>
-            <h3 style={{ fontSize: '1.65rem', fontWeight: 800, color: 'var(--brand-forest)', letterSpacing: '-0.5px' }}>
+            <h3 style={{ fontSize: '1.65rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.5px' }}>
               Welcome back
             </h3>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '2px' }}>

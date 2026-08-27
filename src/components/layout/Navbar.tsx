@@ -24,15 +24,16 @@ export function Navbar() {
         position: 'sticky',
         top: 0,
         zIndex: 100,
-        backgroundColor: 'rgba(15, 57, 43, 0.95)',
+        backgroundColor: theme === 'dark' ? 'rgba(5, 5, 5, 0.95)' : 'rgba(15, 57, 43, 0.95)',
         backdropFilter: 'blur(12px)',
-        borderBottom: '1px solid rgba(208, 247, 100, 0.15)',
+        borderBottom: theme === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(208, 247, 100, 0.15)',
         padding: '0 24px',
         height: '80px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         color: '#FFFFFF',
+        transition: 'background-color 0.3s ease, border-color 0.3s ease',
       }}
     >
       {/* Brand / Logo */}
@@ -219,7 +220,7 @@ export function Navbar() {
           top: '80px',
           left: 0,
           right: 0,
-          backgroundColor: '#0F392B',
+          backgroundColor: theme === 'dark' ? '#080808' : '#0F392B',
           borderBottom: '2px solid var(--brand-lime)',
           padding: '24px',
           display: 'flex',

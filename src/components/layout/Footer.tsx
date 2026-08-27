@@ -14,12 +14,12 @@ import {
 export function Footer() {
   return (
     <footer
+      className="site-footer-bg"
       style={{
-        backgroundColor: '#07140F',
         color: 'rgba(255, 255, 255, 0.75)',
-        borderTop: '1px solid rgba(208, 247, 100, 0.15)',
         padding: '70px 24px 30px',
         fontSize: '0.9rem',
+        transition: 'background-color 0.3s ease, border-color 0.3s ease',
       }}
     >
       <div
