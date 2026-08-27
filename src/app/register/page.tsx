@@ -199,6 +199,7 @@ export default function RegisterPage() {
 
       {/* ── Right Form Area ── */}
       <div
+        className="register-form-side"
         style={{
           flex: 1,
           backgroundColor: '#F7FBF9',
@@ -269,7 +270,7 @@ export default function RegisterPage() {
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
-                <div style={{ gridColumn: 'span 2' }}>
+                <div style={{ gridColumn: '1 / -1' }}>
                   <label className="input-label">Full Name <span style={{ color: '#dc2626' }}>*</span></label>
                   <input
                     type="text"

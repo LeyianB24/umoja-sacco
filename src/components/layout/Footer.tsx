@@ -27,9 +27,9 @@ export function Footer() {
           maxWidth: '1240px',
           margin: '0 auto',
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-          gap: '40px',
-          marginBottom: '60px',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+          gap: '36px',
+          marginBottom: '50px',
         }}
       >
         {/* Brand Col */}
