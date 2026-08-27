@@ -468,6 +468,14 @@ button, input, select, textarea {
   .d-md-flex { display: none !important; }
   .d-md-none { display: flex !important; }
 
+  /* Section Padding */
+  section {
+    padding-top: 56px !important;
+    padding-bottom: 56px !important;
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+
   /* Login & Register Containers Stack Vertically */
   .login-container-responsive {
     flex-direction: column !important;
@@ -507,21 +515,42 @@ button, input, select, textarea {
   }
 
   .data-table, .table-sacco {
-    min-width: 580px !important;
+    min-width: 540px !important;
   }
 
   /* Hero Section Typography */
   .hero-heading {
-    font-size: 2.2rem !important;
+    font-size: 2.1rem !important;
     line-height: 1.15 !important;
   }
 
-  /* Modals Full Width */
-  .modal-dialog {
+  /* 3D Poker Hero Slideshow mobile adaptation */
+  .poker-slideshow-container {
+    height: 330px !important;
+    max-width: 320px !important;
+    margin: 10px auto 0 !important;
+  }
+
+  .poker-card-hero {
+    width: 220px !important;
+    height: 300px !important;
+    border-radius: 18px !important;
+  }
+
+  /* Modals Full Width Sheet */
+  .modal-dialog, .modal-responsive {
     width: 95vw !important;
     max-width: 95vw !important;
     margin: 10px auto !important;
-    padding: 18px !important;
+    padding: 16px !important;
+    max-height: 90vh !important;
+    overflow-y: auto !important;
+  }
+
+  /* Calculator container mobile adaptation */
+  .calculator-card-container {
+    padding: 24px 18px !important;
+    gap: 28px !important;
   }
 
   /* Form Row Stacking */
@@ -548,25 +577,49 @@ button, input, select, textarea {
   }
 
   .btn {
-    padding: 9px 18px;
-    font-size: 0.85rem;
+    padding: 10px 18px;
+    font-size: 0.86rem;
   }
 
   .btn-lg {
-    padding: 12px 22px;
-    font-size: 0.95rem;
+    padding: 12px 20px;
+    font-size: 0.92rem;
   }
 
-  /* 3D Poker Hero Slideshow mobile adaptation */
+  /* 3D Poker Hero Slideshow mobile phone adaptation */
   .poker-slideshow-container {
-    height: 280px !important;
+    height: 290px !important;
     max-width: 280px !important;
-    margin: 20px auto 0 !important;
+    margin: 10px auto 0 !important;
   }
 
   .poker-card-hero {
-    width: 170px !important;
-    height: 240px !important;
+    width: 180px !important;
+    height: 250px !important;
+    border-radius: 16px !important;
+  }
+
+  .floating-assistant-btn {
+    bottom: 16px !important;
+    right: 16px !important;
+    padding: 10px 16px !important;
+    font-size: 0.78rem !important;
+  }
+
+  .floating-scroll-top {
+    bottom: 16px !important;
+    left: 16px !important;
+    width: 38px !important;
+    height: 38px !important;
+  }
+
+  .social-proof-toast {
+    bottom: 68px !important;
+    left: 12px !important;
+    right: 12px !important;
+    max-width: calc(100vw - 24px) !important;
+    padding: 8px 12px !important;
+    font-size: 0.76rem !important;
   }
 }
 

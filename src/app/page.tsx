@@ -642,27 +642,27 @@ export default function LandingPage() {
         style={{
           backgroundColor: '#07140F',
           color: '#FFFFFF',
-          padding: '8px 20px',
-          fontSize: '0.78rem',
+          padding: '8px 16px',
+          fontSize: '0.76rem',
           borderBottom: '1px solid rgba(208, 247, 100, 0.15)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           flexWrap: 'wrap',
-          gap: '10px',
+          gap: '8px',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
           <span className="live-indicator" />
-          <span style={{ fontWeight: 700, color: 'var(--brand-lime)' }}>LIVE NOTICE:</span>
-          <span>Annual Dividend declared at <b>14.5% p.a.</b> • M-Pesa Instant Loan Engine: <b style={{ color: '#22c55e' }}>ONLINE (100% Uptime)</b></span>
+          <span style={{ fontWeight: 700, color: 'var(--brand-lime)' }}>LIVE:</span>
+          <span>Annual Dividend declared at <b>14.5% p.a.</b> • M-Pesa Engine: <b style={{ color: '#22c55e' }}>ONLINE</b></span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', color: 'rgba(255,255,255,0.75)' }}>
+        <div className="d-none d-md-flex" style={{ alignItems: 'center', gap: '16px', color: 'rgba(255,255,255,0.75)' }}>
           <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
             <ShieldCheck size={13} color="var(--brand-lime)" /> SASRA Registered
           </span>
           <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-            <PhoneCall size={13} color="var(--brand-lime)" /> Toll-Free: 0800 000 786
+            <PhoneCall size={13} color="var(--brand-lime)" /> 0800 000 786
           </span>
         </div>
       </div>
@@ -678,7 +678,7 @@ export default function LandingPage() {
             position: 'relative',
             background: `linear-gradient(155deg, rgba(7, 20, 15, 0.96) 0%, rgba(11, 36, 25, 0.93) 50%, rgba(5, 15, 11, 0.98) 100%), url('/assets/images/sacco3.jpg') center/cover no-repeat`,
             color: '#FFFFFF',
-            padding: '80px 24px 100px',
+            padding: '70px 20px 90px',
             overflow: 'hidden',
           }}
         >
@@ -713,8 +713,8 @@ export default function LandingPage() {
               maxWidth: '1240px',
               margin: '0 auto',
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-              gap: '48px',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(290px, 1fr))',
+              gap: '40px',
               alignItems: 'center',
               position: 'relative',
               zIndex: 3,
@@ -725,20 +725,22 @@ export default function LandingPage() {
               <div
                 className="eyebrow-pill"
                 style={{
-                  marginBottom: '22px',
+                  marginBottom: '18px',
                   boxShadow: '0 4px 14px rgba(163, 230, 53, 0.2)',
+                  fontSize: 'clamp(0.65rem, 2.5vw, 0.72rem)',
                 }}
               >
                 <span className="eyebrow-dot" /> Transport Sector Co-Operative • SASRA Regulated
               </div>
 
               <h1
+                className="hero-heading"
                 style={{
-                  fontSize: 'clamp(2.4rem, 5.2vw, 3.9rem)',
+                  fontSize: 'clamp(2.1rem, 5.5vw, 3.8rem)',
                   fontWeight: 800,
-                  lineHeight: 1.08,
-                  letterSpacing: '-1.8px',
-                  marginBottom: '20px',
+                  lineHeight: 1.1,
+                  letterSpacing: '-1.2px',
+                  marginBottom: '18px',
                 }}
               >
                 Own The Fleets. <br />
@@ -748,10 +750,10 @@ export default function LandingPage() {
 
               <p
                 style={{
-                  fontSize: '1.08rem',
-                  lineHeight: 1.7,
+                  fontSize: 'clamp(0.92rem, 2.8vw, 1.05rem)',
+                  lineHeight: 1.65,
                   color: 'rgba(255, 255, 255, 0.85)',
-                  marginBottom: '36px',
+                  marginBottom: '32px',
                   maxWidth: '540px',
                 }}
               >
@@ -761,11 +763,11 @@ export default function LandingPage() {
               </p>
 
               {/* Action Buttons */}
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px', marginBottom: '44px' }}>
-                <Link href="/register" className="btn btn-lime btn-lg" style={{ boxShadow: '0 8px 24px rgba(163, 230, 53, 0.4)' }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginBottom: '36px' }}>
+                <Link href="/register" className="btn btn-lime btn-lg btn-mobile-block" style={{ boxShadow: '0 8px 24px rgba(163, 230, 53, 0.4)' }}>
                   Join Sacco Today <ArrowRight size={18} />
                 </Link>
-                <a href="#calculator" className="btn btn-outline-lime btn-lg">
+                <a href="#calculator" className="btn btn-outline-lime btn-lg btn-mobile-block">
                   <Calculator size={18} /> Calculate Loan & Returns
                 </a>
               </div>
@@ -774,33 +776,33 @@ export default function LandingPage() {
               <div
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: 'repeat(3, 1fr)',
-                  gap: '16px',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(85px, 1fr))',
+                  gap: '12px',
                   borderTop: '1px solid rgba(255, 255, 255, 0.15)',
-                  paddingTop: '24px',
+                  paddingTop: '20px',
                 }}
               >
                 <div>
-                  <div style={{ fontSize: '1.45rem', fontWeight: 800, color: 'var(--brand-lime)', lineHeight: 1 }}>
+                  <div style={{ fontSize: 'clamp(1.15rem, 4vw, 1.45rem)', fontWeight: 800, color: 'var(--brand-lime)', lineHeight: 1 }}>
                     14.5%
                   </div>
-                  <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', marginTop: '6px' }}>
+                  <div style={{ fontSize: '0.68rem', fontWeight: 700, color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', marginTop: '6px' }}>
                     Avg. Dividend
                   </div>
                 </div>
-                <div style={{ borderLeft: '1px solid rgba(255,255,255,0.15)', paddingLeft: '16px' }}>
-                  <div style={{ fontSize: '1.45rem', fontWeight: 800, color: 'var(--brand-lime)', lineHeight: 1 }}>
+                <div style={{ borderLeft: '1px solid rgba(255,255,255,0.15)', paddingLeft: '12px' }}>
+                  <div style={{ fontSize: 'clamp(1.15rem, 4vw, 1.45rem)', fontWeight: 800, color: 'var(--brand-lime)', lineHeight: 1 }}>
                     15 Mins
                   </div>
-                  <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', marginTop: '6px' }}>
+                  <div style={{ fontSize: '0.68rem', fontWeight: 700, color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', marginTop: '6px' }}>
                     MPESA Payout
                   </div>
                 </div>
-                <div style={{ borderLeft: '1px solid rgba(255,255,255,0.15)', paddingLeft: '16px' }}>
-                  <div style={{ fontSize: '1.45rem', fontWeight: 800, color: 'var(--brand-lime)', lineHeight: 1 }}>
+                <div style={{ borderLeft: '1px solid rgba(255,255,255,0.15)', paddingLeft: '12px' }}>
+                  <div style={{ fontSize: 'clamp(1.15rem, 4vw, 1.45rem)', fontWeight: 800, color: 'var(--brand-lime)', lineHeight: 1 }}>
                     KES 650M+
                   </div>
-                  <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', marginTop: '6px' }}>
+                  <div style={{ fontSize: '0.68rem', fontWeight: 700, color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', marginTop: '6px' }}>
                     Asset Base
                   </div>
                 </div>
@@ -1334,19 +1336,21 @@ export default function LandingPage() {
                   border: '1px solid var(--border-color)',
                   marginTop: '28px',
                   boxShadow: 'var(--shadow-sm)',
+                  maxWidth: '100%',
+                  overflowX: 'auto',
                 }}
               >
                 <button
                   onClick={() => setCalcTab('loan')}
                   className={`tab-pill ${calcTab === 'loan' ? 'active' : ''}`}
                 >
-                  <Banknote size={16} style={{ display: 'inline', marginRight: '6px' }} /> Loan Repayment Calculator
+                  <Banknote size={16} style={{ display: 'inline', marginRight: '6px' }} /> Loan Repayment
                 </button>
                 <button
                   onClick={() => setCalcTab('savings')}
                   className={`tab-pill ${calcTab === 'savings' ? 'active' : ''}`}
                 >
-                  <PiggyBank size={16} style={{ display: 'inline', marginRight: '6px' }} /> Compound Dividend Projector
+                  <PiggyBank size={16} style={{ display: 'inline', marginRight: '6px' }} /> Compound Wealth
                 </button>
               </div>
             </div>
@@ -1354,6 +1358,7 @@ export default function LandingPage() {
             {/* TAB 1: LOAN CALCULATOR */}
             {calcTab === 'loan' && (
               <div
+                className="calculator-card-container"
                 style={{
                   backgroundColor: 'var(--bg-surface)',
                   borderRadius: '24px',
@@ -1361,8 +1366,8 @@ export default function LandingPage() {
                   boxShadow: 'var(--shadow-lg)',
                   padding: '40px',
                   display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-                  gap: '48px',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                  gap: '40px',
                   alignItems: 'start',
                 }}
               >
@@ -1608,6 +1613,7 @@ export default function LandingPage() {
             {/* TAB 2: SAVINGS & WEALTH PROJECTOR */}
             {calcTab === 'savings' && (
               <div
+                className="calculator-card-container"
                 style={{
                   backgroundColor: 'var(--bg-surface)',
                   borderRadius: '24px',
@@ -1615,8 +1621,8 @@ export default function LandingPage() {
                   boxShadow: 'var(--shadow-lg)',
                   padding: '40px',
                   display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-                  gap: '48px',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                  gap: '40px',
                   alignItems: 'start',
                 }}
               >
@@ -2479,6 +2485,7 @@ export default function LandingPage() {
         >
           <div
             onClick={(e) => e.stopPropagation()}
+            className="modal-responsive"
             style={{
               backgroundColor: 'var(--bg-surface)',
               borderRadius: '24px',
@@ -2488,10 +2495,12 @@ export default function LandingPage() {
               boxShadow: '0 25px 60px rgba(0,0,0,0.6)',
               border: '1px solid var(--border-color)',
               position: 'relative',
+              maxHeight: '92vh',
+              overflowY: 'auto',
             }}
           >
             {/* Image Header with Navigation Arrows */}
-            <div style={{ height: '360px', position: 'relative' }}>
+            <div style={{ height: 'clamp(220px, 48vw, 360px)', position: 'relative' }}>
               <img
                 src={SACCO_ASSETS[selectedAssetIndex].image}
                 alt={SACCO_ASSETS[selectedAssetIndex].title}
@@ -2661,11 +2670,12 @@ export default function LandingPage() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: '20px',
+            padding: '16px',
           }}
         >
           <div
             onClick={(e) => e.stopPropagation()}
+            className="modal-responsive"
             style={{
               backgroundColor: 'var(--bg-surface)',
               borderRadius: '24px',
@@ -2674,7 +2684,9 @@ export default function LandingPage() {
               overflow: 'hidden',
               boxShadow: '0 25px 60px rgba(0,0,0,0.5)',
               border: '1px solid var(--border-color)',
-              padding: '32px',
+              padding: '30px 24px',
+              maxHeight: '92vh',
+              overflowY: 'auto',
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
@@ -2773,11 +2785,11 @@ export default function LandingPage() {
             onClick={(e) => e.stopPropagation()}
             style={{
               width: '100%',
-              maxWidth: '420px',
+              maxWidth: 'min(420px, 100vw)',
               height: '100%',
               backgroundColor: 'var(--bg-surface)',
               boxShadow: '-10px 0 30px rgba(0,0,0,0.3)',
-              padding: '30px 24px',
+              padding: '24px 20px',
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between',
