@@ -280,7 +280,35 @@ export function Navbar() {
           Contact Support Desk
         </Link>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '10px' }}>
+        {/* Mobile Theme Toggle Row */}
+        <button
+          onClick={toggleTheme}
+          type="button"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '12px 16px',
+            borderRadius: '12px',
+            backgroundColor: 'rgba(255, 255, 255, 0.08)',
+            border: '1px solid rgba(255, 255, 255, 0.15)',
+            color: '#FFFFFF',
+            fontSize: '0.95rem',
+            fontWeight: 700,
+            cursor: 'pointer',
+            marginTop: '4px',
+          }}
+        >
+          <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {theme === 'dark' ? <Sun size={18} color="#a3e635" /> : <Moon size={18} color="#a3e635" />}
+            {theme === 'dark' ? 'Light Mode' : 'Dark Mode (Black)'}
+          </span>
+          <span style={{ fontSize: '0.75rem', color: 'var(--brand-lime)', fontWeight: 800 }}>
+            {theme === 'dark' ? 'ACTIVE' : 'OFF'}
+          </span>
+        </button>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '6px' }}>
           {user ? (
             <Link
               href={user.user_type === 'member' ? '/member' : '/admin'}
