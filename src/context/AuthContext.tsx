@@ -23,6 +23,7 @@ export interface User {
   next_of_kin_phone?: string;
   status?: string;
   kyc_status?: string;
+  profile_pic_url?: string | null;
   user_type: 'admin' | 'member';
 }
 

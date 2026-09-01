@@ -1333,6 +1333,106 @@ button, input, select, textarea {
   border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
 }
 
+/* ────────────────────────────────────────────────────────────────────────────
+   PRINT MEDIA STYLESHEET - UNIVERSAL PRINT-READY OUTPUT
+   ──────────────────────────────────────────────────────────────────────── */
+@media print {
+  /* Hide non-printable navigation, buttons, toggles, sidebars, floaters */
+  header,
+  nav,
+  aside,
+  .no-print,
+  .no-print *,
+  .floating-assistant-btn,
+  .floating-scroll-top,
+  .social-proof-toast,
+  .sacco-bottom-nav,
+  .modal-dialog,
+  button,
+  .btn,
+  input[type="file"],
+  .input-control,
+  .form-select,
+  .eyebrow-pill {
+    display: none !important;
+  }
 
+  /* Reset layout to full width */
+  html, body {
+    background-color: #ffffff !important;
+    color: #111827 !important;
+    font-size: 11pt !important;
+    line-height: 1.4 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
 
+  main,
+  .admin-main-content,
+  .member-main-content,
+  .container {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 10mm !important;
+  }
 
+  /* Cards & Tables Print Styling */
+  .card,
+  .card-sacco-default,
+  .card-sacco-elevated {
+    border: 1px solid #d1d5db !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
+    border-radius: 8px !important;
+    margin-bottom: 15px !important;
+    page-break-inside: avoid !important;
+  }
+
+  .table-container {
+    overflow: visible !important;
+    border: 1px solid #e5e7eb !important;
+  }
+
+  .data-table,
+  .table-sacco {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    min-width: 100% !important;
+  }
+
+  .data-table th,
+  .table-sacco th {
+    background-color: #0B2419 !important;
+    color: #ffffff !important;
+    border: 1px solid #0B2419 !important;
+    padding: 6px 10px !important;
+    font-size: 9pt !important;
+  }
+
+  .data-table td,
+  .table-sacco td {
+    border: 1px solid #e5e7eb !important;
+    padding: 6px 10px !important;
+    font-size: 9pt !important;
+    color: #111827 !important;
+  }
+
+  tr {
+    page-break-inside: avoid !important;
+  }
+
+  .badge {
+    border: 1px solid #d1d5db !important;
+    background: #f3f4f6 !important;
+    color: #111827 !important;
+    font-weight: 700 !important;
+  }
+
+  h1, h2, h3, h4 {
+    color: #0B2419 !important;
+    page-break-after: avoid !important;
+  }
+}

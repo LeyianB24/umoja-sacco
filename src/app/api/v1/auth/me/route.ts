@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { getAuthSession } from '@/lib/auth';
 import { getMemberBalances } from '@/lib/financial';
 import { apiSuccess, apiError } from '@/lib/api-response';
-
+export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
   try {
     const session = await getAuthSession(request);
@@ -110,6 +110,7 @@ export async function GET(request: NextRequest) {
           next_of_kin_phone: member.next_of_kin_phone,
           status: member.status,
           kyc_status: member.kyc_status || 'pending',
+          profile_pic_url: member.profile_pic_url,
           role: 'member',
           user_type: 'member',
           created_at: member.created_at,

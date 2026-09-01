@@ -23,6 +23,7 @@ import {
   CreditCard,
   X,
   Smartphone,
+  Printer,
 } from 'lucide-react';
 
 export default function MemberSavingsPage() {
@@ -114,15 +115,25 @@ export default function MemberSavingsPage() {
             Compulsory monthly savings and voluntary high-yield deposits
           </p>
         </div>
-        <Button
-          variant="primary"
-          size="md"
-          pill
-          onClick={() => setDepositModal(true)}
-        >
-          <Plus size={16} strokeWidth={2.5} />
-          <span>Deposit to Savings</span>
-        </Button>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <button
+            onClick={() => window.print()}
+            className="btn btn-outline-forest"
+            style={{ borderRadius: '50px', padding: '10px 18px' }}
+          >
+            <Printer size={16} />
+            <span>Print Statement</span>
+          </button>
+          <Button
+            variant="primary"
+            size="md"
+            pill
+            onClick={() => setDepositModal(true)}
+          >
+            <Plus size={16} strokeWidth={2.5} />
+            <span>Deposit to Savings</span>
+          </Button>
+        </div>
       </div>
 
       {/* Hero Balance Card */}

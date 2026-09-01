@@ -4,8 +4,9 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
-import { Menu, Sun, Moon, Bell, MessageSquare, User, Settings, LogOut, ChevronDown } from 'lucide-react';
+import { Menu, Sun, Moon, Bell, MessageSquare, User, Settings, LogOut, ChevronDown, Camera, Printer } from 'lucide-react';
 import { getInitials } from '@/lib/utils';
+import { ProfilePictureModal } from '@/components/sacco-ui/ProfilePictureModal';
 
 interface MemberTopbarProps {
   onToggleSidebar: () => void;
@@ -13,15 +14,23 @@ interface MemberTopbarProps {
 }
 
 export function MemberTopbar({ onToggleSidebar, onToggleMobile }: MemberTopbarProps) {
-  const { user, topbar, logout } = useAuth();
+  const { user, topbar, logout, refreshUser } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [profileOpen, setProfileOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
+  const [picModalOpen, setPicModalOpen] = useState(false);
 
   const unreadNotifs = topbar?.unread_notifications ?? 0;
   const unreadMsgs = topbar?.unread_messages ?? 0;
 
   return (
+    <>
+      <ProfilePictureModal
+        isOpen={picModalOpen}
+        onClose={() => setPicModalOpen(false)}
+        currentImage={user?.profile_pic_url}
+        onSuccess={() => refreshUser()}
+      />
     <header
       style={{
         height: '70px',
@@ -90,6 +99,29 @@ export function MemberTopbar({ onToggleSidebar, onToggleMobile }: MemberTopbarPr
 
       {/* Right */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        {/* Universal Print Button */}
+        <button
+          onClick={() => window.print()}
+          title="Print this Page / Statement"
+          style={{
+            height: '38px',
+            padding: '0 12px',
+            borderRadius: '50px',
+            backgroundColor: 'var(--surface-2)',
+            border: '1px solid var(--border-color)',
+            color: 'var(--text-main)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            cursor: 'pointer',
+            fontSize: '0.8rem',
+            fontWeight: 600,
+          }}
+        >
+          <Printer size={16} />
+          <span className="d-none d-sm-inline">Print</span>
+        </button>
+
         {/* Theme Toggle */}
         <button
           onClick={toggleTheme}
@@ -221,9 +253,14 @@ export function MemberTopbar({ onToggleSidebar, onToggleMobile }: MemberTopbarPr
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                overflow: 'hidden',
               }}
             >
-              {getInitials(user?.name)}
+              {user?.profile_pic_url ? (
+                <img src={user.profile_pic_url} alt={user?.name || 'User'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : (
+                getInitials(user?.name)
+              )}
             </div>
             <div style={{ display: 'none', flexDirection: 'column', textAlign: 'left' }} className="d-md-flex">
               <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)', lineHeight: 1.1 }}>
@@ -252,6 +289,31 @@ export function MemberTopbar({ onToggleSidebar, onToggleMobile }: MemberTopbarPr
                 gap: '4px',
               }}
             >
+              <button
+                onClick={() => {
+                  setProfileOpen(false);
+                  setPicModalOpen(true);
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  padding: '10px 14px',
+                  borderRadius: '10px',
+                  fontSize: '0.88rem',
+                  fontWeight: 600,
+                  color: 'var(--text-main)',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  width: '100%',
+                }}
+                onMouseOver={(e) => (e.currentTarget.style.backgroundColor = 'var(--surface-2)')}
+                onMouseOut={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+              >
+                <Camera size={16} /> Upload Photo
+              </button>
               <Link
                 href="/member/profile"
                 onClick={() => setProfileOpen(false)}
@@ -321,5 +383,7 @@ export function MemberTopbar({ onToggleSidebar, onToggleMobile }: MemberTopbarPr
         </div>
       </div>
     </header>
+    </>
   );
 }
+

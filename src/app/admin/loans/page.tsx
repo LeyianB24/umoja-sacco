@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
 import { formatKES, formatDate } from '@/lib/utils';
-import { Banknote, Filter, CheckCircle2, Clock } from 'lucide-react';
+import { Banknote, Filter, CheckCircle2, Clock, Printer } from 'lucide-react';
 
 export default function AdminLoansMasterPage() {
   const [loans, setLoans] = useState<any[]>([]);
@@ -37,7 +37,14 @@ export default function AdminLoansMasterPage() {
           <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem' }}>Master list of all member credit applications, active debt, and settled facilities</p>
         </div>
 
-        <div style={{ display: 'flex', gap: '10px' }}>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <button
+            onClick={() => window.print()}
+            className="btn btn-outline-forest"
+            style={{ borderRadius: '50px', padding: '10px 18px' }}
+          >
+            <Printer size={16} /> Print Loans Report
+          </button>
           <Link href="/admin/loans/reviews" className="btn btn-lime">
             <Clock size={16} /> Loan Review Queue
           </Link>

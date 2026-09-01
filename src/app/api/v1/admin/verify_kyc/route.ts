@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthSession } from '@/lib/auth';
 import { apiSuccess, apiError } from '@/lib/api-response';
+import { createNotification } from '@/lib/notifications';
 
 export async function POST(request: NextRequest) {
   try {
@@ -28,8 +29,21 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // Notify member of KYC verification result
+    const isApproved = status === 'verified';
+    await createNotification({
+      memberId,
+      recipientEmail: updated.email,
+      title: isApproved ? 'KYC Verification Approved' : 'KYC Verification Update',
+      message: isApproved
+        ? 'Congratulations! Your KYC documents have been verified and approved by SACCO management. You now have full access to loans and investment products.'
+        : `Your KYC document submission status has been updated to "${status}". Notes: ${notes || 'Please review your uploaded documents or contact support.'}`,
+      metadata: { status, notes },
+    });
+
     return apiSuccess(updated, `Member KYC status updated to ${status}.`);
   } catch (err: any) {
     return apiError(err.message || 'Failed to update member KYC status', 500);
   }
 }
+

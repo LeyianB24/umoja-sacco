@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthSession } from '@/lib/auth';
 import { apiSuccess, apiError } from '@/lib/api-response';
+import { createNotification } from '@/lib/notifications';
 
 export async function GET(request: NextRequest) {
   try {
@@ -60,8 +61,17 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // Send confirmation notification to member
+    await createNotification({
+      memberId: session.userId,
+      title: 'Loan Application Submitted',
+      message: `Your loan application #${newLoan.loan_id} for KES ${amount.toLocaleString()} has been received and is under review by the credit committee.`,
+      metadata: { loanId: newLoan.loan_id, amount, loanType },
+    });
+
     return apiSuccess(newLoan, 'Loan application submitted successfully and queued for review.', 201);
   } catch (err: any) {
     return apiError(err.message || 'Failed to submit loan application', 500);
   }
 }
+

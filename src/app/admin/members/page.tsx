@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
 import { formatKES, formatDate } from '@/lib/utils';
-import { Users, UserPlus, Search, Filter, ChevronLeft, ChevronRight, Eye } from 'lucide-react';
+import { Users, UserPlus, Search, Filter, ChevronLeft, ChevronRight, Eye, Printer } from 'lucide-react';
 
 export default function AdminMembersPage() {
   const [members, setMembers] = useState<any[]>([]);
@@ -51,9 +51,18 @@ export default function AdminMembersPage() {
           <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--text-main)' }}>Members Directory</h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem' }}>Search, filter, verify KYC, and manage all registered Sacco members</p>
         </div>
-        <Link href="/admin/members/onboarding" className="btn btn-lime">
-          <UserPlus size={16} /> Onboard New Member
-        </Link>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <button
+            onClick={() => window.print()}
+            className="btn btn-outline-forest"
+            style={{ borderRadius: '50px', padding: '10px 18px' }}
+          >
+            <Printer size={16} /> Print Member List
+          </button>
+          <Link href="/admin/members/onboarding" className="btn btn-lime">
+            <UserPlus size={16} /> Onboard New Member
+          </Link>
+        </div>
       </div>
 
       {/* Filters Bar */}

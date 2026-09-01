@@ -23,6 +23,7 @@ import {
   X,
   Smartphone,
   AlertCircle,
+  Printer,
 } from 'lucide-react';
 
 export default function MemberLoansPage() {
@@ -156,7 +157,15 @@ export default function MemberLoansPage() {
             Flexible working capital, asset finance, and emergency credit for drivers
           </p>
         </div>
-        <div style={{ display: 'flex', gap: '10px' }}>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <button
+            onClick={() => window.print()}
+            className="btn btn-outline-forest"
+            style={{ borderRadius: '50px', padding: '10px 18px' }}
+          >
+            <Printer size={16} />
+            <span>Print Statement</span>
+          </button>
           {activeBal > 0 && (
             <Button
               variant="secondary"

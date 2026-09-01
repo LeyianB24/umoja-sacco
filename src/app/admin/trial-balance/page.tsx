@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { formatKES } from '@/lib/utils';
-import { Scale, CheckCircle2, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { Scale, CheckCircle2, AlertTriangle, ShieldCheck, Printer } from 'lucide-react';
 
 export default function AdminTrialBalancePage() {
   const [data, setData] = useState<any>(null);
@@ -36,22 +36,32 @@ export default function AdminTrialBalancePage() {
           <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem' }}>Verification of financial integrity across double-entry ledger accounts</p>
         </div>
 
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '8px 18px',
-            borderRadius: '50px',
-            backgroundColor: totals.is_balanced ? 'rgba(34, 197, 94, 0.12)' : 'rgba(239, 68, 68, 0.12)',
-            border: `1px solid ${totals.is_balanced ? 'rgba(34, 197, 94, 0.25)' : 'rgba(239, 68, 68, 0.25)'}`,
-            color: totals.is_balanced ? '#16a34a' : '#dc2626',
-            fontWeight: 700,
-            fontSize: '0.88rem',
-          }}
-        >
-          {totals.is_balanced ? <CheckCircle2 size={18} /> : <AlertTriangle size={18} />}
-          {totals.is_balanced ? 'Trial Balance Reconciled (Debit = Credit)' : 'Discrepancy Detected'}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+          <button
+            onClick={() => window.print()}
+            className="btn btn-outline-forest"
+            style={{ borderRadius: '50px', padding: '8px 18px' }}
+          >
+            <Printer size={16} /> Print Trial Balance
+          </button>
+
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '8px 18px',
+              borderRadius: '50px',
+              backgroundColor: totals.is_balanced ? 'rgba(34, 197, 94, 0.12)' : 'rgba(239, 68, 68, 0.12)',
+              border: `1px solid ${totals.is_balanced ? 'rgba(34, 197, 94, 0.25)' : 'rgba(239, 68, 68, 0.25)'}`,
+              color: totals.is_balanced ? '#16a34a' : '#dc2626',
+              fontWeight: 700,
+              fontSize: '0.88rem',
+            }}
+          >
+            {totals.is_balanced ? <CheckCircle2 size={18} /> : <AlertTriangle size={18} />}
+            {totals.is_balanced ? 'Trial Balance Reconciled (Debit = Credit)' : 'Discrepancy Detected'}
+          </div>
         </div>
       </div>
 

@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
-import { Menu, Sun, Moon, Bell, Shield, Sliders, LogOut, ChevronDown, Activity } from 'lucide-react';
+import { Menu, Sun, Moon, Bell, Shield, Sliders, LogOut, ChevronDown, Activity, Printer } from 'lucide-react';
 import { getInitials } from '@/lib/utils';
 
 interface AdminTopbarProps {
@@ -108,6 +108,29 @@ export function AdminTopbar({ onToggleSidebar, onToggleMobile }: AdminTopbarProp
 
       {/* Right */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+        {/* Universal Admin Print Button */}
+        <button
+          onClick={() => window.print()}
+          title="Print this Page / Report"
+          style={{
+            height: '38px',
+            padding: '0 12px',
+            borderRadius: '50px',
+            backgroundColor: 'var(--surface-2)',
+            border: '1px solid var(--border-color)',
+            color: 'var(--text-main)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            cursor: 'pointer',
+            fontSize: '0.8rem',
+            fontWeight: 600,
+          }}
+        >
+          <Printer size={16} />
+          <span className="d-none d-sm-inline">Print</span>
+        </button>
+
         {/* Role badge */}
         <span
           style={{

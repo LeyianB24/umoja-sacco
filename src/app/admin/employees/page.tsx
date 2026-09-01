@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { formatKES, formatDate } from '@/lib/utils';
-import { Briefcase, UserPlus, Users } from 'lucide-react';
+import { Briefcase, UserPlus, Users, Printer } from 'lucide-react';
 
 export default function AdminEmployeesPage() {
   const [employees, setEmployees] = useState<any[]>([]);
@@ -27,9 +27,19 @@ export default function AdminEmployeesPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
-      <div>
-        <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--text-main)' }}>Employee Directory</h1>
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem' }}>Manage Sacco staff, statutory numbers (KRA, NSSF, NHIF), and job titles</p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+        <div>
+          <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>Employee Directory</h1>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', margin: '4px 0 0' }}>Manage Sacco staff, statutory numbers (KRA, NSSF, NHIF), and job titles</p>
+        </div>
+
+        <button
+          onClick={() => window.print()}
+          className="btn btn-outline-forest"
+          style={{ borderRadius: '50px', padding: '10px 20px' }}
+        >
+          <Printer size={16} /> Print Staff Directory
+        </button>
       </div>
 
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>

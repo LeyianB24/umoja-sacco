@@ -19,6 +19,8 @@ import {
   Settings,
   Headphones,
   LogOut,
+  TrendingUp,
+  Briefcase,
 } from 'lucide-react';
 
 interface MemberSidebarProps {
@@ -41,7 +43,9 @@ export function MemberSidebar({ collapsed, mobileOpen, onCloseMobile }: MemberSi
     { label: 'Dashboard', icon: <LayoutDashboard size={20} />, href: '/member' },
     
     { header: 'Personal Finances' },
+    { label: 'Daily Income', icon: <TrendingUp size={20} />, href: '/member/income' },
     { label: 'Savings', icon: <PiggyBank size={20} />, href: '/member/savings' },
+    { label: 'My Investments', icon: <Briefcase size={20} />, href: '/member/investments' },
     { label: 'Shares Portfolio', icon: <PieChart size={20} />, href: '/member/shares' },
     { label: 'My Loans', icon: <Banknote size={20} />, href: '/member/loans' },
     { label: 'Contributions', icon: <CalendarCheck size={20} />, href: '/member/contributions' },

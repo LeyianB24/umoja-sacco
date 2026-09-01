@@ -17,6 +17,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Filter,
+  Printer,
 } from 'lucide-react';
 
 export default function MemberTransactionsPage() {
@@ -69,11 +70,22 @@ export default function MemberTransactionsPage() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       {/* Header */}
-      <div>
-        <h1 className="heading-1" style={{ margin: 0 }}>Transaction Ledger</h1>
-        <p className="body-rg" style={{ margin: '4px 0 0 0' }}>
-          Complete, immutable financial audit history of all inflows and outflows
-        </p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px' }}>
+        <div>
+          <h1 className="heading-1" style={{ margin: 0 }}>Transaction Ledger</h1>
+          <p className="body-rg" style={{ margin: '4px 0 0 0' }}>
+            Complete, immutable financial audit history of all inflows and outflows
+          </p>
+        </div>
+
+        <button
+          onClick={() => window.print()}
+          className="btn btn-outline-forest"
+          style={{ borderRadius: '50px', padding: '10px 18px' }}
+        >
+          <Printer size={16} />
+          <span>Print Ledger Statement</span>
+        </button>
       </div>
 
       {/* Search & Filter Toolbar */}

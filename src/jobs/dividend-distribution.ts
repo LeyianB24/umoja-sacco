@@ -72,12 +72,13 @@ export async function runDividendDistribution(args: JobArgs = {}): Promise<JobRe
     const grossDividend = Math.round(totalPool * shareRatio * 100) / 100;
     if (grossDividend <= 0) continue;
 
-    // 5% withholding tax under Kenyan law for cooperative dividends
-    const withholdingTax = Math.round(grossDividend * 0.05 * 100) / 100;
+    // 15% withholding tax by default under cooperative dividend regulations (or custom arg)
+    const whtRate = typeof args.whtRate === 'number' ? args.whtRate : 0.15;
+    const withholdingTax = Math.round(grossDividend * whtRate * 100) / 100;
     const netDividend = Math.round((grossDividend - withholdingTax) * 100) / 100;
 
     if (dryRun) {
-      console.log(`[dividend_distribution][DRY-RUN] ${m.full_name}: Gross KES ${grossDividend.toFixed(2)}, Tax KES ${withholdingTax.toFixed(2)}, Net KES ${netDividend.toFixed(2)}`);
+      console.log(`[dividend_distribution][DRY-RUN] ${m.full_name}: Gross KES ${grossDividend.toFixed(2)}, Tax (${whtRate * 100}%) KES ${withholdingTax.toFixed(2)}, Net KES ${netDividend.toFixed(2)}`);
       distributedCount++;
       totalDistributed += netDividend;
       continue;

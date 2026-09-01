@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthSession } from '@/lib/auth';
 import { apiSuccess, apiError } from '@/lib/api-response';
+import { createNotification } from '@/lib/notifications';
 
 export async function POST(request: NextRequest) {
   try {
@@ -80,6 +81,14 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // Send in-app confirmation notification
+    await createNotification({
+      memberId: session.userId,
+      title: 'Payment Received',
+      message: `Your M-Pesa payment of KES ${amount.toLocaleString()} for ${paymentType} (Ref: ${refNo}) was received and credited to your account.`,
+      metadata: { refNo, amount, paymentType },
+    });
+
     return apiSuccess({
       CheckoutRequestID: checkoutRequestId,
       MerchantRequestID: `MR_${Date.now()}`,
@@ -92,3 +101,4 @@ export async function POST(request: NextRequest) {
     return apiError(err.message || 'Failed to initiate M-Pesa prompt', 500);
   }
 }
+

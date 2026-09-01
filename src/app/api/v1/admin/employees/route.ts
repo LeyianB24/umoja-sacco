@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthSession } from '@/lib/auth';
 import { apiSuccess, apiError } from '@/lib/api-response';
-
+export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
   try {
     const session = await getAuthSession(request);

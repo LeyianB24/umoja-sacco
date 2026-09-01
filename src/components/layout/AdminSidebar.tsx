@@ -30,6 +30,9 @@ import {
   Headphones,
   Sliders,
   LogOut,
+  Mail,
+  ShieldAlert,
+  Sparkles,
 } from 'lucide-react';
 
 interface AdminSidebarProps {
@@ -98,6 +101,13 @@ export function AdminSidebar({ collapsed, mobileOpen, onCloseMobile }: AdminSide
         { label: 'Welfare Management', icon: <HeartPulse size={19} />, href: '/admin/welfare', perm: 'welfare.php' },
         { label: 'Asset Portfolio', icon: <Building2 size={19} />, href: '/admin/investments', perm: 'investments.php' },
         { label: 'Equity & Shares', icon: <PieChart size={19} />, href: '/admin/shares', perm: 'admin_shares.php' },
+        { label: 'Dividend Engine', icon: <Sparkles size={19} />, href: '/admin/dividends', perm: 'dividends.php' },
+      ],
+    },
+    {
+      header: 'Communications & Dispatch',
+      items: [
+        { label: 'Email Broadcasts', icon: <Mail size={19} />, href: '/admin/broadcast', perm: 'broadcast.php' },
       ],
     },
     {
@@ -110,6 +120,7 @@ export function AdminSidebar({ collapsed, mobileOpen, onCloseMobile }: AdminSide
     {
       header: 'System Maintenance',
       items: [
+        { label: 'Security Audit Trail', icon: <ShieldAlert size={19} />, href: '/admin/audit-logs', perm: 'audit_logs.php' },
         { label: 'Live Monitor', icon: <Monitor size={19} />, href: '/admin/live-monitor', perm: 'live_monitor.php' },
         { label: 'System Health', icon: <Activity size={19} />, href: '/admin/system-health', perm: 'system_health.php' },
         { label: 'Database Backups', icon: <Database size={19} />, href: '/admin/backups', perm: 'backups.php' },

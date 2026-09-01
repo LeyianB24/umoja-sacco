@@ -39,6 +39,7 @@ export default function MemberDashboard() {
   const { toast } = useToast();
   const router = useRouter();
   const [data, setData] = useState<any>(null);
+  const [incomeSummary, setIncomeSummary] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   // Quick Deposit Modal
@@ -50,9 +51,15 @@ export default function MemberDashboard() {
 
   const fetchDashboard = async () => {
     try {
-      const res = await api.get('/member/dashboard');
-      if (res.status === 'success') {
-        setData(res.data);
+      const [resDash, resIncome] = await Promise.all([
+        api.get('/member/dashboard').catch(() => null),
+        api.get('/member/income', { summary: true }).catch(() => null),
+      ]);
+      if (resDash?.status === 'success') {
+        setData(resDash.data);
+      }
+      if (resIncome?.status === 'success') {
+        setIncomeSummary(resIncome.data);
       }
     } catch (err: any) {
       console.error(err);
@@ -146,7 +153,15 @@ export default function MemberDashboard() {
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: '10px' }}>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <button
+            onClick={() => router.push('/member/income')}
+            className="btn btn-lime"
+            style={{ borderRadius: '50px', padding: '10px 18px' }}
+          >
+            <TrendingUp size={16} />
+            <span>Log Daily Income</span>
+          </button>
           <Button
             variant="primary"
             size="md"
@@ -156,25 +171,88 @@ export default function MemberDashboard() {
             <Plus size={16} strokeWidth={2.5} />
             <span>Deposit via M-Pesa</span>
           </Button>
+          <button
+            onClick={() => window.open(`/api/v1/reports/export?type=account&format=xlsx`, '_blank')}
+            className="btn btn-outline-forest"
+            style={{ borderRadius: '50px', padding: '10px 16px' }}
+            title="Download Statement"
+          >
+            Download Statement (.xlsx)
+          </button>
         </div>
       </div>
 
       {/* ──────────────────────────────────────────────────────────────────
-          2. BALANCE HERO CARD
+          2. BALANCE HERO & DAILY INCOME WIDGET
           ────────────────────────────────────────────────────────────────── */}
-      <Card variant="elevated">
-        <Card.Body>
-          <BalanceHero
-            label="Total Withdrawable Wallet"
-            accountNumber={regNo}
-            amount={b.wallet}
-            currency="KES"
-            onAddMoney={() => setDepositModal(true)}
-            onWithdraw={() => router.push('/member/withdraw')}
-            onTransfer={() => router.push('/member/mpesa')}
-          />
-        </Card.Body>
-      </Card>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
+        <Card variant="elevated">
+          <Card.Body>
+            <BalanceHero
+              label="Total Withdrawable Wallet"
+              accountNumber={regNo}
+              amount={b.wallet}
+              currency="KES"
+              onAddMoney={() => setDepositModal(true)}
+              onWithdraw={() => router.push('/member/withdraw')}
+              onTransfer={() => router.push('/member/mpesa')}
+            />
+          </Card.Body>
+        </Card>
+
+        {/* Daily Income Snapshot Widget */}
+        <Card variant="default">
+          <Card.Body style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%' }}>
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <span style={{ fontSize: '13px', color: 'var(--color-gray-dark)', fontWeight: 700, textTransform: 'uppercase' }}>
+                  Today's Driver Earnings
+                </span>
+                <Link href="/member/income" style={{ fontSize: '12px', color: 'var(--color-forest)', fontWeight: 700, textDecoration: 'none' }}>
+                  View Ledger &rarr;
+                </Link>
+              </div>
+              <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--color-forest)', letterSpacing: '-0.5px' }}>
+                {formatKES(incomeSummary?.todaysIncome || 0)}
+              </div>
+              <div style={{ fontSize: '12px', color: 'var(--color-gray-medium)', marginTop: '4px' }}>
+                This Week: <b>{formatKES(incomeSummary?.thisWeek || 0)}</b> &bull; This Month: <b>{formatKES(incomeSummary?.thisMonth || 0)}</b>
+              </div>
+            </div>
+
+            {/* Mini 7-Day Bars */}
+            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', height: '60px', gap: '6px', marginTop: '14px', paddingTop: '8px', borderTop: '1px solid var(--border-color)' }}>
+              {(incomeSummary?.last7Days || [
+                { day: 'M', amount: 2500 },
+                { day: 'T', amount: 3200 },
+                { day: 'W', amount: 1800 },
+                { day: 'T', amount: 4100 },
+                { day: 'F', amount: 5000 },
+                { day: 'S', amount: 3800 },
+                { day: 'S', amount: 2200 },
+              ]).map((d: any, i: number) => {
+                const max = Math.max(1, ...(incomeSummary?.last7Days?.map((x: any) => x.amount) || [5000]));
+                const pct = Math.max(15, (d.amount / max) * 100);
+                return (
+                  <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', height: '100%', justifyContent: 'flex-end' }}>
+                    <div
+                      title={`${d.day}: ${formatKES(d.amount)}`}
+                      style={{
+                        width: '100%',
+                        height: `${pct}%`,
+                        backgroundColor: 'var(--color-forest)',
+                        borderRadius: '4px 4px 2px 2px',
+                        background: 'linear-gradient(180deg, var(--color-lime) 0%, var(--color-forest) 100%)',
+                      }}
+                    />
+                    <span style={{ fontSize: '10px', fontWeight: 600, color: 'var(--color-gray-medium)' }}>{d.day?.slice(0, 1)}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </Card.Body>
+        </Card>
+      </div>
 
       {/* ──────────────────────────────────────────────────────────────────
           3. SACCO FINANCIAL SUMMARY CARDS (4-Column Grid)
