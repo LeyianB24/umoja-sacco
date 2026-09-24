@@ -66,3 +66,8 @@ yarn-error.log*
 .idea/
 .DS_Store
 Thumbs.db
+
+# Playwright E2E
+test-results/
+playwright-report/
+e2e/.auth/*.json

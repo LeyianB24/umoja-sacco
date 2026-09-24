@@ -9,7 +9,10 @@
     "lint": "next lint",
     "postinstall": "prisma generate",
     "job": "ts-node src/jobs/runner.ts",
-    "worker": "ts-node src/jobs/worker.ts"
+    "worker": "ts-node src/jobs/worker.ts",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:ci": "playwright test --project=public --project=chromium --reporter=github,html"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
@@ -26,6 +29,7 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@types/bcryptjs": "^2.4.6",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^20.14.9",
@@ -33,7 +37,8 @@
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "ts-node": "^10.9.2",
-    "typescript": "^5.5.3"
+    "typescript": "^5.5.3",
+    "wait-on": "^9.1.0"
   },
   "prisma": {
     "seed": "npx ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"

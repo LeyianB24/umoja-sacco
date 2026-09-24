@@ -87,7 +87,7 @@ export function MemberTopbar({ onToggleSidebar, onToggleMobile }: MemberTopbarPr
           <Menu size={20} />
         </button>
 
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
+        <div data-testid="member-greeting" style={{ display: 'flex', flexDirection: 'column' }}>
           <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-muted)' }}>
             Welcome back,
           </span>
@@ -354,6 +354,7 @@ export function MemberTopbar({ onToggleSidebar, onToggleMobile }: MemberTopbarPr
               </Link>
               <div style={{ height: '1px', backgroundColor: 'var(--border-color)', margin: '4px 0' }} />
               <button
+                data-testid="logout-btn"
                 onClick={() => {
                   setProfileOpen(false);
                   logout();

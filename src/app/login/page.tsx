@@ -194,6 +194,7 @@ export default function LoginPage() {
           >
             <button
               type="button"
+              data-testid="login-tab-member"
               onClick={() => {
                 setTab('member');
                 setError('');
@@ -214,6 +215,7 @@ export default function LoginPage() {
             </button>
             <button
               type="button"
+              data-testid="login-tab-admin"
               onClick={() => {
                 setTab('admin');
                 setError('');
@@ -236,6 +238,8 @@ export default function LoginPage() {
 
           {error && (
             <div
+              data-testid="login-error"
+              role="alert"
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -263,6 +267,7 @@ export default function LoginPage() {
               <div style={{ position: 'relative' }}>
                 <input
                   type="text"
+                  data-testid="login-identifier"
                   className="input-control"
                   placeholder={tab === 'member' ? 'name@example.com or USMS-2026-0001' : 'admin or staff@umojasacco.co.ke'}
                   value={identifier}
@@ -282,6 +287,7 @@ export default function LoginPage() {
               <div style={{ position: 'relative' }}>
                 <input
                   type={showPassword ? 'text' : 'password'}
+                  data-testid="login-password"
                   className="input-control"
                   placeholder="••••••••"
                   value={password}
@@ -291,6 +297,8 @@ export default function LoginPage() {
                 />
                 <button
                   type="button"
+                  data-testid="login-password-toggle"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
                   onClick={() => setShowPassword(!showPassword)}
                   style={{
                     position: 'absolute',
@@ -323,6 +331,7 @@ export default function LoginPage() {
 
             <button
               type="submit"
+              data-testid="login-submit"
               disabled={loading}
               className="btn btn-forest btn-lg"
               style={{ width: '100%', marginTop: '6px' }}
