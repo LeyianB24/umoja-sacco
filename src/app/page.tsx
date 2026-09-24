@@ -635,12 +635,16 @@ export default function LandingPage() {
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--bg-primary)' }}>
+      {/* Fixed floating navbar — rendered once at root layout level, floats above all content */}
+      <Navbar />
       {/* ═════════════════════════════════════════════════════════════════════
           TOP ANNOUNCEMENT & LIVE TICKER BAR
       ═════════════════════════════════════════════ */}
       <div
         className="landing-notice-bar"
         style={{
+          /* push the bar below the fixed navbar so it's always visible */
+          marginTop: 'clamp(86px, 10vw, 104px)',
           padding: '8px 16px',
           fontSize: '0.76rem',
           display: 'flex',
@@ -665,8 +669,6 @@ export default function LandingPage() {
           </span>
         </div>
       </div>
-
-      <Navbar />
 
       <main style={{ flex: 1 }}>
         {/* ═════════════════════════════════════════════════════════════════════

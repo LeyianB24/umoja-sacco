@@ -70,15 +70,16 @@ export function Navbar() {
     <header
       className="floating-nav-wrapper"
       style={{
-        position: 'sticky',
-        top: 'clamp(8px, 1.8vw, 18px)',
+        position: 'fixed',
+        top: 'clamp(10px, 1.8vw, 18px)',
+        left: '50%',
+        transform: 'translateX(-50%)',
         zIndex: 1000,
-        width: '100%',
-        padding: '0 clamp(8px, 2.5vw, 24px)',
+        width: 'calc(100% - clamp(16px, 5vw, 48px))',
+        maxWidth: '1240px',
         display: 'flex',
         justifyContent: 'center',
         pointerEvents: 'none',
-        transition: 'top 0.3s ease',
       }}
     >
       <nav
@@ -88,7 +89,6 @@ export function Navbar() {
         style={{
           pointerEvents: 'auto',
           width: '100%',
-          maxWidth: '1240px',
           height: scrolled ? 'clamp(58px, 6vw, 68px)' : 'clamp(64px, 6.8vw, 76px)',
           borderRadius: 'clamp(14px, 2vw, 22px)',
           backgroundColor: isDark
