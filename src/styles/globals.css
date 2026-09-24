@@ -460,6 +460,41 @@ button, input, select, textarea {
   .mobile-toggle { display: none !important; }
 }
 
+/* Floating Navbar Animation & Utilities */
+@keyframes floatingDrawerIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.floating-mobile-drawer {
+  animation: floatingDrawerIn 0.25s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@media (max-width: 480px) {
+  .floating-nav-subtitle {
+    display: none !important;
+  }
+  .floating-nav-logo-box {
+    width: 38px !important;
+    height: 38px !important;
+  }
+}
+
+@media (max-width: 280px) {
+  .floating-nav-title {
+    font-size: 0.92rem !important;
+  }
+  .floating-navbar {
+    padding: 0 8px !important;
+  }
+}
+
 /* Tablet & Mobile (< 992px) */
 @media (max-width: 991.98px) {
   .d-lg-none { display: flex !important; }
