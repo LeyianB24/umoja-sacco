@@ -1,6 +1,0 @@
-<?php
-require "config/app.php";
-$res = $conn->query("DESCRIBE members");
-while($row = $res->fetch_assoc()) {
-    echo $row['Field'] . ' ' . $row['Type'] . "\n";
-}
