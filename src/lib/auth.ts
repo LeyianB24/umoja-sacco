@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import jwt, { SignOptions } from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'umoja_sacco_super_secure_jwt_secret_key_2026_bezalel_tech';
 
@@ -30,10 +31,28 @@ export async function hashPassword(password: string): Promise<string> {
 }
 
 export async function verifyPassword(plain: string, hash: string): Promise<boolean> {
-  if (!hash) return false;
-  // Handle PHP password_hash or md5 fallback if any
+  if (!hash || !plain) return false;
+
+  // 1. Check legacy PHP SHA-256 hash (64 hex characters)
+  if (hash.length === 64) {
+    const sha256 = crypto.createHash('sha256').update(plain).digest('hex');
+    if (sha256.toLowerCase() === hash.toLowerCase()) {
+      return true;
+    }
+  }
+
+  // 2. Check legacy MD5 hash (32 hex characters)
+  if (hash.length === 32) {
+    const md5 = crypto.createHash('md5').update(plain).digest('hex');
+    if (md5.toLowerCase() === hash.toLowerCase()) {
+      return true;
+    }
+  }
+
+  // 3. Handle standard bcrypt & PHP password_hash ($2y$, $2b$, $2a$)
   try {
-    return await bcrypt.compare(plain, hash);
+    const normalizedHash = hash.startsWith('$2y$') ? '$2a$' + hash.substring(4) : hash;
+    return await bcrypt.compare(plain, normalizedHash);
   } catch {
     return false;
   }
