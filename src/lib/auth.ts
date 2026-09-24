@@ -3,7 +3,11 @@ import jwt, { SignOptions } from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'umoja_sacco_super_secure_jwt_secret_key_2026_bezalel_tech';
+const JWT_SECRET = process.env.JWT_SECRET || (
+  process.env.NODE_ENV === 'production'
+    ? (() => { throw new Error('CRITICAL: JWT_SECRET environment variable is missing in production.'); })()
+    : 'umoja_sacco_super_secure_jwt_secret_key_2026_bezalel_tech'
+);
 
 export interface AuthSession {
   userId: number;

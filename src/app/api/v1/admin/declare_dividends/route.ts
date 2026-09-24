@@ -10,6 +10,10 @@ export async function POST(request: NextRequest) {
       return apiError('Unauthorized', 401);
     }
 
+    if (session.roleId !== 1 && session.role?.toLowerCase() !== 'superadmin') {
+      return apiError('Forbidden. Superadmin role is required to declare or disburse dividends.', 403);
+    }
+
     const body = await request.json().catch(() => ({}));
     const period = Number(body.period || body.fiscal_year || new Date().getFullYear() - 1);
     const dryRun = Boolean(body.dry_run || body.dryRun);

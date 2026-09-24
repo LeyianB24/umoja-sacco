@@ -13,15 +13,19 @@ export async function GET(request: NextRequest) {
     const period = parseInt(searchParams.get('period') || '0', 10);
 
     // Security check: Either valid admin session OR matching CRON_SECRET authorization header
-    const cronSecret = process.env.CRON_SECRET || 'umoja_cron_secret_key_2026';
+    const cronSecret = process.env.CRON_SECRET || (
+      process.env.NODE_ENV === 'production' ? null : 'umoja_cron_secret_key_2026'
+    );
     const authHeader = request.headers.get('authorization') || '';
-    const isSecretAuthorized = authHeader === `Bearer ${cronSecret}` || request.headers.get('x-cron-secret') === cronSecret;
+    const isSecretAuthorized = Boolean(
+      cronSecret && (authHeader === `Bearer ${cronSecret}` || request.headers.get('x-cron-secret') === cronSecret)
+    );
 
     const session = await getAuthSession(request);
     const isAdmin = session && session.userType === 'admin';
 
     if (!isSecretAuthorized && !isAdmin) {
-      return apiError('Unauthorized. Admin session or valid CRON_SECRET required.', 401);
+      return apiError('Unauthorized. Valid admin session or authorized CRON_SECRET required.', 401);
     }
 
     if (!jobName) {
@@ -61,15 +65,19 @@ export async function POST(request: NextRequest) {
     const period = Number(body.period || 0);
 
     // Security check
-    const cronSecret = process.env.CRON_SECRET || 'umoja_cron_secret_key_2026';
+    const cronSecret = process.env.CRON_SECRET || (
+      process.env.NODE_ENV === 'production' ? null : 'umoja_cron_secret_key_2026'
+    );
     const authHeader = request.headers.get('authorization') || '';
-    const isSecretAuthorized = authHeader === `Bearer ${cronSecret}` || request.headers.get('x-cron-secret') === cronSecret;
+    const isSecretAuthorized = Boolean(
+      cronSecret && (authHeader === `Bearer ${cronSecret}` || request.headers.get('x-cron-secret') === cronSecret)
+    );
 
     const session = await getAuthSession(request);
     const isAdmin = session && session.userType === 'admin';
 
     if (!isSecretAuthorized && !isAdmin) {
-      return apiError('Unauthorized. Admin session or valid CRON_SECRET required.', 401);
+      return apiError('Unauthorized. Valid admin session or authorized CRON_SECRET required.', 401);
     }
 
     if (!jobName || !REGISTERED_JOBS[jobName]) {

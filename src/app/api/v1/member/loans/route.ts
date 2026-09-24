@@ -36,15 +36,33 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json().catch(() => ({}));
     const amount = Number(body.amount);
-    const loanType = body.loan_type || 'emergency';
+    const rawLoanType = String(body.loan_type || 'emergency').toLowerCase().trim();
     const duration = Number(body.duration || 12);
-    const interestRate = Number(body.interest_rate || 12.0);
 
-    if (!amount || amount <= 0) {
-      return apiError('Please enter a valid loan amount.', 422);
+    // Official SASRA Compliant Sacco Loan Rate Schedule (Annual Interest)
+    const LOAN_MATRIX: Record<string, { rate: number; minAmt: number; maxAmt: number; minMos: number; maxMos: number }> = {
+      express: { rate: 8.0, minAmt: 5000, maxAmt: 100000, minMos: 1, maxMos: 6 },
+      development: { rate: 10.0, minAmt: 20000, maxAmt: 2000000, minMos: 3, maxMos: 36 },
+      dev: { rate: 10.0, minAmt: 20000, maxAmt: 2000000, minMos: 3, maxMos: 36 },
+      asset: { rate: 12.0, minAmt: 100000, maxAmt: 4000000, minMos: 6, maxMos: 48 },
+      emergency: { rate: 6.0, minAmt: 5000, maxAmt: 80000, minMos: 1, maxMos: 4 },
+    };
+
+    const config = LOAN_MATRIX[rawLoanType] || { rate: 12.0, minAmt: 5000, maxAmt: 1000000, minMos: 1, maxMos: 24 };
+
+    if (!amount || isNaN(amount) || amount < config.minAmt || amount > config.maxAmt) {
+      return apiError(`Invalid amount for ${rawLoanType} loan. Allowed limits: KES ${config.minAmt.toLocaleString()} to KES ${config.maxAmt.toLocaleString()}.`, 422);
     }
 
-    const totalPayable = amount * (1 + (interestRate / 100));
+    if (duration < config.minMos || duration > config.maxMos) {
+      return apiError(`Invalid tenure for ${rawLoanType} loan. Allowed duration: ${config.minMos} to ${config.maxMos} months.`, 422);
+    }
+
+    // Authoritative interest rate computed strictly on server
+    const interestRate = config.rate;
+    const totalInterest = amount * (interestRate / 100) * (duration / 12);
+    const totalPayable = Math.round((amount + totalInterest) * 100) / 100;
+    const loanType = rawLoanType;
 
     const newLoan = await prisma.loans.create({
       data: {

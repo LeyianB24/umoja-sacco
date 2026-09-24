@@ -24,69 +24,30 @@ export async function POST(request: NextRequest) {
     const checkoutRequestId = `ws_CO_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
     const refNo = `MP-${paymentType.slice(0, 3).toUpperCase()}-${Date.now().toString().slice(-6)}`;
 
-    // In production, initiate Safaricom Daraja STK push
-    // Simulate instant recording in transactions & destination ledger
-    if (paymentType === 'savings') {
-      await prisma.savings.create({
-        data: {
-          member_id: session.userId,
-          amount,
-          transaction_type: 'deposit',
-          description: `M-Pesa STK Deposit (${refNo})`,
-          reference_no: refNo,
-        },
-      });
-    } else if (paymentType === 'shares') {
-      const units = Math.floor(amount / 20);
-      await prisma.shareTransactions.create({
-        data: {
-          member_id: session.userId,
-          units,
-          unit_price: 20,
-          total_value: amount,
-          transaction_type: 'purchase',
-          reference_no: refNo,
-        },
-      });
-
-      await prisma.memberShareholdings.upsert({
-        where: { member_id: session.userId },
-        update: {
-          units_owned: { increment: units },
-          total_amount_paid: { increment: amount },
-          last_updated: new Date(),
-        },
-        create: {
-          member_id: session.userId,
-          units_owned: units,
-          total_amount_paid: amount,
-          average_purchase_price: 20,
-        },
-      });
-    }
-
-    // Record general transaction
+    // Security: Only record a pending transaction record.
+    // Financial ledgers (savings, shares) MUST ONLY be credited upon verified Daraja callback.
     await prisma.transactions.create({
       data: {
         member_id: session.userId,
         amount,
         transaction_type: paymentType,
         type: 'credit',
-        category: 'M-Pesa Paybill',
+        category: 'M-Pesa STK (Pending)',
         reference_no: refNo,
         payment_channel: 'mpesa',
         mpesa_request_id: checkoutRequestId,
-        description: `M-Pesa payment for ${paymentType}`,
+        description: `Pending M-Pesa ${paymentType} deposit (${refNo})`,
+        notes: JSON.stringify({ phone, paymentType, initiated_at: new Date().toISOString() }),
         transaction_date: new Date(),
       },
     });
 
-    // Send in-app confirmation notification
+    // In-app acknowledgment of STK dispatch
     await createNotification({
       memberId: session.userId,
-      title: 'Payment Received',
-      message: `Your M-Pesa payment of KES ${amount.toLocaleString()} for ${paymentType} (Ref: ${refNo}) was received and credited to your account.`,
-      metadata: { refNo, amount, paymentType },
+      title: 'STK Prompt Dispatched',
+      message: `An M-Pesa prompt for KES ${amount.toLocaleString()} was dispatched to ${phone || 'your phone'}. Enter PIN to finalize.`,
+      metadata: { refNo, amount, paymentType, checkoutRequestId },
     });
 
     return apiSuccess({

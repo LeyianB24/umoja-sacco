@@ -62,12 +62,12 @@ export async function POST(request: NextRequest) {
 
     // If customer cancelled or payment failed
     if (resultCode !== 0) {
-      // Mark mpesa_requests as failed if exists
-      await prisma.mpesaRequests.updateMany({
-        where: { checkout_request_id: checkoutRequestId },
+      // Mark pending transaction as failed if exists
+      await prisma.transactions.updateMany({
+        where: { mpesa_request_id: checkoutRequestId },
         data: {
-          status: 'failed',
-          updated_at: new Date(),
+          category: 'M-Pesa (Failed)',
+          notes: JSON.stringify({ resultCode, resultDesc, failed_at: new Date().toISOString() }),
         },
       }).catch(() => null);
 
@@ -119,30 +119,48 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Lookup original request by checkout_request_id
-    const mpesaReq = await prisma.mpesaRequests.findFirst({
-      where: { checkout_request_id: checkoutRequestId },
+    // Webhook origin security verification: Check secret if configured
+    const callbackSecret = process.env.MPESA_CALLBACK_SECRET;
+    if (callbackSecret) {
+      const authHeader = request.headers.get('x-mpesa-secret') || request.nextUrl.searchParams.get('secret');
+      if (authHeader !== callbackSecret) {
+        if (logId) {
+          await prisma.callbackLogs.update({
+            where: { log_id: logId },
+            data: { last_error: 'Unauthorized callback origin: secret mismatch' },
+          }).catch(() => null);
+        }
+        return NextResponse.json({ ResultCode: 1, ResultDesc: 'Unauthorized callback origin' }, { status: 401 });
+      }
+    }
+
+    // Lookup original pending transaction by checkout_request_id
+    const pendingTx = await prisma.transactions.findFirst({
+      where: { mpesa_request_id: checkoutRequestId },
     }).catch(() => null);
 
-    let memberId = mpesaReq?.member_id || null;
+    let memberId = pendingTx?.member_id || null;
 
-    // If not found in mpesa_requests, lookup member by phone
-    if (!memberId && phoneNumber) {
-      const normalizedPhoneVariants = [
-        phoneNumber,
-        `+${phoneNumber}`,
-        phoneNumber.startsWith('254') ? '0' + phoneNumber.slice(3) : phoneNumber,
-      ];
-
-      const member = await prisma.members.findFirst({
-        where: {
-          phone: { in: normalizedPhoneVariants },
-        },
+    // Secondary fallback: lookup in mpesaRequests table
+    if (!memberId) {
+      const mpesaReq = await (prisma as any).mpesaRequests?.findFirst({
+        where: { checkout_request_id: checkoutRequestId },
       }).catch(() => null);
-
-      if (member) {
-        memberId = member.member_id;
+      if (mpesaReq) {
+        memberId = mpesaReq.member_id;
       }
+    }
+
+    // Security Gate: Reject unmapped callbacks to prevent unsolicited balance manipulation
+    if (!memberId) {
+      console.warn(`[SECURITY] M-Pesa callback rejected: No initiated checkout request matched for ID ${checkoutRequestId}`);
+      if (logId) {
+        await prisma.callbackLogs.update({
+          where: { log_id: logId },
+          data: { last_error: `Rejected: No matching pending transaction for checkout ID ${checkoutRequestId}` },
+        }).catch(() => null);
+      }
+      return NextResponse.json({ ResultCode: 1, ResultDesc: 'Unmapped checkout request ID' }, { status: 400 });
     }
 
     // Update log with extracted metadata
@@ -154,16 +172,11 @@ export async function POST(request: NextRequest) {
           amount,
           phone_number: phoneNumber,
           transaction_date: transactionDate,
-          member_id: memberId || undefined,
+          member_id: memberId,
           processed: true,
           processed_at: new Date(),
         },
       }).catch(() => null);
-    }
-
-    if (!memberId) {
-      console.warn(`M-Pesa callback: No member matched for phone ${phoneNumber} or CheckoutID ${checkoutRequestId}`);
-      return NextResponse.json({ ResultCode: 0, ResultDesc: 'Callback logged, but no matching member found' });
     }
 
     // Idempotency: Check if receipt already processed
@@ -177,22 +190,19 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Determine payment type
-    let paymentType = 'savings';
-    if (mpesaReq?.notes && ['savings', 'shares', 'loan_repayment', 'registration', 'welfare'].includes(mpesaReq.notes)) {
-      paymentType = mpesaReq.notes;
-    }
+    // Determine payment type from pending transaction record
+    let paymentType = pendingTx?.transaction_type || 'savings';
 
     const refNo = mpesaReceipt || `MP-${paymentType.toUpperCase()}-${Date.now().toString().slice(-6)}`;
 
-    // Update mpesa_requests status to completed
-    if (mpesaReq) {
-      await prisma.mpesaRequests.update({
-        where: { id: mpesaReq.id },
+    // Update original pending transaction record with verified receipt
+    if (pendingTx) {
+      await prisma.transactions.update({
+        where: { transaction_id: pendingTx.transaction_id },
         data: {
-          status: 'completed',
-          mpesa_receipt: mpesaReceipt,
-          updated_at: new Date(),
+          category: 'M-Pesa Paybill (Verified)',
+          reference_no: refNo,
+          notes: JSON.stringify({ mpesaReceipt, verified_at: new Date().toISOString() }),
         },
       }).catch(() => null);
     }
